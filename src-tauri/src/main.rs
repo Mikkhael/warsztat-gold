@@ -4,7 +4,11 @@
 mod test_greet;
 use test_greet::*;
 
+// mod test_sqlite;
+
 fn main() {
+    // test_sqlite::test(std::path::Path::new("C:\\Users\\bondg\\Desktop\\Dev\\warsztat-gold\\test.db3"));
+
     tauri::Builder::default()
     .manage(TestGreetState::default())
     .setup(|app| {
