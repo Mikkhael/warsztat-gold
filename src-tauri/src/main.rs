@@ -4,6 +4,8 @@
 mod test_greet;
 use test_greet::*;
 
+mod sqlite_manager;
+
 // mod test_sqlite;
 
 fn main() {
@@ -11,11 +13,18 @@ fn main() {
 
     tauri::Builder::default()
     .manage(TestGreetState::default())
+    .manage(sqlite_manager::SqliteManagerLock::default())
     .setup(|app| {
         TestGreetState::init(app);
         Ok(())
     })
-    .invoke_handler(tauri::generate_handler![greet])
+    .invoke_handler(tauri::generate_handler![
+        greet,
+        sqlite_manager::open_database,
+        sqlite_manager::save_database,
+        sqlite_manager::perform_execute,
+        sqlite_manager::perform_query
+    ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

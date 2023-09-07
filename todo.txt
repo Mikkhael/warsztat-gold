@@ -1,0 +1,1 @@
+- create sql component and test sqlite_manager from frontend

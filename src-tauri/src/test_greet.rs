@@ -17,6 +17,13 @@ impl TestGreetState {
              counter: 0.into(),
              ..Default::default() 
         }).expect("Unable to inicialize state");
+        
+        println!("Cache Dir:       {:?}", resolver.app_cache_dir());
+        println!("Config Dir:      {:?}", resolver.app_config_dir());
+        println!("Data Dir:        {:?}", resolver.app_data_dir());
+        println!("Local Data Dir:  {:?}", resolver.app_local_data_dir());
+        println!("Log Dir:         {:?}", resolver.app_log_dir());
+
     }
 }
 

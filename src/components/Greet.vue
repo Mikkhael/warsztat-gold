@@ -10,6 +10,18 @@ async function greet() {
   greetMsg.value = await invoke("greet", { name: name.value });
   greetMsg.value = greetMsg.value.replace(/\n/g, "<br>");
 }
+
+async function set_name(new_name) {
+  name.value = new_name;
+}
+
+defineExpose({
+  greet,
+  name,
+  greetMsg,
+  set_name,
+});
+
 </script>
 
 <template>
