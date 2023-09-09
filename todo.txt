@@ -1,1 +1,2 @@
-- create sql component and test sqlite_manager from frontend
++ create sql component and test sqlite_manager from frontend
+- organize frontend code into seperate modules for logic and view

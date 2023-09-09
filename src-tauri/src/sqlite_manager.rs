@@ -1,6 +1,7 @@
 use rusqlite::Rows;
 use rusqlite::{Connection, Result, Error, backup::Backup};
 use std::path::{Path, PathBuf};
+use rusqlite::types::ValueRef;
 use std::sync::Mutex;
 
 
@@ -13,20 +14,41 @@ pub struct SqliteManager{
 }
 
 pub type SqliteManagerLock = Mutex<SqliteManager>;
-pub type QueryRowsStrings = Vec<Vec<String>>;
 
-pub fn convert_rows_to_strings(rows: &mut Rows, cols: usize) -> Result<QueryRowsStrings> {
-    let mut res : QueryRowsStrings = Vec::new();
+fn valueref_to_json(value: ValueRef<'_>) -> serde_json::Value {
+    use ValueRef::*;
+    match value {
+        Null       => serde_json::Value::Null,
+        Integer(v) => v.into(),
+        Real(v)    => v.into(),
+        Text(v)    => String::from_utf8_lossy(v).into(),
+        Blob(v)    => v.into()
+    }
+}
+
+pub type ExtractedRows = Vec<Vec<serde_json::Value>>;
+pub fn extract_all_rows<'a>(rows: &'a mut Rows, cols: usize) -> Result<ExtractedRows> {
+    let mut res : ExtractedRows = Vec::new();
     while let Some(row) = rows.next()? {
-        let mut row_strings : Vec<String> = Vec::new();
-        row_strings.reserve_exact(cols);
+        let mut row_strings = Vec::with_capacity(cols);
         for i in 0..cols {
-            row_strings.push(row.get(i)?);
+            row_strings.push( valueref_to_json(row.get_ref(i)?) );
         }
         res.push(row_strings);
     }
     Ok(res)
 }
+
+// fn convert_cell_to_string(cell_ref: rusqlite::types::ValueRef) -> String{
+//     use rusqlite::types::ValueRef::*;
+//     match cell_ref {
+//         Null            => "null".to_string(),
+//         Integer(v)      => v.to_string(),
+//         Real(v)         => v.to_string(),
+//         Text(v)         => String::from_utf8_lossy(v).to_string(),
+//         _               => "blob".to_string()
+//     }
+// }
 
 impl SqliteManager{
     // pub fn is_open(&self)  -> bool { self.conn.is_some() }
@@ -57,12 +79,12 @@ impl SqliteManager{
             Ok(0)
         }
     }
-    pub fn query(&self, query: &str) -> Result<QueryRowsStrings> {
+    pub fn query(&self, query: &str) -> Result<ExtractedRows> {
         if let Some(conn) = self.get_conn() {
             let mut stmt = conn.prepare(&query)?;
             let cols = stmt.column_count();
             let mut rows = stmt.query(())?;
-            convert_rows_to_strings(&mut rows, cols)
+            extract_all_rows(&mut rows, cols)
         }else{
             Ok(Default::default())
         }
@@ -122,7 +144,7 @@ pub fn save_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<
 }
 
 #[tauri::command]
-pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<QueryRowsStrings, String> {
+pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<ExtractedRows, String> {
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     db.query(&query).map_err(|err| err.to_string())
 }

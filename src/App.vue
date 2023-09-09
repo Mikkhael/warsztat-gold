@@ -1,61 +1,32 @@
 <script setup>
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
-import Greet from "./components/Greet.vue";
+import TestGreet from "./components/test_App.vue";
+import SqlDebugConsole from "./components/SqlDebug/SqlDebugConsole.vue";
 import { onMounted, ref } from "vue";
 
-const greet_ref = ref();
+const sql_mode = ref("true");
+const test_greet = ref();
+const sql_debug_console = ref();
 
+// defineExpose({
+//   sql_debug_console,
+//   test_greet
+// })
 
-onMounted( () => {
-  window.greet_ref = greet_ref.value;
-} )
+onMounted(() => {
+    window.APP_DEBUG = {
+    sql_debug_console,
+    test_greet
+  };
+});
 
 </script>
 
 <template>
-  <div class="container">
-    <h1>Welcome to Tauri!</h1>
+  
+  <SqlDebugConsole v-if="sql_mode" ref="sql_debug_console"/>
+  <TestGreet v-else ref="test_greet"/>
 
-    <div class="row">
-      <a href="https://vitejs.dev">
-        <img src="/vite.svg" class="logo vite" alt="Vite logo" />
-      </a>
-      <a href="https://tauri.app" target="_blank">
-        <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
-      </a>
-      <a href="https://vuejs.org/" target="_blank">
-        <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-      </a>
-    </div>
+  <input type="checkbox" v-model="sql_mode"> SQL_MODE
 
-    <p>Click on the Tauri, Vite, and Vue logos to learn more.</p>
-
-    <p>
-      Recommended IDE setup:
-      <a href="https://code.visualstudio.com/" target="_blank">VS Code</a>
-      +
-      <a href="https://github.com/johnsoncodehk/volar" target="_blank">Volar</a>
-      +
-      <a href="https://github.com/tauri-apps/tauri-vscode" target="_blank"
-        >Tauri</a
-      >
-      +
-      <a href="https://github.com/rust-lang/rust-analyzer" target="_blank"
-        >rust-analyzer</a
-      >
-    </p>
-
-    <Greet ref="greet_ref"/>
-  </div>
 </template>
 
-<style scoped>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #249b73);
-}
-</style>
