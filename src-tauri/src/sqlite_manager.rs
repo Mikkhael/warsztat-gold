@@ -51,7 +51,7 @@ pub fn extract_all_rows<'a>(rows: &'a mut Rows, cols: usize) -> Result<Extracted
 // }
 
 impl SqliteManager{
-    // pub fn is_open(&self)  -> bool { self.conn.is_some() }
+    pub fn is_open(&self)  -> bool { self.conn.is_some() }
     pub fn get_conn(&self) -> Option<&Connection> { self.conn.as_ref() }
     pub fn get_path(&self) -> Option<&Path> { self.path.as_ref().map(|p| p.as_path()) }
 
@@ -93,6 +93,19 @@ impl SqliteManager{
 
 }
 
+#[derive(serde::Serialize)]
+pub struct CurrentDbState {
+    is_open: bool,
+    path: PathBuf
+}
+#[tauri::command]
+pub fn get_current_db_state(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<CurrentDbState, String>{
+    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    Ok(CurrentDbState {
+        is_open: db.is_open(),
+        path: db.path.clone().unwrap_or("".into())
+    })
+}
 
 
 #[tauri::command]
@@ -106,6 +119,12 @@ pub fn open_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<
     }
 
     return Err("Canceled opening db".to_string());
+}
+#[tauri::command]
+pub fn close_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
+    let mut db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    db.close();
+    Ok(())
 }
 
 #[tauri::command]

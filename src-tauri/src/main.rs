@@ -21,9 +21,11 @@ fn main() {
     .invoke_handler(tauri::generate_handler![
         greet,
         sqlite_manager::open_database,
+        sqlite_manager::close_database,
         sqlite_manager::save_database,
         sqlite_manager::perform_execute,
-        sqlite_manager::perform_query
+        sqlite_manager::perform_query,
+        sqlite_manager::get_current_db_state,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

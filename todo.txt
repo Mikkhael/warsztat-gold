@@ -1,2 +1,11 @@
 + create sql component and test sqlite_manager from frontend
-- organize frontend code into seperate modules for logic and view
++ organize frontend code into seperate modules for logic and view
+
+- create interface for accual mdb
+- import desired db structure form mdb
+- implement import from mdb
+- implement export to mdb (csv)
+
+- create main UI layout
+- create example form
+- create toolbars
