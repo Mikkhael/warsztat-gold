@@ -2,7 +2,7 @@
 import { ref, onRenderTriggered, reactive, onMounted, computed } from "vue";
 
 const props = defineProps(['title', 'text', 'zindex', 'dims', 'wis', 'wprops']);
-const emit = defineEmits(['window-request-focus']);
+const emit = defineEmits(['window-request-focus', 'window-request-close']);
 
 const window = ref();
 const main = ref();
@@ -31,7 +31,7 @@ function set_size(w = init_size_w, h = init_size_h){
 
 
 function handle_drag_window(event){
-    if(event.buttons & 1) {
+    if(is_focused.value && (event.buttons & 1)) {
         curr_pos_x += event.movementX;
         curr_pos_y += event.movementY;
         update_current_pos();
@@ -64,7 +64,10 @@ defineExpose({
 
     <div class="window" ref="window" :style="{zIndex: props.zindex}" :class="{focused: is_focused}" @mousedown="emit('window-request-focus')">
         <header ref="header" @mousemove="handle_drag_window($event)" >
-            {{ props.title }}
+            <span class="title" v-text="props.title"></span>
+            <div class="buttons">
+                <div class="button close" @click="emit('window-request-close')" @mousemove.stop>X</div>
+            </div>
         </header>
 
         <main ref="main">
@@ -80,33 +83,56 @@ defineExpose({
     box-sizing: border-box;
 }
 .window{
-    border: 1px solid black;
-    background-color: white;
+    font-size: 1em;
+    border: 2px solid #7b99e1;
+    background-color: #ecffff;
     position: absolute;
     pointer-events: auto;
-    opacity: 0.8;
+    /* opacity: 0.8; */
 }
 
 .window.focused {
-    opacity: 1;
+    border-color: #0055e5;
+    /* opacity: 1; */
 }
 .window > header {
-    border-bottom: 4px solid green;
-    background-color: #61e4d2;
-    text-align: left;
+    background-color: #7b99e1;
+    color: white;
+    padding: 2px;
     width: 100%;
-    padding-left: 3px;
+    height: 2em;
+    padding-left: 10px;
     user-select: none;
     cursor: all-scroll;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
 }
 
 .window.focused > header {
-    background-color: #6361e4;
+    background-color: #0055e5;
 }
-.window > main {
-    border: 1px solid red;
+
+.button {
+    font-family: monospace;
+    border: 1px solid white;
+    background-color: #f56262;
+    height: 1.5em;
+    width: 1.5em;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+}
+.window.focused .button.close {
+    background-color: #fd3c3c;
+}
+.window .button.close:hover {
+    background-color: #ff0000;
+}
+main {
     width: 100%;
     overflow: scroll;
     resize: both;
 }
+
 </style>

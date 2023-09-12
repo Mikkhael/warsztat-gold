@@ -20,11 +20,11 @@
 
 - floating windows
     + core windows
-    - styling
+    + styling
     + slots
     + global API
-    - buttons
-        - exit
+    + buttons
+        + exit
         - minimize?
     - opened windows list
     - minimize bar

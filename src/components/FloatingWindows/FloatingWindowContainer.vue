@@ -19,6 +19,7 @@ const windows_refs  = props.manager.refs;
         :text="index" :title="title" :zindex="zindex" :wis="wis" :wprops="wprops" :dims="dims"
         :ref="el => windows_refs[title] = el"
         @window-request-focus="manager.focus_window_by_index(index)"
+        @window-request-close="manager.close_window(title)"
         />
     
 </template>
