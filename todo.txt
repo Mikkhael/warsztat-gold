@@ -21,8 +21,8 @@
 - floating windows
     + core windows
     - styling
-    - slots
-    - global API
+    + slots
+    + global API
     - buttons
         - exit
         - minimize?

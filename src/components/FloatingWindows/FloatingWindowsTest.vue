@@ -1,13 +1,22 @@
 <script setup>
 import FloatingWindowContainer from "./FloatingWindowContainer.vue"
-import { ref, reactive, nextTick } from "vue";
+import TestWindow1 from "./TestWindow1.vue";
+import TestWindow2 from "./TestWindow2.vue";
+import FWManager from "./FWManager";
+import { ref } from "vue";
 
-const manager = ref();
+const container = ref();
+const container2 = ref();
+
+
+const fw_manager  = new FWManager(container);
+const fw_manager2 = new FWManager(container2);
+
 const new_window_name = ref("test1");
-
+const zaha = ref([0]);
 
 defineExpose({
-    manager
+    fw_manager
 });
 
 </script>
@@ -15,14 +24,29 @@ defineExpose({
 <template>
 
     
-    <div class="container">
-        <FloatingWindowContainer ref="manager" />
+    <div class="container" ref="container">
+        <FloatingWindowContainer :manager="fw_manager" />
     </div>
+    
+    <div class="container2" ref="container2">
+        <FloatingWindowContainer :manager="fw_manager2" />
+    </div>
+    
 
-    <input type="text" v-model="new_window_name">
-    <input type="button" value="OPEN or FOCUS"  @click="manager.open_or_focus_window (new_window_name)">
-    <input type="button" value="OPEN or REOPEN" @click="manager.open_or_reopen_window(new_window_name)">
-    <input type="button" value="CLOSE"          @click="manager.close_window         (new_window_name)">
+    <p>
+        <input type="text" v-model="new_window_name">
+        <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1, {text: new_window_name, index: 123}, {x:37.52})">
+        <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2, {text: 'jsdiogf', aha: zaha})" >
+        <input type="button" value="CLOSE"   @click="fw_manager.close_window         (new_window_name)">
+    </p>
+
+    <p>
+        {{ zaha }}
+        <input type="button" value="OPEN or FOCUS"  @click="fw_manager2.open_or_focus_window (new_window_name, {h:300.5})">
+        <input type="button" value="CLOSE"          @click="fw_manager2.close_window         (new_window_name)">
+    </p>
+
+
 
 </template>
 
@@ -38,6 +62,18 @@ defineExpose({
     /* height: 70%; */
     top: 0px;
     border: 1px solid red;
+    z-index: 0;
+}
+
+.container2 {
+    pointer-events: none;
+    position: absolute;
+    overflow: hidden;
+    width: 400px;
+    height: 400px;
+    right: 20px;
+    bottom: 20px;
+    border: 1px solid blue;
     z-index: 0;
 }
 
