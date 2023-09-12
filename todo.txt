@@ -1,11 +1,32 @@
 + create sql component and test sqlite_manager from frontend
 + organize frontend code into seperate modules for logic and view
 
-- create interface for accual mdb
-- import desired db structure form mdb
-- implement import from mdb
-- implement export to mdb (csv)
+- Access
+    - create interface for accual mdb
+    - import desired db structure form mdb
+    - implement import from mdb
+    - implement export to mdb (csv)
 
-- create main UI layout
-- create example form
-- create toolbars
+- Buckups API
+    - local and manual
+    - periodic
+    - remote
+    - progress
+
+- Core
+    - create main UI layout
+    - create example form
+    - create toolbars
+
+- floating windows
+    + core windows
+    - styling
+    - slots
+    - global API
+    - buttons
+        - exit
+        - minimize?
+    - opened windows list
+    - minimize bar
+    - improve dragging
+

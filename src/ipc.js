@@ -44,10 +44,9 @@ function refresh_state(){
     ])
 }
 
-await refresh_state().catch(err => {
+refresh_state().catch(err => {
     console.error("Error refreshing state", err);
 });
-console.log("Initialized IPC");
 
 export default {
     state,

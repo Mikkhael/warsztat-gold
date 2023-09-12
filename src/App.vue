@@ -1,21 +1,26 @@
 <script setup>
 import TestGreet from "./components/test_App.vue";
 import SqlDebugConsole from "./components/SqlDebug/SqlDebugConsole.vue";
-import { onMounted, ref } from "vue";
+import FloatingWindowsTest from "./components/FloatingWindows/FloatingWindowsTest.vue";
+import { onMounted, readonly, ref } from "vue";
 
-const sql_mode = ref("true");
-const test_greet = ref();
-const sql_debug_console = ref();
+const main_components = [
+  SqlDebugConsole,
+  FloatingWindowsTest,
+  TestGreet,
+];
+const main_components_names = readonly([
+  "SqlDebugConsole",
+  "FloatingWindowsTest",
+  "TestGreet",
+]);
+const current_main_component_index = ref(0);
+const current_main_component = ref();
 
-// defineExpose({
-//   sql_debug_console,
-//   test_greet
-// })
 
 onMounted(() => {
     window.APP_DEBUG = {
-    sql_debug_console,
-    test_greet
+    current_main_component,
   };
 });
 
@@ -23,10 +28,11 @@ onMounted(() => {
 
 <template>
   
-  <SqlDebugConsole v-if="sql_mode" ref="sql_debug_console"/>
-  <TestGreet v-else ref="test_greet"/>
+  <component :is="main_components[current_main_component_index]"  ref="current_main_component"/>
 
-  <input type="checkbox" v-model="sql_mode"> SQL_MODE
+  <select v-model="current_main_component_index">
+    <option v-for="(name, index) in main_components_names" :value="index">{{ name }}</option>
+  </select>
 
 </template>
 
