@@ -12,6 +12,7 @@ impl TestGreetState {
     pub fn init(app: &mut tauri::App) {
         let resolver = app.path_resolver();
         let test_txt_path = resolver.resolve_resource("resources/test.txt").expect("Unable to resolve test resource path");
+        println!("test_txt_path:  {}", test_txt_path.display());
         app.state::<TestGreetState>().0.set(TestGreetStateInner {
              test_file_path: test_txt_path,
              counter: 0.into(),

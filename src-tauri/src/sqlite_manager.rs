@@ -1,5 +1,7 @@
 use rusqlite::Rows;
 use rusqlite::{Connection, Result, Error, backup::Backup};
+use tauri::App;
+use tauri::Manager;
 use std::path::{Path, PathBuf};
 use rusqlite::types::ValueRef;
 use std::sync::Mutex;
@@ -9,6 +11,8 @@ use tauri::api::dialog;
 
 #[derive(Default)]
 pub struct SqliteManager{
+    decimal_extension_path: PathBuf,
+
     conn: Option<Connection>,
     path: Option<PathBuf>
 }
@@ -55,11 +59,33 @@ impl SqliteManager{
     pub fn get_conn(&self) -> Option<&Connection> { self.conn.as_ref() }
     pub fn get_path(&self) -> Option<&Path> { self.path.as_ref().map(|p| p.as_path()) }
 
+    pub fn init(app: &mut App) {
+        let resolver = app.path_resolver();
+        let state_lock = app.state::<SqliteManagerLock>();
+        let mut state = state_lock.lock().expect("Unable to lock sqlite manager");
+
+        let decimal_extension_path = resolver.resolve_resource("resources/sqlite/decimal").expect("Unable to resolve path to decimal extension");
+        // let mut decimal_extension_path = decimal_extension_path.to_string_lossy().to_string();
+        // decimal_extension_path.drain(0..4);
+        println!("decimal: {:?}", decimal_extension_path);
+        println!("decimal: {}", decimal_extension_path.display());
+
+        state.decimal_extension_path = decimal_extension_path;
+    }
+
     pub fn open(&mut self, path: &Path) -> Result<(), Error>{ 
         let res = Connection::open(path); 
         if let Ok(conn) = res {
+
+            {
+                let _guard = unsafe { rusqlite::LoadExtensionGuard::new(&conn)? };
+                unsafe { conn.load_extension(&self.decimal_extension_path, None)? }
+            }
+
             self.conn = Some(conn);
             self.path = Some(path.to_path_buf());
+            
+
             return Ok(());
         } else {
             self.conn = None;
@@ -165,11 +191,17 @@ pub fn save_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<
 #[tauri::command]
 pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<ExtractedRows, String> {
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    if !db.is_open() {
+        return Err("No database opened".into());
+    }
     db.query(&query).map_err(|err| err.to_string())
 }
 
 #[tauri::command]
 pub fn perform_execute(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<usize, String> {
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    if !db.is_open() {
+        return Err("No database opened".into());
+    }
     db.execute(&query).map_err(|err| err.to_string())
 }

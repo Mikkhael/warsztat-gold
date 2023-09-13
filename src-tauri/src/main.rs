@@ -16,6 +16,7 @@ fn main() {
     .manage(sqlite_manager::SqliteManagerLock::default())
     .setup(|app| {
         TestGreetState::init(app);
+        sqlite_manager::SqliteManager::init(app);
         Ok(())
     })
     .invoke_handler(tauri::generate_handler![
