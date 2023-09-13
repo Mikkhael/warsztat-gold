@@ -3,7 +3,8 @@
 
 - Access
     - create interface for accual mdb
-    - import desired db structure form mdb
+    + import desired db structure form mdb
+    - load decimal extension
     - implement import from mdb
     - implement export to mdb (csv)
 
