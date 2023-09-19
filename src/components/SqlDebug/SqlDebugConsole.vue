@@ -58,12 +58,21 @@ function perform_execute(){
 }
 function save(){
     return ipc.db_save().then(path => {
+        if(!path) return;
         last_status_success.value = true;
         last_status_message.value = `Saved Database at '${path}'`;
     }).catch(handle_error);
 }
+function export_csv(){
+    return ipc.db_export_csv().then(path => {
+        if(!path) return;
+        last_status_success.value = true;
+        last_status_message.value = `Exported CSV to '${path}'`;
+    }).catch(handle_error);
+}
 function open(){
     return ipc.db_open().then(path => {
+        if(!path) return;
         last_status_success.value = true;
         last_status_message.value = `Opened Database at '${path}'`;
     }).catch(handle_error);
@@ -108,6 +117,7 @@ defineExpose({
         <button @click="perform_execute()">EXECUTE</button>
         <button @click="open()">OPEN</button>
         <button @click="save()">SAVE</button>
+        <button @click="export_csv()">EXPORT CSV</button>
         <button @click="close()">CLOSE</button>
     </div>
     <span v-if="ipc.state.db_is_open" >{{ ipc.state.db_path }} </span>

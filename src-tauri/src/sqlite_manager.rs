@@ -9,9 +9,6 @@ use std::path::{Path, PathBuf};
 use rusqlite::types::ValueRef;
 use std::sync::Mutex;
 
-
-use tauri::api::dialog;
-
 #[derive(Default)]
 pub struct SqliteManager{
     decimal_extension_path: PathBuf,
@@ -143,7 +140,9 @@ impl SqliteConn{
     }
 
     pub fn export_table_to_csv(&self, table_name: &str, file_name: &Path) -> DynResult<()> {
-        let file = fs::OpenOptions::new().write(true).truncate(true).open(file_name)?;
+        print!("Exporting CSV [{}]... ", table_name);
+        std::io::stdout().flush()?;
+        let file = fs::OpenOptions::new().write(true).truncate(true).create(true).open(file_name)?;
         let mut file = BufWriter::new(file);
 
         let select_sql = format!("SELECT * FROM `{}`", table_name);
@@ -160,8 +159,10 @@ impl SqliteConn{
             write!(file, ";")?;
             write_string_for_csv(&mut file, val)?;
         }
+        write!(file, "\r\n")?;
 
         let mut rows = stmt.query(())?;
+        let mut done_rows = 0usize;
         
         while let Some(row) = rows.next()? {
             write_value_for_csv(&mut file, row.get_ref(0)?)?;
@@ -169,8 +170,11 @@ impl SqliteConn{
                 write!(file, ";")?;
                 write_value_for_csv(&mut file, row.get_ref(i)?)?;
             }
+            write!(file, "\r\n")?;
+            done_rows += 1;
         }
         
+        println!("{} rows", done_rows);
         Ok(())
     }
 
@@ -196,16 +200,10 @@ pub fn get_current_db_state(sqlite_manager: tauri::State<SqliteManagerLock>) -> 
 
 
 #[tauri::command]
-pub fn open_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<String, String> {
-    let open_dialog = dialog::blocking::FileDialogBuilder::new().add_filter("Sqlite database", &["db3"]);
-    let db_path = open_dialog.pick_file();
-    if let Some(path) = db_path {
-        let mut db = sqlite_manager.lock().map_err(|err| err.to_string())?;
-        db.open(&path).map_err(|err| err.to_string())?;
-        return Ok(path.to_string_lossy().into());
-    }
-
-    return Err("Canceled opening db".to_string());
+pub fn open_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
+    let mut db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    db.open(&path).map_err(|err| err.to_string())?;
+    Ok(())
 }
 #[tauri::command]
 pub fn close_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
@@ -215,49 +213,36 @@ pub fn close_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result
 }
 
 #[tauri::command]
-pub fn save_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<String, String> {
-    let original_path : Option<PathBuf>;
-    {
-        let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
-        original_path = db.sqlite_conn.as_ref().map(|c| c.path.to_path_buf());
-    }
-    let mut open_dialog = dialog::blocking::FileDialogBuilder::new().add_filter("Sqlite database", &["db3"]);
-    if let Some(path) = &original_path {
-        if let Some(parent) = path.parent(){
-            open_dialog = open_dialog.set_directory(parent);
+pub fn save_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
+    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    if let Some(sqlite_conn) = &db.sqlite_conn {
+        let db_conn = &sqlite_conn.conn;
+        let mut backup_conn = Connection::open(&path).map_err(|err| err.to_string())?;
+        if db_conn.path() == backup_conn.path() {
+            return Err("Connection to self".to_string());
         }
-        if let Some(file_name) = path.file_name(){
-            open_dialog = open_dialog.set_file_name(&file_name.to_string_lossy().to_string());
-        }
+        let backup = Backup::new(db_conn, &mut backup_conn).map_err(|err| err.to_string())?;
+        backup.run_to_completion(50, std::time::Duration::from_millis(10), Some(|p| {
+            let done = p.pagecount - p.remaining;
+            let total = p.pagecount;
+            println!("Saving Progress: {}%  ({}/{})", done*100/total, done, total);
+        })).map_err(|err| err.to_string())?;
+        Ok(())
+    } else {
+       Err("No connection opened".to_string())
     }
-    let path = open_dialog.save_file();
-    if let Some(path) = path {
-        let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
-        if let Some(sqlite_conn) = &db.sqlite_conn {
-            let db_conn = &sqlite_conn.conn;
-            let mut backup_conn = Connection::open(&path).map_err(|err| err.to_string())?;
-            let backup = Backup::new(db_conn, &mut backup_conn).map_err(|err| err.to_string())?;
-            backup.run_to_completion(5, std::time::Duration::from_millis(100), Some(|p| {
-                let done = p.pagecount - p.remaining;
-                let total = p.pagecount;
-                println!("Saving Progress: {}%  ({}/{})", done*100/total, done, total);
-            })).map_err(|err| err.to_string())?;
-            return Ok(path.to_string_lossy().to_string());
-        } else {
-            return Err("No connection opened".to_string());
-        }
-    }
-    return Err("Canceled saving db".to_string());
 }
 
-// #[tauri::command]
+#[tauri::command]
 pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(ref sqlite_conn) = db.sqlite_conn {
+        dbg!(&export_path);
+        fs::create_dir_all(&export_path).map_err(|err| err.to_string())?;
         let table_names = db.get_main_tables().map_err(|err| err.to_string())?;
         for table_name in table_names {
             let file_name = &export_path.join( format!("{}.csv", table_name));
-            sqlite_conn.export_table_to_csv(&table_name, file_name).map_err(|err| err.to_string());
+            sqlite_conn.export_table_to_csv(&table_name, file_name).map_err(|err| err.to_string())?;
         }
         Ok(())
     } else {

@@ -1,6 +1,10 @@
 + create sql component and test sqlite_manager from frontend
 + organize frontend code into seperate modules for logic and view
 
+
+- better command errors
+- remember last paths in dialogs (localstorage keyd by title?)
+
 - Access
     - create interface for accual mdb
     + import desired db structure form mdb
@@ -8,6 +12,8 @@
     - fix decimal check
     - implement import from mdb
     - implement export to mdb (csv)
+        + csv export
+        - mdb import macro
     - test decimals in csv in access
 
 - Buckups API
