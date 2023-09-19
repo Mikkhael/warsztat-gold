@@ -13,12 +13,17 @@
   "tauri": {
     "allowlist": {
       "all": false,
+      "dialog": {
+        "all": true
+      },
       "shell": {
         "all": false,
         "open": false
       },
       "fs": {
         "all": false,
+        "exists": true,
+        "createDir": true,
         "scope": ["$RESOURCE/*"]
       }
     },

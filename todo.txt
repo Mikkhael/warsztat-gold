@@ -5,8 +5,10 @@
     - create interface for accual mdb
     + import desired db structure form mdb
     + load decimal extension [XD]
+    - fix decimal check
     - implement import from mdb
     - implement export to mdb (csv)
+    - test decimals in csv in access
 
 - Buckups API
     - local and manual

@@ -1,0 +1,28 @@
+CENNIK  GM
+czynność
+dane do zaświadczenie o sprawności inst
+dokumenty sprzedaży
+dokumenty sprzedaży chwilówk
+dostawcy
+faktura szczegóły chwilówka
+inwentaryzacja
+inwentaryzacja nr 3
+jamar
+klienci
+liczby słownie
+modele sam
+nazwy części
+obroty magazynowe
+płace
+pracownicy
+przyjęcia PZ
+rodzaje dokumentów
+samochody klientów
+sposób zapłaty
+sprzedaż
+zamówienia części
+zamówienia części archiwum
+zlecenia czynności
+zlecenia gaz
+zlecenia instalacji gazowej
+zlecenia naprawy

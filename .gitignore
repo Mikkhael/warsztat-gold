@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 mdb/test.db3
+mdb/decimal.dll
 
 # Editor directories and files
 .vscode/*
