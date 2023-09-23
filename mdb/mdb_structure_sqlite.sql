@@ -11,6 +11,13 @@ CREATE TABLE IF NOT EXISTS `CENNIK  GM` (
   UNIQUE (`CATALOG_NO`), 
   PRIMARY KEY (`ID cennin GM`)
 ) STRICT;
+CREATE VIEW IF NOT EXISTS `CENNIK  GM_csv_view` (`ID cennin GM`, `CATALOG_NO`, `DESC_GER1`, `DESC_GER2`, `PRICE`) AS SELECT 
+  `ID cennin GM`,
+  `CATALOG_NO`,
+  `DESC_GER1`,
+  `DESC_GER2`,
+  REPLACE(CAST(`PRICE` AS TEXT),".",",")
+FROM `CENNIK  GM`;
 
 
 
@@ -20,6 +27,10 @@ CREATE TABLE IF NOT EXISTS `czynność` (
   UNIQUE (`czynność`), 
   PRIMARY KEY (`ID cynności`)
 ) STRICT;
+CREATE VIEW IF NOT EXISTS `czynność_csv_view` (`ID cynności`, `czynność`) AS SELECT 
+  `ID cynności`,
+  `czynność`
+FROM `czynność`;
 
 
 
@@ -34,6 +45,15 @@ CREATE TABLE IF NOT EXISTS `dane do zaświadczenie o sprawności inst` (
   PRIMARY KEY (`ID typów`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `dane do zaświadczenie o sprawności inst IDX ID obrotów mag` ON `dane do zaświadczenie o sprawności inst` (`ID obrotów mag`);
+CREATE VIEW IF NOT EXISTS `dane do zaświadczenie o sprawności inst_csv_view` (`ID typów`, `Producent`, `Typ/Nr`, `E-_`, `67R-_`, `Ważność legalizacji zbiornika do`, `ID obrotów mag`) AS SELECT 
+  `ID typów`,
+  `Producent`,
+  `Typ/Nr`,
+  `E-_`,
+  `67R-_`,
+  DATETIME(`Ważność legalizacji zbiornika do`),
+  `ID obrotów mag`
+FROM `dane do zaświadczenie o sprawności inst`;
 
 
 
@@ -47,6 +67,13 @@ CREATE TABLE IF NOT EXISTS `dokumenty sprzedaży` (
   PRIMARY KEY (`ID dokumentu`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `dokumenty sprzedaży IDX ID zlecenia` ON `dokumenty sprzedaży` (`ID zlecenia`);
+CREATE VIEW IF NOT EXISTS `dokumenty sprzedaży_csv_view` (`ID dokumentu`, `nazwa dokumentu`, `nr dokumentu`, `ID zlecenia`, `data wystawienia`) AS SELECT 
+  `ID dokumentu`,
+  `nazwa dokumentu`,
+  `nr dokumentu`,
+  `ID zlecenia`,
+  DATETIME(`data wystawienia`)
+FROM `dokumenty sprzedaży`;
 
 
 
@@ -58,6 +85,12 @@ CREATE TABLE IF NOT EXISTS `dokumenty sprzedaży chwilówk` (
   UNIQUE (`nr dokumentu`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `dokumenty sprzedaży chwilówk IDX ID zlecenia` ON `dokumenty sprzedaży chwilówk` (`ID zlecenia`);
+CREATE VIEW IF NOT EXISTS `dokumenty sprzedaży chwilówk_csv_view` (`nazwa dokumentu`, `nr dokumentu`, `ID zlecenia`, `data wystawienia`) AS SELECT 
+  `nazwa dokumentu`,
+  `nr dokumentu`,
+  `ID zlecenia`,
+  DATETIME(`data wystawienia`)
+FROM `dokumenty sprzedaży chwilówk`;
 
 
 
@@ -81,6 +114,22 @@ CREATE TABLE IF NOT EXISTS `dostawcy` (
   PRIMARY KEY (`ID dostawcy - producenta`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `dostawcy IDX kod pocztowy` ON `dostawcy` (`kod pocztowy`);
+CREATE VIEW IF NOT EXISTS `dostawcy_csv_view` (`ID dostawcy - producenta`, `Nazwa`, `kod pocztowy`, `miejscowość`, `ulica nr domu`, `tel 1`, `tel 2`, `fax`, `konto bank`, `nr konta`, `przedstawiciel`, `@-maill`, `NIP`, `otrzymany rabat %`) AS SELECT 
+  `ID dostawcy - producenta`,
+  `Nazwa`,
+  `kod pocztowy`,
+  `miejscowość`,
+  `ulica nr domu`,
+  `tel 1`,
+  `tel 2`,
+  `fax`,
+  `konto bank`,
+  `nr konta`,
+  `przedstawiciel`,
+  `@-maill`,
+  `NIP`,
+  `otrzymany rabat %`
+FROM `dostawcy`;
 
 
 
@@ -92,6 +141,13 @@ CREATE TABLE IF NOT EXISTS `faktura szczegóły chwilówka` (
   `numer` TEXT CHECK (length(`numer`) <= 10)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `faktura szczegóły chwilówka IDX numer` ON `faktura szczegóły chwilówka` (`numer`);
+CREATE VIEW IF NOT EXISTS `faktura szczegóły chwilówka_csv_view` (`nazwa części lub czynności`, `jednostka`, `ilość`, `cena netto`, `numer`) AS SELECT 
+  `nazwa części lub czynności`,
+  `jednostka`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  REPLACE(CAST(decimal(`cena netto`) AS TEXT),".",","),
+  `numer`
+FROM `faktura szczegóły chwilówka`;
 
 
 
@@ -104,6 +160,13 @@ CREATE TABLE IF NOT EXISTS `inwentaryzacja` (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `inwentaryzacja IDX numer dokumentu` ON `inwentaryzacja` (`numer dokumentu`);
 CREATE INDEX IF NOT EXISTS `inwentaryzacja IDX numer cz` ON `inwentaryzacja` (`numer cz`);
+CREATE VIEW IF NOT EXISTS `inwentaryzacja_csv_view` (`numer cz`, `ilość`, `data zapisu`, `rodzaj dokumentu`, `numer dokumentu`) AS SELECT 
+  `numer cz`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  DATETIME(`data zapisu`),
+  `rodzaj dokumentu`,
+  `numer dokumentu`
+FROM `inwentaryzacja`;
 
 
 
@@ -116,6 +179,13 @@ CREATE TABLE IF NOT EXISTS `inwentaryzacja nr 3` (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `inwentaryzacja nr 3 IDX numer dokumentu` ON `inwentaryzacja nr 3` (`numer dokumentu`);
 CREATE INDEX IF NOT EXISTS `inwentaryzacja nr 3 IDX numer cz` ON `inwentaryzacja nr 3` (`numer cz`);
+CREATE VIEW IF NOT EXISTS `inwentaryzacja nr 3_csv_view` (`numer cz`, `ilość`, `data zapisu`, `rodzaj dokumentu`, `numer dokumentu`) AS SELECT 
+  `numer cz`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  DATETIME(`data zapisu`),
+  `rodzaj dokumentu`,
+  `numer dokumentu`
+FROM `inwentaryzacja nr 3`;
 
 
 
@@ -127,6 +197,13 @@ CREATE TABLE IF NOT EXISTS `jamar` (
   `numer` TEXT CHECK (length(`numer`) <= 10)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `jamar IDX numer` ON `jamar` (`numer`);
+CREATE VIEW IF NOT EXISTS `jamar_csv_view` (`nazwa części lub czynności`, `jednostka`, `ilość`, `cena netto`, `numer`) AS SELECT 
+  `nazwa części lub czynności`,
+  `jednostka`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  REPLACE(CAST(decimal(`cena netto`) AS TEXT),".",","),
+  `numer`
+FROM `jamar`;
 
 
 
@@ -149,6 +226,21 @@ CREATE TABLE IF NOT EXISTS `klienci` (
   PRIMARY KEY (`ID`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `klienci IDX KOD_POCZT` ON `klienci` (`KOD_POCZT`);
+CREATE VIEW IF NOT EXISTS `klienci_csv_view` (`ID`, `NAZWA`, `MIASTO`, `ULICA`, `KOD_POCZT`, `TELEFON1`, `TELEFON2`, `NIP`, `KTO`, `KIEDY`, `UPUST`, `odbierający fakturę`, `list`) AS SELECT 
+  `ID`,
+  `NAZWA`,
+  `MIASTO`,
+  `ULICA`,
+  `KOD_POCZT`,
+  `TELEFON1`,
+  `TELEFON2`,
+  `NIP`,
+  `KTO`,
+  DATETIME(`KIEDY`),
+  `UPUST`,
+  `odbierający fakturę`,
+  `list`
+FROM `klienci`;
 
 
 
@@ -158,6 +250,10 @@ CREATE TABLE IF NOT EXISTS `liczby słownie` (
   PRIMARY KEY (`liczba`), 
   UNIQUE (`słownie`)
 ) STRICT;
+CREATE VIEW IF NOT EXISTS `liczby słownie_csv_view` (`liczba`, `słownie`) AS SELECT 
+  REPLACE(CAST(`liczba` AS TEXT),".",","),
+  `słownie`
+FROM `liczby słownie`;
 
 
 
@@ -173,6 +269,15 @@ CREATE TABLE IF NOT EXISTS `modele sam` (
   UNIQUE (`Typ:`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `modele sam IDX Kod:` ON `modele sam` (`Kod:`);
+CREATE VIEW IF NOT EXISTS `modele sam_csv_view` (`ID modelu`, `Model:`, `Typ:`, `Nadw:`, `Rok produkcji:`, `Silnik:`, `Kod:`) AS SELECT 
+  `ID modelu`,
+  `Model:`,
+  `Typ:`,
+  `Nadw:`,
+  `Rok produkcji:`,
+  `Silnik:`,
+  `Kod:`
+FROM `modele sam`;
 
 
 
@@ -188,6 +293,16 @@ CREATE TABLE IF NOT EXISTS `nazwy części` (
   UNIQUE (`numer części`), 
   PRIMARY KEY (`numer części`)
 ) STRICT;
+CREATE VIEW IF NOT EXISTS `nazwy części_csv_view` (`numer części`, `nazwa części`, `jednostka`, `grupa`, `VAT`, `ilość w opakowaniu zbiorczym`, `lokalizacja w magazynie`, `odpowiedniki`) AS SELECT 
+  `numer części`,
+  `nazwa części`,
+  `jednostka`,
+  REPLACE(CAST(`grupa` AS TEXT),".",","),
+  REPLACE(CAST(`VAT` AS TEXT),".",","),
+  `ilość w opakowaniu zbiorczym`,
+  `lokalizacja w magazynie`,
+  `odpowiedniki`
+FROM `nazwy części`;
 
 
 
@@ -206,6 +321,16 @@ CREATE INDEX IF NOT EXISTS `obroty magazynowe IDX numer dokumentu` ON `obroty ma
 CREATE INDEX IF NOT EXISTS `obroty magazynowe IDX numer cz` ON `obroty magazynowe` (`numer cz`);
 CREATE INDEX IF NOT EXISTS `obroty magazynowe IDX rodzaj dokumentu` ON `obroty magazynowe` (`rodzaj dokumentu`);
 CREATE INDEX IF NOT EXISTS `obroty magazynowe IDX rodzaj dokumentu,numer dokumentu` ON `obroty magazynowe` (`rodzaj dokumentu`, `numer dokumentu`);
+CREATE VIEW IF NOT EXISTS `obroty magazynowe_csv_view` (`ID`, `numer cz`, `ilość`, `cena netto`, `data przyjęcia`, `rodzaj dokumentu`, `numer dokumentu`, `cena netto sprzedaży`) AS SELECT 
+  `ID`,
+  `numer cz`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  REPLACE(CAST(decimal(`cena netto`) AS TEXT),".",","),
+  DATETIME(`data przyjęcia`),
+  `rodzaj dokumentu`,
+  `numer dokumentu`,
+  REPLACE(CAST(decimal(`cena netto sprzedaży`) AS TEXT),".",",")
+FROM `obroty magazynowe`;
 
 
 
@@ -219,6 +344,14 @@ CREATE TABLE IF NOT EXISTS `płace` (
   PRIMARY KEY (`ID płac`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `płace IDX ID pracownika` ON `płace` (`ID pracownika`);
+CREATE VIEW IF NOT EXISTS `płace_csv_view` (`ID płac`, `ID pracownika`, `data`, `kwota`, `podstawa`, `miesiąc płacenia`) AS SELECT 
+  `ID płac`,
+  `ID pracownika`,
+  `data`,
+  REPLACE(CAST(`kwota` AS TEXT),".",","),
+  `podstawa`,
+  DATETIME(`miesiąc płacenia`)
+FROM `płace`;
 
 
 
@@ -248,6 +381,29 @@ CREATE TABLE IF NOT EXISTS `pracownicy` (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `pracownicy IDX kod` ON `pracownicy` (`kod`);
 CREATE INDEX IF NOT EXISTS `pracownicy IDX nazwisko` ON `pracownicy` (`nazwisko`);
+CREATE VIEW IF NOT EXISTS `pracownicy_csv_view` (`ID pracownika`, `nazwisko`, `imię`, `inię II`, `nazwisko rodowe`, `imię ojca`, `imię matki`, `nazwisko rodowe matki`, `data urodzenia`, `miejsce urodzenia`, `obywatelstwo`, `nr PESEL`, `nr NIP`, `ul i nr domu`, `kod`, `miejscowość`, `tel domowy`, `wykształcenie`, `wykształcenie uzupełniające`, `dodatkowe uprawnienia`, `stanowisko`) AS SELECT 
+  `ID pracownika`,
+  `nazwisko`,
+  `imię`,
+  `inię II`,
+  `nazwisko rodowe`,
+  `imię ojca`,
+  `imię matki`,
+  `nazwisko rodowe matki`,
+  DATETIME(`data urodzenia`),
+  `miejsce urodzenia`,
+  `obywatelstwo`,
+  `nr PESEL`,
+  `nr NIP`,
+  `ul i nr domu`,
+  `kod`,
+  `miejscowość`,
+  `tel domowy`,
+  `wykształcenie`,
+  REPLACE(CAST(`wykształcenie uzupełniające` AS TEXT),".",","),
+  REPLACE(CAST(`dodatkowe uprawnienia` AS TEXT),".",","),
+  `stanowisko`
+FROM `pracownicy`;
 
 
 
@@ -261,6 +417,14 @@ CREATE TABLE IF NOT EXISTS `przyjęcia PZ` (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `przyjęcia PZ IDX numer dokumentu` ON `przyjęcia PZ` (`numer dokumentu`);
 CREATE INDEX IF NOT EXISTS `przyjęcia PZ IDX numer cz` ON `przyjęcia PZ` (`numer cz`);
+CREATE VIEW IF NOT EXISTS `przyjęcia PZ_csv_view` (`numer cz`, `ilość`, `cena netto`, `data przyjęcia`, `rodzaj dokumentu`, `numer dokumentu`) AS SELECT 
+  `numer cz`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  REPLACE(CAST(decimal(`cena netto`) AS TEXT),".",","),
+  DATETIME(`data przyjęcia`),
+  `rodzaj dokumentu`,
+  `numer dokumentu`
+FROM `przyjęcia PZ`;
 
 
 
@@ -268,6 +432,9 @@ CREATE TABLE IF NOT EXISTS `rodzaje dokumentów` (
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `rodzaje dokumentów IDX rodzaj dokumentu` ON `rodzaje dokumentów` (`rodzaj dokumentu`);
+CREATE VIEW IF NOT EXISTS `rodzaje dokumentów_csv_view` (`rodzaj dokumentu`) AS SELECT 
+  `rodzaj dokumentu`
+FROM `rodzaje dokumentów`;
 
 
 
@@ -284,12 +451,25 @@ CREATE TABLE IF NOT EXISTS `samochody klientów` (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `samochody klientów IDX ID klienta` ON `samochody klientów` (`ID klienta`);
 CREATE INDEX IF NOT EXISTS `samochody klientów IDX nr rej` ON `samochody klientów` (`nr rej`);
+CREATE VIEW IF NOT EXISTS `samochody klientów_csv_view` (`ID`, `kalkulacja`, `marka`, `model`, `nr rej`, `ID klienta`, `nr silnika`, `nr nadwozia`) AS SELECT 
+  `ID`,
+  `kalkulacja`,
+  `marka`,
+  `model`,
+  `nr rej`,
+  `ID klienta`,
+  `nr silnika`,
+  `nr nadwozia`
+FROM `samochody klientów`;
 
 
 
 CREATE TABLE IF NOT EXISTS `sposób zapłaty` (
   `sposób zapłaty` TEXT CHECK (length(`sposób zapłaty`) <= 15)
 ) STRICT;
+CREATE VIEW IF NOT EXISTS `sposób zapłaty_csv_view` (`sposób zapłaty`) AS SELECT 
+  `sposób zapłaty`
+FROM `sposób zapłaty`;
 
 
 
@@ -305,6 +485,15 @@ CREATE TABLE IF NOT EXISTS `sprzedaż` (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `sprzedaż IDX numer dokumentu` ON `sprzedaż` (`numer dokumentu`);
 CREATE INDEX IF NOT EXISTS `sprzedaż IDX rodzaj dokumentu` ON `sprzedaż` (`rodzaj dokumentu`);
+CREATE VIEW IF NOT EXISTS `sprzedaż_csv_view` (`numer cz`, `ilość`, `cena netto sprzedaży`, `cena netto`, `rodzaj dokumentu`, `numer dokumentu`, `data przyjęcia`) AS SELECT 
+  `numer cz`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  REPLACE(CAST(decimal(`cena netto sprzedaży`) AS TEXT),".",","),
+  REPLACE(CAST(decimal(`cena netto`) AS TEXT),".",","),
+  `rodzaj dokumentu`,
+  `numer dokumentu`,
+  DATETIME(`data przyjęcia`)
+FROM `sprzedaż`;
 
 
 
@@ -315,6 +504,12 @@ CREATE TABLE IF NOT EXISTS `zamówienia części` (
   `uwagi / przeznaczenie` TEXT CHECK (length(`uwagi / przeznaczenie`) <= 50)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `zamówienia części IDX numer części` ON `zamówienia części` (`numer części`);
+CREATE VIEW IF NOT EXISTS `zamówienia części_csv_view` (`numer części`, `ilość`, `data zamówienia`, `uwagi / przeznaczenie`) AS SELECT 
+  `numer części`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  DATETIME(`data zamówienia`),
+  `uwagi / przeznaczenie`
+FROM `zamówienia części`;
 
 
 
@@ -329,6 +524,14 @@ CREATE TABLE IF NOT EXISTS `zamówienia części archiwum` (
 CREATE INDEX IF NOT EXISTS `zamówienia części archiwum IDX data zamówienia` ON `zamówienia części archiwum` (`data zamówienia`);
 CREATE INDEX IF NOT EXISTS `zamówienia części archiwum IDX numer części` ON `zamówienia części archiwum` (`numer części`);
 CREATE INDEX IF NOT EXISTS `zamówienia części archiwum IDX zlealizowane` ON `zamówienia części archiwum` (`zlealizowane`);
+CREATE VIEW IF NOT EXISTS `zamówienia części archiwum_csv_view` (`numer części`, `ilość`, `data zamówienia`, `data realizacji`, `uwagi / przeznaczenie`, `zlealizowane`) AS SELECT 
+  `numer części`,
+  REPLACE(CAST(`ilość` AS TEXT),".",","),
+  DATETIME(`data zamówienia`),
+  DATETIME(`data realizacji`),
+  `uwagi / przeznaczenie`,
+  `zlealizowane`
+FROM `zamówienia części archiwum`;
 
 
 
@@ -340,6 +543,12 @@ CREATE TABLE IF NOT EXISTS `zlecenia czynności` (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `zlecenia czynności IDX ID czynności` ON `zlecenia czynności` (`ID czynności`);
 CREATE INDEX IF NOT EXISTS `zlecenia czynności IDX ID zlecenia` ON `zlecenia czynności` (`ID zlecenia`);
+CREATE VIEW IF NOT EXISTS `zlecenia czynności_csv_view` (`ID zlecenia`, `ID czynności`, `krotność wykonania`, `cena netto`) AS SELECT 
+  `ID zlecenia`,
+  `ID czynności`,
+  REPLACE(CAST(`krotność wykonania` AS TEXT),".",","),
+  REPLACE(CAST(decimal(`cena netto`) AS TEXT),".",",")
+FROM `zlecenia czynności`;
 
 
 
@@ -351,6 +560,12 @@ CREATE TABLE IF NOT EXISTS `zlecenia gaz` (
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `zlecenia gaz IDX ID czynności` ON `zlecenia gaz` (`ID czynności`);
 CREATE INDEX IF NOT EXISTS `zlecenia gaz IDX ID zlecenia` ON `zlecenia gaz` (`ID zlecenia`);
+CREATE VIEW IF NOT EXISTS `zlecenia gaz_csv_view` (`ID zlecenia`, `ID czynności`, `krotność wykonania`, `cena netto`) AS SELECT 
+  `ID zlecenia`,
+  `ID czynności`,
+  REPLACE(CAST(`krotność wykonania` AS TEXT),".",","),
+  REPLACE(CAST(decimal(`cena netto`) AS TEXT),".",",")
+FROM `zlecenia gaz`;
 
 
 
@@ -375,6 +590,23 @@ CREATE TABLE IF NOT EXISTS `zlecenia instalacji gazowej` (
 CREATE INDEX IF NOT EXISTS `zlecenia instalacji gazowej IDX data zamknięcia` ON `zlecenia instalacji gazowej` (`data zamknięcia`);
 CREATE INDEX IF NOT EXISTS `zlecenia instalacji gazowej IDX ID klienta` ON `zlecenia instalacji gazowej` (`ID klienta`);
 CREATE INDEX IF NOT EXISTS `zlecenia instalacji gazowej IDX ID samochodu` ON `zlecenia instalacji gazowej` (`ID samochodu`);
+CREATE VIEW IF NOT EXISTS `zlecenia instalacji gazowej_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `data otwarcia`, `data zamknięcia`, `zysk z części`, `zysk z robocizny`, `mechanik prowadzący`, `% udziału`, `pomocnik 1`, `% udziału p1`, `pomocnik 2`, `% udziału p2`, `zgłoszone naprawy`, `uwagi o naprawie`) AS SELECT 
+  `ID`,
+  `ID klienta`,
+  `ID samochodu`,
+  DATETIME(`data otwarcia`),
+  DATETIME(`data zamknięcia`),
+  REPLACE(CAST(decimal(`zysk z części`) AS TEXT),".",","),
+  REPLACE(CAST(decimal(`zysk z robocizny`) AS TEXT),".",","),
+  `mechanik prowadzący`,
+  `% udziału`,
+  `pomocnik 1`,
+  `% udziału p1`,
+  `pomocnik 2`,
+  `% udziału p2`,
+  REPLACE(CAST(`zgłoszone naprawy` AS TEXT),".",","),
+  `uwagi o naprawie`
+FROM `zlecenia instalacji gazowej`;
 
 
 
@@ -399,4 +631,21 @@ CREATE TABLE IF NOT EXISTS `zlecenia naprawy` (
 CREATE INDEX IF NOT EXISTS `zlecenia naprawy IDX data zamknięcia` ON `zlecenia naprawy` (`data zamknięcia`);
 CREATE INDEX IF NOT EXISTS `zlecenia naprawy IDX ID klienta` ON `zlecenia naprawy` (`ID klienta`);
 CREATE INDEX IF NOT EXISTS `zlecenia naprawy IDX ID samochodu` ON `zlecenia naprawy` (`ID samochodu`);
+CREATE VIEW IF NOT EXISTS `zlecenia naprawy_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `data otwarcia`, `data zamknięcia`, `zysk z części`, `zysk z robocizny`, `mechanik prowadzący`, `% udziału`, `pomocnik 1`, `% udziału p1`, `pomocnik 2`, `% udziału p2`, `zgłoszone naprawy`, `uwagi o naprawie`) AS SELECT 
+  `ID`,
+  `ID klienta`,
+  `ID samochodu`,
+  DATETIME(`data otwarcia`),
+  DATETIME(`data zamknięcia`),
+  REPLACE(CAST(decimal(`zysk z części`) AS TEXT),".",","),
+  REPLACE(CAST(decimal(`zysk z robocizny`) AS TEXT),".",","),
+  `mechanik prowadzący`,
+  `% udziału`,
+  `pomocnik 1`,
+  `% udziału p1`,
+  `pomocnik 2`,
+  `% udziału p2`,
+  REPLACE(CAST(`zgłoszone naprawy` AS TEXT),".",","),
+  REPLACE(CAST(`uwagi o naprawie` AS TEXT),".",",")
+FROM `zlecenia naprawy`;
 

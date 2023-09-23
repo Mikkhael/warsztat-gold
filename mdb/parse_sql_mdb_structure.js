@@ -34,6 +34,7 @@ function matches(regex, str){
 
 
 let primary_key_name = "''";
+let current_cols_info = [];
 function parse_column(table_name) {
     let line = lines[i].trim();
     let has_comma = line.endsWith(',');
@@ -45,46 +46,52 @@ function parse_column(table_name) {
         if(!col_name){
             console.error("SJDIUHJSDIUGS", line, table_name);
         }
+        let col_type = 'any';
         let tokens = tokens_str.split(' ');
         let is_decimal = false;
         for(let i=0; i<tokens.length; i++){
             let token = tokens[i];
                  if(token === "NOT")     {}
             else if(token === "NULL")    {}
-            else if(token === "INTEGER") {}
+            else if(token === "INTEGER") {col_type="int"}
             else if(token === "DEFAULT") {}
             else if(token == +token)     {}
             else if(token.startsWith("'") &&
                     token.endsWith("'")) {}
             else if(token === "CURRENT_TIMESTAMP") {}
-            else if(token === "FLOAT")   {tokens[i] = 'REAL'}
-            else if(token === "DOUBLE")  {tokens[i] = 'REAL'}
-            else if(token === "LONGTEXT"){tokens[i] = 'TEXT'}
-            else if(token === "TINYINT(1)") {tokens[i] = 'INTEGER'}
+            else if(token === "FLOAT")   {tokens[i] = 'REAL'; col_type="num"}
+            else if(token === "DOUBLE")  {tokens[i] = 'REAL'; col_type="num"}
+            else if(token === "LONGTEXT"){tokens[i] = 'TEXT'; col_type="num"}
+            else if(token === "TINYINT(1)") {tokens[i] = 'INTEGER'; col_type="int"}
             else if(token === "AUTO_INCREMENT") {
                 primary_key_name = col_name;
-                console.log('sjfiosjdfio', col_name)
+                console.log('Primary:', col_name)
                 tokens[i] = '';
             }
             else if(token.startsWith('VARCHAR')) {
                 let [n] = matches(/VARCHAR\((.*?)\)/, token);
                 tokens[i] = `TEXT CHECK (length(${col_name}) <= ${n})`;
+                col_type = "str";
             }
             else if(token.startsWith('TINYINT(3)')) {
                 tokens[i] = `INTEGER CHECK (${col_name} <= 255)`;
+                col_type = "int";
             }
             else if(token.startsWith('DECIMAL')) {
                 is_decimal = true;
                 tokens[i] = `TEXT CHECK (decimal(${col_name}) IS NOT NULL)`;
+                col_type = "dec";
             }
             else if(token.startsWith('UNSIGNED')) {
                 tokens[i] = `CHECK (${col_name} >= 0)`;
             }
             else if(token.startsWith('DATETIME')) {
                 tokens[i] = `TEXT CHECK (datetime(${col_name}) IS NOT NULL)`;
+                col_type = "date";
             }
             else if(token.startsWith('TIMESTAMP')) {
                 tokens[i] = `TEXT CHECK (datetime(${col_name}) IS NOT NULL)`;
+                col_type = "date";
             }
             else {
                 console.error("UNKNOWN TOKEN", token, line, table_name);
@@ -95,6 +102,7 @@ function parse_column(table_name) {
             res_line += ',';
         }
         lines[i] = res_line;
+        current_cols_info.push({col_name, col_type});
     } else if(line.startsWith('INDEX')){
         let [index_name] = matches(/INDEX \((.*?)\)/, line);
         // lines[i] = '--' + lines[i];
@@ -115,6 +123,7 @@ function parse_create_table() {
     i++;
 
     let indexes_to_create = [];
+    current_cols_info = [];
     while(!lines[i].endsWith(';')){
         let new_index = parse_column(table_name);
         if(new_index) {
@@ -133,6 +142,22 @@ function parse_create_table() {
     i += index_lines.length;
     indexes_to_create = [];
 
+    let csv_view_name = table_name.slice(0, -1) + '_csv_view`';
+    let csv_view_cols = current_cols_info.map(({col_name, col_type}) => {
+        if(col_type == "num"){
+            return `REPLACE(CAST(${col_name} AS TEXT),".",",")`;
+        }else if(col_type == "dec"){
+            return `REPLACE(CAST(decimal(${col_name}) AS TEXT),".",",")`;
+        }else if(col_type == "date"){
+            return `DATETIME(${col_name})`;
+        }else{
+            return col_name;
+        }
+    });
+
+    let csv_view_def  = `CREATE VIEW IF NOT EXISTS ${csv_view_name} (${current_cols_info.map(x=>x.col_name).join(', ')}) AS SELECT \n${csv_view_cols.map(x=>'  '+x).join(',\n')}\nFROM ${table_name};`;
+    lines.splice(i, 0, csv_view_def);
+    i += 1;
 }
 
 while(i < lines.length) {

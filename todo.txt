@@ -10,14 +10,18 @@
     + import desired db structure form mdb
     + load decimal extension [XD]
     - fix decimal check
-    - create views?
+    + create views?
     - implement import from mdb
-    - implement export to mdb (csv)
+        + mdb export macro
+        - sanitize resulting csv
+        - test reimport
+        - csv import
+    + implement export to mdb (csv)
         + csv export
-            - quotes on numbers
-            - do only OEM, without utf
-            - remove milis from date
-        - mdb import macro
+            + quotes on numbers
+            + do only OEM, without utf
+            + remove milis from date
+        + mdb import macro
     - test decimals in csv in access
 
 - Buckups API

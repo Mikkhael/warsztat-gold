@@ -126,8 +126,8 @@ fn write_value_for_csv<W : Write>(w: &mut W, value: ValueRef) -> std::io::Result
     }
 }
 fn write_string_for_csv<W : Write>(w: &mut W, v: &str) -> std::io::Result<()> {
-    if v.contains('"') { write!(w, "\"{}\"", v) }
-    else               { write!(w, "\"{}\"", v.replace('"', "\"\"")) }
+    if v.contains("\"") { write!(w, "\"{}\"", v.replace('"', "\"\"")) }
+    else                { write!(w, "\"{}\"", v) }
 }
 
 impl SqliteConn{
@@ -141,11 +141,12 @@ impl SqliteConn{
         extract_all_rows(&mut rows, cols)
     }
 
-    pub fn export_table_to_csv(&self, table_name: &str, file_path: &Path, enc_file_path: Option<&Path>) -> DynResult<()> {
+    pub fn export_table_to_csv(&self, table_name: &str, file_path: &Path, use_encoding: bool) -> DynResult<()> {
         print!("Exporting CSV [{}]... ", table_name);
         std::io::stdout().flush()?;
         let file = fs::OpenOptions::new().write(true).truncate(true).create(true).open(file_path)?;
         let mut file = BufWriter::new(file);
+        let mut temp_line = Vec::<u8>::new();
 
         let select_sql = format!("SELECT * FROM `{}`", table_name);
         let mut stmt = self.conn.prepare(&select_sql)?;
@@ -156,33 +157,35 @@ impl SqliteConn{
         let mut col_names = stmt.column_names().into_iter();
 
         if let Some(val) = col_names.next() {
-            write_string_for_csv(&mut file, val)?; }
+            write_string_for_csv(&mut temp_line, val)?; }
         for val in col_names {
-            write!(file, ";")?;
-            write_string_for_csv(&mut file, val)?;
+            write!(temp_line, ";")?;
+            write_string_for_csv(&mut temp_line, val)?;
         }
-        write!(file, "\r\n")?;
+        write!(temp_line, "\r\n")?;
+        if use_encoding { temp_line = encoding::encode_buf(&temp_line)? }
+        file.write(&temp_line)?;
+        temp_line.clear();
 
         let mut rows = stmt.query(())?;
         let mut done_rows = 0usize;
         
         while let Some(row) = rows.next()? {
-            write_value_for_csv(&mut file, row.get_ref(0)?)?;
+            write_value_for_csv(&mut temp_line, row.get_ref(0)?)?;
             for i in 1..col_count {
-                write!(file, ";")?;
-                write_value_for_csv(&mut file, row.get_ref(i)?)?;
+                write!(temp_line, ";")?;
+                write_value_for_csv(&mut temp_line, row.get_ref(i)?)?;
             }
-            write!(file, "\r\n")?;
+            write!(temp_line, "\r\n")?;
+            if use_encoding { temp_line = encoding::encode_buf(&temp_line)? }
+            file.write(&temp_line)?;
+            temp_line.clear();
             done_rows += 1;
         }
         
         println!("{} rows", done_rows);
 
-        file.flush();
-        if let Some(path) = enc_file_path {
-            encoding::encode_file(file_path, path)?;
-        }
-
+        file.flush()?;
         Ok(())
     }
 
@@ -248,10 +251,10 @@ pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
         dbg!(&export_path);
         fs::create_dir_all(&export_path).map_err(|err| err.to_string())?;
         let table_names = db.get_main_tables().map_err(|err| err.to_string())?;
-        for table_name in table_names {
-            let file_name     = &export_path.join( format!("{}_utf8.txt", table_name));
-            let file_name_enc = &export_path.join( format!("{}.txt", table_name));
-            sqlite_conn.export_table_to_csv(&table_name, file_name, Some(file_name_enc)).map_err(|err| err.to_string())?;
+        for mut table_name in table_names {
+            let file_name = &export_path.join( format!("{}.txt", table_name));
+            table_name.push_str("_csv_view");
+            sqlite_conn.export_table_to_csv(&table_name, file_name, true).map_err(|err| err.to_string())?;
         }
         Ok(())
     } else {
