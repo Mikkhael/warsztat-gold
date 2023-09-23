@@ -9,6 +9,8 @@ use std::path::{Path, PathBuf};
 use rusqlite::types::ValueRef;
 use std::sync::Mutex;
 
+use crate::encoding;
+
 #[derive(Default)]
 pub struct SqliteManager{
     decimal_extension_path: PathBuf,
@@ -139,10 +141,10 @@ impl SqliteConn{
         extract_all_rows(&mut rows, cols)
     }
 
-    pub fn export_table_to_csv(&self, table_name: &str, file_name: &Path) -> DynResult<()> {
+    pub fn export_table_to_csv(&self, table_name: &str, file_path: &Path, enc_file_path: Option<&Path>) -> DynResult<()> {
         print!("Exporting CSV [{}]... ", table_name);
         std::io::stdout().flush()?;
-        let file = fs::OpenOptions::new().write(true).truncate(true).create(true).open(file_name)?;
+        let file = fs::OpenOptions::new().write(true).truncate(true).create(true).open(file_path)?;
         let mut file = BufWriter::new(file);
 
         let select_sql = format!("SELECT * FROM `{}`", table_name);
@@ -175,6 +177,12 @@ impl SqliteConn{
         }
         
         println!("{} rows", done_rows);
+
+        file.flush();
+        if let Some(path) = enc_file_path {
+            encoding::encode_file(file_path, path)?;
+        }
+
         Ok(())
     }
 
@@ -241,8 +249,9 @@ pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
         fs::create_dir_all(&export_path).map_err(|err| err.to_string())?;
         let table_names = db.get_main_tables().map_err(|err| err.to_string())?;
         for table_name in table_names {
-            let file_name = &export_path.join( format!("{}.csv", table_name));
-            sqlite_conn.export_table_to_csv(&table_name, file_name).map_err(|err| err.to_string())?;
+            let file_name     = &export_path.join( format!("{}_utf8.txt", table_name));
+            let file_name_enc = &export_path.join( format!("{}.txt", table_name));
+            sqlite_conn.export_table_to_csv(&table_name, file_name, Some(file_name_enc)).map_err(|err| err.to_string())?;
         }
         Ok(())
     } else {

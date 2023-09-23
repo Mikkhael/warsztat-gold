@@ -8,6 +8,8 @@ use test_greet::*;
 
 mod sqlite_manager;
 
+mod encoding;
+
 // mod test_sqlite;
 
 #[tauri::command]
