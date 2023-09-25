@@ -56,6 +56,10 @@ function perform_execute(){
     save_query_to_history(query_string.value);
     return ipc.db_execute(query_string.value).then(handle_success_execute).catch(handle_error);
 }
+function perform_execute_batch(){
+    save_query_to_history(query_string.value);
+    return ipc.db_execute_batch(query_string.value).then(handle_success_execute).catch(handle_error);
+}
 function save(){
     return ipc.db_save().then(path => {
         if(!path) return;
@@ -68,6 +72,13 @@ function export_csv(){
         if(!path) return;
         last_status_success.value = true;
         last_status_message.value = `Exported CSV to '${path}'`;
+    }).catch(handle_error);
+}
+function import_csv(){
+    return ipc.db_import_csv().then(path => {
+        if(!path) return;
+        last_status_success.value = true;
+        last_status_message.value = `Imported CSV from '${path}'`;
     }).catch(handle_error);
 }
 function open(){
@@ -114,10 +125,12 @@ defineExpose({
     </select>
     <div class="control">
         <button @click="perform_select()">SELECT</button>
-        <button @click="perform_execute()">EXECUTE</button>
+        <button @click="perform_execute()">EXECUTE 1</button>
+        <button @click="perform_execute_batch()">EXECUTE</button>
         <button @click="open()">OPEN</button>
         <button @click="save()">SAVE</button>
         <button @click="export_csv()">EXPORT CSV</button>
+        <button @click="import_csv()">IMPORT CSV</button>
         <button @click="close()">CLOSE</button>
     </div>
     <span v-if="ipc.state.db_is_open" >{{ ipc.state.db_path }} </span>

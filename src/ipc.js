@@ -81,9 +81,23 @@ async function db_export_csv() {
     console.log("export csv path", exportPath);
     return await invoke("export_csv", {exportPath}).then(() => exportPath);
 }
+async function db_import_csv() {
+    let path = await open({
+        title: "Wybierz folder źródłowy",
+        directory: true,
+        recursive: true
+    });
+    if(!path) return path;
+    console.log("ixport csv path", path);
+    return await invoke("import_csv", {importPath: path}).then(() => path);
+}
 
 function db_execute(query) {
     return invoke("perform_execute", {query});
+}
+
+function db_execute_batch(query) {
+    return invoke("perform_execute_batch", {query});
 }
 
 function db_query(query) {
@@ -110,6 +124,8 @@ export default {
     db_close,
     db_save,
     db_export_csv,
+    db_import_csv,
     db_execute,
+    db_execute_batch,
     db_query,
 }

@@ -15,6 +15,7 @@ dist-ssr
 mdb/test.db3
 mdb/decimal.dll
 mdb/exported_test
+mdb/import_test
 
 # Editor directories and files
 .vscode/*

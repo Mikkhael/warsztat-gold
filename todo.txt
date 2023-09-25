@@ -13,8 +13,10 @@
     + create views?
     - implement import from mdb
         + mdb export macro
-        - sanitize resulting csv
+        + sanitize resulting csv
         - test reimport
+        - use better csv extension
+        - deal with numbers
         - csv import
     + implement export to mdb (csv)
         + csv export
