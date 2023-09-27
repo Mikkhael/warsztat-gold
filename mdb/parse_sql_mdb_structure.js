@@ -79,18 +79,14 @@ function parse_column(table_name) {
             }
             else if(token.startsWith('DECIMAL')) {
                 is_decimal = true;
-                tokens[i] = `TEXT CHECK (decimal(${col_name}) IS NOT NULL)`;
+                tokens[i] = `TEXT CHECK (${col_name} IS NULL OR decimal(${col_name}) IS NOT NULL)`; // TODO change decimal to regex
                 col_type = "dec";
             }
             else if(token.startsWith('UNSIGNED')) {
                 tokens[i] = `CHECK (${col_name} >= 0)`;
             }
-            else if(token.startsWith('DATETIME')) {
-                tokens[i] = `TEXT CHECK (datetime(${col_name}) IS NOT NULL)`;
-                col_type = "date";
-            }
-            else if(token.startsWith('TIMESTAMP')) {
-                tokens[i] = `TEXT CHECK (datetime(${col_name}) IS NOT NULL)`;
+            else if(token.startsWith('DATETIME') || token.startsWith('TIMESTAMP')) {
+                tokens[i] = `TEXT CHECK (${col_name} IS NULL OR datetime(${col_name}) IS NOT NULL)`;
                 col_type = "date";
             }
             else {

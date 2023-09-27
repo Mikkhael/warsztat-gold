@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `dane do zaświadczenie o sprawności inst` (
   `Typ/Nr` TEXT CHECK (length(`Typ/Nr`) <= 15) NOT NULL,
   `E-_` INTEGER CHECK (`E-_` <= 255) CHECK (`E-_` >= 0) NOT NULL DEFAULT 0,
   `67R-_` TEXT CHECK (length(`67R-_`) <= 15) NOT NULL,
-  `Ważność legalizacji zbiornika do` TEXT CHECK (datetime(`Ważność legalizacji zbiornika do`) IS NOT NULL),
+  `Ważność legalizacji zbiornika do` TEXT CHECK (`Ważność legalizacji zbiornika do` IS NULL OR datetime(`Ważność legalizacji zbiornika do`) IS NOT NULL),
   `ID obrotów mag` INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID typów`)
 ) STRICT;
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS `dokumenty sprzedaży` (
   `nazwa dokumentu` TEXT CHECK (length(`nazwa dokumentu`) <= 50) NOT NULL,
   `nr dokumentu` TEXT CHECK (length(`nr dokumentu`) <= 15) NOT NULL,
   `ID zlecenia` INTEGER NOT NULL DEFAULT 0,
-  `data wystawienia` TEXT CHECK (datetime(`data wystawienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
+  `data wystawienia` TEXT CHECK (`data wystawienia` IS NULL OR datetime(`data wystawienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (`nr dokumentu`), 
   PRIMARY KEY (`ID dokumentu`)
 ) STRICT;
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `dokumenty sprzedaży chwilówk` (
   `nazwa dokumentu` TEXT CHECK (length(`nazwa dokumentu`) <= 50) NOT NULL,
   `nr dokumentu` TEXT CHECK (length(`nr dokumentu`) <= 15) NOT NULL,
   `ID zlecenia` INTEGER NOT NULL DEFAULT 0,
-  `data wystawienia` TEXT CHECK (datetime(`data wystawienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
+  `data wystawienia` TEXT CHECK (`data wystawienia` IS NULL OR datetime(`data wystawienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (`nr dokumentu`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `dokumenty sprzedaży chwilówk IDX ID zlecenia` ON `dokumenty sprzedaży chwilówk` (`ID zlecenia`);
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS `faktura szczegóły chwilówka` (
   `nazwa części lub czynności` TEXT CHECK (length(`nazwa części lub czynności`) <= 50),
   `jednostka` TEXT CHECK (length(`jednostka`) <= 5),
   `ilość` REAL NULL DEFAULT 0,
-  `cena netto` TEXT CHECK (decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
   `numer` TEXT CHECK (length(`numer`) <= 10)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `faktura szczegóły chwilówka IDX numer` ON `faktura szczegóły chwilówka` (`numer`);
@@ -154,7 +154,7 @@ FROM `faktura szczegóły chwilówka`;
 CREATE TABLE IF NOT EXISTS `inwentaryzacja` (
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NULL,
-  `data zapisu` TEXT CHECK (datetime(`data zapisu`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `data zapisu` TEXT CHECK (`data zapisu` IS NULL OR datetime(`data zapisu`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL DEFAULT 'inwen',
   `numer dokumentu` INTEGER DEFAULT 4
 ) STRICT;
@@ -173,7 +173,7 @@ FROM `inwentaryzacja`;
 CREATE TABLE IF NOT EXISTS `inwentaryzacja nr 3` (
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NULL,
-  `data zapisu` TEXT CHECK (datetime(`data zapisu`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `data zapisu` TEXT CHECK (`data zapisu` IS NULL OR datetime(`data zapisu`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL DEFAULT 'inwen',
   `numer dokumentu` INTEGER DEFAULT 3
 ) STRICT;
@@ -193,7 +193,7 @@ CREATE TABLE IF NOT EXISTS `jamar` (
   `nazwa części lub czynności` TEXT CHECK (length(`nazwa części lub czynności`) <= 50),
   `jednostka` TEXT CHECK (length(`jednostka`) <= 5),
   `ilość` REAL NULL DEFAULT 0,
-  `cena netto` TEXT CHECK (decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
   `numer` TEXT CHECK (length(`numer`) <= 10)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `jamar IDX numer` ON `jamar` (`numer`);
@@ -217,7 +217,7 @@ CREATE TABLE IF NOT EXISTS `klienci` (
   `TELEFON2` TEXT CHECK (length(`TELEFON2`) <= 17),
   `NIP` TEXT CHECK (length(`NIP`) <= 13),
   `KTO` TEXT CHECK (length(`KTO`) <= 8),
-  `KIEDY` TEXT CHECK (datetime(`KIEDY`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
+  `KIEDY` TEXT CHECK (`KIEDY` IS NULL OR datetime(`KIEDY`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `UPUST` INTEGER CHECK (`UPUST` <= 255) CHECK (`UPUST` >= 0) DEFAULT 0,
   `odbierający fakturę` TEXT CHECK (length(`odbierający fakturę`) <= 50),
   `list` INTEGER,
@@ -310,11 +310,11 @@ CREATE TABLE IF NOT EXISTS `obroty magazynowe` (
   `ID` INTEGER ,
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NOT NULL,
-  `cena netto` TEXT CHECK (decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
-  `data przyjęcia` TEXT CHECK (datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL,
   `numer dokumentu` INTEGER DEFAULT 0,
-  `cena netto sprzedaży` TEXT CHECK (decimal(`cena netto sprzedaży`) IS NOT NULL) DEFAULT 0
+  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR decimal(`cena netto sprzedaży`) IS NOT NULL) DEFAULT 0
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `obroty magazynowe IDX ilość` ON `obroty magazynowe` (`ilość`);
 CREATE INDEX IF NOT EXISTS `obroty magazynowe IDX numer dokumentu` ON `obroty magazynowe` (`numer dokumentu`);
@@ -340,7 +340,7 @@ CREATE TABLE IF NOT EXISTS `płace` (
   `data` TEXT CHECK (length(`data`) <= 10),
   `kwota` REAL NULL DEFAULT 0,
   `podstawa` TEXT CHECK (length(`podstawa`) <= 15),
-  `miesiąc płacenia` TEXT CHECK (datetime(`miesiąc płacenia`) IS NOT NULL),
+  `miesiąc płacenia` TEXT CHECK (`miesiąc płacenia` IS NULL OR datetime(`miesiąc płacenia`) IS NOT NULL),
   PRIMARY KEY (`ID płac`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `płace IDX ID pracownika` ON `płace` (`ID pracownika`);
@@ -364,7 +364,7 @@ CREATE TABLE IF NOT EXISTS `pracownicy` (
   `imię ojca` TEXT CHECK (length(`imię ojca`) <= 15),
   `imię matki` TEXT CHECK (length(`imię matki`) <= 15),
   `nazwisko rodowe matki` TEXT CHECK (length(`nazwisko rodowe matki`) <= 15),
-  `data urodzenia` TEXT CHECK (datetime(`data urodzenia`) IS NOT NULL) NOT NULL,
+  `data urodzenia` TEXT CHECK (`data urodzenia` IS NULL OR datetime(`data urodzenia`) IS NOT NULL) NOT NULL,
   `miejsce urodzenia` TEXT CHECK (length(`miejsce urodzenia`) <= 15),
   `obywatelstwo` TEXT CHECK (length(`obywatelstwo`) <= 15),
   `nr PESEL` TEXT CHECK (length(`nr PESEL`) <= 12),
@@ -410,8 +410,8 @@ FROM `pracownicy`;
 CREATE TABLE IF NOT EXISTS `przyjęcia PZ` (
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NULL,
-  `cena netto` TEXT CHECK (decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
-  `data przyjęcia` TEXT CHECK (datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL DEFAULT 'dosta',
   `numer dokumentu` INTEGER DEFAULT 0
 ) STRICT;
@@ -476,11 +476,11 @@ FROM `sposób zapłaty`;
 CREATE TABLE IF NOT EXISTS `sprzedaż` (
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NULL,
-  `cena netto sprzedaży` TEXT CHECK (decimal(`cena netto sprzedaży`) IS NOT NULL),
-  `cena netto` TEXT CHECK (decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR decimal(`cena netto sprzedaży`) IS NOT NULL),
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL,
   `numer dokumentu` INTEGER NOT NULL,
-  `data przyjęcia` TEXT CHECK (datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (`numer cz`)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `sprzedaż IDX numer dokumentu` ON `sprzedaż` (`numer dokumentu`);
@@ -500,7 +500,7 @@ FROM `sprzedaż`;
 CREATE TABLE IF NOT EXISTS `zamówienia części` (
   `numer części` TEXT CHECK (length(`numer części`) <= 15),
   `ilość` REAL NULL DEFAULT 0,
-  `data zamówienia` TEXT CHECK (datetime(`data zamówienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
+  `data zamówienia` TEXT CHECK (`data zamówienia` IS NULL OR datetime(`data zamówienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `uwagi / przeznaczenie` TEXT CHECK (length(`uwagi / przeznaczenie`) <= 50)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `zamówienia części IDX numer części` ON `zamówienia części` (`numer części`);
@@ -516,8 +516,8 @@ FROM `zamówienia części`;
 CREATE TABLE IF NOT EXISTS `zamówienia części archiwum` (
   `numer części` TEXT CHECK (length(`numer części`) <= 15),
   `ilość` REAL NULL DEFAULT 0,
-  `data zamówienia` TEXT CHECK (datetime(`data zamówienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
-  `data realizacji` TEXT CHECK (datetime(`data realizacji`) IS NOT NULL),
+  `data zamówienia` TEXT CHECK (`data zamówienia` IS NULL OR datetime(`data zamówienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
+  `data realizacji` TEXT CHECK (`data realizacji` IS NULL OR datetime(`data realizacji`) IS NOT NULL),
   `uwagi / przeznaczenie` TEXT CHECK (length(`uwagi / przeznaczenie`) <= 50),
   `zlealizowane` INTEGER
 ) STRICT;
@@ -539,7 +539,7 @@ CREATE TABLE IF NOT EXISTS `zlecenia czynności` (
   `ID zlecenia` INTEGER DEFAULT 0,
   `ID czynności` INTEGER DEFAULT 0,
   `krotność wykonania` REAL NULL DEFAULT 0,
-  `cena netto` TEXT CHECK (decimal(`cena netto`) IS NOT NULL) DEFAULT 0
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `zlecenia czynności IDX ID czynności` ON `zlecenia czynności` (`ID czynności`);
 CREATE INDEX IF NOT EXISTS `zlecenia czynności IDX ID zlecenia` ON `zlecenia czynności` (`ID zlecenia`);
@@ -556,7 +556,7 @@ CREATE TABLE IF NOT EXISTS `zlecenia gaz` (
   `ID zlecenia` INTEGER DEFAULT 0,
   `ID czynności` INTEGER DEFAULT 0,
   `krotność wykonania` REAL NULL DEFAULT 0,
-  `cena netto` TEXT CHECK (decimal(`cena netto`) IS NOT NULL) DEFAULT 0
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0
 ) STRICT;
 CREATE INDEX IF NOT EXISTS `zlecenia gaz IDX ID czynności` ON `zlecenia gaz` (`ID czynności`);
 CREATE INDEX IF NOT EXISTS `zlecenia gaz IDX ID zlecenia` ON `zlecenia gaz` (`ID zlecenia`);
@@ -573,10 +573,10 @@ CREATE TABLE IF NOT EXISTS `zlecenia instalacji gazowej` (
   `ID` INTEGER NOT NULL ,
   `ID klienta` INTEGER DEFAULT 0,
   `ID samochodu` INTEGER DEFAULT 0,
-  `data otwarcia` TEXT CHECK (datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
-  `data zamknięcia` TEXT CHECK (datetime(`data zamknięcia`) IS NOT NULL),
-  `zysk z części` TEXT CHECK (decimal(`zysk z części`) IS NOT NULL) DEFAULT 0,
-  `zysk z robocizny` TEXT CHECK (decimal(`zysk z robocizny`) IS NOT NULL) DEFAULT 0,
+  `data otwarcia` TEXT CHECK (`data otwarcia` IS NULL OR datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
+  `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
+  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR decimal(`zysk z części`) IS NOT NULL) DEFAULT 0,
+  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR decimal(`zysk z robocizny`) IS NOT NULL) DEFAULT 0,
   `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
   `% udziału` INTEGER CHECK (`% udziału` <= 255) CHECK (`% udziału` >= 0) DEFAULT 0,
   `pomocnik 1` TEXT CHECK (length(`pomocnik 1`) <= 30),
@@ -614,10 +614,10 @@ CREATE TABLE IF NOT EXISTS `zlecenia naprawy` (
   `ID` INTEGER NOT NULL ,
   `ID klienta` INTEGER DEFAULT 0,
   `ID samochodu` INTEGER DEFAULT 0,
-  `data otwarcia` TEXT CHECK (datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
-  `data zamknięcia` TEXT CHECK (datetime(`data zamknięcia`) IS NOT NULL),
-  `zysk z części` TEXT CHECK (decimal(`zysk z części`) IS NOT NULL) DEFAULT 0,
-  `zysk z robocizny` TEXT CHECK (decimal(`zysk z robocizny`) IS NOT NULL) DEFAULT 0,
+  `data otwarcia` TEXT CHECK (`data otwarcia` IS NULL OR datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
+  `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
+  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR decimal(`zysk z części`) IS NOT NULL) DEFAULT 0,
+  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR decimal(`zysk z robocizny`) IS NOT NULL) DEFAULT 0,
   `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
   `% udziału` INTEGER CHECK (`% udziału` <= 255) CHECK (`% udziału` >= 0) DEFAULT 0,
   `pomocnik 1` TEXT CHECK (length(`pomocnik 1`) <= 30),

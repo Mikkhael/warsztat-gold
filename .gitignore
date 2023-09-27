@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 mdb/test.db3
+mdb/test.db3.old
 mdb/decimal.dll
 mdb/exported_test
 mdb/import_test

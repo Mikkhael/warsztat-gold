@@ -125,7 +125,7 @@ defineExpose({
     </select>
     <div class="control">
         <button @click="perform_select()">SELECT</button>
-        <button @click="perform_execute()">EXECUTE 1</button>
+        <button @click="perform_execute()">EXE1</button>
         <button @click="perform_execute_batch()">EXECUTE</button>
         <button @click="open()">OPEN</button>
         <button @click="save()">SAVE</button>

@@ -3,7 +3,7 @@ use rusqlite::{Connection, Result, Error, backup::Backup};
 use tauri::App;
 use tauri::Manager;
 use std::error;
-use std::fs;
+use std::fs::{self, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use rusqlite::types::ValueRef;
@@ -15,6 +15,7 @@ use crate::utils;
 #[derive(Default)]
 pub struct SqliteManager{
     decimal_extension_path: PathBuf,
+    vsv_extension_path:     PathBuf,
     main_tables_path: PathBuf,
 
     sqlite_conn: Option<SqliteConn>
@@ -39,7 +40,7 @@ fn valueref_to_json(value: ValueRef<'_>) -> serde_json::Value {
 }
 
 pub type ExtractedRows = Vec<Vec<serde_json::Value>>;
-pub fn extract_all_rows<'a>(rows: &'a mut Rows, cols: usize) -> Result<ExtractedRows> {
+pub fn extract_all_rows<'a>(rows: &'a mut Rows, cols: usize, max_rows: Option<usize>) -> Result<ExtractedRows> {
     let mut res : ExtractedRows = Vec::new();
     while let Some(row) = rows.next()? {
         let mut row_strings = Vec::with_capacity(cols);
@@ -47,6 +48,11 @@ pub fn extract_all_rows<'a>(rows: &'a mut Rows, cols: usize) -> Result<Extracted
             row_strings.push( valueref_to_json(row.get_ref(i)?) );
         }
         res.push(row_strings);
+        if let Some(max_rows) = max_rows {
+            if res.len() >= max_rows {
+                break;
+            }
+        }
     }
     Ok(res)
 }
@@ -73,10 +79,12 @@ impl SqliteManager{
         let mut state = state_lock.lock().expect("Unable to lock sqlite manager");
 
         state.decimal_extension_path = resolver.resolve_resource("resources/sqlite/decimal").expect("Cannot resolve decimal path");
+        state.vsv_extension_path     = resolver.resolve_resource("resources/sqlite/vsv").expect("Cannot resolve vsv path");
         state.main_tables_path       = resolver.resolve_resource("resources/sqlite/main_tables.txt").expect("Cannot resolve main tables path");
 
 
         println!("decimal:     {}", state.decimal_extension_path.display());
+        println!("vsv:         {}", state.vsv_extension_path.display());
         println!("main tables: {}", state.main_tables_path.display());
     }
 
@@ -87,8 +95,9 @@ impl SqliteManager{
             unsafe {
                 let _guard = rusqlite::LoadExtensionGuard::new(&conn)?;
                 conn.load_extension(&self.decimal_extension_path, None)?;
+                conn.load_extension(&self.vsv_extension_path, None)?;
             }
-            rusqlite::vtab::csvtab::load_module(&conn)?;
+            // rusqlite::vtab::csvtab::load_module(&conn)?;
             self.sqlite_conn = Some(SqliteConn { 
                 conn: conn, 
                 path: path.to_path_buf() 
@@ -139,11 +148,11 @@ impl SqliteConn{
     pub fn execute_batch(&self, query: &str) -> Result<()> {
         self.conn.execute_batch(&query)
     }
-    pub fn query<P : rusqlite::Params>(&self, query: &str, params: P) -> Result<ExtractedRows> {
+    pub fn query<P : rusqlite::Params>(&self, query: &str, params: P, max_rows: Option<usize>) -> Result<ExtractedRows> {
         let mut stmt = self.conn.prepare(&query)?;
         let cols = stmt.column_count();
         let mut rows = stmt.query(params)?;
-        extract_all_rows(&mut rows, cols)
+        extract_all_rows(&mut rows, cols, max_rows)
     }
 
     pub fn export_table_to_csv(&self, table_name: &str, file_path: &Path, use_encoding: bool) -> DynResult<()> {
@@ -194,7 +203,7 @@ impl SqliteConn{
         Ok(())
     }
 
-    pub fn import_table_from_csv<'a>(&self, table_name: &str, file_path: &Path, use_encoding: bool) -> DynResult<()> {
+    pub fn import_table_from_csv(&self, table_name: &str, file_path: &Path, use_encoding: bool) -> DynResult<()> {
         print!("Importing CSV [{}]... ", table_name);
         std::io::stdout().flush()?;
 
@@ -204,18 +213,30 @@ impl SqliteConn{
         if use_encoding {
             decoded_file_path = utils::path_append_to_file_stem(file_path, "_utf8");
             encoding::decode_file(file_path, &decoded_file_path)?;
+            print!("decoded... ");
+            std::io::stdout().flush()?;
             accual_file_path = &decoded_file_path;
         }
 
-        let file_path_str = accual_file_path.to_string_lossy();
+        let file_path_str_winsafe = utils::get_correct_fopen_path(accual_file_path).unwrap_or(accual_file_path.as_os_str().into());
+        let file_path_str = file_path_str_winsafe.to_string_lossy();
+        let opened_file = OpenOptions::new().read(true).open(accual_file_path);
+        drop(opened_file);
 
-        let vtab_sql   = format!("CREATE VIRTUAL TABLE temp.`{}` USING csv(filename='{}', header='yes', delimiter=';')", temp_table_name, file_path_str);
+        let vtab_sql   = format!("CREATE VIRTUAL TABLE temp.`{}` USING vsv(filename=\"{}\", header=yes, fsep=';', nulls=yes)", temp_table_name, file_path_str);
         self.conn.execute(&vtab_sql, ())?;
 
-        // let select_sql = format!("SELECT * FROM {}", temp_table_name);
-        // TODO
-        
-        println!("{} rows", "??");
+        let delete_sql = format!("DELETE FROM `{}`", table_name);
+        let deleted_rows = self.conn.execute(&delete_sql, ())?;
+
+        let insert_sql = format!("INSERT INTO `{}` SELECT * FROM temp.`{}`", table_name, temp_table_name);
+        let inserted_rows = self.conn.execute(&insert_sql, ())?;
+
+        println!(" DELETED {}, INSERTED {}", deleted_rows, inserted_rows);
+
+        let drop_sql = format!("DROP TABLE temp.`{}`", temp_table_name);
+        self.conn.execute(&drop_sql, ())?;
+
         Ok(())
     }
 
@@ -296,7 +317,7 @@ pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
 pub fn import_csv(import_path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(ref sqlite_conn) = db.sqlite_conn {
-        dbg!(&import_path);
+        // dbg!(&import_path);
         let table_names = db.get_main_tables().map_err(|err| err.to_string())?;
         for table_name in table_names {
             let file_path = import_path.join( format!("{}.txt", table_name));
@@ -316,7 +337,7 @@ pub fn import_csv(import_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
 pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<ExtractedRows, String> {
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
-        sqlite_conn.query(&query, ()).map_err(|err| err.to_string())
+        sqlite_conn.query(&query, (), Some(100)).map_err(|err| err.to_string())
     }else{
         Err("No database opened".into())
     }

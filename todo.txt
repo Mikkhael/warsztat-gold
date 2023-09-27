@@ -4,6 +4,7 @@
 
 - better command errors
 - remember last paths in dialogs (localstorage keyd by title?)
+- print debug mesages as events to frontend
 
 - Access
     - create interface for accual mdb
@@ -14,10 +15,10 @@
     - implement import from mdb
         + mdb export macro
         + sanitize resulting csv
-        - test reimport
-        - use better csv extension
-        - deal with numbers
-        - csv import
+        - test reimport !! Investigate wrong reinport (possibly mdb foreign keys do something wrong)
+        + use better csv extension
+        + deal with numbers
+        + csv import
     + implement export to mdb (csv)
         + csv export
             + quotes on numbers

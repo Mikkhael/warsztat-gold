@@ -36,14 +36,24 @@ pub fn decode_file(path_in: &Path, path_out: &Path) -> std::io::Result<()>{
     let mut buf_in  = BufReader::new(file_in);
     let mut buf_out = BufWriter::new(file_out);
 
+    let mut outside_quotes = true;
     loop {
         let buf = buf_in.fill_buf()?;
         let buf_len = buf.len();
         if buf_len == 0 {break;}
-        let decoded = oem_cp::decode_string_complete_table(buf, &oem_cp::code_table::DECODING_TABLE_CP852);
-        buf_out.write_all(decoded.as_bytes())?;
+        let decoded_str = oem_cp::decode_string_complete_table(buf, &oem_cp::code_table::DECODING_TABLE_CP852);
+        let mut decoded_bytes = decoded_str.into_bytes();
+        for byte in decoded_bytes.iter_mut() {
+            match *byte {
+                b'"' => outside_quotes = !outside_quotes,
+                b',' => if outside_quotes {*byte = b'.'}
+                _    => (),
+            }
+        }
+        buf_out.write_all(&decoded_bytes)?;
         buf_in.consume(buf_len);
     }
     buf_out.flush()?;
+    buf_out.into_inner()?.sync_all()?;
     Ok(())
 }

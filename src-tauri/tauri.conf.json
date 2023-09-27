@@ -38,7 +38,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "resources": ["resources/*"]
+      "resources": ["resources/*", "resources/sqlite/*"]
     },
     "security": {
       "csp": null
