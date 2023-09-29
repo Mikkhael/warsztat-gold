@@ -16,6 +16,11 @@
         + mdb export macro
         + sanitize resulting csv
         - test reimport !! Investigate wrong reinport (possibly mdb foreign keys do something wrong)
+        - invalid ł conversion !!!
+        + missing spaces
+        + , into . inside quotes
+        - missing rows in zlecenia naprawy
+            - MDB Memo type is truncated to 255 chars, should be 65535
         + use better csv extension
         + deal with numbers
         + csv import

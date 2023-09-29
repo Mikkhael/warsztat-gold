@@ -33,10 +33,14 @@ function matches(regex, str){
 }
 
 
-let primary_key_name = "''";
-let current_cols_info = [];
-function parse_column(table_name) {
-    let line = lines[i].trim();
+// let primary_key_name = "''";
+// let current_cols_info = [];
+
+function parse_column(table_name, line) {
+
+    let col_info = {};
+
+    line = line.trim();
     let has_comma = line.endsWith(',');
     if(has_comma) {
         line = line.slice(0, -1);
@@ -44,11 +48,12 @@ function parse_column(table_name) {
     if(line.startsWith('`')){
         const [col_name, tokens_str] = matches(/^(`.*?`) (.*)$/, line);
         if(!col_name){
-            console.error("SJDIUHJSDIUGS", line, table_name);
+            console.error("NO COL NAME !!!!", line, table_name);
         }
         let col_type = 'any';
         let tokens = tokens_str.split(' ');
         let is_decimal = false;
+        let is_primary = false;
         for(let i=0; i<tokens.length; i++){
             let token = tokens[i];
                  if(token === "NOT")     {}
@@ -61,11 +66,10 @@ function parse_column(table_name) {
             else if(token === "CURRENT_TIMESTAMP") {}
             else if(token === "FLOAT")   {tokens[i] = 'REAL'; col_type="num"}
             else if(token === "DOUBLE")  {tokens[i] = 'REAL'; col_type="num"}
-            else if(token === "LONGTEXT"){tokens[i] = 'TEXT'; col_type="num"}
+            else if(token === "LONGTEXT"){tokens[i] = 'TEXT'; col_type="str"}
             else if(token === "TINYINT(1)") {tokens[i] = 'INTEGER'; col_type="int"}
             else if(token === "AUTO_INCREMENT") {
-                primary_key_name = col_name;
-                console.log('Primary:', col_name)
+                is_primary = true;
                 tokens[i] = '';
             }
             else if(token.startsWith('VARCHAR')) {
@@ -97,51 +101,73 @@ function parse_column(table_name) {
         if(has_comma){
             res_line += ',';
         }
-        lines[i] = res_line;
-        current_cols_info.push({col_name, col_type});
+        col_info = {col_name, col_type, res_line, is_primary};
     } else if(line.startsWith('INDEX')){
         let [index_name] = matches(/INDEX \((.*?)\)/, line);
-        // lines[i] = '--' + lines[i];
-        lines.splice(i, 1);
-        i--;
-        if(index_name !== primary_key_name) {
-            // console.log(index_name, primary_key_name);
-            return index_name;
-        }
+        col_info = {col_name: index_name, col_type: "idx"};
     }
-    return '';
+    return col_info;
 }
 
 function parse_create_table() {
     let [table_name] = matches(/CREATE TABLE (`.*`) \(/, lines[i]);
     if(!table_name) return;
-    // console.log(table_name);
+
+    // MIGRATION TABLE
+    let table_name_migration = table_name.slice(0, -1) + '_migration`';
+    lines[i] = `DROP TABLE IF EXISTS ${table_name_migration}; ` + lines[i].replace(table_name, table_name_migration);
     i++;
 
+    // TABLE SCHEMA
     let indexes_to_create = [];
-    current_cols_info = [];
+    let current_cols_info = [];
+    let primary_key_name = "''";
     while(!lines[i].endsWith(';')){
-        let new_index = parse_column(table_name);
-        if(new_index) {
-            indexes_to_create.push(new_index);
+        let col_info = parse_column(table_name, lines[i]);
+        if(col_info.col_type == "idx") {
+            lines.splice(i, 1); // !!!
+            i--;                // !!!
+            if(col_info.col_type != primary_key_name){
+                indexes_to_create.push(col_info.col_name);
+            }
+        } else if ( col_info.col_name !== undefined) {
+            if(col_info.is_primary){
+                primary_key_name = col_info.col_name;
+            }
+            lines[i] = col_info.res_line; // !!!
+            current_cols_info.push(col_info);
         }
         i++;
     }
-    primary_key_name = "''";
+    console.log(`Primary of ${table_name}:`, primary_key_name);
+    // console.log(current_cols_info.map(({col_name, col_type}) => `${col_name}: ${col_type}`));
     i++;
+
+    // MIGRATION PROCESS
+    let csv_view_name = table_name.slice(0, -1) + '_csv_view`';
+    let migration_sql = `DROP VIEW IF EXISTS ${csv_view_name};\n`+
+                        `CREATE TABlE IF NOT EXISTS ${table_name} AS SELECT * FROM ${table_name_migration};\n` +
+                        `INSERT INTO ${table_name_migration} SELECT * FROM ${table_name};\n`+
+                        `DROP TABLE ${table_name};\n`+
+                        `ALTER TABLE ${table_name_migration} RENAME TO ${table_name};\n`;
+    lines.splice(i, 0, migration_sql);
+    i++;
+
+    // INDExES
     let index_lines = indexes_to_create.map(col_name => {
         let index_name = table_name.slice(0,-1) + ' IDX ' + col_name.slice(1);
         index_name = index_name.split(/\`,\s*\`/).join(',');
-        return `CREATE INDEX IF NOT EXISTS ${index_name} ON ${table_name} (${col_name});`
+        return `DROP INDEX IF EXISTS ${index_name}; CREATE INDEX ${index_name} ON ${table_name} (${col_name});`
     });
     lines.splice(i, 0, ...index_lines);
     i += index_lines.length;
-    indexes_to_create = [];
 
-    let csv_view_name = table_name.slice(0, -1) + '_csv_view`';
+    // CSV VIEW
     let csv_view_cols = current_cols_info.map(({col_name, col_type}) => {
         if(col_type == "num"){
             return `REPLACE(CAST(${col_name} AS TEXT),".",",")`;
+        }else if(col_type == "int"){
+            return `CAST(${col_name} AS TEXT)`;
         }else if(col_type == "dec"){
             return `REPLACE(CAST(decimal(${col_name}) AS TEXT),".",",")`;
         }else if(col_type == "date"){
@@ -150,10 +176,9 @@ function parse_create_table() {
             return col_name;
         }
     });
-
-    let csv_view_def  = `CREATE VIEW IF NOT EXISTS ${csv_view_name} (${current_cols_info.map(x=>x.col_name).join(', ')}) AS SELECT \n${csv_view_cols.map(x=>'  '+x).join(',\n')}\nFROM ${table_name};`;
+    let csv_view_def  = `CREATE VIEW ${csv_view_name} (${current_cols_info.map(x=>x.col_name).join(', ')}) AS SELECT \n${csv_view_cols.map(x=>'  '+x).join(',\n')}\nFROM ${table_name};`;
     lines.splice(i, 0, csv_view_def);
-    i += 1;
+    i++;
 }
 
 while(i < lines.length) {
@@ -168,7 +193,7 @@ while(i < lines.length) {
 
 let out = lines.join('\n');
 
-out = out.replace(/CREATE TABLE/g, "CREATE TABLE IF NOT EXISTS");
+// out = out.replace(/CREATE TABLE/g, "CREATE TABLE IF NOT EXISTS");
 out = out.replace(/ENGINE=maria DEFAULT CHARSET=utf8/g, "STRICT");
 out = out.replace(/, *\n\) STRICT/gm, "\n) STRICT");
 
