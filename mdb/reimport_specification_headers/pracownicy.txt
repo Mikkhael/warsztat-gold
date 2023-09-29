@@ -1,0 +1,1 @@
+"ID pracownika";"nazwisko";"imi©";"ini© II";"nazwisko rodowe";"imi© ojca";"imi© matki";"nazwisko rodowe matki";"data urodzenia";"miejsce urodzenia";"obywatelstwo";"nr PESEL";"nr NIP";"ul i nr domu";"kod";"miejscowo˜†";"tel domowy";"wyksztaˆcenie";"wyksztaˆcenie uzupeˆniaj¥ce";"dodatkowe uprawnienia";"stanowisko"

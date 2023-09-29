@@ -1,0 +1,1 @@
+"ID";"ID klienta";"ID samochodu";"data otwarcia";"data zamkni©cia";"zysk z cz©˜ci";"zysk z robocizny";"mechanik prowadz¥cy";"% udziaˆu";"pomocnik 1";"% udziaˆu p1";"pomocnik 2";"% udziaˆu p2";"zgˆoszone naprawy";"uwagi o naprawie"

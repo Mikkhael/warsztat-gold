@@ -1,0 +1,85 @@
+ CENNIK  GM.txt                     - reordered 1-43 after 344 
+ czynność.txt                       - reordered 1680-1724 to start, than 245-302, 1725-1734 after 244
+ dostawcy.txt                       - reordered 13-21 to start
+ faktura szczegóły chwilówka.txt    - trailing space
+ jamar.txt                          - trailing space
+ klienci.txt                        - reordered 1201 after 1199, 2434 after 2375, 57 after 56, 398 after 396
+ pracownicy.txt                     - ERROR, changed . to , inside string
+ samochody klientów.txt             - ERROR? masa różnic, napiszę skrypt
+ zlecenia instalacji gazowej.txt    - ERROR, changed . to , inside string
+ zlecenia naprawy.txt               - ERROR? masa różnic, napiszę skrypt
+
+================================
+
+reordered CENNIK  GM
+reordered czynność
+reordered dostawcy
+CANNOT FIND LINE !!!!! idx: 2 faktura szczegóły chwilówka
+CANNOT FIND LINE !!!!! idx: 2 jamar
+reordered klienci
+CANNOT FIND LINE !!!!! idx: 1 pracownicy
+reordered samochody klientów
+CANNOT FIND LINE !!!!! idx: 4 zlecenia instalacji gazowej
+DIFFERENT LINES NUMBER !!!!! 19969 / 19929 zlecenia naprawy
+
+===== Po trailing spaces ======
+
+reordered CENNIK  GM
+reordered czynność
+reordered dostawcy
+reordered klienci
+CANNOT FIND LINE !!!!! idx: 1 pracownicy
+reordered samochody klientów
+CANNOT FIND LINE !!!!! idx: 4 zlecenia instalacji gazowej
+DIFFERENT LINES NUMBER !!!!! 19969 / 19929 zlecenia naprawy
+
+===== Po fixed SQL VIEW schema  ======
+
+reordered CENNIK  GM
+reordered czynność
+reordered dostawcy
+reordered klienci
+reordered samochody klientów
+DIFFERENT LINES NUMBER !!!!! 19969 / 19929 zlecenia naprawy
+
+===== Po Cusomowych specyfikacjach importu do "pracownicy", "zlecenia naprawy", "zlecenia instalacji gazowej"  ======
+
+reordered CENNIK  GM
+reordered czynność
+reordered dostawcy
+reordered klienci
+reordered samochody klientów
+reordered zlecenia naprawy
+
+
+
+============================================================
+
+Exporting CSV [CENNIK  GM_csv_view]                                 125295 
+Exporting CSV [czynność_csv_view]                                   1712 
+Exporting CSV [dane do zaświadczenie o sprawności inst_csv_view]    42 
+Exporting CSV [dokumenty sprzedaży_csv_view]                  E                                            
+Exporting CSV [dokumenty sprzedaży chwilówk_csv_view]         E                                            
+Exporting CSV [dostawcy_csv_view]                                   22 
+Exporting CSV [faktura szczegóły chwilówka_csv_view]                31 
+Exporting CSV [inwentaryzacja_csv_view]                             126 
+Exporting CSV [inwentaryzacja nr 3_csv_view]                        1048 
+Exporting CSV [jamar_csv_view]                                      175 
+Exporting CSV [klienci_csv_view]                                    2627 
+Exporting CSV [liczby słownie_csv_view]                             16001 
+Exporting CSV [modele sam_csv_view]                                 27 
+Exporting CSV [nazwy części_csv_view]                               2271 
+Exporting CSV [obroty magazynowe_csv_view]                          28777 
+Exporting CSV [płace_csv_view]                                      221 
+Exporting CSV [pracownicy_csv_view]                                 8 
+Exporting CSV [przyjęcia PZ_csv_view]                        E                                             
+Exporting CSV [rodzaje dokumentów_csv_view]                         11 
+Exporting CSV [samochody klientów_csv_view]                         4377 
+Exporting CSV [sposób zapłaty_csv_view]                             6 
+Exporting CSV [sprzedaż_csv_view]                            E                                             
+Exporting CSV [zamówienia części_csv_view]                          7 
+Exporting CSV [zamówienia części archiwum_csv_view]                 358 
+Exporting CSV [zlecenia czynności_csv_view]                         15298 
+Exporting CSV [zlecenia gaz_csv_view]                               13 
+Exporting CSV [zlecenia instalacji gazowej_csv_view]                14 
+Exporting CSV [zlecenia naprawy_csv_view]                           17557 
