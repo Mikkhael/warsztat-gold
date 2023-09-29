@@ -81,9 +81,11 @@ function parse_column(table_name, line) {
                 tokens[i] = `INTEGER CHECK (${col_name} <= 255)`;
                 col_type = "int";
             }
-            else if(token.startsWith('DECIMAL')) {
+            else if(token.startsWith('DECIMAL(19,4)')) {
                 is_decimal = true;
-                tokens[i] = `TEXT CHECK (${col_name} IS NULL OR decimal(${col_name}) IS NOT NULL)`; // TODO change decimal to regex
+                const MAX = `922337203685477,5808`;
+                tokens[i] = `TEXT CHECK (${col_name} IS NULL OR (decimal_cmp(${col_name},"${MAX}") < 0 AND decimal_cmp(${col_name},"-${MAX}") > 0))`;
+                // tokens[i] = 'TEXT';
                 col_type = "dec";
             }
             else if(token.startsWith('UNSIGNED')) {
@@ -161,6 +163,17 @@ function parse_create_table() {
     });
     lines.splice(i, 0, ...index_lines);
     i += index_lines.length;
+
+    // TRIGGER DECIMAL INSERTS
+    let dec_cols = current_cols_info.filter(x => x.col_type === "dec").map(x => x.col_name);
+    if(dec_cols.length > 0){
+        let dec_ins_trig_name = table_name.slice(0, -1) + '_dec_insert_trigger`';
+        let dec_ins_trig_sets = dec_cols.map(x => `${x} = decimal(new.${x})`).join(', ');
+        let dec_ins_trig_sql =  `DROP TRIGGER IF EXISTS ${dec_ins_trig_name}; CREATE TRIGGER ${dec_ins_trig_name} AFTER INSERT ON ${table_name} BEGIN\n` +
+        `   UPDATE ${table_name} SET ${dec_ins_trig_sets} WHERE ROWID = new.ROWID;\nEND;`;
+        lines.splice(i, 0, dec_ins_trig_sql);
+        i++;
+    }
 
     // CSV VIEW
     let csv_view_cols = current_cols_info.map(({col_name, col_type}) => {

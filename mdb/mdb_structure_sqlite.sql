@@ -178,7 +178,7 @@ DROP TABLE IF EXISTS `faktura szczegóły chwilówka_migration`; CREATE TABLE `f
   `nazwa części lub czynności` TEXT CHECK (length(`nazwa części lub czynności`) <= 50),
   `jednostka` TEXT CHECK (length(`jednostka`) <= 5),
   `ilość` REAL NULL DEFAULT 0,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `numer` TEXT CHECK (length(`numer`) <= 10)
 ) STRICT;
 DROP VIEW IF EXISTS `faktura szczegóły chwilówka_csv_view`;
@@ -188,6 +188,9 @@ DROP TABLE `faktura szczegóły chwilówka`;
 ALTER TABLE `faktura szczegóły chwilówka_migration` RENAME TO `faktura szczegóły chwilówka`;
 
 DROP INDEX IF EXISTS `faktura szczegóły chwilówka IDX numer`; CREATE INDEX `faktura szczegóły chwilówka IDX numer` ON `faktura szczegóły chwilówka` (`numer`);
+DROP TRIGGER IF EXISTS `faktura szczegóły chwilówka_dec_insert_trigger`; CREATE TRIGGER `faktura szczegóły chwilówka_dec_insert_trigger` AFTER INSERT ON `faktura szczegóły chwilówka` BEGIN
+   UPDATE `faktura szczegóły chwilówka` SET `cena netto` = decimal(new.`cena netto`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `faktura szczegóły chwilówka_csv_view` (`nazwa części lub czynności`, `jednostka`, `ilość`, `cena netto`, `numer`) AS SELECT 
   `nazwa części lub czynności`,
   `jednostka`,
@@ -250,9 +253,9 @@ FROM `inwentaryzacja nr 3`;
 
 DROP TABLE IF EXISTS `jamar_migration`; CREATE TABLE `jamar_migration` (
   `nazwa części lub czynności` TEXT CHECK (length(`nazwa części lub czynności`) <= 50),
-  `jednostka` TEXT CHECK (length(`jednostka`) <= 10),
+  `jednostka` TEXT CHECK (length(`jednostka`) <= 5),
   `ilość` REAL NULL DEFAULT 0,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `numer` TEXT CHECK (length(`numer`) <= 10)
 ) STRICT;
 DROP VIEW IF EXISTS `jamar_csv_view`;
@@ -262,6 +265,9 @@ DROP TABLE `jamar`;
 ALTER TABLE `jamar_migration` RENAME TO `jamar`;
 
 DROP INDEX IF EXISTS `jamar IDX numer`; CREATE INDEX `jamar IDX numer` ON `jamar` (`numer`);
+DROP TRIGGER IF EXISTS `jamar_dec_insert_trigger`; CREATE TRIGGER `jamar_dec_insert_trigger` AFTER INSERT ON `jamar` BEGIN
+   UPDATE `jamar` SET `cena netto` = decimal(new.`cena netto`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `jamar_csv_view` (`nazwa części lub czynności`, `jednostka`, `ilość`, `cena netto`, `numer`) AS SELECT 
   `nazwa części lub czynności`,
   `jednostka`,
@@ -401,11 +407,11 @@ DROP TABLE IF EXISTS `obroty magazynowe_migration`; CREATE TABLE `obroty magazyn
   `ID` INTEGER ,
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NOT NULL,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL,
   `numer dokumentu` INTEGER DEFAULT 0,
-  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR decimal(`cena netto sprzedaży`) IS NOT NULL) DEFAULT 0
+  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR (decimal_cmp(`cena netto sprzedaży`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto sprzedaży`,"-922337203685477,5808") > 0)) DEFAULT 0
 ) STRICT;
 DROP VIEW IF EXISTS `obroty magazynowe_csv_view`;
 CREATE TABlE IF NOT EXISTS `obroty magazynowe` AS SELECT * FROM `obroty magazynowe_migration`;
@@ -419,6 +425,9 @@ DROP INDEX IF EXISTS `obroty magazynowe IDX numer dokumentu`; CREATE INDEX `obro
 DROP INDEX IF EXISTS `obroty magazynowe IDX numer cz`; CREATE INDEX `obroty magazynowe IDX numer cz` ON `obroty magazynowe` (`numer cz`);
 DROP INDEX IF EXISTS `obroty magazynowe IDX rodzaj dokumentu`; CREATE INDEX `obroty magazynowe IDX rodzaj dokumentu` ON `obroty magazynowe` (`rodzaj dokumentu`);
 DROP INDEX IF EXISTS `obroty magazynowe IDX rodzaj dokumentu,numer dokumentu`; CREATE INDEX `obroty magazynowe IDX rodzaj dokumentu,numer dokumentu` ON `obroty magazynowe` (`rodzaj dokumentu`, `numer dokumentu`);
+DROP TRIGGER IF EXISTS `obroty magazynowe_dec_insert_trigger`; CREATE TRIGGER `obroty magazynowe_dec_insert_trigger` AFTER INSERT ON `obroty magazynowe` BEGIN
+   UPDATE `obroty magazynowe` SET `cena netto` = decimal(new.`cena netto`), `cena netto sprzedaży` = decimal(new.`cena netto sprzedaży`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `obroty magazynowe_csv_view` (`ID`, `numer cz`, `ilość`, `cena netto`, `data przyjęcia`, `rodzaj dokumentu`, `numer dokumentu`, `cena netto sprzedaży`) AS SELECT 
   CAST(`ID` AS TEXT),
   `numer cz`,
@@ -522,7 +531,7 @@ FROM `pracownicy`;
 DROP TABLE IF EXISTS `przyjęcia PZ_migration`; CREATE TABLE `przyjęcia PZ_migration` (
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NULL,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL DEFAULT 'dosta',
   `numer dokumentu` INTEGER DEFAULT 0
@@ -535,6 +544,9 @@ ALTER TABLE `przyjęcia PZ_migration` RENAME TO `przyjęcia PZ`;
 
 DROP INDEX IF EXISTS `przyjęcia PZ IDX numer dokumentu`; CREATE INDEX `przyjęcia PZ IDX numer dokumentu` ON `przyjęcia PZ` (`numer dokumentu`);
 DROP INDEX IF EXISTS `przyjęcia PZ IDX numer cz`; CREATE INDEX `przyjęcia PZ IDX numer cz` ON `przyjęcia PZ` (`numer cz`);
+DROP TRIGGER IF EXISTS `przyjęcia PZ_dec_insert_trigger`; CREATE TRIGGER `przyjęcia PZ_dec_insert_trigger` AFTER INSERT ON `przyjęcia PZ` BEGIN
+   UPDATE `przyjęcia PZ` SET `cena netto` = decimal(new.`cena netto`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `przyjęcia PZ_csv_view` (`numer cz`, `ilość`, `cena netto`, `data przyjęcia`, `rodzaj dokumentu`, `numer dokumentu`) AS SELECT 
   `numer cz`,
   REPLACE(CAST(`ilość` AS TEXT),".",","),
@@ -613,8 +625,8 @@ FROM `sposób zapłaty`;
 DROP TABLE IF EXISTS `sprzedaż_migration`; CREATE TABLE `sprzedaż_migration` (
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NULL,
-  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR decimal(`cena netto sprzedaży`) IS NOT NULL),
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0,
+  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR (decimal_cmp(`cena netto sprzedaży`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto sprzedaży`,"-922337203685477,5808") > 0)),
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL,
   `numer dokumentu` INTEGER NOT NULL,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -628,6 +640,9 @@ ALTER TABLE `sprzedaż_migration` RENAME TO `sprzedaż`;
 
 DROP INDEX IF EXISTS `sprzedaż IDX numer dokumentu`; CREATE INDEX `sprzedaż IDX numer dokumentu` ON `sprzedaż` (`numer dokumentu`);
 DROP INDEX IF EXISTS `sprzedaż IDX rodzaj dokumentu`; CREATE INDEX `sprzedaż IDX rodzaj dokumentu` ON `sprzedaż` (`rodzaj dokumentu`);
+DROP TRIGGER IF EXISTS `sprzedaż_dec_insert_trigger`; CREATE TRIGGER `sprzedaż_dec_insert_trigger` AFTER INSERT ON `sprzedaż` BEGIN
+   UPDATE `sprzedaż` SET `cena netto sprzedaży` = decimal(new.`cena netto sprzedaży`), `cena netto` = decimal(new.`cena netto`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `sprzedaż_csv_view` (`numer cz`, `ilość`, `cena netto sprzedaży`, `cena netto`, `rodzaj dokumentu`, `numer dokumentu`, `data przyjęcia`) AS SELECT 
   `numer cz`,
   REPLACE(CAST(`ilość` AS TEXT),".",","),
@@ -694,7 +709,7 @@ DROP TABLE IF EXISTS `zlecenia czynności_migration`; CREATE TABLE `zlecenia czy
   `ID zlecenia` INTEGER DEFAULT 0,
   `ID czynności` INTEGER DEFAULT 0,
   `krotność wykonania` REAL NULL DEFAULT 0,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0
 ) STRICT;
 DROP VIEW IF EXISTS `zlecenia czynności_csv_view`;
 CREATE TABlE IF NOT EXISTS `zlecenia czynności` AS SELECT * FROM `zlecenia czynności_migration`;
@@ -704,6 +719,9 @@ ALTER TABLE `zlecenia czynności_migration` RENAME TO `zlecenia czynności`;
 
 DROP INDEX IF EXISTS `zlecenia czynności IDX ID czynności`; CREATE INDEX `zlecenia czynności IDX ID czynności` ON `zlecenia czynności` (`ID czynności`);
 DROP INDEX IF EXISTS `zlecenia czynności IDX ID zlecenia`; CREATE INDEX `zlecenia czynności IDX ID zlecenia` ON `zlecenia czynności` (`ID zlecenia`);
+DROP TRIGGER IF EXISTS `zlecenia czynności_dec_insert_trigger`; CREATE TRIGGER `zlecenia czynności_dec_insert_trigger` AFTER INSERT ON `zlecenia czynności` BEGIN
+   UPDATE `zlecenia czynności` SET `cena netto` = decimal(new.`cena netto`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `zlecenia czynności_csv_view` (`ID zlecenia`, `ID czynności`, `krotność wykonania`, `cena netto`) AS SELECT 
   CAST(`ID zlecenia` AS TEXT),
   CAST(`ID czynności` AS TEXT),
@@ -717,7 +735,7 @@ DROP TABLE IF EXISTS `zlecenia gaz_migration`; CREATE TABLE `zlecenia gaz_migrat
   `ID zlecenia` INTEGER DEFAULT 0,
   `ID czynności` INTEGER DEFAULT 0,
   `krotność wykonania` REAL NULL DEFAULT 0,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR decimal(`cena netto`) IS NOT NULL) DEFAULT 0
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0
 ) STRICT;
 DROP VIEW IF EXISTS `zlecenia gaz_csv_view`;
 CREATE TABlE IF NOT EXISTS `zlecenia gaz` AS SELECT * FROM `zlecenia gaz_migration`;
@@ -727,6 +745,9 @@ ALTER TABLE `zlecenia gaz_migration` RENAME TO `zlecenia gaz`;
 
 DROP INDEX IF EXISTS `zlecenia gaz IDX ID czynności`; CREATE INDEX `zlecenia gaz IDX ID czynności` ON `zlecenia gaz` (`ID czynności`);
 DROP INDEX IF EXISTS `zlecenia gaz IDX ID zlecenia`; CREATE INDEX `zlecenia gaz IDX ID zlecenia` ON `zlecenia gaz` (`ID zlecenia`);
+DROP TRIGGER IF EXISTS `zlecenia gaz_dec_insert_trigger`; CREATE TRIGGER `zlecenia gaz_dec_insert_trigger` AFTER INSERT ON `zlecenia gaz` BEGIN
+   UPDATE `zlecenia gaz` SET `cena netto` = decimal(new.`cena netto`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `zlecenia gaz_csv_view` (`ID zlecenia`, `ID czynności`, `krotność wykonania`, `cena netto`) AS SELECT 
   CAST(`ID zlecenia` AS TEXT),
   CAST(`ID czynności` AS TEXT),
@@ -742,8 +763,8 @@ DROP TABLE IF EXISTS `zlecenia instalacji gazowej_migration`; CREATE TABLE `zlec
   `ID samochodu` INTEGER DEFAULT 0,
   `data otwarcia` TEXT CHECK (`data otwarcia` IS NULL OR datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
-  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR decimal(`zysk z części`) IS NOT NULL) DEFAULT 0,
-  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR decimal(`zysk z robocizny`) IS NOT NULL) DEFAULT 0,
+  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR (decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR (decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
   `% udziału` INTEGER CHECK (`% udziału` <= 255) CHECK (`% udziału` >= 0) DEFAULT 0,
   `pomocnik 1` TEXT CHECK (length(`pomocnik 1`) <= 30),
@@ -764,6 +785,9 @@ DROP INDEX IF EXISTS `zlecenia instalacji gazowej IDX data zamknięcia`; CREATE 
 DROP INDEX IF EXISTS `zlecenia instalacji gazowej IDX ID`; CREATE INDEX `zlecenia instalacji gazowej IDX ID` ON `zlecenia instalacji gazowej` (`ID`);
 DROP INDEX IF EXISTS `zlecenia instalacji gazowej IDX ID klienta`; CREATE INDEX `zlecenia instalacji gazowej IDX ID klienta` ON `zlecenia instalacji gazowej` (`ID klienta`);
 DROP INDEX IF EXISTS `zlecenia instalacji gazowej IDX ID samochodu`; CREATE INDEX `zlecenia instalacji gazowej IDX ID samochodu` ON `zlecenia instalacji gazowej` (`ID samochodu`);
+DROP TRIGGER IF EXISTS `zlecenia instalacji gazowej_dec_insert_trigger`; CREATE TRIGGER `zlecenia instalacji gazowej_dec_insert_trigger` AFTER INSERT ON `zlecenia instalacji gazowej` BEGIN
+   UPDATE `zlecenia instalacji gazowej` SET `zysk z części` = decimal(new.`zysk z części`), `zysk z robocizny` = decimal(new.`zysk z robocizny`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `zlecenia instalacji gazowej_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `data otwarcia`, `data zamknięcia`, `zysk z części`, `zysk z robocizny`, `mechanik prowadzący`, `% udziału`, `pomocnik 1`, `% udziału p1`, `pomocnik 2`, `% udziału p2`, `zgłoszone naprawy`, `uwagi o naprawie`) AS SELECT 
   CAST(`ID` AS TEXT),
   CAST(`ID klienta` AS TEXT),
@@ -790,8 +814,8 @@ DROP TABLE IF EXISTS `zlecenia naprawy_migration`; CREATE TABLE `zlecenia napraw
   `ID samochodu` INTEGER DEFAULT 0,
   `data otwarcia` TEXT CHECK (`data otwarcia` IS NULL OR datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
-  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR decimal(`zysk z części`) IS NOT NULL) DEFAULT 0,
-  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR decimal(`zysk z robocizny`) IS NOT NULL) DEFAULT 0,
+  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR (decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR (decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
   `% udziału` INTEGER CHECK (`% udziału` <= 255) CHECK (`% udziału` >= 0) DEFAULT 0,
   `pomocnik 1` TEXT CHECK (length(`pomocnik 1`) <= 30),
@@ -812,6 +836,9 @@ DROP INDEX IF EXISTS `zlecenia naprawy IDX data zamknięcia`; CREATE INDEX `zlec
 DROP INDEX IF EXISTS `zlecenia naprawy IDX ID`; CREATE INDEX `zlecenia naprawy IDX ID` ON `zlecenia naprawy` (`ID`);
 DROP INDEX IF EXISTS `zlecenia naprawy IDX ID klienta`; CREATE INDEX `zlecenia naprawy IDX ID klienta` ON `zlecenia naprawy` (`ID klienta`);
 DROP INDEX IF EXISTS `zlecenia naprawy IDX ID samochodu`; CREATE INDEX `zlecenia naprawy IDX ID samochodu` ON `zlecenia naprawy` (`ID samochodu`);
+DROP TRIGGER IF EXISTS `zlecenia naprawy_dec_insert_trigger`; CREATE TRIGGER `zlecenia naprawy_dec_insert_trigger` AFTER INSERT ON `zlecenia naprawy` BEGIN
+   UPDATE `zlecenia naprawy` SET `zysk z części` = decimal(new.`zysk z części`), `zysk z robocizny` = decimal(new.`zysk z robocizny`) WHERE ROWID = new.ROWID;
+END;
 CREATE VIEW `zlecenia naprawy_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `data otwarcia`, `data zamknięcia`, `zysk z części`, `zysk z robocizny`, `mechanik prowadzący`, `% udziału`, `pomocnik 1`, `% udziału p1`, `pomocnik 2`, `% udziału p2`, `zgłoszone naprawy`, `uwagi o naprawie`) AS SELECT 
   CAST(`ID` AS TEXT),
   CAST(`ID klienta` AS TEXT),

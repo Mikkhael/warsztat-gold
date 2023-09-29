@@ -7,6 +7,7 @@ const query_string  = ref("");
 const query_history_select = ref();
 const query_history = ref([]);
 const returned_rows = ref([]);
+const returend_col_names = ref([]);
 const last_status_success  = ref(true);
 const last_status_message  = ref("");
 
@@ -21,10 +22,11 @@ function handle_success_execute(count){
     last_status_message.value = `Query affected ${count} rows`;
     // returned_rows.value = [];
 }
-function handle_success_query(rows){
+function handle_success_query([rows, col_names]){
     last_status_success.value = true;
     last_status_message.value = `Query returned ${rows.length} rows`;
     returned_rows.value = rows;
+    returend_col_names.value = col_names;
 }
 
 function paste_query(query){
@@ -136,6 +138,10 @@ defineExpose({
     <span v-if="ipc.state.db_is_open" >{{ ipc.state.db_path }} </span>
     <p :style="{color: last_status_success ? 'green' : 'red'}">{{last_status_message}}</p>
     <table class="result">
+        <tr>
+            <th>#</th>
+            <th v-for="col_name in returend_col_names">{{ col_name }}</th>
+        </tr>
         <tr v-for="(row, row_i) in returned_rows">
             <td>{{ row_i }}:</td>
             <td v-for="cell in row" :style="{color: typeof cell == 'number' ? 'green' : ''}">{{cell == null ? '~NULL~' : cell}}</td>
@@ -159,6 +165,9 @@ defineExpose({
 }
 .sql_console .control > * {
     flex-grow: 1;
+}
+.sql_console .result tr * {
+    outline: 1px solid black;
 }
     
 </style>
