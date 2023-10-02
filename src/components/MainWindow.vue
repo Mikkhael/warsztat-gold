@@ -1,0 +1,164 @@
+<script setup>
+import { onMounted, readonly, ref } from "vue";
+import ipc from "../ipc";
+import FWManager from "./FloatingWindows/FWManager";
+import FloatingWindowContainer from "./FloatingWindows/FloatingWindowContainer.vue"
+
+
+import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
+import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
+
+import SQLDebugConsole from "./SqlDebug/SQLDebugConsole.vue";
+
+
+const last_state_info = ref();
+
+const fwWindowsContainer = ref();
+const fwManager = new FWManager(fwWindowsContainer);
+
+
+function set_last_state_info(msg = "", is_error = false) {
+    last_state_info.value.innerHTML = msg;
+    last_state_info.value.setAttribute("error", +is_error);
+}
+function set_last_state_err(msg) {set_last_state_info(msg, true);}
+
+
+//////////// TOOLBAR HANDLERS
+
+function tool_open() {
+    return ipc.db_open().then(path => {
+        if(path === null) return;
+        set_last_state_info(`Otworzono bazę "${path}"`);
+    }).catch(set_last_state_err);
+}
+function tool_sql() {
+    fwManager.open_or_focus_window("SQL Debug", SQLDebugConsole);
+}
+
+function tool_zlecenia(){
+    fwManager.open_or_focus_window("Zlecenia Otwarte", TestWindow1, {text: "sjifosfg", index: Math.round(Math.random()*10)});
+}
+
+function tool_klienci(){
+    fwManager.open_or_focus_window("Klienci", TestWindow2, {text: Math.random(), aha: [123]}, {y: 100});
+}
+
+</script>
+
+<template>
+  
+    <section class="container">
+
+        <section class="toolbar">
+            <div class="toolgroup">
+                <div class="tool" @click="tool_open();">Otwórz</div>
+                <div class="tool" @click="tool_sql();" >SQL</div>
+            </div>
+            <div class="toolgroup"></div>
+            <div class="toolgroup">
+                <div class="tool" @click="tool_zlecenia();">Zlecenia</div>
+                <div class="tool" @click="tool_klienci();" >Klienci</div>
+            </div>
+            <div class="toolgroup"></div>
+        </section>
+        <main class="main">
+            <div ref="fwWindowsContainer" class="mainWindowsContainer">
+                <FloatingWindowContainer :manager="fwManager" />
+            </div>
+            <div class="bigtext" v-show="!ipc.state.db_is_open" >
+                Żadna baza danych nie jest otwarta.
+            </div>
+        </main>
+        <footer class="footer">
+            <span class="appname">
+                Warsztat Auto-Gold
+            </span>
+            <span class="last_state_info" ref="last_state_info" error="0">
+
+            </span>
+        </footer>
+
+    </section>
+
+</template>
+
+<style scoped>
+
+* {
+    box-sizing: border-box;
+}
+.container{
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    display: flex;
+    flex-direction: column;
+}
+
+.container > * {
+    width: 100%;
+}
+
+
+.toolbar {
+    padding: 2px;
+    min-height: 24px;
+    background-color: #d8d8d8;
+    display: flex;
+}
+
+.toolgroup {
+    display: flex;
+    flex-grow: 1;
+}
+.tool{
+    outline: 1px solid black;
+    padding: 0px 5%;
+    cursor: pointer;
+    user-select: none;
+    transition: 0.2s;
+}
+.tool:hover {
+    background-color: #fff;
+}
+
+.footer {
+    min-height: 24px;
+    font-size: 0.9em;
+    background-color: #d8d8d8;
+    display: flex;
+    justify-content: space-between;
+}
+.footer .last_state_info{
+    color: green;
+}
+.footer .last_state_info[error="1"]{
+    color: red;
+}
+
+.main {
+    flex-grow: 1;
+    text-align: center;
+    position: relative;
+    background-color: rgb(231, 231, 231);
+}
+
+.main .mainWindowsContainer{
+    pointer-events: none;
+    position: absolute;
+    overflow: hidden;
+    inset: 0;
+    z-index: 0;
+}
+
+
+.main .bigtext {
+    font-size: 5em;
+    background-color: rgb(126, 126, 126);
+}
+
+</style>
+
