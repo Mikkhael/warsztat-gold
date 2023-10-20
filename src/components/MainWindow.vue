@@ -8,7 +8,7 @@ import FloatingWindowContainer from "./FloatingWindows/FloatingWindowContainer.v
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
 import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
 
-import SQLDebugConsole from "./SqlDebug/SQLDebugConsole.vue";
+import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 
 
 const last_state_info = ref();
