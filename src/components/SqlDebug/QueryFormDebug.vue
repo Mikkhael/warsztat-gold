@@ -4,6 +4,8 @@ import QueryFormScroller from '../QueryFormScroller.vue';
 import ipc from '../../ipc';
 import { computed, reactive, ref, watch } from 'vue';
 
+const scroller_ref = ref();
+
 const query_props = reactive({
 	value_name: "`rowid`",
 	where: "",
@@ -16,18 +18,32 @@ const res = ref({});
 const res_str = computed(() => {
 	let r = '';
 	for(let key in res.value) {
-		r += key + ': ' + res[key] + '\n';
+		r += key + ': ' + res.value[key] + '\n';
 	}
 	return r;
 })
 
 watch(value, async (newValue) => {
-	let [rows, col_names] = ipc.db_query(`SELECT * FROM ${query_props.from} WHERE ${query_props.value_name} = ${value.value}`);
+
+	let [rows, col_names] = await ipc.db_query(`SELECT * FROM ${query_props.from} WHERE ${query_props.value_name} = ${newValue}`).catch(err => {
+		return [
+			[["Składni"]],
+			["Błąd"]
+		];
+	});
+	if(rows.length <= 0) {
+		res.value = {"Nic": "nie ma"};
+		return;
+	}
 	let res2 = {};
 	for(let i in col_names){
 		res2[col_names[i]] = rows[0][i];
 	}
 	res.value = res2;
+});
+
+defineExpose({
+	scroller_ref
 });
 
 </script>
@@ -37,10 +53,10 @@ watch(value, async (newValue) => {
 
 	<div class="container">
 		<button @click="ipc.db_open()">OPEN</button>
-		<div>Query Value Name: <input type="text" v-model="query_props.value_name"></div>
-		<div>Query From: <input type="text" v-model="query_props.from"></div>
-		<div>Query Where: <input type="text" v-model="query_props.where"></div>
-		<div>Curr Value: <input type="text" v-model="value"></div>
+		<div>Query Value Name: <input type="text" v-model.lazy="query_props.value_name"></div>
+		<div>Query From: <input type="text" v-model.lazy="query_props.from"></div>
+		<div>Query Where: <input type="text" v-model.lazy="query_props.where"></div>
+		<div>Curr Value: <input type="text" v-model.lazy="value"></div>
 	</div>
 
 	<div>
@@ -48,7 +64,7 @@ watch(value, async (newValue) => {
 	</div>
 
 	<div>
-		<QueryFormScroller :query_props="query_props" v-model:value="value" />
+		<QueryFormScroller :query_props="query_props" v-model:value="value" ref="scroller_ref"/>
 	</div>
 
 	<textarea cols="30" rows="10" :value="res_str"></textarea>
