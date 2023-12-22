@@ -40,7 +40,36 @@
 
 - Core
     - create main UI layout
-    - create example form
+        - toolbar
+        - footbar
+        - popups
+        - errors messages
+            - sql update constraint
+            - system error
+        - main area
+    - Forms API
+        - create example form
+        - Query Form Scroller
+            + working scroller
+            - Simple Mode
+        - Kontrolki
+            - Input
+                - Bool (checkbox)
+                - Integer
+                - Number
+                - Decimal
+                - Text
+                - Datetime
+                - Input constrains
+                    - min/max
+                    - length
+            - Enum
+            - Query Enum
+            - Radiobox
+            - Frame
+            - Field-Search
+            - Full-Text-Search
+
     - create toolbars
 
 - floating windows

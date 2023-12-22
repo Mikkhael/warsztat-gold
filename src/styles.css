@@ -32,7 +32,7 @@ a:hover {
 h1 {
   text-align: center;
 }
-
+/* 
 input,
 button {
   border-radius: 8px;
@@ -45,19 +45,49 @@ button {
   background-color: #ffffff;
   transition: border-color 0.25s;
   box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+} */
+
+
+
+.as_input {
+  padding: 0.1em 0.2em;
+  font-size: 1em;
 }
 
-button {
+input,
+button{
+  /* border-radius: 8px; */
+  border: 1px solid gray;
+  padding: 0.1em 0.2em;
+  font-size: 1em;
+  color: #0f0f0f;
+  background-color: #ffffff;
+  transition: border-color 0.25s;
+  transition: background-color 0.15s;
+  /* box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2); */
+}
+
+
+button, 
+input[type="button"] {
   cursor: pointer;
 }
 
-button:hover {
+button:hover,
+input:focus,
+input:hover,
+input[type="button"]:hover {
   border-color: #396cd8;
+  background-color: #e3f5f1;
 }
-button:active {
+input[type="button"]:focus{
+  background-color: #ffffff;
+}
+
+/* button:active {
   border-color: #396cd8;
   background-color: #e8e8e8;
-}
+} */
 
 input,
 button {

@@ -1,5 +1,7 @@
 <script setup>
 
+import { escape_sql_value } from '../../utils';
+
 import QueryFormScroller from '../QueryFormScroller.vue';
 import ipc from '../../ipc';
 import { computed, reactive, ref, watch } from 'vue';
@@ -25,7 +27,8 @@ const res_str = computed(() => {
 
 watch(value, async (newValue) => {
 
-	let [rows, col_names] = await ipc.db_query(`SELECT * FROM ${query_props.from} WHERE ${query_props.value_name} = ${newValue}`).catch(err => {
+	let [rows, col_names] = await ipc.db_query(`SELECT * FROM ${query_props.from} WHERE ${query_props.value_name} = ${escape_sql_value(newValue)}`).catch(err => {
+		console.error(err);
 		return [
 			[["Składni"]],
 			["Błąd"]

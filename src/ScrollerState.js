@@ -6,7 +6,7 @@ class ScrollerState {
 		// this.has_value_updated = false;
 		// this.update_queries(starting_value);
 		this.value = starting_value;
-		this.bounds = [starting_value, starting_value];
+		this.bounds = [starting_value, starting_value, 0];
 		this.emit_callback = emit_callback;
 		this.is_empty = true;
 		this.expire();
@@ -19,13 +19,13 @@ class ScrollerState {
 		this.from  = from;
 		this.where = where;
 
-		const where_bnds  = this.where ? `WHERE ${this.where}` : '';
+		const where_bnds  = 			 this.where ? `WHERE ${this.where}`  : '';
 		const where_next  = `WHERE ` + ( this.where ? `(${this.where}) AND ` : `` ) + `${this.field} >  {{}}`;
 		const where_ncur  = `WHERE ` + ( this.where ? `(${this.where}) AND ` : `` ) + `${this.field} >= {{}}`;
 		const where_prev  = `WHERE ` + ( this.where ? `(${this.where}) AND ` : `` ) + `${this.field} <  {{}}`;
 		const where_pcur  = `WHERE ` + ( this.where ? `(${this.where}) AND ` : `` ) + `${this.field} <= {{}}`;
 
-		this.str_query_bounds = `SELECT min(${this.field}), max(${this.field}) FROM ${this.from} ${where_bnds};`;
+		this.str_query_bounds = `SELECT min(${this.field}), max(${this.field}), count(*) FROM ${this.from} ${where_bnds};`;
 		this.str_query_next   = `SELECT ${this.field} FROM ${this.from} ${where_next} ORDER BY ${this.field} ASC  LIMIT 1;`;
 		this.str_query_ncur   = `SELECT ${this.field} FROM ${this.from} ${where_ncur} ORDER BY ${this.field} ASC  LIMIT 1;`;
 		this.str_query_prev   = `SELECT ${this.field} FROM ${this.from} ${where_prev} ORDER BY ${this.field} DESC LIMIT 1;`;
@@ -47,7 +47,9 @@ class ScrollerState {
 			 if(typeof(this.value) === 'number') this.value = +value;
 		else if(typeof(this.value) === 'bigint') this.value = BigInt(value);
 		else 									 this.value = value;
-		if(emit && this.emit_callback) this.emit_callback(this.value);
+		if(isNaN(this.value)) 					 this.value = value;
+		if(emit && this.emit_callback)
+			this.emit_callback(this.value);
 		// this.has_value_updated = true;
 	}
 	// poll_has_value_updated() {
@@ -60,12 +62,12 @@ class ScrollerState {
 		if(this.is_bounds_utd && !force) return;
 		console.log("Updating bounds");
 		const [rows, col_names] = await ipc.db_query(this.get_query(this.str_query_bounds));
-		if(rows.length <= 0) {
+		if(rows.length <= 0 || rows[0][2] == 0) {
 			console.log("Updated bounds - empty");
-			this.bounds = [this.value,this.value];
+			this.bounds = [this.value,this.value,0];
 			this.is_empty  = true;
 		} else {
-			this.bounds = [rows[0][0], rows[0][1]];
+			this.bounds = [rows[0][0], rows[0][1], rows[0][2]];
 			this.is_empty = false;
 		}
 		this.is_bounds_utd = true;
