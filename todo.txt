@@ -38,6 +38,8 @@
     - remote
     - progress
 
+- Dynamic Forms API
+
 - Core
     - create main UI layout
         - toolbar
@@ -51,7 +53,8 @@
         - create example form
         - Query Form Scroller
             + working scroller
-            - Simple Mode
+            + Simple Mode
+            - test for large arrays (bigint count)
         - Kontrolki
             - Input
                 - Bool (checkbox)

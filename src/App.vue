@@ -1,6 +1,7 @@
 <script setup>
 import SqlDebugConsole from "./components/SqlDebug/SqlDebugConsole.vue";
 import QueryFormDebug from "./components/SqlDebug/QueryFormDebug.vue";
+import QueryFormSimpleDebug from "./components/SqlDebug/QueryFormSimpleDebug.vue";
 import FloatingWindowsTest from "./components/FloatingWindows/FloatingWindowsTest.vue";
 import MainWindow from "./components/MainWindow.vue";
 import { onMounted, readonly, ref } from "vue";
@@ -9,15 +10,17 @@ const main_components = [
   MainWindow,
   SqlDebugConsole,
   QueryFormDebug,
+  QueryFormSimpleDebug,
   FloatingWindowsTest,
 ];
 const main_components_names = readonly([
   "MainWindow",
   "SqlDebugConsole",
   "QueryFormDebug",
+  "QueryFormSimpleDebug",
   "FloatingWindowsTest",
 ]);
-const current_main_component_index = ref(2);
+const current_main_component_index = ref(3);
 const current_main_component = ref();
 
 
