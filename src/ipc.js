@@ -1,3 +1,4 @@
+//@ts-check
 import { reactive } from 'vue'
 import { invoke } from "@tauri-apps/api/tauri";
 import { save, open, message, confirm } from "@tauri-apps/api/dialog";
@@ -15,10 +16,20 @@ const state = reactive({
 // }
 
 //////////// Utils //////////////////////
-
+/**
+ * 
+ * @param {string} a 
+ * @param {string} b 
+ * @returns {Promise<string>}
+ */
 function join_path(a, b) {
     return invoke("join_path", {a, b});
 }
+/**
+ * 
+ * @param {string} path 
+ * @returns {Promise<string>}
+ */
 function file_name(path) {
     return invoke("file_name", {path});
 }
@@ -39,6 +50,7 @@ function file_name(path) {
 
 //////////// Database //////////////////////
 
+
 async function db_open() {
     let path = await open({
         title: "Wybierz plik bazy danych",
@@ -47,6 +59,7 @@ async function db_open() {
     if(!path) return path;
     return await invoke("open_database", {path}).then(() => {
         state.db_is_open = true;
+        //@ts-ignore
         state.db_path = path;
         return path;
     });
@@ -61,7 +74,7 @@ async function db_save() {
     let path = await save({
         title: "Wybierz plik, gdzie zapisać bazę danych",
         filters: [{name: "Sqlite Database", extensions: ['db3']}],
-        defaultPath: state.path || undefined,
+        defaultPath: state.db_path || undefined,
     });
     if(!path) return path;
     return await invoke("save_database", {path}).then(() => path);
@@ -77,6 +90,7 @@ async function db_export_csv() {
     let name = await file_name(state.db_path);
     console.log("name", name);
     name = name + '_' + (new Date()).toString().replace(/:/g, '_');
+    //@ts-ignore
     let exportPath = await join_path(path, name);
     console.log("export csv path", exportPath);
     return await invoke("export_csv", {exportPath}).then(() => exportPath);
@@ -92,14 +106,30 @@ async function db_import_csv() {
     return await invoke("import_csv", {importPath: path}).then(() => path);
 }
 
+/**
+ * @param {string} query 
+ * @returns {Promise<number>}
+ */
 function db_execute(query) {
     return invoke("perform_execute", {query});
 }
 
+/**
+ * @param {string} query 
+ */
 function db_execute_batch(query) {
     return invoke("perform_execute_batch", {query});
 }
 
+/**
+ * @typedef IPCQueryResult
+ * @type {[any[][], string[]]} 
+ */
+
+/**
+ * @param {string} query 
+ * @returns {Promise<IPCQueryResult>}
+ */
 function db_query(query) {
     return invoke("perform_query", {query});
 }

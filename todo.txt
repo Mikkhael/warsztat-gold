@@ -51,13 +51,17 @@
         - main area
     - Forms API
         - create example form
-        - Form Value
+        - FormManager
             + standerd form value
             + table update manager
-            - automated update logic
-            - automated fetch logic
-            - update only changed values
-            - easier formValue and tableSync bindings
+            + automated update logic
+            + automated fetch logic
+            + update only changed values
+            + easier formValue and tableSync bindings
+            - add assertions
+            - multirow select support ??
+            - add transaction for update
+            - couple formManager with scroller
         + Query Form Scroller
             + working scroller
             + Simple Mode
@@ -81,6 +85,9 @@
             - Full-Text-Search
 
     - create toolbars
+
+- Query Builder ?
+- query whitespace remover
 
 - floating windows
     + core windows
