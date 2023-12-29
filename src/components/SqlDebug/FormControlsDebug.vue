@@ -8,7 +8,8 @@ import {FormManager} from '../../FormManager';
 import QueryFormScroller from '../QueryFormScroller.vue';
 import {ref, reactive, watch, computed} from 'vue';
 
-const form_scroller = ref();
+
+const form_scroller = /**@type { import('vue').Ref<QueryFormScroller> } */ (ref());
 
 const query_props = reactive({
 	value_name: "`rowid`",
@@ -51,7 +52,14 @@ const res_str = computed(() => {
 })
 
 
-
+function update_res(row) {
+    if(Object.keys(row).length <= 0) {
+        res.value = {"Nic": "nie ma"};
+        return;
+    }
+    res.value = row;
+    return row;
+}
 
 watch(form1_fetch_query_ref, async (newValue) => {
     // let [rows, col_names] = await ipc.db_query(`SELECT rowid as rowid,* FROM ${query_props.from} WHERE ${query_props.value_name} = ${escape_sql_value(newValue)}`).catch(err => {
@@ -59,13 +67,14 @@ watch(form1_fetch_query_ref, async (newValue) => {
         console.error(err);
         return {"Błąd": "Składni"};
     });
-
-    if(Object.keys(row).length <= 0) {
-        res.value = {"Nic": "nie ma"};
-        return;
-    }
-    res.value = row;
+    update_res(row);
 });
+
+async function update_all_and_refresh(){
+    const [updated_rows, row] = await form1.update_all_and_refresh();
+    console.log("Updated rows: ", updated_rows);
+    if(row) update_res(row);
+}
 
 </script>
 
@@ -80,10 +89,10 @@ watch(form1_fetch_query_ref, async (newValue) => {
 		<div>Curr Value: <input type="text" v-model.lazy="rowid.value"></div>
         <button @click="update_query = pracownicy.get_update_query();">Update Query Refresh</button> <br>
         <textarea>{{ update_query }}</textarea> <br>
-        <button @click="form1.update_all().catch(err => console.error(err)).then(() => form_scroller.state.expire())" > UPDATE  </button>
-        <button @click="form1.fetch_row_and_refresh().catch(err => console.error(err))" > REFRESH </button>
-        <button @click="form1.fetch_row_and_replace().catch(err => console.error(err))" > REPLACE </button>
-        <button @click="form1.fetch_row_and_retcon() .catch(err => console.error(err))" > RETCON  </button>
+        <button @click="update_all_and_refresh().then(() => form_scroller.refresh()).catch(err => console.error(err))" > UPDATE  </button>
+        <button @click="form1.fetch_row_and_refresh().then(update_res).catch(err => console.error(err))" > REFRESH </button>
+        <button @click="form1.fetch_row_and_replace().then(update_res).catch(err => console.error(err))" > REPLACE </button>
+        <button @click="form1.fetch_row_and_retcon() .then(update_res).catch(err => console.error(err))" > RETCON  </button>
 	</div>
 
 

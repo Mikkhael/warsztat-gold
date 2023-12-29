@@ -60,7 +60,7 @@
             + easier formValue and tableSync bindings
             - add assertions
             - multirow select support ??
-            - add transaction for update
+            + add transaction for update
             - couple formManager with scroller
         + Query Form Scroller
             + working scroller

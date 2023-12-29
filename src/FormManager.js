@@ -153,7 +153,7 @@ class TableUpdateSyncManager {
     async update(force = false) {
         const update_query = this.get_update_query(force);
         if(update_query === "")
-            return -1;
+            return 0;
         return await ipc.db_execute(update_query);
     }
 }
@@ -211,14 +211,23 @@ class FormManager {
     retcon (/**@type {Object.<string, any>}*/ new_values) { for(let name in new_values) this.values[name]?.retcon (new_values[name]); return new_values; }
     revert (/**@type {string[]}*/ names)                  { for(let name of names)      this.values[name]?.revert(); }
 
-    update_all(force = false) {
-        const syncs     = this.update_tables.map(x => x.sync);
-        const promises  = syncs.map(x => x.update(force));
-        return Promise.all(promises).then(xs => xs.reduce((acc,x) => acc+x, 0)); // TODO replace with transaction
+    async update_all(force = false) {
+        const syncs   = this.update_tables.map(x => x.sync);
+        const queries = syncs.map(x => x.get_update_query(force)).filter(x => x.length > 0);
+        if(queries.length == 0) {
+            return 0;
+        }
+        const batch_query = queries.join('');
+        return await ipc.db_execute_batch(batch_query).then(() => queries.length);
     }
     
-    update_all_and_fetch_row(force = false) {
-        return this.update_all(force).then()
+    /**
+     * @returns {Promise<[number, Object.<string, any> | null]>}
+     */
+    async update_all_and_refresh(force = false) {
+        const updated_rows = await this.update_all(force);
+        const res = (updated_rows != 0) ? await this.fetch_row_and_refresh() : null;
+        return [updated_rows, res];
     }
 
     async fetch_row() {

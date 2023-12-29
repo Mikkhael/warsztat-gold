@@ -1,5 +1,4 @@
 <script setup>
-
 import { watch, ref, reactive, toRef } from "vue";
 import ScrollerState from "../ScrollerState";
 
@@ -71,9 +70,16 @@ function handle_err(err){
 	is_error.value = true;
 }
 
+function refresh() {
+	state.expire();
+	return update_current_value();
+}
+
 defineExpose({
-	state
+	state,
+	refresh
 });
+
 
 </script>
 

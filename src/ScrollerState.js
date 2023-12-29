@@ -1,7 +1,13 @@
+//@ts-check
+
 import ipc from "./ipc"
 import { escape_sql_value } from "./utils";
 
 class ScrollerState {
+	/**
+	 * @param {any} starting_value 
+	 * @param {(any) => void} emit_callback 
+	 */
 	constructor(starting_value, emit_callback) {
 		// this.has_value_updated = false;
 		// this.update_queries(starting_value);
@@ -11,7 +17,11 @@ class ScrollerState {
 		this.is_empty = true;
 		this.expire();
 	}
-
+	/**
+	 * @param {string} field 
+	 * @param {string} from 
+	 * @param {string} where 
+	 */
 	update_queries(field, from, where) {
 		this.expire();
 
@@ -43,6 +53,11 @@ class ScrollerState {
 	get_query(str = "") {
 		return str.replace("{{}}", escape_sql_value(this.value) ?? '0');
 	}
+
+	/**
+	 * @param {any} value 
+	 * @param {boolean} emit 
+	 */
 	set_value(value, emit) {
 			 if(typeof(this.value) === 'number') this.value = +value;
 		else if(typeof(this.value) === 'bigint') this.value = BigInt(value);
@@ -60,10 +75,10 @@ class ScrollerState {
 
 	async update_bounds(force = false) {
 		if(this.is_bounds_utd && !force) return;
-		console.log("Updating bounds");
+		console.log("scroller - bounds");
 		const [rows, col_names] = await ipc.db_query(this.get_query(this.str_query_bounds));
 		if(rows.length <= 0 || rows[0][2] == 0) {
-			console.log("Updated bounds - empty");
+			console.log("scroller - bounds - empty");
 			this.bounds = [this.value,this.value,0];
 			this.is_empty  = true;
 		} else {
@@ -71,21 +86,27 @@ class ScrollerState {
 			this.is_empty = false;
 		}
 		this.is_bounds_utd = true;
-		console.log("Updated bounds - ", this.bounds);
+		console.log("scroller - bounds - ", this.bounds);
 	}
 
+	/**
+	 * 
+	 * @param {boolean} with_curr 
+	 * @param {boolean} dir_next
+	 * @returns 
+	 */
 	async scroll(with_curr, dir_next, emit = true, force = false) {
 		await this.update_bounds(force);
-		if(this.with_curr && this.is_curr_utd && !force) return;
-		console.log("Updating scroll", with_curr, dir_next);
-		let str_query = "";
+		if(with_curr && this.is_curr_utd && !force) return;
+		console.log("scroller - scroll", with_curr, dir_next);
+		let str_query;
 			 if( with_curr &&  dir_next) str_query = this.str_query_ncur;
 		else if( with_curr && !dir_next) str_query = this.str_query_pcur;
 		else if(!with_curr &&  dir_next) str_query = this.str_query_next;
 		else if(!with_curr && !dir_next) str_query = this.str_query_prev;
 		const [rows, col_names] = await ipc.db_query(this.get_query(str_query));
 		if(rows.length <= 0) {
-			console.log("Updated scroll - none");
+			console.log("scroller - scroll - none");
 			// this.is_empty  = true;
 			await this.update_bounds(force);
 			this.set_value(this.bounds[+dir_next], emit);
@@ -94,10 +115,10 @@ class ScrollerState {
 			this.set_value(rows[0][0], emit);
 		}
 		this.is_curr_utd = true;
-		console.log("Updated scroll - ", this.value);
+		console.log("scroller - scroll - ", this.value);
 	}
 	async goto(value, dir_next = true, emit = true) {
-		console.log("Updating goto", value, dir_next);
+		console.log("scroller - goto", value, dir_next);
 		this.set_value(value, emit);
 		await this.scroll(true, dir_next, emit, true);
 	}
