@@ -2,7 +2,7 @@
 
 import { escape_sql_value, query_row_to_object } from './utils';
 import ipc from './ipc';
-import {reactive, unref, toRef} from 'vue'
+import {ref, unref, readonly, computed, watch} from 'vue'
 
 
 /*
@@ -40,42 +40,54 @@ formTab1Col1.replace(789);
 
 */
 
+/**@template T */
 class FormValue {
-    constructor(/**@type {any}*/ initial_value = null) {
-        this.value = initial_value;
+    constructor(/**@type {T}*/ initial_value) {
+        this.value = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
+        this.changed = computed(() => false);
         // this.is_changed = readonly(false);
     }
 
-    set(new_value) { this.value = new_value; }
-    replace(new_value) { this.value = new_value; }
-    refresh(new_value) { this.value = new_value; }
+    set(new_value)     { this.value.value = unref(new_value); }
+    replace(new_value) { this.value.value = unref(new_value); }
+    refresh(new_value) { this.value.value = unref(new_value); }
     retcon(new_value) {}
     revert(){}
 
-    is_changed() {return false;}
+    is_changed() { return this.changed.value; }
 
-    as_ref() {return toRef(this, 'value');}
+    as_ref_changed() { return this.changed; }
+    as_ref() {return this.value;}
+    as_value() {return this.value.value;}
 }
 
+
+/**
+ * @template T 
+ * @extends FormValue<T>
+*/
 class RemoteFormValue extends FormValue {
-    constructor(/**@type {any}*/ initial_value = null) {
+    constructor(/**@type {T}*/ initial_value) {
         super(initial_value);
-        this.true_value = initial_value;
+        this.true_value = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
+        this.changed = computed(() => this.value.value != this.true_value.value);
         // this.is_changed = computed(() => this.value != this.true_value);
     }
 
     replace(new_value) {
-        this.true_value = new_value;
-        this.value      = new_value;
+        this.true_value.value = unref(new_value);
+        this.value.value      = unref(new_value);
     }
     refresh(new_value) {
         if(!this.is_changed())
-            this.value = new_value;
-        this.true_value = new_value;
+            this.value.value  = unref(new_value);
+        this.true_value.value = unref(new_value);
     }
-    retcon(new_value) { this.true_value = new_value; }
-    revert() { this.value = this.true_value; }
-    is_changed() { return this.value != this.true_value}
+    retcon(new_value) { this.true_value.value = unref(new_value); }
+    revert() { this.value.value = this.true_value.value; }
+    
+    as_ref_true() {return this.true_value;}
+    as_value_true() {return this.true_value;}
 };
 
 /*
@@ -90,6 +102,7 @@ class RemoteFormValue extends FormValue {
         - from the form's values, by value name (it can detect, if it was changed (but dosen't))
 */
 
+
 class TableUpdateSyncManager {
     /**
      * @param {FormManager} form_manager
@@ -102,8 +115,8 @@ class TableUpdateSyncManager {
         this.table_name = table_name;
         this.#convert_all_entries_to_FormValues(primary);
         this.#convert_all_entries_to_FormValues(columns);
-        this.primary = primary;
-        this.columns = columns;
+        this.primary = /**@type {Object.<string, FormValue>} */ (primary);
+        this.columns = /**@type {Object.<string, FormValue>} */ (columns);
     }
 
     /**
@@ -120,15 +133,18 @@ class TableUpdateSyncManager {
         this.columns[name] = this.#convert_value_to_FormValue(value);
     }
 
-    #convert_value_to_FormValue(value) {
+    /**
+     * @template T 
+     * @returns {FormValue<T>}
+    */
+    #convert_value_to_FormValue(/**@type {T} */ value) {
         if(value instanceof FormValue)
             return value;
-        return new FormValue(value);
+        return new FormValue(unref(value));
     }
     #convert_all_entries_to_FormValues(object) {
         for(let key in object ) {
-            if(object[key] instanceof FormValue) continue;
-            object[key] = new FormValue(object[key]);
+            object[key] = this.#convert_value_to_FormValue(object[key]);
         }
     }
 
@@ -143,8 +159,8 @@ class TableUpdateSyncManager {
         if (ce.length == 0) return "";
         const pe = Object.entries(this.primary);
 
-        const set   = ce.map(([name, val]) => `\`${name}\` = ${escape_sql_value( unref(val.value) )}`).join(",");
-        const where = pe.map(([name, val]) => `\`${name}\` = ${escape_sql_value( unref(val.value) )}`).join(" AND ");
+        const set   = ce.map(([name, val]) => `\`${name}\` = ${escape_sql_value( val.as_value() )}`).join(",");
+        const where = pe.map(([name, val]) => `\`${name}\` = ${escape_sql_value( val.as_value() )}`).join(" AND ");
         
         const query = `UPDATE \`${this.table_name}\` SET ${set} WHERE ${where};`;
         return query;
@@ -173,22 +189,22 @@ class FormManager {
     }
 
     /**
+     * @template T
      * @param {string} name 
-     * @param {any} value 
-     * @returns {FormValue}
+     * @param {T} initial_value 
      */
-    new_local(name, value = null){
-        const formValue = reactive(new FormValue(value));
+    new_local(name, initial_value){
+        const formValue = new FormValue(initial_value);
         this.values[name] = formValue;
         return formValue;
     }
     /**
+     * @template T
      * @param {string} name 
-     * @param {any} value 
-     * @returns {RemoteFormValue}
+     * @param {T} initial_value 
      */
-    new_remote(name, value = null){
-        const formValue = reactive(new RemoteFormValue(value));
+    new_remote(name, initial_value){
+        const formValue = new RemoteFormValue(initial_value);
         this.values[name] = formValue;
         return formValue;
     }

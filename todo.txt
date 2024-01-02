@@ -61,7 +61,7 @@
             - add assertions
             - multirow select support ??
             + add transaction for update
-            - couple formManager with scroller
+            + couple formManager with scroller
         + Query Form Scroller
             + working scroller
             + Simple Mode

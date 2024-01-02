@@ -127,6 +127,9 @@ class ScrollerState {
 		this.set_value(this.bounds[+to_last], emit);
 		this.is_curr_utd = true;
 	}
+	refresh(dir_next = true, emit = true) {
+		return this.scroll(true, dir_next, emit, true);
+	}
 }
 
 export default ScrollerState;

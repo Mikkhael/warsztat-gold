@@ -70,9 +70,8 @@ function handle_err(err){
 	is_error.value = true;
 }
 
-function refresh() {
-	state.expire();
-	return update_current_value();
+function refresh(dir_next = true) {
+	return state.refresh(dir_next);
 }
 
 defineExpose({

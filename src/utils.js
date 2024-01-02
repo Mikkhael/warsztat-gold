@@ -1,3 +1,4 @@
+//@ts-check
 
 function escape_sql_value(value){
 	if(typeof value === 'number' || typeof value === 'bigint'){
@@ -19,8 +20,19 @@ function query_row_to_object(row, col_names) {
 	return res;
 }
 
+/**
+ * 
+ * @param {object} object 
+ * @param {(value: any, key: string) => any} map_function 
+ * @returns
+ */
+function object_map(object, map_function) {
+	return Object.fromEntries(Object.entries(object).map(([key, value]) => map_function(value, key)));
+}
+
 export {
 	escape_sql_value,
 	arr_to_object,
-	query_row_to_object
+	query_row_to_object,
+	object_map
 }
