@@ -68,14 +68,16 @@
             - test for large arrays (bigint count)
         - Kontrolki
             - Input
-                - Integer
-                - Number
+                + Integer
+                + Number
                 - Decimal
-                - Text
+                + Text
                 - Datetime
                 - Input constrains
                     - min/max
                     - length
+                    - presets for different-sized fields from access
+                - tooltips for constraint violation
             - Enum (select)
             - Query Enum
             - Bool (checkbox)

@@ -4,6 +4,8 @@
 import { escape_sql_value, query_row_to_object } from '../../utils';
 import ipc from '../../ipc';
 
+import {FormInput} from '../Controls';
+
 import {FormManager} from '../../FormManager'; 
 import QueryFormScroller from '../QueryFormScroller.vue';
 import {ref, reactive, watch, computed} from 'vue';
@@ -103,7 +105,14 @@ async function update_all_and_refresh(){
         ROWID:    <input type="number" v-model="prac_rowid.value.value" :class="{changed: prac_rowid.changed.value}"> <br>
         IMIĘ:     <input type="text" v-model="prac_imie.value.value" :class="{changed: prac_imie.changed.value}">  <br>
         NAZWISKO: <input type="text" v-model="prac_nazwisko.value.value" :class="{changed: prac_nazwisko.changed.value}">  <br>
-    </div>s
+    </div>
+
+    <fieldset class="form">
+        <legend>FORM</legend>
+        ROWID:    <FormInput type="integer" :formValue="prac_rowid" max="5"/>      <br>
+        IMIĘ:     <FormInput type="text"    :formValue="prac_imie" />       <br>
+        NAZWISKO: <FormInput type="text"    :formValue="prac_nazwisko" />   <br>
+    </fieldset>
     
 	<textarea cols="30" rows="10" :value="res_str"></textarea>
 
