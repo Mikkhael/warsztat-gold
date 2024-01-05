@@ -31,6 +31,7 @@
             + remove milis from date
         + mdb import macro
     + test decimals in csv in access (mniejsze niż 922337203685477,5808 [922 337 203 685 477] ), za duże się nie wpisują w ogóle
+    - float and double constrains
 
 - Buckups API
     - local and manual
@@ -62,22 +63,30 @@
             - multirow select support ??
             + add transaction for update
             + couple formManager with scroller
+            - better binding than by prefix
         + Query Form Scroller
             + working scroller
             + Simple Mode
             - test for large arrays (bigint count)
         - Kontrolki
+            - Labels
             - Input
                 + Integer
                 + Number
-                - Decimal
+                - float
+                + Decimal
                 + Text
                 - Datetime
-                - Input constrains
-                    - min/max
-                    - length
+                + Input constrains
+                    + min/max
+                    + length
                     - presets for different-sized fields from access
-                - tooltips for constraint violation
+                + tooltips for constraint violation
+                + readonly
+                - optional comma as separator
+                + null
+                    - better null handling
+                    - add CTRL+Z hisotry when clearing a field
             - Enum (select)
             - Query Enum
             - Bool (checkbox)

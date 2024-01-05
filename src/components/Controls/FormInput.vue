@@ -1,39 +1,119 @@
 <script setup>
 //@ts-check
 
+import { onActivated, onMounted, computed, ref, watch } from 'vue';
+
 const props = defineProps({
     type: {
         type: String,
         required: true
     },
     formValue: {
-        /**@type {import('vue').PropType<import('../../FormManager').FormValue<string | number>>} */
+        /**@type {import('vue').PropType<import('../../FormManager').FormValue<string | number | null>>} */
         type: Object,
         required: true
     },
-    min:  { type: String },
-    max:  { type: String },
-    step: { type: String },
+    properties: {
+        type: Object,
+        default: {}
+    },
+    readonly: {
+        type: Boolean,
+        default: false
+    },
+    len: {
+        type: Number,
+        required: false
+    },
+    nonull: {
+        type: Boolean,
+        default: false
+    }
 });
 const emit  = defineEmits(['update:formValue']);
 
 const value_ref     = props.formValue.as_ref();
 const value_changed = props.formValue.as_ref_changed();
 
-const additional_props = { type: props.type };
+const additional_props = Object.assign({ type: props.type, disabled: props.readonly }, props.properties);
+if(props.len !== undefined) {
+    additional_props.maxlength = props.len;
+}
+
+/**@returns {string} */
+let custom_validity_check = (/**@type {string | number | null} */ value, /**@type {ValidityState} */validityState) => '';
+
+
+function check_decimal(/**@type {string} */ value) {
+    if(value === '') return '';
+    const match = value.match(/^[\+\-]?(\d+)(?:\.(\d+))?$/);
+    console.log(match);
+    if(match === null) {
+        return 'Wartośc musi mieć postać liczby, z ewentualnym seperatorem dziesiętnym (".")';
+    }
+    const whole = match[1];
+    const decim = match[2] || '0';
+    const res = [];
+    if(decim.length > 4) {
+        res.push('Cyfr dziesiętnych po przecinku może być co najwyżej 4');
+    }
+    // "922337203685477,5808"
+    if((whole.length >  '922337203685477'.length) ||
+        (whole.length == '922337203685477'.length && whole > '922337203685477') ||
+        (whole == '922337203685477' && decim >= `5808`)) {
+        res.push('Wartość musi mieścić się w zakresie +/-922337203685477,5808');
+    }
+    if(res.length === 0) return '';
+    return res.join('\n');
+}
 
 if(props.type == 'integer') {
     additional_props.type = 'number';
     additional_props.step = 1;
 }
-
-function bind_if_defined(name) {
-    if(props[name] !== undefined) { additional_props[name] = props[name]; }
+else if(props.type == 'decimal') {
+    additional_props.type    = 'text';
+    // additional_props.pattern = /[\+\-]?\d+(?:\.\d+)?/.source;
+    custom_validity_check = (value) => check_decimal((value === null ? '' : value).toString());
+}
+else if(props.type == 'number') {
+    additional_props.step = '0.01';
 }
 
-bind_if_defined('min');
-bind_if_defined('max');
-bind_if_defined('step');
+const elem = ref();
+function update_validity(value) {
+    let invalid_msg = custom_validity_check(value, elem.value.validity);
+    if(!invalid_msg) {
+        if(props.nonull && value === null) {
+            invalid_msg = 'Wartość nie może być pusta';
+        }
+    }
+    elem.value.setCustomValidity(invalid_msg);
+}
+
+const value_ref_proxy__pass = {
+    get() { return value_ref.value; },
+    set(new_value) { value_ref.value = new_value }
+};
+const value_ref_proxy__empty_as_null = {
+    get() { return value_ref.value === null ? '' : value_ref.value; },
+    set(new_value) { value_ref.value = (new_value === '') ? null : new_value; }
+};
+
+const treat_empty_as_null = additional_props.type === 'number' || props.type === 'decimal';
+const value_ref_proxy = computed(
+    treat_empty_as_null ? value_ref_proxy__empty_as_null : 
+                          value_ref_proxy__pass
+);
+
+function set_as_null() {
+    value_ref_proxy.value = null;
+}
+
+watch(value_ref, (new_value) => {
+    console.log(typeof new_value, new_value);
+    update_validity(new_value);
+});
 
 
 
@@ -41,19 +121,30 @@ bind_if_defined('step');
 
 <template>
 
-    <input v-model="value_ref" class="FormControl FormControlInput" :class="{changed: value_changed}" v-bind="additional_props">
+    <input ref="elem" v-model="value_ref_proxy" class="FormControl FormControlInput" :class="{changed: value_changed, null: value_ref === null}" v-bind="additional_props">
+    <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControl FormControlNullBtn" @click="set_as_null()" value="N">
 
 </template>
 
 <style>
 
 .FormControlInput.changed {
-    background-color: #c4c7f1;
+    background-color: #e1f1c4;
 }
 
 .FormControlInput:invalid {
     color: red;
     border-color: red;
+}
+
+.FormControlInput.null {
+    background-color: #c7caf5;
+}
+.FormControlInput.null:disabled {
+    background-color: #b1b4d8;
+}
+.FormControlInput.changed.null {
+    background-color: #a7f19d;
 }
 
 </style>

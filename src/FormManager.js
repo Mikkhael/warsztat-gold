@@ -70,7 +70,7 @@ class RemoteFormValue extends FormValue {
     constructor(/**@type {T}*/ initial_value) {
         super(initial_value);
         this.true_value = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
-        this.changed = computed(() => this.value.value != this.true_value.value);
+        this.changed = computed(() => this.value.value !== this.true_value.value);
         // this.is_changed = computed(() => this.value != this.true_value);
     }
 
@@ -175,7 +175,8 @@ class TableUpdateSyncManager {
 }
 
 class FormManager {
-    constructor() {
+    constructor(/**@type {import('vue').Ref<HTMLFormElement> | null} */ form_elem = null) {
+        this.form_elem = form_elem;
         /**@type {Object.<string, FormValue>} */
         this.values = {};
         /**@type {{prefix: string, sync: TableUpdateSyncManager}[]} */
@@ -227,11 +228,23 @@ class FormManager {
     retcon (/**@type {Object.<string, any>}*/ new_values) { for(let name in new_values) this.values[name]?.retcon (new_values[name]); return new_values; }
     revert (/**@type {string[]}*/ names)                  { for(let name of names)      this.values[name]?.revert(); }
 
-    async update_all(force = false) {
+    throw_if_invalid() {
+        if(this.form_elem) {
+            const is_valid = unref(this.form_elem).reportValidity();
+            if(!is_valid) {
+                throw new Error("Form Invalid");
+            }
+        }
+    }
+
+    async update_all(force = false, bypass_validation = false) {
         const syncs   = this.update_tables.map(x => x.sync);
         const queries = syncs.map(x => x.get_update_query(force)).filter(x => x.length > 0);
         if(queries.length == 0) {
             return 0;
+        }
+        if(!bypass_validation) {
+            this.throw_if_invalid();
         }
         const batch_query = queries.join('');
         return await ipc.db_execute_batch(batch_query).then(() => queries.length);
@@ -240,8 +253,8 @@ class FormManager {
     /**
      * @returns {Promise<[number, Object.<string, any> | null]>}
      */
-    async update_all_and_refresh(force = false) {
-        const updated_rows = await this.update_all(force);
+    async update_all_and_refresh(force = false, bypass_validation = false) {
+        const updated_rows = await this.update_all(force, bypass_validation);
         const res = (updated_rows != 0) ? await this.fetch_row_and_refresh() : null;
         return [updated_rows, res];
     }

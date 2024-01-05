@@ -3,6 +3,14 @@
 function escape_sql_value(value){
 	if(typeof value === 'number' || typeof value === 'bigint'){
 		return value.toString();
+	} else if(value === null) {
+		return 'NULL';
+	} else if(value === undefined) {
+		console.error(`ESCAPING AN UNDEFINED VALUE `, value);
+		return 'NULL';
+	} else if(typeof value === 'object') {
+		console.error(`ESCAPING AN OBJECT VALUE `, value);
+		return 'NULL';
 	} else {
 		return '"' + value.toString().replace(/"/g, '""') + '"';
 	}
