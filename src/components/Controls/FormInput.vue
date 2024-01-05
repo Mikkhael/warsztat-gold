@@ -121,15 +121,15 @@ watch(value_ref, (new_value) => {
 
 <template>
 
-    <input ref="elem" v-model="value_ref_proxy" class="FormControl FormControlInput" :class="{changed: value_changed, null: value_ref === null}" v-bind="additional_props">
-    <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControl FormControlNullBtn" @click="set_as_null()" value="N">
+    <input ref="elem" v-model="value_ref_proxy" class="FormControl FormControlInput" :class="{changed: value_changed, null: value_ref === null}" v-bind="additional_props" :placeholder="value_ref === null ? '~' : ''">
+    <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControl FormControlNullBtn" @click="set_as_null()" value="~">
 
 </template>
 
 <style>
 
 .FormControlInput.changed {
-    background-color: #e1f1c4;
+    background-color: #fcf5be;
 }
 
 .FormControlInput:invalid {
@@ -137,14 +137,13 @@ watch(value_ref, (new_value) => {
     border-color: red;
 }
 
-.FormControlInput.null {
-    background-color: #c7caf5;
-}
-.FormControlInput.null:disabled {
-    background-color: #b1b4d8;
-}
-.FormControlInput.changed.null {
-    background-color: #a7f19d;
-}
+/* .FormControlInput.null {
+    background-image: repeating-linear-gradient(-60deg,
+     #00f7ff00,
+     #00f7ff00 10px,
+     #00f7ffcc 10px,
+     #00f7ffcc 12px, 
+     #00f7ff00 12px);
+} */
 
 </style>

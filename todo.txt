@@ -52,6 +52,7 @@
         - main area
     - Forms API
         - create example form
+        - default form layout component
         - FormManager
             + standerd form value
             + table update manager
@@ -85,7 +86,7 @@
                 + readonly
                 - optional comma as separator
                 + null
-                    - better null handling
+                    + better null handling
                     - add CTRL+Z hisotry when clearing a field
             - Enum (select)
             - Query Enum
