@@ -33,10 +33,10 @@ const form1_fetch_query = ` SELECT
 const form_elem = ref();
 const form1 = new FormManager(form_elem);
 const rowid         = form1.new_local("rowid_scroller", 0);
-console.log('A"', rowid);
+// console.log('A"', rowid);
 
 const form1_fetch_query_ref = computed(() => {
-    console.log(rowid);
+    // console.log(rowid);
     return form1_fetch_query.replace(`{{rowid}}`, escape_sql_value(rowid.as_value()));
 });
 
@@ -124,20 +124,18 @@ function handle_err(/**@type {Error} */ err) {
         IMIĘ:     <input type="text" v-model="prac_imie.value.value" :class="{changed: prac_imie.changed.value}">  <br>
         NAZWISKO: <input type="text" v-model="prac_nazwisko.value.value" :class="{changed: prac_nazwisko.changed.value}">  <br>
     </div>
-    <form ref="form_elem">
-        <fieldset class="form">
-            <legend>FORM</legend>
-            ROWID PRAC: <FormInput type="integer"            :formValue="prac_rowid"   :properties="{max: 5}" nonull/>    <br>
-            IMIĘ:       <FormInput type="text"    :len="15"  :formValue="prac_imie"    :properties="{
-                pattern: /[A-Z][a-z]+/.source,
-            }" nonull /> <br>
-            NAZWISKO:          <FormInput type="text"    :len="15"  :formValue="prac_nazwisko"             /> <br>
-            KWOTA:             <FormInput type="number"             :formValue="place_kwota"               /> <br>
-            KWOTA D:           <FormInput type="decimal"            :formValue="place_kwota"               /> <br>
-            ROWID PŁAC:        <FormInput type="integer"            :formValue="place_rowid"  readonly     /> <br>
-            MIEJSCE URODZENIA: <FormInput type="text"    :len="3"   :formValue="prac_miejsce" readonly     /> <br>
-        </fieldset>
-    </form>
+    <fieldset class="form_fieldset">
+        <legend>FORM</legend>
+        <form ref="form_elem" class="form">
+            <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :formValue="prac_rowid"   :properties="{max: 5}" nonull/>
+            <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :formValue="prac_imie"    :properties="{pattern: /[A-Z][a-z]+/.source}" nonull />
+            <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :formValue="prac_nazwisko" :class="{wide: prac_rowid.as_value() < 5}"            />
+            <label class="label">KWOTA:            </label> <FormInput type="number"             :formValue="place_kwota"   class="wide" />
+            <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :formValue="place_kwota"               />
+            <label class="label">ROWID PŁAC:       </label> <FormInput type="integer"            :formValue="place_rowid"  readonly     />
+            <label class="label">MIEJSCE URODZENIA:</label> <FormInput type="text"    :len="3"   :formValue="prac_miejsce" readonly     />
+        </form>
+    </fieldset>
     
 	<textarea cols="30" rows="10" :value="res_str"></textarea>
 
@@ -149,8 +147,28 @@ function handle_err(/**@type {Error} */ err) {
 
 <style scoped>
 
+    .form {
+        display: grid;
+        grid: auto / auto auto;
+        gap: 5px 10px;
+        justify-items: start;
+        justify-content: start;
+    }
+    .form > * {
+        border-bottom: solid 2px black;
+    }
+
+    .wide{
+        width: 40ch;
+    }
+
     .container .changed {
         background-color: #f1c4c4;
     }
+
+</style>
+
+<style>
+
 
 </style>

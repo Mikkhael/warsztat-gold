@@ -30,7 +30,10 @@ const props = defineProps({
         default: false
     }
 });
-const emit  = defineEmits(['update:formValue']);
+
+// const value_formvalue = (props.formValue instanceof FormValue) ? props.formValue : new FormValue(props.formValue);
+// const value_ref     = value_formvalue.as_ref();
+// const value_changed = value_formvalue.as_ref_changed();
 
 const value_ref     = props.formValue.as_ref();
 const value_changed = props.formValue.as_ref_changed();
@@ -47,7 +50,7 @@ let custom_validity_check = (/**@type {string | number | null} */ value, /**@typ
 function check_decimal(/**@type {string} */ value) {
     if(value === '') return '';
     const match = value.match(/^[\+\-]?(\d+)(?:\.(\d+))?$/);
-    console.log(match);
+    // console.log(match);
     if(match === null) {
         return 'Wartośc musi mieć postać liczby, z ewentualnym seperatorem dziesiętnym (".")';
     }
@@ -111,7 +114,7 @@ function set_as_null() {
 }
 
 watch(value_ref, (new_value) => {
-    console.log(typeof new_value, new_value);
+    // console.log(typeof new_value, new_value);
     update_validity(new_value);
 });
 
@@ -121,18 +124,35 @@ watch(value_ref, (new_value) => {
 
 <template>
 
-    <input ref="elem" v-model="value_ref_proxy" class="FormControl FormControlInput" :class="{changed: value_changed, null: value_ref === null}" v-bind="additional_props" :placeholder="value_ref === null ? '~' : ''">
-    <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControl FormControlNullBtn" @click="set_as_null()" value="~">
+    <section class="FormControlInput">
+        <input ref="elem" v-model="value_ref_proxy" class="FormControlInputMain" :class="{changed: value_changed, null: value_ref === null}" v-bind="additional_props" :placeholder="value_ref === null ? '~' : ''">
+        <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControlInputNullBtn" @click="set_as_null()" value="~">
+    </section>
 
 </template>
 
 <style>
 
-.FormControlInput.changed {
+.FormControlInput{
+    width: 20ch;
+    display: flex;
+    flex-direction: row;
+    /* border: 2px solid red; */
+}
+.FormControlInputNullBtn{
+    width: 2ch;
+}
+.FormControlInputMain{
+    /* border: 2px solid blue; */
+    width: 0ch;
+    flex-grow: 1;
+}
+
+.FormControlInputMain.changed {
     background-color: #fcf5be;
 }
 
-.FormControlInput:invalid {
+.FormControlInputMain:invalid {
     color: red;
     border-color: red;
 }
