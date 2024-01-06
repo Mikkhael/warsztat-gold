@@ -58,7 +58,9 @@ class FormValue {
 
     as_ref_changed() { return this.changed; }
     as_ref() {return this.value;}
+    as_ref_true() {return this.value;}
     as_value() {return this.value.value;}
+    as_value_true() {return this.value.value;}
 }
 
 
@@ -85,9 +87,9 @@ class RemoteFormValue extends FormValue {
     }
     retcon(new_value) { this.true_value.value = unref(new_value); }
     revert() { this.value.value = this.true_value.value; }
-    
+
     as_ref_true() {return this.true_value;}
-    as_value_true() {return this.true_value;}
+    as_value_true() {return this.true_value.value;}
 };
 
 /*

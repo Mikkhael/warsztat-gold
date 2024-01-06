@@ -4,7 +4,7 @@
 import { escape_sql_value, query_row_to_object } from '../../utils';
 import ipc from '../../ipc';
 
-import {FormInput} from '../Controls';
+import {FormInput, FormEnum} from '../Controls';
 
 import {FormManager} from '../../FormManager'; 
 import QueryFormScroller from '../QueryFormScroller.vue';
@@ -25,7 +25,8 @@ const form1_fetch_query = ` SELECT
     \`nazwisko\`            as \`prac_nazwisko\`,
     \`miejsce urodzenia\`   as \`prac_miejsce urodzenia\`,
     max(\`ID płac\`)        as \`place_ID płac\`,
-    \`kwota\`               as \`place_kwota\`
+    \`kwota\`               as \`place_kwota\`,
+    \`podstawa\`            as \`place_podstawa\`
     FROM    \`pracownicy\` NATURAL LEFT JOIN \`płace\`
     WHERE   \`ID pracownika\` = {{rowid}};
 `;
@@ -42,16 +43,17 @@ const form1_fetch_query_ref = computed(() => {
 
 form1.set_fetch_query(form1_fetch_query_ref);
 
-const prac_rowid    = form1.new_remote("prac_rowid", 0);
-const prac_imie     = form1.new_remote("prac_imię", '');
-const prac_nazwisko = form1.new_remote("prac_nazwisko", '');
-const prac_miejsce  = form1.new_local ("prac_miejsce urodzenia", '');
+const prac_rowid     = form1.new_remote("prac_rowid", 0);
+const prac_imie      = form1.new_remote("prac_imię", '');
+const prac_nazwisko  = form1.new_remote("prac_nazwisko", '');
+const prac_miejsce   = form1.new_local ("prac_miejsce urodzenia", '');
 
-const place_rowid   = form1.new_local ("place_ID płac", 0);
-const place_kwota   = form1.new_remote("place_kwota", '');
+const place_rowid    = form1.new_local ("place_ID płac", 0);
+const place_kwota    = form1.new_remote("place_kwota", '');
+const place_podstawa = form1.new_remote("place_podstawa", '');
 
-const pracownicy    = form1.add_table_sync('pracownicy', 'prac_', {'rowid': rowid});
-const place         = form1.add_table_sync('płace', 'place_', {'rowid': place_rowid});
+const pracownicy     = form1.add_table_sync('pracownicy', 'prac_', {'rowid': rowid});
+const place          = form1.add_table_sync('płace', 'place_', {'rowid': place_rowid});
 
 
 const update_query = ref("");
@@ -98,6 +100,10 @@ function handle_err(/**@type {Error} */ err) {
     console.error(err);
 }
 
+defineExpose({
+    form1
+});
+
 </script>
 
 
@@ -134,6 +140,9 @@ function handle_err(/**@type {Error} */ err) {
             <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :formValue="place_kwota"               />
             <label class="label">ROWID PŁAC:       </label> <FormInput type="integer"            :formValue="place_rowid"  readonly     />
             <label class="label">MIEJSCE URODZENIA:</label> <FormInput type="text"    :len="3"   :formValue="prac_miejsce" readonly     />
+            <label class="label">PODSTAWA:</label>          <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PREMIA+++'], 123, [456, 'liczba'], ['456', 'liczba str']]"  />
+            <label class="label">PODSTAWA:</label>          <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PRIA++'], 123]"  readonly   />
+            <label class="label">PODSTAWA:</label>          <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  nonull   />
         </form>
     </fieldset>
     

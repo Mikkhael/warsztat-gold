@@ -88,7 +88,9 @@
                 + null
                     + better null handling
                     - add CTRL+Z hisotry when clearing a field
-            - Enum (select)
+                - hints
+            + Enum (select)
+                - advanced value modification
             - Query Enum
             - Bool (checkbox)
             - Radiobox

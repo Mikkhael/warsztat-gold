@@ -1,5 +1,18 @@
 //@ts-check
 
+function typeofpl(value){
+	switch(typeof value) {
+		case "bigint" : 	return 'duża liczba';
+		case "string":		return 'tekst';
+		case "number":		return 'liczba';
+		case "boolean":		return 'tak/nie';
+		case "symbol":		return 'symbol';
+		case "undefined":	return 'n/d';
+		case "object":		return 'objekt';
+		case "function":	return 'funkcja';
+	}
+}
+
 function escape_sql_value(value){
 	if(typeof value === 'number' || typeof value === 'bigint'){
 		return value.toString();
@@ -42,5 +55,6 @@ export {
 	escape_sql_value,
 	arr_to_object,
 	query_row_to_object,
-	object_map
+	object_map,
+	typeofpl
 }

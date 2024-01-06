@@ -125,7 +125,7 @@ watch(value_ref, (new_value) => {
 <template>
 
     <section class="FormControlInput">
-        <input ref="elem" v-model="value_ref_proxy" class="FormControlInputMain" :class="{changed: value_changed, null: value_ref === null}" v-bind="additional_props" :placeholder="value_ref === null ? '~' : ''">
+        <input ref="elem" v-model="value_ref_proxy" class="FormControl FormControlInputMain" :class="{changed: value_changed, null: value_ref === null}" v-bind="additional_props" :placeholder="value_ref === null ? '~' : ''">
         <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControlInputNullBtn" @click="set_as_null()" value="~">
     </section>
 
@@ -146,15 +146,6 @@ watch(value_ref, (new_value) => {
     /* border: 2px solid blue; */
     width: 0ch;
     flex-grow: 1;
-}
-
-.FormControlInputMain.changed {
-    background-color: #fcf5be;
-}
-
-.FormControlInputMain:invalid {
-    color: red;
-    border-color: red;
 }
 
 /* .FormControlInput.null {

@@ -95,6 +95,20 @@ input,
 button {
   outline: none;
 }
+
+
+
+
+.FormControl.changed {
+  background-color: #fcf5be;
+}
+
+.FormControl:invalid {
+  color: red;
+  border-color: red;
+}
+
+
 /*
 @media (prefers-color-scheme: dark) {
   :root {
