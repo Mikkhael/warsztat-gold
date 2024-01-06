@@ -1,7 +1,8 @@
 <script setup>
 //@ts-check
 
-import { onActivated, onMounted, computed, ref, watch } from 'vue';
+import { onActivated, onMounted, computed, ref, watch, toRef } from 'vue';
+import { generate_UID } from '../../utils';
 
 const props = defineProps({
     type: {
@@ -12,6 +13,10 @@ const props = defineProps({
         /**@type {import('vue').PropType<import('../../FormManager').FormValue<string | number | null>>} */
         type: Object,
         required: true
+    },
+    hints: {
+        type: Array,
+        default: []
     },
     properties: {
         type: Object,
@@ -118,14 +123,32 @@ watch(custom_validity_message, (new_value) => {
 });
 
 
+const use_datalist = computed(() => props.hints.length > 0);
+const UID = ref(generate_UID());
+
+watch(toRef(props, 'hints'), (new_value) => {
+    console.log('HINTS: ', new_value);
+});
+
 </script>
 
 <template>
 
     <section class="FormControlInput">
-        <input ref="elem" v-model="value_ref_proxy" class="FormControl FormControlInputMain" :class="{changed: value_changed, null: value_ref === null}" v-bind="additional_props" :placeholder="value_ref === null ? '~' : ''">
+        <input  ref="elem"
+                 v-model="value_ref_proxy" 
+                 class="FormControl FormControlInputMain" 
+                 :class="{changed: value_changed, null: value_ref === null}" 
+                 v-bind="additional_props"
+                 :list="use_datalist ? UID : ''"
+                 :placeholder="value_ref === null ? '~' : ''"
+        />
         <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControlInputNullBtn" @click="set_as_null()" value="~">
+        <datalist v-if="use_datalist" :id="UID">
+            <option v-for="v in props.hints" :value="v">{{ v }}</option>
+        </datalist>
     </section>
+
 
 </template>
 

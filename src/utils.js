@@ -1,5 +1,13 @@
 //@ts-check
 
+let last_UID = 0;
+function generate_UID(){
+	const uid = `UID_${last_UID}`;
+	last_UID = last_UID + 1;
+	console.log("NEW UID", uid);
+	return uid;
+}
+
 function typeofpl(value){
 	switch(typeof value) {
 		case "bigint" : 	return 'duża liczba';
@@ -87,6 +95,7 @@ function object_map(object, map_function) {
 }
 
 export {
+	generate_UID,
 	escape_sql_value,
 	arr_to_object,
 	query_row_to_object,

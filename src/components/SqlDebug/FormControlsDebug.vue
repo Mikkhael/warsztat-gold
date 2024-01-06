@@ -147,13 +147,15 @@ defineExpose({
             <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :formValue="prac_imie"    :properties="{pattern: /[A-Z][a-z]+/.source}" nonull />
             <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :formValue="prac_nazwisko" :class="{wide: prac_rowid.as_value() < 5}"            />
             <label class="label">KWOTA:            </label> <FormInput type="number"             :formValue="place_kwota"   class="wide" />
+            <label class="label">KWOTA HINT:       </label> <FormInput type="number"             :formValue="place_kwota"  :hints="kwota_test_bnd_procesed" class="wide" />
             <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :formValue="place_kwota"               />
             <label class="label">ROWID PŁAC:       </label> <FormInput type="integer"            :formValue="place_rowid"  readonly     />
             <label class="label">MIEJSCE URODZENIA:</label> <FormInput type="text"    :len="3"   :formValue="prac_miejsce" readonly     />
             <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PREMIA+++'], 123, [456, 'liczba'], ['456', 'liczba str']]"  />
             <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PRIA++'], 123]"  readonly   />
             <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  nonull   />
-            <label class="label">PODSTAWA Hint:    </label> <FormEnum  :formValue="place_podstawa" :options="podstawa_hints_flat" />
+            <label class="label">PODSTAWA Query:   </label> <FormEnum  :formValue="place_podstawa" :options="podstawa_hints_flat" />
+            <label class="label">PODSTAWA Hint:    </label> <FormInput type="text" :formValue="place_podstawa" :hints="podstawa_hints_flat" />
         </form>
     </fieldset>
     
