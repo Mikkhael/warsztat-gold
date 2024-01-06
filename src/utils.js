@@ -33,11 +33,46 @@ function arr_to_object(/**@type {string[]} */ arr, val_map = function(/**@type {
 	return Object.fromEntries(arr.map(key => [key, val_map(key)]));
 }
 
+/**
+ * 
+ * @param {any[]} row 
+ * @param {string[]} col_names 
+ * @returns 
+ */
 function query_row_to_object(row, col_names) {
+	/**@type {Object.<string, any>} */
 	const res = {};
 	for(let i = 0; i < col_names.length; i++) {
 		res[col_names[i]] = row[i];
 	}
+	return res;
+}
+
+/**
+ * @param {any[][]} arr 
+ */
+function transpose_array(arr) {
+	/**@type {any[][]} */
+	const transpose = [];
+	for (let i = 0; i < arr.length; i++) {
+		const row = arr[i];
+		for (let j = 0; j < row.length; j++) {
+			if(i===0) transpose[j] = [];
+			transpose[j].push(row[j]);
+		}
+	}
+	return transpose;
+}
+
+/**
+ * @typedef {import('./ipc').IPCQueryResult} RawQueryResult
+ * @typedef {Object.<string, any[]>} ObjectQueryResult
+ */
+
+function query_result_to_object(/**@type {RawQueryResult} */ query_res) {
+	const [rows, col_names] = query_res;
+	const transpose = transpose_array(rows);
+	const res = Object.fromEntries(col_names.map((x,i) => [x, transpose[i]]));
 	return res;
 }
 

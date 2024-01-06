@@ -43,8 +43,8 @@ if(props.len !== undefined) {
     additional_props.maxlength = props.len;
 }
 
-/**@returns {string} */
-let custom_validity_check = (/**@type {string | number | null} */ value, /**@type {ValidityState} */validityState) => '';
+// /**@returns {string} */
+// let custom_validity_check = (/**@type {string | number | null} */ value, /**@type {ValidityState} */validityState) => '';
 
 
 function check_decimal(/**@type {string} */ value) {
@@ -77,21 +77,10 @@ if(props.type == 'integer') {
 else if(props.type == 'decimal') {
     additional_props.type    = 'text';
     // additional_props.pattern = /[\+\-]?\d+(?:\.\d+)?/.source;
-    custom_validity_check = (value) => check_decimal((value === null ? '' : value).toString());
+    // custom_validity_check = (value) => check_decimal((value === null ? '' : value).toString());
 }
 else if(props.type == 'number') {
     additional_props.step = '0.01';
-}
-
-const elem = ref();
-function update_validity(value) {
-    let invalid_msg = custom_validity_check(value, elem.value.validity);
-    if(!invalid_msg) {
-        if(props.nonull && value === null) {
-            invalid_msg = 'Wartość nie może być pusta';
-        }
-    }
-    elem.value.setCustomValidity(invalid_msg);
 }
 
 const value_ref_proxy__pass = {
@@ -113,11 +102,20 @@ function set_as_null() {
     value_ref_proxy.value = null;
 }
 
-watch(value_ref, (new_value) => {
-    // console.log(typeof new_value, new_value);
-    update_validity(new_value);
+const custom_validity_message = computed(() => {
+    const value  = value_ref.value;
+    const nonull = props.nonull;
+    const rdonly = props.readonly;
+    const is_decimal = props.type === 'decimal';
+    if(rdonly) {return '';}
+    if(value === null) {return nonull ? 'Wartość nie może być pusta' : '';}
+    if(is_decimal) {return check_decimal(value.toString());}
+    return '';
 });
-
+const elem = ref();
+watch(custom_validity_message, (new_value) => {
+    elem.value.setCustomValidity(new_value);
+});
 
 
 </script>

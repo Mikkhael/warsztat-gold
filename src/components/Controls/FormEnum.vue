@@ -52,19 +52,28 @@ const value_ref_proxy = computed({
     set(new_value) {value_ref.value = new_value;}
 });
 
+
+const custom_validity_message = computed(() => {
+    const value = value_ref.value;
+    const map   = options_map.value;
+    const rdonly = props.readonly;
+    const nonull = props.nonull;
+    if (rdonly) return '';
+    if (value === null && nonull)          { return 'Wartość nie może być pusta'; }
+    if (value !== null && !map.has(value)) { return `Nieoczekiwana wartość (${typeofpl(value)}): ${value}`;}
+    return '';
+});
 const elem = /**@type {import('vue').Ref<HTMLSelectElement>}*/ (ref());
-watch(value_ref, (new_value) => {
-    console.log("SELECT", typeof new_value, new_value, typeof elem.value.value, elem.value.value);
-    if(props.readonly) return;
-    if(new_value === null && props.nonull) {
-        elem.value.setCustomValidity('Wartość nie może być pusta');
-    } else if (!options_map.value.has(new_value) && new_value !== null) {
-        elem.value.setCustomValidity(`Nieoczekiwana wartość (${typeofpl(new_value)}): ${new_value}`);
-        // console.log('invalid', `Nieoczekiwana wartość (${typeof new_value}): ${new_value}`);
-    } else {
-        elem.value.setCustomValidity('');
-    }
-})
+watch(custom_validity_message, (new_value) => {
+    elem.value.setCustomValidity(new_value);
+});
+
+// watch(value_ref, (new_value) => {
+//     console.log("SELECT", typeof new_value, new_value, typeof elem.value.value, elem.value.value);
+//     // update_validity();
+// });
+
+
 
 </script>
 

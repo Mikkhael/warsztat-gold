@@ -55,6 +55,15 @@ const place_podstawa = form1.new_remote("place_podstawa", '');
 const pracownicy     = form1.add_table_sync('pracownicy', 'prac_', {'rowid': rowid});
 const place          = form1.add_table_sync('płace', 'place_', {'rowid': place_rowid});
 
+const podstawa_hints = form1.add_aux_query(`SELECT DISTINCT podstawa FROM \`płace\``);
+const podstawa_hints_flat = computed(() => podstawa_hints.value[0].flat() );
+
+const kwota_test_bnd = form1.add_aux_query(computed(() => 
+    `SELECT K - S, K, K + S FROM (SELECT max(\`ID płac\`), kwota as K, \`ID pracownika\` as S FROM płace WHERE \`ID pracownika\` = ${rowid.as_sql()});`
+));
+const kwota_test_bnd_procesed = computed(() => {
+    return kwota_test_bnd.value[0][0];
+})
 
 const update_query = ref("");
 
@@ -130,22 +139,26 @@ defineExpose({
         IMIĘ:     <input type="text" v-model="prac_imie.value.value" :class="{changed: prac_imie.changed.value}">  <br>
         NAZWISKO: <input type="text" v-model="prac_nazwisko.value.value" :class="{changed: prac_nazwisko.changed.value}">  <br>
     </div>
+    <p>{{ kwota_test_bnd_procesed }}</p>
     <fieldset class="form_fieldset">
         <legend>FORM</legend>
         <form ref="form_elem" class="form">
-            <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :formValue="prac_rowid"   :properties="{max: 5}" nonull/>
+            <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :formValue="prac_rowid"   :properties="{max: 30}" nonull/>
             <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :formValue="prac_imie"    :properties="{pattern: /[A-Z][a-z]+/.source}" nonull />
             <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :formValue="prac_nazwisko" :class="{wide: prac_rowid.as_value() < 5}"            />
             <label class="label">KWOTA:            </label> <FormInput type="number"             :formValue="place_kwota"   class="wide" />
             <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :formValue="place_kwota"               />
             <label class="label">ROWID PŁAC:       </label> <FormInput type="integer"            :formValue="place_rowid"  readonly     />
             <label class="label">MIEJSCE URODZENIA:</label> <FormInput type="text"    :len="3"   :formValue="prac_miejsce" readonly     />
-            <label class="label">PODSTAWA:</label>          <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PREMIA+++'], 123, [456, 'liczba'], ['456', 'liczba str']]"  />
-            <label class="label">PODSTAWA:</label>          <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PRIA++'], 123]"  readonly   />
-            <label class="label">PODSTAWA:</label>          <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  nonull   />
+            <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PREMIA+++'], 123, [456, 'liczba'], ['456', 'liczba str']]"  />
+            <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PRIA++'], 123]"  readonly   />
+            <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  nonull   />
+            <label class="label">PODSTAWA Hint:    </label> <FormEnum  :formValue="place_podstawa" :options="podstawa_hints_flat" />
         </form>
     </fieldset>
     
+    <br>
+
 	<textarea cols="30" rows="10" :value="res_str"></textarea>
 
 

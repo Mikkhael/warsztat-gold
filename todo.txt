@@ -91,7 +91,7 @@
                 - hints
             + Enum (select)
                 - advanced value modification
-            - Query Enum
+            + Query Enum
             - Bool (checkbox)
             - Radiobox
             - Frame

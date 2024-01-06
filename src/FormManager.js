@@ -2,7 +2,7 @@
 
 import { escape_sql_value, query_row_to_object } from './utils';
 import ipc from './ipc';
-import {ref, unref, readonly, computed, watch} from 'vue'
+import {ref, unref, readonly, computed, watch, shallowRef} from 'vue'
 
 
 /*
@@ -61,6 +61,8 @@ class FormValue {
     as_ref_true() {return this.value;}
     as_value() {return this.value.value;}
     as_value_true() {return this.value.value;}
+
+    as_sql() {return escape_sql_value(this.as_value());}
 }
 
 
@@ -185,10 +187,18 @@ class FormManager {
         this.update_tables = [];
         /**@type {import('vue').ComputedRef<string> | null} */
         this.fetch_query = null;
+        /**@type {[import('vue').Ref<string> | string, import('vue').Ref<import('./utils').RawQueryResult>][]} */
+        this.aux_queries = [];
     }
 
     set_fetch_query(/**@type {import('vue').ComputedRef<string>} */ fetch_query) {
         this.fetch_query = fetch_query;
+    }
+
+    add_aux_query(/**@type {import('vue').Ref<string> | string} */ query) {
+        const res = shallowRef(/**@type {import('./utils').RawQueryResult} */ ([[], []]) );
+        this.aux_queries.push([query, res]);
+        return res;
     }
 
     /**
@@ -268,10 +278,19 @@ class FormManager {
         }
         return query_row_to_object(rows[0], col_names);
     }
+    
+    fetch_and_refresh_aux() {
+        const promises = this.aux_queries.map(async ([query, res]) => {
+            const new_res = await ipc.db_query(unref(query));
+            // TODO chack equivalance
+            res.value = new_res;
+        });
+        return Promise.all(promises);
+    }
 
-    fetch_row_and_replace() {return this.fetch_row().then(res => this.replace(res)); }
-    fetch_row_and_refresh() {return this.fetch_row().then(res => this.refresh(res)); }
-    fetch_row_and_retcon()  {return this.fetch_row().then(res => this.retcon(res)); }
+    fetch_row_and_replace() {return Promise.all([ this.fetch_row().then(res => this.replace(res)), this.fetch_and_refresh_aux() ]).then(res => res[0]); }
+    fetch_row_and_refresh() {return Promise.all([ this.fetch_row().then(res => this.refresh(res)), this.fetch_and_refresh_aux() ]).then(res => res[0]); }
+    fetch_row_and_retcon()  {return Promise.all([ this.fetch_row().then(res => this.retcon(res)) , this.fetch_and_refresh_aux() ]).then(res => res[0]); }
     
 }
 
