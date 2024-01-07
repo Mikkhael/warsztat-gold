@@ -42,7 +42,7 @@ formTab1Col1.replace(789);
 
 /**@template T */
 class FormValue {
-    constructor(/**@type {T}*/ initial_value) {
+    constructor(/**@type {import('vue').Ref<T> | T}*/ initial_value) {
         this.value = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
         this.changed = computed(() => false);
         // this.is_changed = readonly(false);
@@ -54,7 +54,8 @@ class FormValue {
     retcon(new_value) {}
     revert(){}
 
-    is_changed() { return this.changed.value; }
+    is_changed() { return false; }
+    to_update() {return true;}
 
     as_ref_changed() { return this.changed; }
     as_ref() {return this.value;}
@@ -71,12 +72,15 @@ class FormValue {
  * @extends FormValue<T>
 */
 class RemoteFormValue extends FormValue {
-    constructor(/**@type {T}*/ initial_value) {
+    constructor(/**@type {import('vue').Ref<T> | T}*/ initial_value) {
         super(initial_value);
-        this.true_value = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
+        this.true_value = /**@type {import('vue').Ref<T>} */ (ref(unref(initial_value)));
         this.changed = computed(() => this.value.value !== this.true_value.value);
         // this.is_changed = computed(() => this.value != this.true_value);
     }
+
+    is_changed() { return this.changed.value; }
+    to_update() {return this.is_changed();}
 
     replace(new_value) {
         this.true_value.value = unref(new_value);
@@ -144,7 +148,7 @@ class TableUpdateSyncManager {
     #convert_value_to_FormValue(/**@type {T} */ value) {
         if(value instanceof FormValue)
             return value;
-        return new FormValue(unref(value));
+        return new FormValue(value);
     }
     #convert_all_entries_to_FormValues(object) {
         for(let key in object ) {
@@ -152,14 +156,14 @@ class TableUpdateSyncManager {
         }
     }
 
-    is_changed() {
-        return Object.values(this.columns).some(x => x.is_changed());
+    to_update() {
+        return Object.values(this.columns).some(x => x.to_update());
     }
 
     get_update_query(force = false) {
         let ce = Object.entries(this.columns)
         if(!force)
-            ce = ce.filter(x => x[1].is_changed());
+            ce = ce.filter(x => x[1].to_update());
         if (ce.length == 0) return "";
         const pe = Object.entries(this.primary);
 
@@ -183,12 +187,14 @@ class FormManager {
         this.form_elem = form_elem;
         /**@type {Object.<string, FormValue>} */
         this.values = {};
-        /**@type {{prefix: string, sync: TableUpdateSyncManager}[]} */
-        this.update_tables = [];
+        /**@type {Object.<string, TableUpdateSyncManager>} */
+        this.update_tables = {};
         /**@type {import('vue').ComputedRef<string> | null} */
         this.fetch_query = null;
         /**@type {[import('vue').Ref<string> | string, import('vue').Ref<import('./utils').RawQueryResult>][]} */
         this.aux_queries = [];
+        /**@type {Object.<string, [string, FormValue][]>} */
+        this.pending_sync_columns = {};
     }
 
     set_fetch_query(/**@type {import('vue').ComputedRef<string>} */ fetch_query) {
@@ -206,9 +212,10 @@ class FormManager {
      * @param {string} name 
      * @param {T} initial_value 
      */
-    new_local(name, initial_value){
+    new_local(name, initial_value, sync_name = ''){
         const formValue = new FormValue(initial_value);
         this.values[name] = formValue;
+        this.try_adding_column_to_sync(name, formValue, sync_name);
         return formValue;
     }
     /**
@@ -216,21 +223,77 @@ class FormManager {
      * @param {string} name 
      * @param {T} initial_value 
      */
-    new_remote(name, initial_value){
+    new_remote(name, initial_value, sync_name = ''){
         const formValue = new RemoteFormValue(initial_value);
         this.values[name] = formValue;
+        this.try_adding_column_to_sync(name, formValue, sync_name);
         return formValue;
     }
     
     /**
-     * @param {string} table_name 
-     * @param {Object.<string, FormValue>} primary 
-     * @param {Object.<string, FormValue>} columns
+     * @param {string} name 
+     * @param {FormValue} formValue 
+     * @param {string} sync_name 
      */
-    add_table_sync(table_name, prefix, primary, columns = {}) { 
-        const sync = new TableUpdateSyncManager(this, table_name, primary, columns);
-        this.update_tables.push({prefix, sync});
-        if(prefix) sync.auto_add_columns_with_prefix(prefix);
+    try_adding_column_to_sync(name, formValue, sync_name) {
+        if(sync_name === '') return;
+        if(this.update_tables[sync_name]){
+            this.update_tables[sync_name].add_column(name, formValue);
+        } else {
+            if(!this.pending_sync_columns[sync_name]) {
+                this.pending_sync_columns[sync_name] = [];
+            }
+            this.pending_sync_columns[sync_name].push([name, formValue]);
+        }
+    }
+
+    /**
+     * @param {string | [string, FormValue] | [string, any]} value 
+     * @return {[string, FormValue | any]}
+     */
+    convert_to_valid_sync_field_entry(value) {
+        console.log("V", value);
+        if(typeof value == 'string') {
+            const formValue = this.values[value];
+            if(!formValue) {
+                console.error('Field Value does not exist: ', value);
+            }
+            return [value, formValue];
+        }
+        return value;
+    }
+
+    add_pending_fields_to_sync(/**@type {string} */ sync_name) {
+        const pending = this.pending_sync_columns[sync_name];
+        const sync    = this.update_tables[sync_name];
+        if(!pending) return;
+        for(let [name, value] of pending){
+            sync.add_column(name, value);
+        }
+        delete this.pending_sync_columns[sync_name];
+    }
+
+    check_pending(){
+        const res = Object.entries(this.pending_sync_columns);
+        if(res.length > 0) {
+            console.error("STILL PENDING SYNC COLUMNS REMAIN: ", res);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @param {string} sync_name 
+     * @param {string} table_name 
+     * @param {(string | [string, FormValue] | [string, any])[]} primary 
+     * @param {(string | [string, FormValue] | [string, any])[]} columns
+     */
+    add_table_sync(sync_name, table_name, primary, columns = []) { 
+        const primary_processed = Object.fromEntries(primary.map(x => this.convert_to_valid_sync_field_entry(x)));
+        const columns_processed = Object.fromEntries(columns.map(x => this.convert_to_valid_sync_field_entry(x)));
+        const sync = new TableUpdateSyncManager(this, table_name, primary_processed, columns_processed);
+        this.update_tables[sync_name] = sync;
+        this.add_pending_fields_to_sync(sync_name);
         return sync;
     }
 
@@ -250,7 +313,7 @@ class FormManager {
     }
 
     async update_all(force = false, bypass_validation = false) {
-        const syncs   = this.update_tables.map(x => x.sync);
+        const syncs   = Object.values(this.update_tables);
         const queries = syncs.map(x => x.get_update_query(force)).filter(x => x.length > 0);
         if(queries.length == 0) {
             return 0;

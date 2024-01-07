@@ -134,7 +134,8 @@ watch(custom_validity_message, (new_value) => {
 
 
 const use_datalist = computed(() => props.hints.length > 0);
-const UID = ref(generate_UID());
+// const UID = ref(generate_UID());
+const UID = 'placeholer_UID';
 
 watch(toRef(props, 'hints'), (new_value) => {
     console.log('HINTS: ', new_value);
@@ -154,9 +155,9 @@ watch(toRef(props, 'hints'), (new_value) => {
                  :placeholder="value_ref === null ? '~' : ''"
         />
         <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControlInputNullBtn" @click="set_as_null()" value="~">
-        <datalist v-if="use_datalist" :id="UID">
+        <!-- <datalist v-if="use_datalist" :id="UID">
             <option v-for="v in props.hints" :value="v">{{ v }}</option>
-        </datalist>
+        </datalist> -->
     </section>
 
 

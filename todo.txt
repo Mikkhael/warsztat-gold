@@ -64,7 +64,7 @@
             - multirow select support ??
             + add transaction for update
             + couple formManager with scroller
-            - better binding than by prefix
+            + better binding than by prefix
         + Query Form Scroller
             + working scroller
             + Simple Mode

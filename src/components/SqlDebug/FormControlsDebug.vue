@@ -20,14 +20,14 @@ const query_props = reactive({
 });
 
 const form1_fetch_query = ` SELECT 
-    \`ID pracownika\`       as \`prac_rowid\`,
-    \`imię\`                as \`prac_imię\`,
-    \`nazwisko\`            as \`prac_nazwisko\`,
-    \`miejsce urodzenia\`   as \`prac_miejsce urodzenia\`,
-    max(\`ID płac\`)        as \`place_ID płac\`,
-    \`kwota\`               as \`place_kwota\`,
-    \`podstawa\`            as \`place_podstawa\`,
-    \`miesiąc płacenia\`    as \`place_miesiąc płacenia\`
+    \`ID pracownika\`       ,
+    \`imię\`                ,
+    \`nazwisko\`            ,
+    \`miejsce urodzenia\`   ,
+    max(\`ID płac\`)        as \`płace_ID płac\`,
+    \`kwota\`               ,
+    \`podstawa\`            ,
+    \`miesiąc płacenia\`    
     FROM    \`pracownicy\` NATURAL LEFT JOIN \`płace\`
     WHERE   \`ID pracownika\` = {{rowid}};
 `;
@@ -44,18 +44,35 @@ const form1_fetch_query_ref = computed(() => {
 
 form1.set_fetch_query(form1_fetch_query_ref);
 
-const prac_rowid     = form1.new_remote("prac_rowid", 0);
-const prac_imie      = form1.new_remote("prac_imię", '');
-const prac_nazwisko  = form1.new_remote("prac_nazwisko", '');
-const prac_miejsce   = form1.new_local ("prac_miejsce urodzenia", '');
+const prac_rowid     = form1.new_remote("ID pracownika",     0,  'sync_pracownicy');
+const prac_imie      = form1.new_remote("imię",              '', 'sync_pracownicy');
+const prac_nazwisko  = form1.new_remote("nazwisko",          '');
+const prac_miejsce   = form1.new_local ("miejsce urodzenia", '');
 
-const place_rowid    = form1.new_local ("place_ID płac", 0);
-const place_kwota    = form1.new_remote("place_kwota", '');
-const place_podstawa = form1.new_remote("place_podstawa", '');
-const place_miesiac  = form1.new_remote("place_miesiąc płacenia", '');
+const place_rowid    = form1.new_local ("płace_ID płac",    0);
+const place_kwota    = form1.new_remote("kwota",            '', 'sync_płace');
+const place_podstawa = form1.new_remote("podstawa",         '');
+const place_miesiac  = form1.new_remote("miesiąc płacenia", '');
 
-const pracownicy     = form1.add_table_sync('pracownicy', 'prac_', {'rowid': rowid});
-const place          = form1.add_table_sync('płace', 'place_', {'rowid': place_rowid});
+const pracownicy     = form1.add_table_sync('sync_pracownicy', 'pracownicy',
+    [
+        'ID pracownika'
+    ],
+    [
+        'nazwisko',
+        // `miejsce urodzenia`
+    ]
+);
+const place          = form1.add_table_sync('sync_płace', 'płace',
+    [
+        ['rowid', place_rowid]
+    ],
+    [
+        'podstawa', 
+        ['miesiąc płacenia', place_miesiac]
+    ]
+);
+form1.check_pending();
 
 const podstawa_hints = form1.add_aux_query(`SELECT DISTINCT podstawa FROM \`płace\``);
 const podstawa_hints_flat = computed(() => podstawa_hints.value[0].flat() );
