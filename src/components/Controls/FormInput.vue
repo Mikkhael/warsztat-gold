@@ -96,11 +96,21 @@ const value_ref_proxy__empty_as_null = {
     get() { return value_ref.value === null ? '' : value_ref.value; },
     set(new_value) { value_ref.value = (new_value === '') ? null : new_value; }
 };
+const value_ref_proxy__dateYYYY_MM_DD = {
+    get() { return value_ref.value === null ? '' : value_ref.value.toString().slice(0, 10); },
+    set(new_value) { value_ref.value = (new_value === '' || new_value === null) ? null : (new_value + ' 00:00'); }
+};
 
-const treat_empty_as_null = additional_props.type === 'number' || props.type === 'decimal';
+
+const treat_as_dateYYYY_MM_DD   = additional_props.type === 'date';
+const treat_empty_as_null       = additional_props.type === 'number' ||
+                                  additional_props.type === 'date' ||
+                                  additional_props.type === 'datetime-local' ||
+                                  props.type === 'decimal';
 const value_ref_proxy = computed(
-    treat_empty_as_null ? value_ref_proxy__empty_as_null : 
-                          value_ref_proxy__pass
+    treat_as_dateYYYY_MM_DD ? value_ref_proxy__dateYYYY_MM_DD :
+    treat_empty_as_null     ? value_ref_proxy__empty_as_null : 
+                              value_ref_proxy__pass
 );
 
 function set_as_null() {
@@ -155,16 +165,17 @@ watch(toRef(props, 'hints'), (new_value) => {
 <style>
 
 .FormControlInput{
-    width: 20ch;
+    width: 22ch;
     display: flex;
     flex-direction: row;
-    /* border: 2px solid red; */
+}
+.FormControlInput:has(input[type="date"]) {
+    width: 15ch;
 }
 .FormControlInputNullBtn{
     width: 2ch;
 }
 .FormControlInputMain{
-    /* border: 2px solid blue; */
     width: 0ch;
     flex-grow: 1;
 }

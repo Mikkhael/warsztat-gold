@@ -71,13 +71,13 @@
             - test for large arrays (bigint count)
         - Kontrolki
             - Labels
-            - Input
+            + Input
                 + Integer
                 + Number
                 - float
                 + Decimal
                 + Text
-                - Datetime
+                + Datetime
                 + Input constrains
                     + min/max
                     + length

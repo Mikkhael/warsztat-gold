@@ -26,7 +26,8 @@ const form1_fetch_query = ` SELECT
     \`miejsce urodzenia\`   as \`prac_miejsce urodzenia\`,
     max(\`ID płac\`)        as \`place_ID płac\`,
     \`kwota\`               as \`place_kwota\`,
-    \`podstawa\`            as \`place_podstawa\`
+    \`podstawa\`            as \`place_podstawa\`,
+    \`miesiąc płacenia\`    as \`place_miesiąc płacenia\`
     FROM    \`pracownicy\` NATURAL LEFT JOIN \`płace\`
     WHERE   \`ID pracownika\` = {{rowid}};
 `;
@@ -51,6 +52,7 @@ const prac_miejsce   = form1.new_local ("prac_miejsce urodzenia", '');
 const place_rowid    = form1.new_local ("place_ID płac", 0);
 const place_kwota    = form1.new_remote("place_kwota", '');
 const place_podstawa = form1.new_remote("place_podstawa", '');
+const place_miesiac  = form1.new_remote("place_miesiąc płacenia", '');
 
 const pracownicy     = form1.add_table_sync('pracownicy', 'prac_', {'rowid': rowid});
 const place          = form1.add_table_sync('płace', 'place_', {'rowid': place_rowid});
@@ -140,6 +142,7 @@ defineExpose({
         NAZWISKO: <input type="text" v-model="prac_nazwisko.value.value" :class="{changed: prac_nazwisko.changed.value}">  <br>
     </div>
     <p>{{ kwota_test_bnd_procesed }}</p>
+    <p>{{ place_miesiac }}</p>
     <fieldset class="form_fieldset">
         <legend>FORM</legend>
         <form ref="form_elem" class="form">
@@ -156,6 +159,8 @@ defineExpose({
             <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  nonull   />
             <label class="label">PODSTAWA Query:   </label> <FormEnum  :formValue="place_podstawa" :options="podstawa_hints_flat" />
             <label class="label">PODSTAWA Hint:    </label> <FormInput type="text" :formValue="place_podstawa" :hints="podstawa_hints_flat" />
+            <label class="label">Date:             </label> <FormInput type="date" :formValue="place_miesiac"/>
+            <label class="label">Datetime-local:   </label> <FormInput type="datetime-local" :formValue="place_miesiac"/>
         </form>
     </fieldset>
     
