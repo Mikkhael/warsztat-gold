@@ -45,7 +45,23 @@
     - create main UI layout
         - toolbar
         - footbar
-        - popups
+        - prompts and alerts
+            - content
+            - custom inputs
+            - custom buttons
+        - messages (popups)
+            - history
+                - filtering
+            - popup layout
+            - corner messages
+                - auto close
+                - full view
+                - custom onclick ?
+            - types
+                - info
+                - warn
+                - error
+                - critical error
         - errors messages
             - sql update constraint
             - system error
@@ -87,7 +103,7 @@
                 - optional comma as separator
                 + null
                     + better null handling
-                    - add CTRL+Z hisotry when clearing a field
+                    - add CTRL+Z history when clearing a field
                 + hints
                     - make hints better
             + Enum (select)
