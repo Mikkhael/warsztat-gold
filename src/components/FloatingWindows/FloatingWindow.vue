@@ -130,7 +130,7 @@ defineExpose({
     background-color: #ff0000;
 }
 main {
-    width: 100%;
+    min-width: 100%;
     overflow: scroll;
     resize: both;
 }
