@@ -7,7 +7,15 @@ import { generate_UID } from '../../utils';
 const props = defineProps({
     type: {
         type: String,
-        required: true
+        required: true,
+        validator: function(value) {
+            return value == "integer"        ||
+                   value == "number"         ||
+                   value == "decimal"        ||
+                   value == "date"           ||
+                   value == "datetime-local" ||
+                   value == "text";
+        }
     },
     formValue: {
         /**@type {import('vue').PropType<import('../../FormManager').FormValue<string | number | null>>} */
@@ -132,35 +140,35 @@ watch(custom_validity_message, (new_value) => {
     elem.value.setCustomValidity(new_value);
 });
 
+const uid = generate_UID();
+const INPUT_UID = ref(uid + '_input');
 
 const use_datalist = computed(() => props.hints.length > 0);
-// const UID = ref(generate_UID());
-const UID = 'placeholer_UID';
+const HINTS_UID = ref(uid + '_hint');
+// const UID = 'placeholer_UID';
 
-watch(toRef(props, 'hints'), (new_value) => {
-    console.log('HINTS: ', new_value);
-});
+// watch(toRef(props, 'hints'), (new_value) => {
+//     console.log('HINTS: ', new_value);
+// });
 
 </script>
 
 <template>
-
     <section class="FormControlInput">
         <input  ref="elem"
                  v-model="value_ref_proxy" 
                  class="FormControl FormControlInputMain" 
                  :class="{changed: value_changed, null: value_ref === null}" 
                  v-bind="additional_props"
-                 :list="use_datalist ? UID : ''"
+                 :list="use_datalist ? HINTS_UID : ''"
                  :placeholder="value_ref === null ? '~' : ''"
+                 :id="INPUT_UID"
         />
         <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControlInputNullBtn" @click="set_as_null()" value="~">
-        <!-- <datalist v-if="use_datalist" :id="UID">
+        <datalist v-if="use_datalist" :id="HINTS_UID">
             <option v-for="v in props.hints" :value="v">{{ v }}</option>
-        </datalist> -->
+        </datalist>
     </section>
-
-
 </template>
 
 <style>

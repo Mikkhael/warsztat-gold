@@ -1,9 +1,9 @@
 //@ts-check
 
-let last_UID = 0;
+let last_UID = 0n;
 function generate_UID(){
 	const uid = `UID_${last_UID}`;
-	last_UID = last_UID + 1;
+	last_UID = last_UID + 1n;
 	console.log("NEW UID", uid);
 	return uid;
 }

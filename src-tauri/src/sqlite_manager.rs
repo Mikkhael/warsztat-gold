@@ -346,7 +346,7 @@ pub fn import_csv(import_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
 
 #[tauri::command]
 pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(ExtractedRows, Vec<String>), String> {
-    println!("[INVOKE] perform_query");
+    println!("[INVOKE] perform_query:   {}", query);
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
         let (extracted_rows, stmt) = sqlite_conn.query(&query, (), Some(100)).map_err(|err| err.to_string())?;
@@ -359,7 +359,7 @@ pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLo
 
 #[tauri::command]
 pub fn perform_execute(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<usize, String> {
-    println!("[INVOKE] perform_execute");
+    println!("[INVOKE] perform_execute: {}", query);
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
         sqlite_conn.execute(&query, ()).map_err(|err| err.to_string())
@@ -369,7 +369,7 @@ pub fn perform_execute(query: String, sqlite_manager: tauri::State<SqliteManager
 }
 #[tauri::command]
 pub fn perform_execute_batch(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
-    println!("[INVOKE] perform_execute_batch");
+    println!("[INVOKE] perform_batch:   {}", query);
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
         sqlite_conn.execute_batch(&query).map_err(|err| err.to_string())
