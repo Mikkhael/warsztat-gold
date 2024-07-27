@@ -1,77 +1,73 @@
-import { reactive, markRaw } from 'vue';
+//@ts-check
+import { reactive } from 'vue';
+import WinBox from '../WinBox/winbox';
+
+/**
+ * @typedef {import('vue').Component} Component
+ */
+
+class FWWindow {
+    /**
+     * @param {Component} component 
+     * @param {WinBox} box
+     */
+    constructor(component, box) {
+        this.component = component;
+        this.box = box;
+    }
+
+    get_mount_selector(){
+        return '#' + this.box.id;
+    }
+}
+
 
 class FWManager {
-    constructor(container) {
-        this.container = container;
-        // [title, zindex, dims]
-        this.props = reactive([]);
-        this.refs  = reactive({});
+    constructor() {
+        this.cointainer = /**@type {Element?}*/ (null);
+        this.opened_windows = reactive(/**@type {Map.<string, FWWindow>} */ (new Map()));
+        // this.opened_windows = reactive(/**@type {string[]} */ ([]));
     }
 
-    get_container_h() {
-        return this.container.value.clientHeight;
-    }
-    get_container_w() {
-        return this.container.value.clientWidth;
-    }
-
-
-    // Props modification
-    open_window_unchecked(title, wis = 'div', wprops = {}, dims = {}){
-        dims.w = dims?.w ?? this.get_container_w() / 2.5;
-        dims.h = dims?.h ?? this.get_container_h() / 2.5;
-        dims.x = dims?.x ?? (this.get_container_w() - dims.w) / 2;
-        dims.y = dims?.y ?? (this.get_container_h() - dims.h) / 2;
-        this.unfocus_all_by_1();
-        this.props.push([title, 0, markRaw(wis), wprops, dims]);
-    }
-    close_window(title){
-        const index = this.get_window_index(title);
-        if(index !== -1){
-            this.props.splice(index, 1);
-            delete this.refs[title];
-        } 
-    }
-    unfocus_all_by_1(){
-        for(let i in this.props)
-            this.props[i][1] -= 1;
+    /**
+     * @param {Element} cointainer 
+     */
+    set_cointainer(cointainer){
+        this.cointainer = cointainer;
     }
 
-    // Other
-    
-    open_or_focus_window(title, wis, wprops, dims){
-        const index = this.get_window_index(title);
-        if(index === -1){
-            this.open_window_unchecked(title, wis, wprops, dims);
-        }else{
-            this.focus_window_by_index(index);
+    /**
+     * @param {string} title
+     */
+    focus_window(title) {
+        const window = this.opened_windows.get(title);
+        if(window) {
+            window.box.focus(); // TODO center
+            return window;
         }
+        return null;
+        // return false;
     }
 
-    get_window_index(title) {
-        return this.props.findIndex(w => w[0] === title);
+    /**
+     * @param {string} title 
+     * @param {Component} component 
+     */
+    open_or_focus_window(title, component) {
+        if(!this.cointainer) {
+            return null;
+        }
+        if(this.opened_windows.has(title)) {
+            return this.focus_window(title);
+        }
+        console.log("Setting container: ", this.cointainer);
+        const box = new WinBox(title, {
+            root: this.cointainer
+        });
+        const window = new FWWindow(component, box);
+        this.opened_windows.set(title, window);
+        return window;
     }
-    
-    get_window_ref(title){
-        return this.refs[title];
-    }
-    
-    focus_window_by_index(index){
-        this.unfocus_all_by_1();
-        this.props[index][1] = 0;
-    }
-    
-    focus_window_by_title(title){
-        const index = this.get_window_index(title);
-        if(index !== -1) this.focus_window_by_index();
-    }
-    
-    // open_or_reopen_window(title){
-    //     const index = this.get_window_index(title);
-    //     if(index !== -1)
-    //         this.close_window(title);
-    //     this.open_window_unchecked(title);
-    // }
 }
 
 export default FWManager;

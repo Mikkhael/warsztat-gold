@@ -29,7 +29,7 @@ const main_components_names = readonly([
   "QueryViewerDebug",
   "AlertsDebug"
 ]);
-const current_main_component_index = ref(6);
+const current_main_component_index = ref(5);
 const current_main_component = ref();
 
 

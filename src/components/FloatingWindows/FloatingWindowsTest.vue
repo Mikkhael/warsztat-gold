@@ -1,16 +1,34 @@
 <script setup>
-import FloatingWindowContainer from "./FloatingWindowContainer.vue"
+//@ts-check
 import TestWindow1 from "./TestWindow1.vue";
 import TestWindow2 from "./TestWindow2.vue";
+import FWCollection from "./FWCollection.vue";
 import FWManager from "./FWManager";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
 const container = ref();
 const container2 = ref();
 
+const FWcollection = ref();
+const FWcollection2 = ref();
 
-const fw_manager  = new FWManager(container);
-const fw_manager2 = new FWManager(container2);
+/**@type {import('vue').Ref<FWManager>} */
+let fw_manager = ref(null);
+/**@type {import('vue').Ref<FWManager>} */
+let fw_manager2 = ref(null);
+
+onMounted(() => {
+    console.log("Setting cointainer: ", container.value);
+    console.log("Setting cointainer2: ", container2.value);
+    console.log("Setting collection: ", FWcollection.value);
+    console.log("Setting manager: ", FWcollection.value.manager);
+    fw_manager.value  = FWcollection.value.manager;
+    fw_manager2.value = FWcollection2.value.manager;
+
+    fw_manager.value.set_cointainer(container.value);
+    fw_manager2.value.set_cointainer(container2.value);
+})
+
 
 const new_window_name = ref("test1");
 const zaha = ref([0]);
@@ -25,25 +43,30 @@ defineExpose({
 
     
     <div class="container" ref="container">
-        <FloatingWindowContainer :manager="fw_manager" />
     </div>
     
     <div class="container2" ref="container2">
-        <FloatingWindowContainer :manager="fw_manager2" />
     </div>
+
+    <FWCollection ref="FWcollection" />
+    <FWCollection ref="FWcollection2"/>
     
 
     <p>
         <input type="text" v-model="new_window_name">
-        <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1, {text: new_window_name, index: 123}, {x:37.52})">
+        <!-- <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1, {text: new_window_name, index: 123}, {x:37.52})">
         <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2, {text: 'jsdiogf', aha: zaha})" >
+        <input type="button" value="CLOSE"   @click="fw_manager.close_window         (new_window_name)"> -->
+        <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1)">
+        <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2)" >
         <input type="button" value="CLOSE"   @click="fw_manager.close_window         (new_window_name)">
     </p>
 
     <p>
         {{ zaha }}
-        <input type="button" value="OPEN or FOCUS"  @click="fw_manager2.open_or_focus_window (new_window_name, {h:300.5})">
-        <input type="button" value="CLOSE"          @click="fw_manager2.close_window         (new_window_name)">
+        <input type="button" value="OPEN 1"  @click="fw_manager2.open_or_focus_window (new_window_name, TestWindow1)">
+        <input type="button" value="OPEN 2"  @click="fw_manager2.open_or_focus_window (new_window_name, TestWindow2)" >
+        <input type="button" value="CLOSE"   @click="fw_manager2.close_window         (new_window_name)">
     </p>
 
 

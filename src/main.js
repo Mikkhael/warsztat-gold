@@ -1,6 +1,7 @@
 import ipc from "./ipc";
 import { createApp } from "vue";
 import "./styles.css";
+import "./WinBox.css";
 import App from "./App.vue";
 
 window.IPC = ipc;
