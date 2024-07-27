@@ -1,20 +1,32 @@
+//@ts-check
+
 import ipc from "./ipc"
 
 class SimpleScrollerState {
-	constructor(starting_value, query, emit_callback) {
+	/**
+	 * 
+	 * @param {number | bigint} starting_value 
+	 * @param {string} query_from 
+	 * @param {function(bigint): any} emit_callback 
+	 */
+	constructor(starting_value, query_from, emit_callback) {
 		// this.has_value_updated = false;
 		// this.update_queries(starting_value);
 		this.index = BigInt(starting_value);
 		this.count = BigInt(0);
 		// this.prim  = [];
 		this.emit_callback = emit_callback;
-		this.update_queries(query);
+		this.str_query_count = '';
+		this.update_queries(query_from);
 		this.expire();
 	}
 
-	update_queries(query) {
+	/**
+	 * @param {string} query_from 
+	 */
+	update_queries(query_from) {
 		this.expire();
-		this.str_query_count = `SELECT count(*) FROM ${query};`;
+		this.str_query_count = `SELECT count(*) FROM ${query_from};`;
 	}
 
 	expire() {
@@ -23,6 +35,9 @@ class SimpleScrollerState {
 	}
 
 
+	/**
+	 * @param {number | bigint} index 
+	 */
 	set_index(index, emit = true) {
 		this.index = BigInt(index);
 		if(this.index < 0) 			this.index += this.count + 1n;

@@ -124,6 +124,7 @@ function db_execute_batch(query) {
 /**
  * @typedef IPCQueryResult
  * @type {[any[][], string[]]} 
+ * [value[row_index][column_index], column_name[column_index]]
  */
 
 /**

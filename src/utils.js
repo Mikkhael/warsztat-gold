@@ -37,6 +37,17 @@ function escape_sql_value(value){
 	}
 }
 
+function escape_backtick(/**@type {string | undefined} */ value) {
+    if(typeof value == "string") {
+        if(value.indexOf('`') != -1) {
+            console.error("Invalid column name: ", value);
+        }
+        return "`" + value + "`";
+    }
+    return value;
+}
+
+
 function arr_to_object(/**@type {string[]} */ arr, val_map = function(/**@type {string}*/ key) {return /**@type {*}*/(undefined);} ){
 	return Object.fromEntries(arr.map(key => [key, val_map(key)]));
 }
@@ -97,6 +108,7 @@ function object_map(object, map_function) {
 export {
 	generate_UID,
 	escape_sql_value,
+	escape_backtick,
 	arr_to_object,
 	query_row_to_object,
 	object_map,

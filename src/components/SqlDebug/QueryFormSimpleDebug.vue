@@ -11,6 +11,7 @@ const scroller_ref = ref();
 const query = ref("`pracownicy` WHERE rowid%2==1 ORDER BY `imię` ASC");
 
 const index = ref(0n);
+const step = ref(1n);
 const res = ref({});
 
 const res_str = computed(() => {
@@ -62,6 +63,7 @@ defineExpose({
 		<button @click="ipc.db_open()">OPEN</button>
 		<div>Query: <input type="text" v-model.lazy="query" style="width: 100%"></div>
 		<div>Index: <input type="text" v-model.lazy="index"></div>
+		<div>Step: <input type="text" v-model.lazy="step"></div>
 	</div>
 
 	<div>
@@ -69,7 +71,7 @@ defineExpose({
 	</div>
 
 	<div>
-		<QueryFormScrollerSimple :query="query" v-model:index="index" ref="scroller_ref"/>
+		<QueryFormScrollerSimple :query="query" :step="step" v-model:index="index" ref="scroller_ref"/>
 	</div>
 
 	<textarea cols="30" rows="10" :value="res_str"></textarea>

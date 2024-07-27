@@ -1,12 +1,35 @@
 <script setup>
-
+//@ts-check
 import { watch, ref, reactive, toRef } from "vue";
 import SimpleScrollerState from "../SimpleSrollerState";
 
-const props = defineProps(['query', 'index']);
+// const props = defineProps(['query', 'index', 'step']);
+const props = defineProps({
+	query: {
+		type: String,
+		required: true
+	},
+	index: {
+        /**@type {import('vue').PropType<bigint>} */
+		type: undefined,
+		required: true
+	},
+	step: {
+        /**@type {import('vue').PropType<bigint>} */
+		type: undefined,
+		default: 1n
+	},
+	limit: {
+        /**@type {import('vue').PropType<bigint>} */
+		type: undefined,
+		default: 1n
+	}
+});
+
+
 const emit = defineEmits(['update:index']);
 
-function emit_index(index) {return emit('update:index', index);}
+function emit_index(index) {console.log(index, 'aha'); return emit('update:index', index);}
 
 const state = reactive( new SimpleScrollerState(props.index, props.query, emit_index) );
 const is_error = ref(true);
@@ -50,6 +73,9 @@ async function update_current_index(index = props.index){
 async function click_last() {
 	console.log("click last");
 	await state.goto_bound(true);
+	if(props.limit > 1) {
+		await state.scroll(-(props.limit - 1));
+	}
 	is_error.value = false;
 }
 async function click_frst() {
@@ -59,12 +85,12 @@ async function click_frst() {
 }
 async function click_prev() {
 	console.log("click prev");
-	await state.scroll(-1);
+	await state.scroll(-props.step);
 	is_error.value = false;
 }
 async function click_next() {
 	console.log("click next");
-	await state.scroll(1, true);
+	await state.scroll(props.step);
 	is_error.value = false;
 }
 

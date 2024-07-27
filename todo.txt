@@ -66,7 +66,13 @@
             - sql update constraint
             - system error
         - main area
-    - Table Viewer
+    - Query Viewer
+        + basic view
+        + scroller
+        + advanced sorting
+        - search
+        - update
+        - insert
     - Forms API
         - create example form
         - default form layout component
