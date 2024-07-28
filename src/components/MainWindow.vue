@@ -2,6 +2,7 @@
 import { onMounted, readonly, ref } from "vue";
 import ipc from "../ipc";
 import FWCollection from "./FloatingWindows/FWCollection.vue";
+import FWManager from "./FloatingWindows/FWManager";
 
 
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
@@ -10,39 +11,43 @@ import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 
 
-// const last_state_info = ref();
+const last_state_info = ref();
 
-// const fwWindowsContainer = ref();
-// const fwWindowsCollection = ref();
-// const fwManager = new FWManager(fwWindowsContainer);
+const fwCollection = ref();
+/**@type {import('vue').Ref<FWManager>} */
+const fwManager = ref(null);
 
-
-// function set_last_state_info(msg = "", is_error = false) {
-//     last_state_info.value.innerHTML = msg;
-//     last_state_info.value.setAttribute("error", +is_error);
-// }
-// function set_last_state_err(msg) {set_last_state_info(msg, true);}
+onMounted(() => {
+    fwManager.value = fwCollection.value.manager;
+});
 
 
-// //////////// TOOLBAR HANDLERS
+function set_last_state_info(msg = "", is_error = false) {
+    last_state_info.value.innerHTML = msg;
+    last_state_info.value.setAttribute("error", +is_error);
+}
+function set_last_state_err(msg) {set_last_state_info(msg, true);}
 
-// function tool_open() {
-//     return ipc.db_open().then(path => {
-//         if(path === null) return;
-//         set_last_state_info(`Otworzono bazę "${path}"`);
-//     }).catch(set_last_state_err);
-// }
-// function tool_sql() {
-//     fwManager.open_or_focus_window("SQL Debug", SQLDebugConsole);
-// }
 
-// function tool_zlecenia(){
-//     fwManager.open_or_focus_window("Zlecenia Otwarte", TestWindow1, {text: "sjifosfg", index: Math.round(Math.random()*10)});
-// }
+//////////// TOOLBAR HANDLERS
 
-// function tool_klienci(){
-//     fwManager.open_or_focus_window("Klienci", TestWindow2, {text: Math.random(), aha: [123]}, {y: 100});
-// }
+function tool_open() {
+    return ipc.db_open().then(path => {
+        if(path === null) return;
+        set_last_state_info(`Otworzono bazę "${path}"`);
+    }).catch(set_last_state_err);
+}
+function tool_sql() {
+    fwManager.value.open_or_focus_window("SQL Debug", SQLDebugConsole);
+}
+
+function tool_zlecenia(){
+    fwManager.value.open_or_focus_window("Zlecenia Otwarte", TestWindow1, {text: "sjifosfg", index: Math.round(Math.random()*10)});
+}
+
+function tool_klienci(){
+    fwManager.value.open_or_focus_window("Klienci", TestWindow2, {text: ""+Math.random(), aha: [123]});
+}
 
 </script>
 
@@ -50,7 +55,7 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
   
     <section class="container">
 
-        <!-- <section class="toolbar">
+        <section class="toolbar">
             <div class="toolgroup">
                 <div class="tool" @click="tool_open();">Otwórz</div>
                 <div class="tool" @click="tool_sql();" >SQL</div>
@@ -63,9 +68,7 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
             <div class="toolgroup"></div>
         </section>
         <main class="main">
-            <div ref="fwWindowsContainer" class="mainWindowsContainer">
-            </div>
-            <FWCollection ref="fwWindowsCollection" />
+            <FWCollection ref="fwCollection" />
             <div class="bigtext" v-show="!ipc.state.db_is_open" >
                 Żadna baza danych nie jest otwarta.
             </div>
@@ -77,7 +80,7 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
             <span class="last_state_info" ref="last_state_info" error="0">
 
             </span>
-        </footer> -->
+        </footer>
 
     </section>
 

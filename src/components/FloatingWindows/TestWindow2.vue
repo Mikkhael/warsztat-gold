@@ -1,9 +1,18 @@
 <script setup>
 
-const props = defineProps(['text', 'aha']);
+const props = defineProps({
+    text: {
+        type: String,
+        default: ""
+    },
+    aha: {
+        type: Array,
+        default: [0]
+    }
+});
 
 function update_aha(event) {
-    props.aha[0] = event.target.value;
+    props.aha[0] = +event.target.value;
 }
 
 </script>

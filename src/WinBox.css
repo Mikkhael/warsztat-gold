@@ -1,5 +1,5 @@
 .winbox {
-    position: fixed;
+    position: absolute;
     left: 0;
     top: 0;
     background: #0050ff;

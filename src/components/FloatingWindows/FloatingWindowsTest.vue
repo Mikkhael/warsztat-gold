@@ -25,7 +25,8 @@ onMounted(() => {
     fw_manager.value  = FWcollection.value.manager;
     fw_manager2.value = FWcollection2.value.manager;
 
-    fw_manager.value.set_cointainer(container.value);
+    // fw_manager.value.set_cointainer(container.value);
+    fw_manager.value.set_cointainer(document.body);
     fw_manager2.value.set_cointainer(container2.value);
 })
 
@@ -57,8 +58,8 @@ defineExpose({
         <!-- <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1, {text: new_window_name, index: 123}, {x:37.52})">
         <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2, {text: 'jsdiogf', aha: zaha})" >
         <input type="button" value="CLOSE"   @click="fw_manager.close_window         (new_window_name)"> -->
-        <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1)">
-        <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2)" >
+        <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1, {index: zaha[0]})">
+        <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2, {text: 'elo'+Math.random(), aha: zaha})" >
         <input type="button" value="CLOSE"   @click="fw_manager.close_window         (new_window_name)">
     </p>
 
@@ -88,8 +89,12 @@ defineExpose({
     z-index: 0;
 }
 
+.container > * {
+    pointer-events: auto;
+}
+
 .container2 {
-    pointer-events: none;
+    pointer-events: all;
     position: absolute;
     overflow: hidden;
     width: 400px;
@@ -98,6 +103,10 @@ defineExpose({
     bottom: 20px;
     border: 1px solid blue;
     z-index: 0;
+}
+
+.container2 > * {
+    pointer-events: all;
 }
 
 </style>

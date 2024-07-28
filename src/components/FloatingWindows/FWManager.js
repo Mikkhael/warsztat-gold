@@ -1,5 +1,5 @@
 //@ts-check
-import { reactive } from 'vue';
+import { reactive, markRaw } from 'vue';
 import WinBox from '../WinBox/winbox';
 
 /**
@@ -10,21 +10,23 @@ class FWWindow {
     /**
      * @param {Component} component 
      * @param {WinBox} box
+     * @param {Object} props
      */
-    constructor(component, box) {
-        this.component = component;
-        this.box = box;
+    constructor(component, box, props) {
+        this.component = markRaw(component);
+        this.box = markRaw(box);
+        this.props = props;
     }
 
     get_mount_selector(){
-        return '#' + this.box.id;
+        return '#' + this.box.id + " .wb-body";
     }
 }
 
 
 class FWManager {
     constructor() {
-        this.cointainer = /**@type {Element?}*/ (null);
+        this.cointainer = /**@type {Element=}*/ (undefined);
         this.opened_windows = reactive(/**@type {Map.<string, FWWindow>} */ (new Map()));
         // this.opened_windows = reactive(/**@type {string[]} */ ([]));
     }
@@ -42,7 +44,10 @@ class FWManager {
     focus_window(title) {
         const window = this.opened_windows.get(title);
         if(window) {
-            window.box.focus(); // TODO center
+            // window.box.window_clicked = true;
+            window.box.restore();
+            // window.box.focus(true);
+            // window.box.move("center", "center");
             return window;
         }
         return null;
@@ -52,21 +57,36 @@ class FWManager {
     /**
      * @param {string} title 
      * @param {Component} component 
+     * @param {Object} props
      */
-    open_or_focus_window(title, component) {
-        if(!this.cointainer) {
-            return null;
-        }
+    open_or_focus_window(title, component, props = {}) {
         if(this.opened_windows.has(title)) {
             return this.focus_window(title);
         }
-        console.log("Setting container: ", this.cointainer);
         const box = new WinBox(title, {
-            root: this.cointainer
+            root: this.cointainer,
+            overflow: true,
+            x: "center",
+            y: "center",
+            onclose: (force) => {
+                this.opened_windows.delete(title);
+            }
         });
-        const window = new FWWindow(component, box);
+        box.removeControl("wb-full");
+        const window = new FWWindow(component, box, props);
         this.opened_windows.set(title, window);
         return window;
+    }
+
+    /**
+     * @param {string} title 
+     * @param {boolean} force 
+     */
+    close_window(title, force = false){
+        const window = this.opened_windows.get(title);
+        if(window) {
+            window.box.close(force);
+        }
     }
 }
 

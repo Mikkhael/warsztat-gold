@@ -127,15 +127,9 @@
 - Query Builder ?
 - query whitespace remover
 
-- floating windows
-    + core windows
-    + styling
-    + slots
-    + global API
-    + buttons
-        + exit
-        - minimize?
-    - opened windows list
-    - minimize bar
-    - improve dragging
+
+- WinBox
+    + core (open, focus, close)
+    + mounting components
+    - fix viewport update when resize
 

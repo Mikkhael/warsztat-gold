@@ -1,10 +1,8 @@
 <script setup>
-import { onMounted } from 'vue';
+import { Teleport } from 'vue';
 import FWManager from './FWManager';
 
 const manager = new FWManager();
-
-const props = defineProps({});
 
 
 defineExpose({
@@ -19,11 +17,12 @@ defineExpose({
     <div class="FW_collection">
 
         <div class="FW_window" v-for="([title, window]) in manager.opened_windows">
-
-            <!-- <component :is="wis" v-bind="props.wprops"></component> -->
+<!-- 
             title: {{ title.toString() }} <br>
-            component: {{ window.box.id.toString() }}
-
+            component: {{ window.box.id.toString() }} -->
+            <Teleport :to="window.get_mount_selector()">
+                <component :is="window.component" v-bind="window.props"></component>
+            </Teleport>
         </div>
 
     </div>
@@ -33,7 +32,7 @@ defineExpose({
 
 <style scoped>
     .FW_collection {
-        border: 1px solid green;
-        /* display: none; */
+        /* border: 1px solid green; */
+        display: none;
     }
 </style>
