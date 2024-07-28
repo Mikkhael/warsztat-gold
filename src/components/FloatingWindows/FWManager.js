@@ -68,6 +68,7 @@ class FWManager {
             overflow: true,
             x: "center",
             y: "center",
+            minheight: 35 + 10,
             onclose: (force) => {
                 this.opened_windows.delete(title);
             }

@@ -691,13 +691,15 @@ function addWindowListener(self, dir){
 
         if(resize_w){
 
-            self.width = Math.max(Math.min(self.width, self.maxwidth, root_w - self.x - self.right), self.minwidth);
+            // self.width = Math.max(Math.min(self.width, self.maxwidth, root_w - self.x - self.right), self.minwidth);
+            self.width = Math.max(Math.min(self.width), self.minwidth);
             resize_w = self.width !== old_w;
         }
 
         if(resize_h){
 
-            self.height = Math.max(Math.min(self.height, self.maxheight, root_h - self.y - self.bottom), self.minheight);
+            // self.height = Math.max(Math.min(self.height, self.maxheight, root_h - self.y - self.bottom), self.minheight);
+            self.height = Math.max(Math.min(self.height), self.minheight);
             resize_h = self.height !== old_h;
         }
 
@@ -1271,11 +1273,14 @@ WinBox.prototype.resize = function(w, h, _skip_update){
     }
     else if(!_skip_update){
 
-        this.width = w ? w = parse(w, this.maxwidth /*- this.left - this.right*/) : 0;
-        this.height = h ? h = parse(h, this.maxheight /*- this.top - this.bottom*/) : 0;
+        this.width = w;
+        this.height = h;
 
-        w = Math.max(w, this.minwidth);
-        h = Math.max(h, this.minheight);
+        // this.width = w ? w = parse(w, this.maxwidth /*- this.left - this.right*/) : 0;
+        // this.height = h ? h = parse(h, this.maxheight /*- this.top - this.bottom*/) : 0;
+
+        // w = Math.max(w, this.minwidth);
+        // h = Math.max(h, this.minheight);
     }
 
     setStyle(this.dom, "width", w + "px");

@@ -128,8 +128,8 @@
 - query whitespace remover
 
 
-- WinBox
++ WinBox
     + core (open, focus, close)
     + mounting components
-    - fix viewport update when resize
+    + fix viewport update when resize
 
