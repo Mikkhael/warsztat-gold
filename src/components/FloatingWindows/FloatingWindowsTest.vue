@@ -12,22 +12,22 @@ const container2 = ref();
 const FWcollection = ref();
 const FWcollection2 = ref();
 
-/**@type {import('vue').Ref<FWManager>} */
-let fw_manager = ref(null);
-/**@type {import('vue').Ref<FWManager>} */
-let fw_manager2 = ref(null);
+/**@type {FWManager?} */
+let fw_manager = null;
+/**@type {FWManager?} */
+let fw_manager2 = null;
 
 onMounted(() => {
     console.log("Setting cointainer: ", container.value);
     console.log("Setting cointainer2: ", container2.value);
     console.log("Setting collection: ", FWcollection.value);
     console.log("Setting manager: ", FWcollection.value.manager);
-    fw_manager.value  = FWcollection.value.manager;
-    fw_manager2.value = FWcollection2.value.manager;
+    fw_manager  = FWcollection.value.get_manager();
+    fw_manager2  = FWcollection2.value.get_manager();
 
     // fw_manager.value.set_cointainer(container.value);
-    fw_manager.value.set_cointainer(document.body);
-    fw_manager2.value.set_cointainer(container2.value);
+    fw_manager.set_cointainer(document.body);
+    fw_manager2.set_cointainer(container2.value);
 })
 
 

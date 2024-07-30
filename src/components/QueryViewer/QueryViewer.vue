@@ -29,14 +29,19 @@ const props = defineProps({
     },
     limit: {
         type: Number,
-        required: true
+        default: 20
     },
     step:  {
         type: Number,
-        default: 1
-    }
+        default: 5
+    },
+    selectable: {
+        type: Boolean,
+        default: false
+    },
 });
 
+const emit = defineEmits(['select']);
 
 
 const offset = ref(0n);
@@ -64,6 +69,9 @@ const query_columns = computed(() => {
         return [];
     }
     return query_result.value[1];
+});
+const query_columns_hide = computed(() => {
+    return query_columns.value.map(x => x.startsWith('__'));
 });
 watch( query_props_names.map(x => toRef(props, x)), () => {
     orderings_list.clear();
@@ -130,6 +138,14 @@ async function refresh() {
     return result;
 }
 
+function handle_select(row_i) {
+    console.log("SELECTING...", row_i, props.selectable);
+    if(!props.selectable) return;
+    const cols = query_columns.value;
+    const row  = query_rows.value[row_i];
+    emit("select", cols, row);
+}
+
 function handle_err(err){
     console.error(err);
 }
@@ -144,25 +160,29 @@ watch(query_sql_full, refresh_routine);
 
     <QueryFormScrollerSimple v-model:index="offset" :query="query_sql_for_scroller" :step="props.step" :limit="props.limit"/>
     <div class="container">
-        <table class="result">
+        <table class="result" :class="{selectable: props.selectable}">
             <tr>
                 <th></th>
-                <th v-for="(col_name, col_i) in query_columns" class="search_input_cell">
+                <th v-for="(col_name, col_i) in query_columns" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">
                     <input type="text" class="search_input" v-model="searches[col_i]" required>
                 </th>
             </tr>
             <tr>
                 <th>#</th>
-                <th v-for="(col_name, col_i) in query_columns">
+                <th v-for="(col_name, col_i) in query_columns" :class="{hidden: query_columns_hide[col_i]}">
                     <span class="col_name">
                         {{ col_name }}
                     </span>
                     <QueryOrderingBtn class="ordering_btns" v-model:value="orderings[col_i]" @update:value="event => set_orderings_list(col_i, event)"/>
                 </th>
             </tr>
-            <tr v-for="(row, row_i) in query_rows">
-                <td class="cell_index" >{{ offset + BigInt(row_i) }}:</td>
-                <td v-for="cell in row" :class="{cell_number: typeof(cell) == 'number', cell_text: typeof(cell) == 'string'}">
+            <tr v-for="(row, row_i) in query_rows" class="data_tr">
+                <td class="cell_index" @click="handle_select(row_i)" >{{ offset + BigInt(row_i) }}:</td>
+                <td v-for="(cell, cell_i) in row" :class="{
+                        cell_number: typeof(cell) == 'number',
+                        cell_text: typeof(cell) == 'string',
+                        hidden: query_columns_hide[cell_i]
+                }">
                     {{cell === null ? '~' : cell}}
                 </td>
             </tr>
@@ -192,6 +212,18 @@ watch(query_sql_full, refresh_routine);
         padding: 2px 5px;
         text-wrap: nowrap;
         border: 1px solid black;
+    }
+
+    td.hidden, th.hidden {
+        display: none;
+    }
+
+    .selectable .data_tr td:first-child {
+        cursor: pointer;
+    }
+
+    .data_tr:hover {
+        background-color: #d7fffc;
     }
 
     .cell_index {

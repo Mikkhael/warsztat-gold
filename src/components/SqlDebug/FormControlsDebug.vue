@@ -5,13 +5,23 @@ import { escape_sql_value, query_row_to_object } from '../../utils';
 import ipc from '../../ipc';
 
 import {FormInput, FormEnum} from '../Controls';
+import FWManager from '../FloatingWindows/FWManager';
+import FWCollection from '../FloatingWindows/FWCollection.vue';
 
 import {FormManager} from '../../FormManager'; 
 import QueryFormScroller from '../QueryFormScroller.vue';
-import {ref, reactive, watch, computed} from 'vue';
+import QueryViewer from '../QueryViewer/QueryViewer.vue';
+import {ref, reactive, watch, computed, onMounted} from 'vue';
 
 
 const form_scroller = /**@type { import('vue').Ref<QueryFormScroller> } */ (ref());
+const fwCollection = ref();
+/**@type {FWManager} */
+let fwManager;
+
+onMounted(() => {
+    fwManager = fwCollection.value.get_manager();
+});
 
 const query_props = reactive({
 	value_name: "`rowid`",
@@ -94,6 +104,32 @@ watch(rowid.as_ref(), async (newValue) => {
     update_res(row);
 });
 
+// FIND
+
+function handle_find(columns, row) {
+    fwManager.close_window("Test - Znajdź");
+    rowid.set(row[0]);
+}
+
+function on_click_find() {
+    fwManager.open_or_focus_window("Test - Znajdź", QueryViewer, {
+        query_select: `
+            p1.rowid as __rowid,
+            p1.\`ID pracownika\`    ,
+            \`imię\`                ,
+            \`nazwisko\`            ,
+            \`miejsce urodzenia\`   ,
+            \`ID płac\` as \`płace_ID płac\`,
+            \`kwota\`               ,
+            \`podstawa\`            ,
+            \`miesiąc płacenia\`    `,
+        query_from: "`pracownicy` as p1 LEFT JOIN (SELECT *, max(`ID płac`) FROM `płace` GROUP BY `ID pracownika` ) as p2 ON p1.rowid=p2.`ID pracownika`",
+        selectable: true,
+    }, {
+        select: handle_find
+    });
+}
+
 // Unnesesary
 const res = ref({});
 const res_str = computed(() => {
@@ -157,6 +193,7 @@ defineExpose({
         ROWID:    <input type="number" v-model="prac_rowid.value.value" :class="{changed: prac_rowid.changed.value}"> <br>
         IMIĘ:     <input type="text" v-model="prac_imie.value.value" :class="{changed: prac_imie.changed.value}">  <br>
         NAZWISKO: <input type="text" v-model="prac_nazwisko.value.value" :class="{changed: prac_nazwisko.changed.value}">  <br>
+        <input type="button" value="ZNAJDŹ" @click="on_click_find">  <br>
     </div>
     <p>{{ kwota_test_bnd_procesed }}</p>
     <p>{{ place_miesiac }}</p>
@@ -188,6 +225,9 @@ defineExpose({
 
 
     <QueryFormScroller :query_props="query_props" v-model:value="rowid.value.value" ref="form_scroller" />
+
+    
+    <FWCollection ref="fwCollection" />
 
 </template>
 

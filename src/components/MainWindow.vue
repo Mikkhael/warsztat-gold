@@ -14,11 +14,11 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 const last_state_info = ref();
 
 const fwCollection = ref();
-/**@type {import('vue').Ref<FWManager>} */
-const fwManager = ref(null);
+/**@type {FWManager?} */
+let fwManager = null;
 
 onMounted(() => {
-    fwManager.value = fwCollection.value.manager;
+    fwManager = fwCollection.value.get_manager();
 });
 
 
@@ -38,15 +38,15 @@ function tool_open() {
     }).catch(set_last_state_err);
 }
 function tool_sql() {
-    fwManager.value.open_or_focus_window("SQL Debug", SQLDebugConsole);
+    fwManager.open_or_focus_window("SQL Debug", SQLDebugConsole);
 }
 
 function tool_zlecenia(){
-    fwManager.value.open_or_focus_window("Zlecenia Otwarte", TestWindow1, {text: "sjifosfg", index: Math.round(Math.random()*10)});
+    fwManager.open_or_focus_window("Zlecenia Otwarte", TestWindow1, {text: "sjifosfg", index: Math.round(Math.random()*10)});
 }
 
 function tool_klienci(){
-    fwManager.value.open_or_focus_window("Klienci", TestWindow2, {text: ""+Math.random(), aha: [123]});
+    fwManager.open_or_focus_window("Klienci", TestWindow2, {text: ""+Math.random(), aha: [123]});
 }
 
 </script>

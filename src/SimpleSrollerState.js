@@ -61,7 +61,8 @@ class SimpleScrollerState {
 
 	async scroll(off, emit = true, force = false) {
 		await this.update_count(force, false);
-		this.set_index(this.index + BigInt(off), emit);
+		const new_index = this.index + BigInt(off);
+		this.set_index(new_index < 0 ? 0 : new_index, emit);
 	}
 	async goto(new_index, emit = true, force = false) {
 		await this.update_count(force, false);

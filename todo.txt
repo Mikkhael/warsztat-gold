@@ -121,8 +121,7 @@
             - Bool (checkbox)
             - Radiobox
             - Frame
-            - Field-Search
-            - Full-Text-Search
+            + Field-Search
 
     - create toolbars
 

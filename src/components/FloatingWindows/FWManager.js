@@ -10,12 +10,14 @@ class FWWindow {
     /**
      * @param {Component} component 
      * @param {WinBox} box
-     * @param {Object} props
+     * @param {Object.<string, any>} props
+     * @param {Object.<string, Function>} listeners
      */
-    constructor(component, box, props) {
+    constructor(component, box, props, listeners) {
         this.component = markRaw(component);
         this.box = markRaw(box);
         this.props = props;
+        this.listeners = listeners;
     }
 
     get_mount_selector(){
@@ -57,9 +59,10 @@ class FWManager {
     /**
      * @param {string} title 
      * @param {Component} component 
-     * @param {Object} props
+     * @param {Object.<string, any>} props
+     * @param {Object.<string, Function>} listeners
      */
-    open_or_focus_window(title, component, props = {}) {
+    open_or_focus_window(title, component, props = {}, listeners = {}) {
         if(this.opened_windows.has(title)) {
             return this.focus_window(title);
         }
@@ -74,9 +77,19 @@ class FWManager {
             }
         });
         box.removeControl("wb-full");
-        const window = new FWWindow(component, box, props);
+        const window = new FWWindow(component, box, props, listeners);
         this.opened_windows.set(title, window);
         return window;
+    }
+
+    /**
+     * @param {string} title 
+     * @param {Component} component 
+     * @param {Object.<string, any>} props
+     * @param {Object.<string, Function>} listeners
+     */
+    open_or_reopen_window(title, component, props = {}, listeners = {}) {
+        // TODO
     }
 
     /**

@@ -4,9 +4,12 @@ import FWManager from './FWManager';
 
 const manager = new FWManager();
 
+function get_manager() {
+    return manager;
+}
 
 defineExpose({
-    manager
+    get_manager
 });
 
 
@@ -21,7 +24,7 @@ defineExpose({
             title: {{ title.toString() }} <br>
             component: {{ window.box.id.toString() }} -->
             <Teleport :to="window.get_mount_selector()">
-                <component :is="window.component" v-bind="window.props"></component>
+                <component :is="window.component" v-bind="window.props" v-on="window.listeners"></component>
             </Teleport>
         </div>
 
