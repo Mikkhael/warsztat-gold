@@ -72,15 +72,12 @@ async function update_current_index(index = props.index){
 
 async function click_last() {
 	console.log("click last");
-	await state.goto_bound(true);
-	if(props.limit > 1) {
-		await state.scroll(-(props.limit - 1));
-	}
+	await state.goto(-props.limit);
 	is_error.value = false;
 }
 async function click_frst() {
 	console.log("click first");
-	await state.goto_bound(false);
+	await state.goto(1);
 	is_error.value = false;
 }
 async function click_prev() {

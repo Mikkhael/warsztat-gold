@@ -47,6 +47,12 @@ function escape_backtick(/**@type {string | undefined} */ value) {
     return value;
 }
 
+function escape_like(/**@type {string} */ value) {
+	const res1 = value.replace(/([%_\\])/g, '\\$1');
+	const res2 = res1.replace(/\"/g, '""');
+	return res2;
+}
+
 
 function arr_to_object(/**@type {string[]} */ arr, val_map = function(/**@type {string}*/ key) {return /**@type {*}*/(undefined);} ){
 	return Object.fromEntries(arr.map(key => [key, val_map(key)]));
@@ -109,6 +115,7 @@ export {
 	generate_UID,
 	escape_sql_value,
 	escape_backtick,
+	escape_like,
 	arr_to_object,
 	query_row_to_object,
 	object_map,

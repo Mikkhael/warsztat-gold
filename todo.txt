@@ -43,6 +43,7 @@
 
 - Core
     - create main UI layout
+        - icons
         - toolbar
         - footbar
         - prompts and alerts
@@ -70,7 +71,8 @@
         + basic view
         + scroller
         + advanced sorting
-        - search
+        + search
+            - highlight
         - update
         - insert
     - Forms API
@@ -132,4 +134,5 @@
     + core (open, focus, close)
     + mounting components
     + fix viewport update when resize
+    - parent windows
 
