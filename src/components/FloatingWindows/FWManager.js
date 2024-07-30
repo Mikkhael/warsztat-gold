@@ -62,10 +62,7 @@ class FWManager {
      * @param {Object.<string, any>} props
      * @param {Object.<string, Function>} listeners
      */
-    open_or_focus_window(title, component, props = {}, listeners = {}) {
-        if(this.opened_windows.has(title)) {
-            return this.focus_window(title);
-        }
+    #open_window_unchecked(title, component, props = {}, listeners = {}) {
         const box = new WinBox(title, {
             root: this.cointainer,
             overflow: true,
@@ -88,8 +85,22 @@ class FWManager {
      * @param {Object.<string, any>} props
      * @param {Object.<string, Function>} listeners
      */
+    open_or_focus_window(title, component, props = {}, listeners = {}) {
+        if(this.opened_windows.has(title)) {
+            return this.focus_window(title);
+        }
+        return this.#open_window_unchecked(title, component, props, listeners);
+    }
+
+    /**
+     * @param {string} title 
+     * @param {Component} component 
+     * @param {Object.<string, any>} props
+     * @param {Object.<string, Function>} listeners
+     */
     open_or_reopen_window(title, component, props = {}, listeners = {}) {
-        // TODO
+        this.close_window(title);
+        return this.#open_window_unchecked(title, component, props, listeners);
     }
 
     /**

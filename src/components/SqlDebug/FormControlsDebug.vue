@@ -112,17 +112,28 @@ function handle_find(columns, row) {
 }
 
 function on_click_find() {
-    fwManager.open_or_focus_window("Test - Znajdź", QueryViewer, {
-        query_select: `
-            p1.rowid as __rowid,
-            p1.\`ID pracownika\`    ,
-            \`imię\`                ,
-            \`nazwisko\`            ,
-            \`miejsce urodzenia\`   ,
-            \`ID płac\` as \`płace_ID płac\`,
-            \`kwota\`               ,
-            \`podstawa\`            ,
-            \`miesiąc płacenia\`    `,
+    fwManager.open_or_reopen_window("Test - Znajdź", QueryViewer, {
+        // query_select: `
+        //     p1.rowid as __rowid,
+        //     p1.\`ID pracownika\` as ID_prac   ,
+        //     \`imię\`                ,
+        //     \`nazwisko\`            ,
+        //     \`miejsce urodzenia\`   ,
+        //     \`ID płac\` as \`płace_ID płac\`,
+        //     \`kwota\`               ,
+        //     \`podstawa\`            ,
+        //     \`miesiąc płacenia\`    `,
+        query_select_fields: [
+            ["p1.rowid"],
+            ["p1.`ID pracownika`", "ID pracownika"],
+            ["`imię`", "Imię"],
+            ["`nazwisko`", "Nazwisko"],
+            ["`miejsce urodzenia`", "Miejce Urodzenia"],
+            ["`ID płac`", "ID płac"],
+            ["`kwota`", "Kwota"],
+            ["`podstawa`", "Podstawa"],
+            ["`miesiąc płacenia`", "Miesiąc Płacenia"],
+        ],
         query_from: "`pracownicy` as p1 LEFT JOIN (SELECT *, max(`ID płac`) FROM `płace` GROUP BY `ID pracownika` ) as p2 ON p1.rowid=p2.`ID pracownika`",
         selectable: true,
     }, {

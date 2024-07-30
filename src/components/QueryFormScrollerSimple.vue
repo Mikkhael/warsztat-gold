@@ -38,7 +38,6 @@ watch(toRef(props, 'query'), async (newValue, oldValue) => {
 	console.log("Updating query", oldValue, newValue);
 	// console.log(queries);
 	state.update_queries(newValue);
-	is_error.value = true;
 	try{
 		await state.update_count();
 		is_error.value = false;
@@ -134,8 +133,8 @@ defineExpose({
 .form_scroller.is_empty .count,
 .form_scroller.is_empty .curr,
 .form_scroller.is_count_oot .count {
-	background-color: #ffcfcf;
-	color: red;
+	background-color: #ebe1b4;
+	color: #ffc012;
 }
 
 </style>

@@ -3,20 +3,21 @@
 
 import { reactive, computed, ref, watch, toRef } from "vue";
 import ipc from "../../ipc";
-import { escape_backtick, escape_like } from "../../utils";
+import { escape_backtick, escape_like, escape_sql_value } from "../../utils";
 // import { invoke } from "@tauri-apps/api/tauri";
 import QueryFormScrollerSimple from "../QueryFormScrollerSimple.vue";
 import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 
 
 const query_props_names = [
-    "query_select",
+    "query_select_fields",
     "query_from",
     "query_where",
 ];
 const props = defineProps({
-    query_select: {
-        type: String,
+    query_select_fields: {
+        /**@type {import('vue').PropType<string | [string, string | undefined][]} */
+        type: undefined,
         required: true
     },
     query_from: {
@@ -64,15 +65,33 @@ function set_orderings_list(column_index, ordering_value) {
 }
 
 const query_result   = ref( /**@type {import('../../ipc').IPCQueryResult?} */ (null));
-const query_columns = computed(() => {
-    if(query_result.value === null) {
-        return [];
+const query_columns_display      = ref(/**@type {string[]} */ ([]));
+const query_columns_true         = ref(/**@type {string[]} */ ([]));
+const query_columns_true_escaped = ref(/**@type {string[]} */ ([]));
+const query_columns_hide         = ref(/**@type {string[]} */ ([]));
+
+watch([query_result, toRef(props, "query_select_fields")], ([new_result, new_fileds]) => {
+    if(typeof new_fileds === "string") {
+        if(new_result === null) {
+            query_columns_display.value      = [];
+            query_columns_true.value         = [];
+            query_columns_true_escaped.value = [];
+            query_columns_hide.value         = [];
+        } else {
+            console.log("new_result", new_result);
+            query_columns_display.value      = new_result[1];
+            query_columns_true.value         = new_result[1];
+            query_columns_true_escaped.value = new_result[1].map(escape_backtick);
+            query_columns_hide.value         = [];
+        }
+    } else {
+        query_columns_display.value      = new_fileds.map( x => x[1] );
+        query_columns_true.value         = new_fileds.map( x => x[0] );
+        query_columns_true_escaped.value = new_fileds.map( x => x[0] );
+        query_columns_hide.value         = new_fileds.map( x => x[1] === undefined );
     }
-    return query_result.value[1];
 });
-const query_columns_hide = computed(() => {
-    return query_columns.value.map(x => x.startsWith('__'));
-});
+
 watch( query_props_names.map(x => toRef(props, x)), () => {
     orderings_list.clear();
     orderings.splice(0, orderings.length);
@@ -86,7 +105,7 @@ const query_rows = computed(() => {
 });
 
 const searches_sql = ref('');
-watch( [searches, query_columns], ([new_searches, new_query_columns]) => {
+watch( [searches, query_columns_true_escaped], ([new_searches, new_query_columns_true]) => {
     let res = [];
     console.log('new_searches', new_searches);
     for(let index in new_searches) {
@@ -94,17 +113,17 @@ watch( [searches, query_columns], ([new_searches, new_query_columns]) => {
         const value = new_searches[index];
         console.log('value', value);
         if(value == "") continue;
-        res.push(`${ escape_backtick(new_query_columns[index]) } LIKE "%${escape_like(value)}%" ESCAPE '\\'`);
+        res.push(`${ new_query_columns_true[index] } LIKE "%${escape_like(value)}%" ESCAPE '\\'`);
     }
     searches_sql.value = res.join(' AND ');
 });
 
 const orderings_sql = ref('');
-watch( [orderings_list, query_columns], ([new_orderings_list, new_query_columns]) => {
+watch( [orderings_list, query_columns_true_escaped], ([new_orderings_list, new_query_columns_true]) => {
     const res = Array.from(new_orderings_list.entries())
                 // .reverse()
                 .map(([col_i, ordering]) => 
-                    escape_backtick(new_query_columns[col_i]) +
+                    new_query_columns_true[col_i] +
                     (ordering > 0 ? " ASC" : " DESC"))
                 .join(', ');
     // console.log('debug_list', res);
@@ -120,10 +139,22 @@ const query_sql_for_scroller = computed(() => {
     const where_sql   = apply_if_defined(' WHERE',    where_sql_true.value);
     return props.query_from + where_sql;
 });
+const query_sql_select = computed(() => {
+    const fields = props.query_select_fields;
+    if(typeof fields === "string") {
+        return fields;
+    }
+    const res = fields.map( ([true_name, display_name]) => 
+        display_name !== undefined ?  
+            true_name + ' as ' + escape_sql_value(display_name) :
+            true_name
+    );
+    return res.join(', ');
+});
 const query_sql_full = computed(() => {
     const apply_if_defined = (prefix, value) => value == "" ? "" : `${prefix} ${value}`;
 
-    const select_sql  = apply_if_defined('SELECT',    props.query_select);
+    const select_sql  = apply_if_defined('SELECT',    query_sql_select.value);
     const from_sql    = apply_if_defined(' FROM',     props.query_from);
     const where_sql   = apply_if_defined(' WHERE',    where_sql_true.value);
     const orderby_sql = apply_if_defined(' ORDER BY', orderings_sql.value);
@@ -141,7 +172,7 @@ async function refresh() {
 function handle_select(row_i) {
     console.log("SELECTING...", row_i, props.selectable);
     if(!props.selectable) return;
-    const cols = query_columns.value;
+    const cols = query_columns_true.value;
     const row  = query_rows.value[row_i];
     emit("select", cols, row);
 }
@@ -163,13 +194,13 @@ watch(query_sql_full, refresh_routine);
         <table class="result" :class="{selectable: props.selectable}">
             <tr>
                 <th></th>
-                <th v-for="(col_name, col_i) in query_columns" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">
+                <th v-for="(col_name, col_i) in query_columns_display" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">
                     <input type="text" class="search_input" v-model="searches[col_i]" required>
                 </th>
             </tr>
             <tr>
                 <th>#</th>
-                <th v-for="(col_name, col_i) in query_columns" :class="{hidden: query_columns_hide[col_i]}">
+                <th v-for="(col_name, col_i) in query_columns_display" :class="{hidden: query_columns_hide[col_i]}">
                     <span class="col_name">
                         {{ col_name }}
                     </span>

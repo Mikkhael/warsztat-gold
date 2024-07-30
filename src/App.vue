@@ -9,6 +9,8 @@ import QueryViewerDebug from "./components/SqlDebug/QueryViewerDebug.vue";
 import MainWindow from "./components/MainWindow.vue";
 import { onMounted, readonly, ref } from "vue";
 
+import WinBox from "./components/WinBox/winbox";
+
 const main_components = [
   MainWindow,
   SqlDebugConsole,
@@ -35,8 +37,9 @@ const current_main_component = ref();
 
 onMounted(() => {
     window.APP_DEBUG = {
-    current_main_component,
-    IDX: current_main_component_index
+      current_main_component,
+      IDX: current_main_component_index,
+      WinBox,
   };
 });
 
