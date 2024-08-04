@@ -11,6 +11,9 @@ import { onMounted, readonly, ref } from "vue";
 
 import WinBox from "./components/WinBox/winbox";
 
+import MsgManager from "./components/Msg/MsgManager";
+import CornerMsgContainer from "./components/Msg/CornerMsgContainer.vue";
+
 const main_components = [
   MainWindow,
   SqlDebugConsole,
@@ -34,6 +37,7 @@ const main_components_names = readonly([
 const current_main_component_index = ref(5);
 const current_main_component = ref();
 
+const msg_manager = new MsgManager(true);
 
 onMounted(() => {
     window.APP_DEBUG = {
@@ -46,13 +50,14 @@ onMounted(() => {
 </script>
 
 <template>
-
-<select v-model="current_main_component_index">
-  <option v-for="(name, index) in main_components_names" :value="index">{{ name }}</option>
-</select>
-
+  
+  <select v-model="current_main_component_index">
+    <option v-for="(name, index) in main_components_names" :value="index">{{ name }}</option>
+  </select>
+  
   <component :is="main_components[current_main_component_index]"  ref="current_main_component"/>
-
+  
+  
+  <CornerMsgContainer :manager="msg_manager" class="msg_container"/>
 
 </template>
-

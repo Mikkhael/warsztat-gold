@@ -1,25 +1,32 @@
 <script setup>
 //@ts-check
 
+import {toRef, watch} from "vue"
+
 const props = defineProps({
-    title: String,
-    content: String,
-    type: String
+    type: String,     // info, succ, warn, error, critical
+    content: String
 });
+
+const emit = defineEmits(['click', 'close'])
+
+function perform_click() {
+    emit('click');
+}
+
+function perform_close() {
+    emit('close');
+}
 
 </script>
 
 <template>
 
     <div class="CornerMsg" :class="props.type">
-        <header>
-            <div class="icon">O</div>
-            <div class="title">{{ props.title }}</div>
-            <div class="close_btn">X</div>
-        </header>
-        <main>
+        <span class="content" @click="perform_click">
             {{ props.content }}
-        </main>
+        </span>
+        <img class="close_btn" src="src/assets/icons/close.svg" @click="perform_close">
     </div>
 
 </template>
@@ -29,56 +36,35 @@ const props = defineProps({
 
 .CornerMsg {
     border-radius: 10px;
-    padding: 4px;
-    display: flex;
-    flex-direction: column;
-    border: 2px solid black;
-}
-
-.CornerMsg.info     { background-color: #ccfcf9; border-color: #00ffee; }
-.CornerMsg.warn     { background-color: #f9fccc; border-color: #eeff00; }
-.CornerMsg.error    { background-color: #fccdcc; border-color: #ff0400; }
-.CornerMsg.critical { background-color: #f7a9a9; border-color: #ff0000; }
-
-.CornerMsg > * {
-    width: 100%;
-}
-.CornerMsg > header {
-    font-size: 1em;
-    font-weight: bold;
-    border-bottom: black 3px solid;
-    display: flex;
-    justify-content: space-between;
-}
-
-.CornerMsg > header > .icon {
-    margin-right: 4px;
-}
-.CornerMsg > header > .close_btn {
-    /* border-left: 2px solid black; */
-    color: gray;
-}
-.CornerMsg > header > .title {
-    text-overflow: ellipsis;
-    text-wrap: nowrap;
-    overflow: hidden;
-}
-
-.CornerMsg > main {
-    font-size: 0.8em;
-    max-height: 3.3em;
-    line-height: 1.1em;
-    /* overflow: hidden; */
-    text-overflow: ellipsis;
+    padding: 10px;
+    display: inline-flex;
+    max-width: fit-content;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    color: white;
+    justify-content: flex-end;
     text-align: justify;
-    position: relative;
+    transition: 1s;
 }
-.CornerMsg > main::after {
-    font-weight: bold;
-    content: "...";
-    bottom: 0px;
-    right: 0px;
 
+.CornerMsg .content {
+    cursor: pointer;
+    align-self: center;
 }
+
+.CornerMsg.info     { background-color: #008cff; }
+.CornerMsg.succ     { background-color: #2fa500; }
+.CornerMsg.warn     { background-color: #ffae00; }
+.CornerMsg.error    { background-color: #ff0400; }
+.CornerMsg.critical { background-color: #a80303; }
+
+.CornerMsg .close_btn {
+    user-select: none;
+    cursor: pointer;
+    height: 1em;
+    margin-left: 4px;
+    align-self: self-start;
+}
+
 
 </style>

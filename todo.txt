@@ -53,16 +53,16 @@
         - messages (popups)
             - history
                 - filtering
-            - popup layout
-            - corner messages
-                - auto close
+            + popup layout
+            + corner messages
+                + auto close
                 - full view
-                - custom onclick ?
-            - types
-                - info
-                - warn
-                - error
-                - critical error
+                + custom onclick
+            + types
+                + info
+                + warn
+                + error
+                + critical error
         - errors messages
             - sql update constraint
             - system error
