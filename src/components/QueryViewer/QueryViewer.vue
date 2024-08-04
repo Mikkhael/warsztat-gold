@@ -34,7 +34,7 @@ const props = defineProps({
     },
     step:  {
         type: Number,
-        default: 5
+        default: 1
     },
     selectable: {
         type: Boolean,

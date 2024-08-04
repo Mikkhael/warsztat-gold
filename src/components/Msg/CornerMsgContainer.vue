@@ -3,20 +3,22 @@
 
 import { watch, toRef, onMounted } from 'vue';
 import CornerMsg from './CornerMsg.vue';
-import MsgManager from './MsgManager';
+import {MsgManager} from './MsgManager';
 
 const props = defineProps({
     manager: {
         type: MsgManager,
         required: true
     }
-})
-
-const msgs_ref = props.manager.msgs;
+});
 
 function handle_close(id) {
     props.manager.close(id);
 }
+
+watch(props, (new_props) => {
+ console.log('props', new_props);
+})
 
 </script>
 
@@ -24,7 +26,7 @@ function handle_close(id) {
 
     <div class="msg_container">
         <TransitionGroup name="msg_transition">
-            <CornerMsg v-for="msg in msgs_ref" :key="msg.id"
+            <CornerMsg v-for="msg in props.manager.msgs" :key="msg.id"
                 :type="msg.type"
                 :content="msg.content"
                 @click="msg.onclick(msg)"

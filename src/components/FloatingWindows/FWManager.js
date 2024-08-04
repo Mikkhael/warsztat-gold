@@ -32,12 +32,16 @@ class FWManager {
         this.opened_windows = reactive(/**@type {Map.<string, FWWindow>} */ (new Map()));
         // this.opened_windows = reactive(/**@type {string[]} */ ([]));
     }
+    /**@return {FWManager} */
+    static NewReactive() {
+        return reactive(new FWManager());
+    }
 
     /**
      * @param {Element} cointainer 
      */
     set_cointainer(cointainer){
-        this.cointainer = cointainer;
+        this.cointainer = markRaw(cointainer);
     }
 
     /**
@@ -45,11 +49,12 @@ class FWManager {
      */
     focus_window(title) {
         const window = this.opened_windows.get(title);
+        // console.log("Window to focus: ", window);
         if(window) {
             // window.box.window_clicked = true;
             window.box.restore();
-            // window.box.focus(true);
-            // window.box.move("center", "center");
+            window.box.focus(true);
+            window.box.move("center", "center");
             return window;
         }
         return null;
@@ -62,7 +67,7 @@ class FWManager {
      * @param {Object.<string, any>} props
      * @param {Object.<string, Function>} listeners
      */
-    #open_window_unchecked(title, component, props = {}, listeners = {}) {
+    open_window_unchecked(title, component, props = {}, listeners = {}) {
         const box = new WinBox(title, {
             root: this.cointainer,
             overflow: true,
@@ -89,7 +94,7 @@ class FWManager {
         if(this.opened_windows.has(title)) {
             return this.focus_window(title);
         }
-        return this.#open_window_unchecked(title, component, props, listeners);
+        return this.open_window_unchecked(title, component, props, listeners);
     }
 
     /**
@@ -100,7 +105,7 @@ class FWManager {
      */
     open_or_reopen_window(title, component, props = {}, listeners = {}) {
         this.close_window(title);
-        return this.#open_window_unchecked(title, component, props, listeners);
+        return this.open_window_unchecked(title, component, props, listeners);
     }
 
     /**
@@ -115,4 +120,10 @@ class FWManager {
     }
 }
 
-export default FWManager;
+const main_fw_manager = FWManager.NewReactive();
+function useMainFWManager() {
+    return main_fw_manager;
+}
+
+export {FWManager, useMainFWManager};
+export default useMainFWManager;

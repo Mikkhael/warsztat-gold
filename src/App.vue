@@ -11,7 +11,7 @@ import { onMounted, readonly, ref } from "vue";
 
 import WinBox from "./components/WinBox/winbox";
 
-import MsgManager from "./components/Msg/MsgManager";
+import useMainMsgManager from "./components/Msg/MsgManager";
 import CornerMsgContainer from "./components/Msg/CornerMsgContainer.vue";
 
 const main_components = [
@@ -37,7 +37,7 @@ const main_components_names = readonly([
 const current_main_component_index = ref(5);
 const current_main_component = ref();
 
-const msg_manager = new MsgManager(true);
+const msg_manager = useMainMsgManager();
 
 onMounted(() => {
     window.APP_DEBUG = {

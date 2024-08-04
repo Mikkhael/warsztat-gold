@@ -2,7 +2,7 @@
 import { onMounted, readonly, ref } from "vue";
 import ipc from "../ipc";
 import FWCollection from "./FloatingWindows/FWCollection.vue";
-import FWManager from "./FloatingWindows/FWManager";
+import useMainFWManager from "./FloatingWindows/FWManager";
 
 
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
@@ -13,13 +13,7 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 
 const last_state_info = ref();
 
-const fwCollection = ref();
-/**@type {FWManager?} */
-let fwManager = null;
-
-onMounted(() => {
-    fwManager = fwCollection.value.get_manager();
-});
+const fwManager = useMainFWManager();
 
 
 function set_last_state_info(msg = "", is_error = false) {
@@ -68,7 +62,7 @@ function tool_klienci(){
             <div class="toolgroup"></div>
         </section>
         <main class="main">
-            <FWCollection ref="fwCollection" />
+            <FWCollection :manager="fwManager" />
             <div class="bigtext" v-show="!ipc.state.db_is_open" >
                 Żadna baza danych nie jest otwarta.
             </div>

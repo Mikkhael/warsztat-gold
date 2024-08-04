@@ -1,17 +1,13 @@
 <script setup>
 import { Teleport } from 'vue';
-import FWManager from './FWManager';
+import {FWManager} from './FWManager';
 
-const manager = new FWManager();
-
-function get_manager() {
-    return manager;
-}
-
-defineExpose({
-    get_manager
+const props = defineProps({
+    manager: {
+        type: FWManager,
+        required: true
+    }
 });
-
 
 </script>
 
@@ -19,7 +15,7 @@ defineExpose({
 
     <div class="FW_collection">
 
-        <div class="FW_window" v-for="([title, window]) in manager.opened_windows">
+        <div class="FW_window" v-for="([title, window]) in props.manager.opened_windows">
 <!-- 
             title: {{ title.toString() }} <br>
             component: {{ window.box.id.toString() }} -->

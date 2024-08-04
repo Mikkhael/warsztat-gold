@@ -5,7 +5,7 @@ import { escape_sql_value, query_row_to_object } from '../../utils';
 import ipc from '../../ipc';
 
 import {FormInput, FormEnum} from '../Controls';
-import FWManager from '../FloatingWindows/FWManager';
+import {FWManager} from '../FloatingWindows/FWManager';
 import FWCollection from '../FloatingWindows/FWCollection.vue';
 
 import {FormManager} from '../../FormManager'; 
@@ -15,13 +15,8 @@ import {ref, reactive, watch, computed, onMounted} from 'vue';
 
 
 const form_scroller = /**@type { import('vue').Ref<QueryFormScroller> } */ (ref());
-const fwCollection = ref();
-/**@type {FWManager} */
-let fwManager;
+const fwManager = FWManager.NewReactive();
 
-onMounted(() => {
-    fwManager = fwCollection.value.get_manager();
-});
 
 const query_props = reactive({
 	value_name: "`rowid`",
@@ -238,7 +233,7 @@ defineExpose({
     <QueryFormScroller :query_props="query_props" v-model:value="rowid.value.value" ref="form_scroller" />
 
     
-    <FWCollection ref="fwCollection" />
+    <FWCollection :manager="fwManager" />
 
 </template>
 

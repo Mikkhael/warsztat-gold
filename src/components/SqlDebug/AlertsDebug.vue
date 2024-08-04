@@ -1,7 +1,8 @@
 <script setup>
 
+import { reactive } from 'vue';
 import CornerMsgContainer from '../Msg/CornerMsgContainer.vue';
-import MsgManager from '../Msg/MsgManager';
+import {MsgManager, useMainMsgManager} from '../Msg/MsgManager';
 
 const lorem2   = `lorem ipsum`;
 const lorem10  = 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Non, tenetur?';
@@ -9,8 +10,8 @@ const lorem20  = 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Null
 const lorem100 = 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Unde molestias, ducimus quo iusto rerum quia aliquid amet assumenda enim minus esse ex eligendi voluptas dolorum expedita vel dicta! Dolorum dolores, harum molestiae, inventore hic tenetur quibusdam non reprehenderit, itaque tempore modi veniam doloremque voluptas a tempora magni. Ipsam consequuntur soluta exercitationem itaque repellat libero accusamus totam distinctio ipsum iste in pariatur, expedita, ducimus officia! Suscipit alias cum vitae corporis aut. Esse dolores saepe inventore amet optio praesentium libero voluptas laboriosam, vel aspernatur alias molestias harum repellendus recusandae placeat id earum ducimus ipsum, natus itaque modi obcaecati? Omnis ea tenetur aperiam.';
 
 
-const manager = new MsgManager();
-const main_manager = MsgManager.getMain();
+const manager = reactive(new MsgManager());
+const main_manager = useMainMsgManager();
 
 function get_random(count) {
     return Math.floor(Math.random() * count);

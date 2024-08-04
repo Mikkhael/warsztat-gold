@@ -3,27 +3,20 @@
 import TestWindow1 from "./TestWindow1.vue";
 import TestWindow2 from "./TestWindow2.vue";
 import FWCollection from "./FWCollection.vue";
-import FWManager from "./FWManager";
-import { onMounted, ref } from "vue";
+import {FWManager} from "./FWManager";
+import { onMounted, reactive, ref } from "vue";
 
 const container = ref();
 const container2 = ref();
 
-const FWcollection = ref();
-const FWcollection2 = ref();
-
-/**@type {FWManager?} */
-let fw_manager = null;
-/**@type {FWManager?} */
-let fw_manager2 = null;
+const fw_manager  = FWManager.NewReactive();
+const fw_manager2 = FWManager.NewReactive();
 
 onMounted(() => {
     console.log("Setting cointainer: ", container.value);
     console.log("Setting cointainer2: ", container2.value);
-    console.log("Setting collection: ", FWcollection.value);
-    console.log("Setting manager: ", FWcollection.value.manager);
-    fw_manager  = FWcollection.value.get_manager();
-    fw_manager2  = FWcollection2.value.get_manager();
+    // console.log("Setting collection: ", FWcollection.value);
+    console.log("Setting manager: ", fw_manager);
 
     // fw_manager.value.set_cointainer(container.value);
     fw_manager.set_cointainer(document.body);
@@ -49,8 +42,8 @@ defineExpose({
     <div class="container2" ref="container2">
     </div>
 
-    <FWCollection ref="FWcollection" />
-    <FWCollection ref="FWcollection2"/>
+    <FWCollection :manager="fw_manager" />
+    <FWCollection :manager="fw_manager2" />
     
 
     <p>

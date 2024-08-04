@@ -6,7 +6,6 @@
  * https://github.com/nextapps-de/winbox
  */
 
-// TODO: rename control amd state classes (min, max, modal, focus, ...) #62
 
 import template from "./template.js";
 import { addListener, removeListener, setStyle, setText, getByClass, addClass, removeClass, hasClass, preventEvent } from "./helper.js";
@@ -388,7 +387,6 @@ function setup(){
         init();
         update_min_stack();
 
-        // TODO adjust window sizes #151
 
         // for(let i = 0; i < stack_win.length; i++){
         //
@@ -608,7 +606,6 @@ function addWindowListener(self, dir){
 
                 event = touch;
 
-                // TODO: fix when touch events bubbles up to the document body
                 //addListener(self.dom, "touchmove", preventEvent);
                 addListener(window, "touchmove", handler_mousemove, eventOptionsPassive);
                 addListener(window, "touchend", handler_mouseup, eventOptionsPassive);
@@ -786,7 +783,6 @@ function addWindowListener(self, dir){
 
 function init(){
 
-    // TODO: the window height of iOS isn't determined correctly when the bottom toolbar disappears
 
     // the bounding rect provides more precise dimensions (float values)
     // //const rect = doc.getBoundingClientRect();
