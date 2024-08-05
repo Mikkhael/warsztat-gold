@@ -3,6 +3,7 @@ import { onMounted, readonly, ref } from "vue";
 import ipc from "../ipc";
 import FWCollection from "./FloatingWindows/FWCollection.vue";
 import useMainFWManager from "./FloatingWindows/FWManager";
+import useMainMsgManager from "./Msg/MsgManager";
 
 
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
@@ -11,17 +12,13 @@ import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 
 
-const last_state_info = ref();
+const fwManager  = useMainFWManager();
+const msgManager = useMainMsgManager();
 
-const fwManager = useMainFWManager();
-
-
-function set_last_state_info(msg = "", is_error = false) {
-    last_state_info.value.innerHTML = msg;
-    last_state_info.value.setAttribute("error", +is_error);
+function handle_error(msg) {
+    console.error(msgManager);
+    msgManager.post("error", msg);
 }
-function set_last_state_err(msg) {set_last_state_info(msg, true);}
-
 
 //////////// TOOLBAR HANDLERS
 
@@ -29,7 +26,7 @@ function tool_open() {
     return ipc.db_open().then(path => {
         if(path === null) return;
         set_last_state_info(`Otworzono bazę "${path}"`);
-    }).catch(set_last_state_err);
+    }).catch(handle_error);
 }
 function tool_sql() {
     fwManager.open_or_focus_window("SQL Debug", SQLDebugConsole);
@@ -70,9 +67,6 @@ function tool_klienci(){
         <footer class="footer">
             <span class="appname">
                 Warsztat Auto-Gold
-            </span>
-            <span class="last_state_info" ref="last_state_info" error="0">
-
             </span>
         </footer>
 

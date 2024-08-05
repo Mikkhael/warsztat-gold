@@ -8,6 +8,12 @@ import { escape_backtick, escape_like, escape_sql_value } from "../../utils";
 import QueryFormScrollerSimple from "../QueryFormScrollerSimple.vue";
 import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 
+import useMainMsgManager from "../Msg/MsgManager";
+const msgManager = useMainMsgManager();
+function handle_err(err){
+	console.error(err);
+	msgManager.post("error", err);
+}
 
 const query_props_names = [
     "query_select_fields",
@@ -177,10 +183,6 @@ function handle_select(row_i) {
     emit("select", cols, row);
 }
 
-function handle_err(err){
-    console.error(err);
-}
-
 async function refresh_routine() {return refresh().catch(handle_err);}
 
 watch(query_sql_full, refresh_routine);
@@ -207,8 +209,8 @@ watch(query_sql_full, refresh_routine);
                     <QueryOrderingBtn class="ordering_btns" v-model:value="orderings[col_i]" @update:value="event => set_orderings_list(col_i, event)"/>
                 </th>
             </tr>
-            <tr v-for="(row, row_i) in query_rows" class="data_tr">
-                <td class="cell_index" @click="handle_select(row_i)" >{{ offset + BigInt(row_i) }}:</td>
+            <tr v-for="(row, row_i) in query_rows" class="data_tr" @click="handle_select(row_i)">
+                <td class="cell_index" >{{ offset + BigInt(row_i) }}:</td>
                 <td v-for="(cell, cell_i) in row" :class="{
                         cell_number: typeof(cell) == 'number',
                         cell_text: typeof(cell) == 'string',
@@ -249,7 +251,7 @@ watch(query_sql_full, refresh_routine);
         display: none;
     }
 
-    .selectable .data_tr td:first-child {
+    .selectable .data_tr {
         cursor: pointer;
     }
 

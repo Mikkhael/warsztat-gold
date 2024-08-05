@@ -5,6 +5,14 @@ import ScrollerState from "../ScrollerState";
 const props = defineProps(['query_props', 'value']);
 const emit = defineEmits(['update:value']);
 
+import useMainMsgManager from "./Msg/MsgManager";
+const msgManager = useMainMsgManager();
+function handle_err(err){
+	console.error(err);
+	msgManager.post("error", err);
+	is_error.value = true;
+}
+
 function emit_value(value) {return emit('update:value', value);}
 
 const state = reactive( new ScrollerState(props.value, emit_value) );
@@ -63,11 +71,6 @@ async function click_next() {
 	console.log("click next");
 	await state.scroll(false, true);
 	is_error.value = false;
-}
-
-function handle_err(err){
-	console.error(err);
-	is_error.value = true;
 }
 
 function refresh(dir_next = true) {

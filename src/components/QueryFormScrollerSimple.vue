@@ -3,6 +3,15 @@
 import { watch, ref, reactive, toRef } from "vue";
 import SimpleScrollerState from "../SimpleSrollerState";
 
+
+import useMainMsgManager from "./Msg/MsgManager";
+const msgManager = useMainMsgManager();
+function handle_err(err){
+	console.error(err);
+	msgManager.post("error", err);
+	is_error.value = true;
+}
+
 // const props = defineProps(['query', 'index', 'step']);
 const props = defineProps({
 	query: {
@@ -88,11 +97,6 @@ async function click_next() {
 	console.log("click next");
 	await state.scroll(props.step);
 	is_error.value = false;
-}
-
-function handle_err(err){
-	console.error(err);
-	is_error.value = true;
 }
 
 defineExpose({

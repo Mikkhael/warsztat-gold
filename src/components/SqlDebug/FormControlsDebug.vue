@@ -14,6 +14,10 @@ import QueryViewer from '../QueryViewer/QueryViewer.vue';
 import {ref, reactive, watch, computed, onMounted} from 'vue';
 
 
+import useMainMsgManager from "../Msg/MsgManager";
+const msgManager = useMainMsgManager();
+
+
 const form_scroller = /**@type { import('vue').Ref<QueryFormScroller> } */ (ref());
 const fwManager = FWManager.NewReactive();
 
@@ -168,6 +172,7 @@ function handle_err(/**@type {Error} */ err) {
         return;
     }
     console.error(err);
+    msgManager.post("error", err);
 }
 
 defineExpose({

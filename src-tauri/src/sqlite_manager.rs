@@ -353,7 +353,7 @@ pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLo
         let col_names : Vec<String> = stmt.column_names().into_iter().map(|s| s.to_owned()).collect();
         Ok((extracted_rows, col_names))
     }else{
-        Err("No database opened".into())
+        Err("Nie otworzono bazy danych".into())
     }
 }
 
@@ -364,7 +364,7 @@ pub fn perform_execute(query: String, sqlite_manager: tauri::State<SqliteManager
     if let Some(sqlite_conn) = &db.sqlite_conn {
         sqlite_conn.execute(&query, ()).map_err(|err| err.to_string())
     }else{
-        Err("No database opened".into())
+        Err("Nie otworzono bazy danych".into())
     }
 }
 #[tauri::command]
@@ -374,6 +374,6 @@ pub fn perform_execute_batch(query: String, sqlite_manager: tauri::State<SqliteM
     if let Some(sqlite_conn) = &db.sqlite_conn {
         sqlite_conn.execute_batch(&query).map_err(|err| err.to_string())
     }else{
-        Err("No database opened".into())
+        Err("Nie otworzono bazy danych".into())
     }
 }
