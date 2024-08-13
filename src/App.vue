@@ -1,4 +1,6 @@
 <script setup>
+import { listen } from "@tauri-apps/api/event";
+
 import SqlDebugConsole from "./components/SqlDebug/SqlDebugConsole.vue";
 import QueryFormDebug from "./components/SqlDebug/QueryFormDebug.vue";
 import QueryFormSimpleDebug from "./components/SqlDebug/QueryFormSimpleDebug.vue";
@@ -38,6 +40,11 @@ const current_main_component_index = ref(5);
 const current_main_component = ref();
 
 const msg_manager = useMainMsgManager();
+
+listen("change_to_test_window", (e) => {
+  console.log('Changing to test window ', e);
+  current_main_component_index.value = +e.payload;
+})
 
 onMounted(() => {
     window.APP_DEBUG = {

@@ -20,6 +20,7 @@ rusqlite = { version = "0.29.0", features = ["bundled", "backup", "load_extensio
 rand = "0.8.5"
 oem_cp = "2.0.0"
 encoding_rs = "0.8.6"
+tauri-plugin-context-menu = "0.8.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.51", features = ["Win32_Storage_FileSystem"] }

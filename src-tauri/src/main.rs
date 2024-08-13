@@ -3,6 +3,8 @@
 
 use std::path::{Path, PathBuf};
 
+use tauri::Manager;
+use tauri_plugin_context_menu;
 
 mod utils;
 mod sqlite_manager;
@@ -21,8 +23,14 @@ fn main() {
 
     tauri::Builder::default()
     .manage(sqlite_manager::SqliteManagerLock::default())
+    .plugin(tauri_plugin_context_menu::init())
     .setup(|app| {
         sqlite_manager::SqliteManager::init(app);
+        let app_handle = app.app_handle();
+        app.listen_global("open_devtools", move |_event| {
+            println!("Opening Devtools");
+            app_handle.get_window("main").unwrap().open_devtools();
+        });
         Ok(())
     })
     .invoke_handler(tauri::generate_handler![

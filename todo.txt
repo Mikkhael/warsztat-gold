@@ -42,6 +42,7 @@
 - Dynamic Forms API
 
 - Core
+    + context menu
     - create main UI layout
         - icons
         - toolbar
@@ -95,6 +96,7 @@
             + Simple Mode
             - test for large arrays (bigint count)
         - Kontrolki
+            - custom context menu
             - Labels
             + Input
                 + Integer
