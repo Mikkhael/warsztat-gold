@@ -25,6 +25,11 @@
         "exists": true,
         "createDir": true,
         "scope": ["$RESOURCE/*"]
+      },
+      "clipboard": {
+        "all": false,
+        "readText": true,
+        "writeText": true
       }
     },
     "bundle": {

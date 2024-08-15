@@ -1,34 +1,57 @@
 //@ts-check
 
 import ipc from "./ipc";
-import { createApp } from "vue";
+import useMainMsgManager from "./components/Msg/MsgManager";
+import { createApp, registerRuntimeCompiler } from "vue";
 import "./styles.css";
 import "./WinBox.css";
 import App from "./App.vue";
-import { showMenu } from "tauri-plugin-context-menu";
-import { emit } from "@tauri-apps/api/event";
+import contextmenu from "./contextmenu";
+import { listen } from "@tauri-apps/api/event";
+import { writeText as clipboard_write, readText as clipboard_read} from "@tauri-apps/api/clipboard";
 
+const msgManager = useMainMsgManager();
 
-window.addEventListener("contextmenu", (e) => {
-    const target = /**@type {HTMLElement & HTMLInputElement} */ (e.target);
-    console.log('Opening context menu', target.tagName, target, e);
-    if( target.tagName === 'INPUT' && target.type === 'text'   ||
-        target.tagName === 'INPUT' && target.type === 'number' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-    ) {
-        // TODO custom menu for text inptus
-        return;
+listen("request_db_open", async (e) => {
+    const path = await ipc.db_open();
+    if(path) {
+        msgManager.post('info', 'Otworzono bazę danych', 3000);
     }
-    e.preventDefault();
-    showMenu({items: [
-        {label: "Otwórz Bazę Danych",  event: (e) => {ipc.db_open()}},
-        {label: "Zamknij Bazę Danych", event: (e) => {ipc.db_close()}},
-        {is_separator: true},
-        {label: 'Okno Testowe', event: "change_to_test_window", payload: '2'},
-        {label: 'Dev Tools', event: (e) => {emit('open_devtools');}},
-    ]});
 });
+listen("request_db_close", async (e) => {
+    await ipc.db_close();
+    msgManager.post('info', 'Zamknięto bazę danych', 3000);
+});
+function get_selection_string(accept_empty) {
+    const selection_string = window.getSelection()?.toString();
+    if(selection_string === undefined || (accept_empty && selection_string === ""))
+        return null;
+    return selection_string;
+}
+listen("request_clipboard_copy", async (e) => {
+    const to_copy = get_selection_string(false);
+    if(to_copy === null)
+        return;
+    await clipboard_write(to_copy);
+    console.log("Coppied text: ", to_copy);
+});
+listen("request_clipboard_cut", async (e) => {
+    const to_copy = get_selection_string(false);
+    if(to_copy === null)
+        return;
+    await clipboard_write(to_copy);
+    document.execCommand('insertText', false, '');
+    console.log('Cut string:', to_copy);
+});
+listen("request_clipboard_paste", async (e) => {
+    const to_write = await clipboard_read();
+    if(to_write === null)
+        return; 
+    document.execCommand('insertText', false, to_write);
+    console.log("Pasted text: ", to_write);
+});
+
+contextmenu.start();
 
 const app = createApp(App);
 

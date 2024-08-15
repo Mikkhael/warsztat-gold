@@ -96,7 +96,7 @@
             + Simple Mode
             - test for large arrays (bigint count)
         - Kontrolki
-            - custom context menu
+            + custom context menu
             - Labels
             + Input
                 + Integer

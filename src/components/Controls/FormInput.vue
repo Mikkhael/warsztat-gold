@@ -163,6 +163,8 @@ const HINTS_UID = ref(uid + '_hint');
                  :list="use_datalist ? HINTS_UID : ''"
                  :placeholder="value_ref === null ? '~' : ''"
                  :id="INPUT_UID"
+                 :nullable="!props.nonull"
+                 @set_as_null="set_as_null()"
         />
         <input type="button" v-if="!props.nonull && !props.readonly && !treat_empty_as_null" class="FormControlInputNullBtn" @click="set_as_null()" value="~">
         <datalist v-if="use_datalist" :id="HINTS_UID">
