@@ -74,12 +74,17 @@ dataset.perform_query_and_retcon_all()  .then(...).catch(...);
  * @typedef {import('vue').Ref<T> | DatasetValue<T>} DatasetValueReflike 
  * */
 
+/** 
+ * @template {SQLValue} [T=SQLValue]
+ * @typedef {{local: T, remote: T | undefined, changed: boolean}} ReactiveDatasetValue
+ * */
+
 /**@template {SQLValue} T */
 class DatasetValue {
     constructor(/**@type {import('vue').Ref<T> | T}*/ initial_value, /**@type {string} */ name) {
         this.name    = name;
         this.local   = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
-        this.changed = computed(() => false);
+        // this.changed = computed(() => false);
     }
 
     set    (/**@type {T}*/ new_value) { this.local.value = unref(new_value); }
@@ -91,13 +96,21 @@ class DatasetValue {
     is_changed()   { return false; }
     is_to_update() { return true; }
 
-    as_ref_changed() { return this.changed; }
+    // as_ref_changed() { return this.changed; }
     as_ref_local()   { return this.local; }
     as_ref_remote()  { return this.local; }
     as_local()       { return this.local.value; }
     as_remote()      { return this.local.value; }
 
     as_sql() {return escape_sql_value(this.as_local());}
+
+    /** @returns {ReactiveDatasetValue<T>}*/
+    to_reactive_values() {return reactive({
+            local:  this.local,
+            remote: undefined,
+            changed: false
+        });
+    }
 }
 
 /**
@@ -131,6 +144,13 @@ class DatasetValueSynced extends DatasetValue {
     as_ref_remote()  { return this.remote; }
     as_local()       { return this.local.value; }
     as_remote()      { return this.remote.value; }
+    
+    to_reactive_values() {return reactive({
+            local:   this.local,
+            remote:  this.remote,
+            changed: this.changed
+        });
+    }
 };
 
 ////////////////// Utils ////////////////////////////////////////
@@ -292,6 +312,7 @@ class DatasetSourceQuery{
             if(!binder) return;
             callback(binder, value);
         });
+        return result;
     }
 
     async perform_query_and_replace() {return await this.#perform_after_query(DVUtil.replace);}

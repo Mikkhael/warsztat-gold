@@ -1,14 +1,15 @@
 <script setup>
 //@ts-check
 
-import { escape_sql_value, query_row_to_object } from '../../utils';
+import { escape_sql_value, query_result_to_object, query_row_to_object } from '../../utils';
 import ipc from '../../ipc';
 
+import { Dataset } from '../Dataset/Dataset';
 import {FormInput, FormEnum} from '../Controls';
-import {FWManager} from '../FloatingWindows/FWManager';
+
+import {useMainFWManager} from '../FloatingWindows/FWManager';
 import FWCollection from '../FloatingWindows/FWCollection.vue';
 
-import {FormManager} from '../../FormManager'; 
 import QueryFormScroller from '../QueryFormScroller.vue';
 import QueryViewer from '../QueryViewer/QueryViewer.vue';
 import {ref, reactive, watch, computed, onMounted} from 'vue';
@@ -19,7 +20,7 @@ const msgManager = useMainMsgManager();
 
 
 const form_scroller = /**@type { import('vue').Ref<QueryFormScroller> } */ (ref());
-const fwManager = FWManager.NewReactive();
+const fwManager = useMainFWManager();
 
 
 const query_props = reactive({
@@ -28,86 +29,65 @@ const query_props = reactive({
 	from: "`pracownicy`",
 });
 
-const form1_fetch_query = ` SELECT 
-    \`ID pracownika\`       ,
-    \`imię\`                ,
-    \`nazwisko\`            ,
-    \`miejsce urodzenia\`   ,
-    max(\`ID płac\`)        as \`płace_ID płac\`,
-    \`kwota\`               ,
-    \`podstawa\`            ,
-    \`miesiąc płacenia\`    
-    FROM    \`pracownicy\` NATURAL LEFT JOIN \`płace\`
-    WHERE   \`ID pracownika\` = {{rowid}};
-`;
-
 const form_elem = ref();
-const form1 = new FormManager(form_elem);
-const rowid         = form1.new_local("rowid_scroller", 0);
-// console.log('A"', rowid);
+const rowid = ref(0);
 
-const form1_fetch_query_ref = computed(() => {
-    // console.log(rowid);
-    return form1_fetch_query.replace(`{{rowid}}`, escape_sql_value(rowid.as_value()));
-});
+const dataset1 = new Dataset();
+const src1 = dataset1.create_source_query();
+const sync_pracownicy = dataset1.create_table_sync('pracownicy');
+const sync_place      = dataset1.create_table_sync('płace');
 
-form1.set_fetch_query(form1_fetch_query_ref);
+const prac_rowid     = dataset1.create_value_synced("ID pracownika",     0,  sync_pracownicy);
+const prac_imie      = dataset1.create_value_synced("imię",              '', sync_pracownicy);
+const prac_nazwisko  = dataset1.create_value_synced("nazwisko",          '', sync_pracownicy);
+const prac_miejsce   = dataset1.create_value_raw   ("miejsce urodzenia", '');
 
-const prac_rowid     = form1.new_remote("ID pracownika",     0,  'sync_pracownicy');
-const prac_imie      = form1.new_remote("imię",              '', 'sync_pracownicy');
-const prac_nazwisko  = form1.new_remote("nazwisko",          '');
-const prac_miejsce   = form1.new_local ("miejsce urodzenia", '');
+const place_rowid    = dataset1.create_value_raw   ("max ID płac",    0);
+const place_kwota    = dataset1.create_value_synced("kwota",            '', sync_place);
+const place_podstawa = dataset1.create_value_synced("podstawa",         '', sync_place);
+const place_miesiac  = dataset1.create_value_synced("miesiąc płacenia", '', sync_place);
 
-const place_rowid    = form1.new_local ("płace_ID płac",    0);
-const place_kwota    = form1.new_remote("kwota",            '', 'sync_płace');
-const place_podstawa = form1.new_remote("podstawa",         '');
-const place_miesiac  = form1.new_remote("miesiąc płacenia", '');
+sync_pracownicy.add_primary("ID pracownika", prac_rowid);
+sync_place.add_primary("ID płac", place_rowid)
 
-const pracownicy     = form1.add_table_sync('sync_pracownicy', 'pracownicy',
-    [
-        'ID pracownika'
-    ],
-    [
-        'nazwisko',
-        // `miejsce urodzenia`
-    ]
-);
-const place          = form1.add_table_sync('sync_płace', 'płace',
-    [
-        ['rowid', place_rowid]
-    ],
-    [
-        'podstawa', 
-        ['miesiąc płacenia', place_miesiac]
-    ]
-);
-form1.check_pending();
+const upper_imie = ref('');
 
-const podstawa_hints = form1.add_aux_query(`SELECT DISTINCT podstawa FROM \`płace\``);
-const podstawa_hints_flat = computed(() => podstawa_hints.value[0].flat() );
+src1.select_auto(prac_rowid);
+src1.select_auto(prac_imie);
+src1.select_auto(prac_nazwisko);
+src1.select_auto(prac_miejsce);
+src1.select_auto(place_rowid, 'max(`ID płac`)');
+src1.select_auto(place_kwota);
+src1.select_auto(place_podstawa);
+src1.select_auto(place_miesiac);
+src1.select_bind(upper_imie, 'IMIĘ CAPS', 'upper(`imię`)');
+src1.select_raw('NAZWISKO CAPS', 'upper(`nazwisko`)');
+src1.set_body_query_and_finalize(['FROM `pracownicy` NATURAL LEFT JOIN `płace` WHERE `ID pracownika` = ', rowid])
 
-const kwota_test_bnd = form1.add_aux_query(computed(() => 
-    `SELECT K - S, K, K + S FROM (SELECT max(\`ID płac\`), kwota as K, \`ID pracownika\` as S FROM płace WHERE \`ID pracownika\` = ${rowid.as_sql()});`
-));
-const kwota_test_bnd_procesed = computed(() => {
-    return kwota_test_bnd.value[0][0];
-})
 
-const update_query = ref("");
+// const podstawa_hints = form1.add_aux_query(`SELECT DISTINCT podstawa FROM \`płace\``);
+// const podstawa_hints_flat = computed(() => podstawa_hints.value[0].flat() );
 
-watch(rowid.as_ref(), async (newValue) => {
-    let row = await form1.fetch_row_and_replace().catch(err => {
+// const kwota_test_bnd = form1.add_aux_query(computed(() => 
+//     `SELECT K - S, K, K + S FROM (SELECT max(\`ID płac\`), kwota as K, \`ID pracownika\` as S FROM płace WHERE \`ID pracownika\` = ${rowid.as_sql()});`
+// ));
+// const kwota_test_bnd_procesed = computed(() => {
+//     return kwota_test_bnd.value[0][0];
+// })
+
+watch(rowid, async (newValue) => {
+    let row = await dataset1.perform_query_and_replace_all().catch(err => {
         console.error(err);
         return {"Błąd": "Składni"};
     });
-    update_res(row);
+    update_debug_res(row);
 });
 
 // FIND
 
 function handle_find(columns, row) {
     fwManager.close_window("Test - Znajdź");
-    rowid.set(row[0]);
+    rowid.value = row[0];
 }
 
 function on_click_find() {
@@ -141,29 +121,31 @@ function on_click_find() {
 }
 
 // Unnesesary
-const res = ref({});
-const res_str = computed(() => {
+const debug_update_query = ref('');
+function update_debug_update_query() {
+    debug_update_query.value = sync_pracownicy.get_update_query() + '\n' + sync_place.get_update_query();
+}
+update_debug_update_query();
+
+const debug_res = ref({});
+const debug_res_str = computed(() => {
 	let r = '';
-	for(let key in res.value) {
-		r += key + ': ' + res.value[key] + '\n';
-	}
+	for(let key in debug_res.value)
+		r += key + ': ' + debug_res.value[key][0] + '\n';
 	return r;
-})
-
-
-function update_res(row) {
-    if(Object.keys(row).length <= 0) {
-        res.value = {"Nic": "nie ma"};
-        return;
-    }
-    res.value = row;
-    return row;
+});
+function update_debug_res([res1]) {
+    const parsed = query_result_to_object(res1);
+    console.log('res1', res1, parsed);
+    debug_res.value = parsed;
 }
 
-async function update_all_and_refresh(bypass_validation = false){
-    const [updated_rows, row] = await form1.update_all_and_refresh(false, bypass_validation);
+// TODO validate form
+async function update_all_and_refresh(){
+    const [updated_rows] = await dataset1.perform_update_all();
+    const [result]       = await dataset1.perform_query_and_refresh_all();
     console.log("Updated rows: ", updated_rows);
-    if(row) update_res(row);
+    if(result) update_debug_res([result]);
 }
 
 function handle_err(/**@type {Error} */ err) {
@@ -176,8 +158,12 @@ function handle_err(/**@type {Error} */ err) {
 }
 
 defineExpose({
-    form1
+    dataset1
 });
+
+console.log('QUERY PROPS', query_props);
+console.log('ROWID', rowid, rowid.value);
+console.log('VALUES', prac_rowid, prac_imie, prac_nazwisko);
 
 </script>
 
@@ -189,53 +175,53 @@ defineExpose({
 		<!-- <div>Query Value Name: <input type="text" v-model.lazy="query_props.value_name"></div>
 		<div>Query From: <input type="text" v-model.lazy="query_props.from"></div>
 		<div>Query Where: <input type="text" v-model.lazy="query_props.where"></div> -->
-		<div>Curr Value: <input type="text" v-model.lazy="rowid.value.value"></div>
-        <button @click="update_query = pracownicy.get_update_query() + '\n' + place.get_update_query();">Update Query Refresh</button> <br>
-        <textarea>{{ update_query }}</textarea> <br>
+		<div>Curr Value: <input type="text" v-model.lazy="rowid"></div>
+        <button @click="update_debug_update_query">Update Query Refresh</button> <br>
+        <textarea>{{ debug_update_query }}</textarea> <br>
         <button @click="update_all_and_refresh()    .then(() => form_scroller.refresh()).catch(handle_err)" > UPDATE  </button>
         <button @click="update_all_and_refresh(true).then(() => form_scroller.refresh()).catch(handle_err)" > UPDATE  BYPASS</button> <br>
-        <button @click="form1.fetch_row_and_refresh().then(update_res).catch(handle_err)" > REFRESH </button>
-        <button @click="form1.fetch_row_and_replace().then(update_res).catch(handle_err)" > REPLACE </button>
-        <button @click="form1.fetch_row_and_retcon() .then(update_res).catch(handle_err)" > RETCON  </button>
+        <button @click="dataset1.perform_query_and_refresh_all().then(update_res).catch(handle_err)" > REFRESH </button>
+        <button @click="dataset1.perform_query_and_replace_all().then(update_res).catch(handle_err)" > REPLACE </button>
+        <button @click="dataset1.perform_query_and_retcon_all() .then(update_res).catch(handle_err)" > RETCON  </button>
 	</div>
 
 
 	<div class="container">
-        ROWID:    <input type="number" v-model="prac_rowid.value.value" :class="{changed: prac_rowid.changed.value}"> <br>
-        IMIĘ:     <input type="text" v-model="prac_imie.value.value" :class="{changed: prac_imie.changed.value}">  <br>
-        NAZWISKO: <input type="text" v-model="prac_nazwisko.value.value" :class="{changed: prac_nazwisko.changed.value}">  <br>
+        ROWID:    <input type="number" v-model="prac_rowid.local.value" :class="{changed: prac_rowid.is_changed()}"> <br>
+        IMIĘ:     <input type="text" v-model="prac_imie.local.value" :class="{changed: prac_imie.is_changed()}">  <br>
+        NAZWISKO: <input type="text" v-model="prac_nazwisko.local.value" :class="{changed: prac_nazwisko.is_changed()}">  <br>
         <input type="button" value="ZNAJDŹ" @click="on_click_find">  <br>
     </div>
-    <p>{{ kwota_test_bnd_procesed }}</p>
-    <p>{{ place_miesiac }}</p>
+    <!-- <p>{{ kwota_test_bnd_procesed }}</p> -->
+    <!-- <p>{{ place_miesiac }}</p> -->
     <fieldset class="form_fieldset">
         <legend>FORM</legend>
         <form ref="form_elem" class="form">
-            <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :formValue="prac_rowid"   :properties="{max: 30}" nonull/>
+            <!-- <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :formValue="prac_rowid"   :properties="{max: 30}" nonull/>
             <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :formValue="prac_imie"    :properties="{pattern: /[A-Z][a-z]+/.source}" nonull />
             <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :formValue="prac_nazwisko" :class="{wide: prac_rowid.as_value() < 5}"            />
             <label class="label">KWOTA:            </label> <FormInput type="number"             :formValue="place_kwota"   class="wide" />
             <label class="label">KWOTA HINT:       </label> <FormInput type="number"             :formValue="place_kwota"  :hints="kwota_test_bnd_procesed" class="wide" />
             <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :formValue="place_kwota"               />
             <label class="label">ROWID PŁAC:       </label> <FormInput type="integer"            :formValue="place_rowid"  readonly     />
-            <label class="label">MIEJSCE URODZENIA:</label> <FormInput type="text"    :len="3"   :formValue="prac_miejsce" readonly     />
-            <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PREMIA+++'], 123, [456, 'liczba'], ['456', 'liczba str']]"  />
-            <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', ['premia', 'PRIA++'], 123]"  readonly   />
-            <label class="label">PODSTAWA:         </label> <FormEnum  :formValue="place_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  nonull   />
-            <label class="label">PODSTAWA Query:   </label> <FormEnum  :formValue="place_podstawa" :options="podstawa_hints_flat" />
-            <label class="label">PODSTAWA Hint:    </label> <FormInput type="text" :formValue="place_podstawa" :hints="podstawa_hints_flat" />
+            <label class="label">MIEJSCE URODZENIA:</label> <FormInput type="text"    :len="3"   :formValue="prac_miejsce" readonly     /> -->
+            <label class="label">PODSTAWA normal:  </label> <FormEnum  :value="place_podstawa" :options="['nadgodziny', ['premia', 'PREMIA+++'], 123, [456, 'liczba'], ['456', 'liczba str']]"  />
+            <label class="label">PODSTAWA rdonly:  </label> <FormEnum  :value="place_podstawa" :options="['nadgodziny', ['premia', 'PRIA++'], 123]"  readonly   />
+            <label class="label">PODSTAWA nonull:  </label> <FormEnum  :value="place_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  nonull   />
+            <!-- <label class="label">PODSTAWA Query:   </label> <FormEnum  :value="place_podstawa" :options="podstawa_hints_flat" /> -->
+            <!-- <label class="label">PODSTAWA Hint:    </label> <FormInput type="text" :formValue="place_podstawa" :hints="podstawa_hints_flat" />
             <label class="label">Date:             </label> <FormInput type="date" :formValue="place_miesiac"/>
-            <label class="label">Datetime-local:   </label> <FormInput type="datetime-local" :formValue="place_miesiac"/>
+            <label class="label">Datetime-local:   </label> <FormInput type="datetime-local" :formValue="place_miesiac"/> -->
         </form>
     </fieldset>
     
     <br>
 
-	<textarea cols="30" rows="10" :value="res_str"></textarea>
+	<textarea cols="30" rows="10" :value="debug_res_str"></textarea>
 
 
 
-    <QueryFormScroller :query_props="query_props" v-model:value="rowid.value.value" ref="form_scroller" />
+    <QueryFormScroller :query_props="query_props" v-model:value="rowid" ref="form_scroller" />
 
     
     <FWCollection :manager="fwManager" />
