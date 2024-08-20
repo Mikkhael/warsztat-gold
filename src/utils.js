@@ -53,9 +53,14 @@ function escape_like(/**@type {string} */ value) {
 	return res2;
 }
 
-
-function arr_to_object(/**@type {string[]} */ arr, val_map = function(/**@type {string}*/ key) {return /**@type {*}*/(undefined);} ){
-	return Object.fromEntries(arr.map(key => [key, val_map(key)]));
+/**
+ * @template T
+ * @param {string[]} arr 
+ * @param {(id: number, key: string) => T} val_map 
+ * @return {Object.<string, T>}
+ */
+function arr_to_object(/**@type {string[]} */ arr, val_map){
+	return Object.fromEntries(arr.map((key, id) => [key, val_map(id, key)]));
 }
 
 /**
@@ -91,7 +96,7 @@ function transpose_array(arr) {
 
 /**
  * @typedef {import('./ipc').IPCQueryResult} RawQueryResult
- * @typedef {Object.<string, any[]>} ObjectQueryResult
+ * @typedef {Object.<string, (number | string | null)[]>} ObjectQueryResult
  */
 
 function query_result_to_object(/**@type {RawQueryResult} */ query_res) {
@@ -99,6 +104,30 @@ function query_result_to_object(/**@type {RawQueryResult} */ query_res) {
 	const transpose = transpose_array(rows);
 	const res = Object.fromEntries(col_names.map((x,i) => [x, transpose[i]]));
 	return res;
+}
+
+/**
+ * @param {RawQueryResult} result
+ * @param {(value: (string | number | null), column_name: string, row_id: number) => void} callback 
+ */
+function iterate_query_result_values(result, callback) {
+	const [rows, columns] = result;
+	rows.forEach((row, row_id) => {
+		columns.forEach((col_name, col_id) => {
+			callback(row[col_id], col_name, row_id);
+		});
+	});
+}
+/**
+ * @param {RawQueryResult} result
+ * @param {(value: (string | number | null), column_name: string) => void} callback 
+ */
+function iterate_query_result_values_single_row(result, callback, row_id=0) {
+	const [rows, columns] = result;
+	const row = rows[row_id];
+	columns.forEach((col_name, col_id) => {
+		callback(row[col_id], col_name);
+	});
 }
 
 /**
@@ -118,6 +147,9 @@ export {
 	escape_like,
 	arr_to_object,
 	query_row_to_object,
+	query_result_to_object,
+	iterate_query_result_values,
+	iterate_query_result_values_single_row,
 	object_map,
 	typeofpl
 }
