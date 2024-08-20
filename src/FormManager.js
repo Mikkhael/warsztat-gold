@@ -43,7 +43,7 @@ formTab1Col1.replace(789);
 /**@template T */
 class FormValue {
     constructor(/**@type {import('vue').Ref<T> | T}*/ initial_value) {
-        this.value = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
+        this.value   = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
         this.changed = computed(() => false);
         // this.is_changed = readonly(false);
     }
