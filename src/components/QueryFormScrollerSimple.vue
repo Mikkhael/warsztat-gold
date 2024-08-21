@@ -114,7 +114,7 @@ defineExpose({
 	<input type="button" class="btn next" value=">" @click="click_next().catch(handle_err)">
 	<input type="button" class="btn next" value="|>" @click="click_last().catch(handle_err)">
 	<span  class="txt count as_input"> ({{ state.count }}) </span>
-	<span  class="as_input"> | C: {{ state.is_count_utd }} | E: {{ state.is_empty }} </span>
+	<!-- <span  class="as_input"> | C: {{ state.is_count_utd }} | E: {{ state.is_empty }} </span> -->
 </div>
 
 </template>

@@ -79,18 +79,16 @@
     - Forms API
         - create example form
         - default form layout component
-        - FormManager
+        - Dataset and Forms
             + standerd form value
             + table update manager
             + automated update logic
             + automated fetch logic
             + update only changed values
-            + easier formValue and tableSync bindings
-            - add assertions
-            - multirow select support ??
             + add transaction for update
-            + couple formManager with scroller
-            + better binding than by prefix
+            - better integrtation with scroller
+            - compact interface for src_query bindings
+            - aux queries
         + Query Form Scroller
             + working scroller
             + Simple Mode

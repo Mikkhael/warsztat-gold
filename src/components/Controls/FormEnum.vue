@@ -14,10 +14,6 @@ const props = defineProps({
         type: Object,
         required: true
     },
-    properties: {
-        type: Object,
-        default: {}
-    },
     readonly: {
         type: Boolean,
         default: false
@@ -41,7 +37,7 @@ watch(toRef(impl, 'custom_validity_message'), (new_value) => {
 
 <template>
 
-    <select class="FormControl FormControlEnum" v-model="impl.local_proxy" ref="elem" :class="{changed: impl.changed, null: impl.local === null}" :disabled="props.readonly">
+    <select class="FormControl FormControlEnum" v-bind="impl.properties" v-model="impl.local_proxy" ref="elem" :class="{changed: impl.changed, null: impl.local === null}" :disabled="props.readonly">
         <option value="___unknown" hidden>{{ impl.local }}</option>
         <option v-if="!impl.options.has(null)"    :value="null" :class="{remote: impl.remote === null}" :hidden="props.nonull" class="FormControlEnumOption FormControlEnumNull" >~</option>
         <option v-for="[v, name] in impl.options" :value="v"    :class="{remote: impl.remote === v}"                           class="FormControlEnumOption" >{{ name }}</option>

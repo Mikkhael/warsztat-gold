@@ -5,10 +5,27 @@ import { emit } from "@tauri-apps/api/event";
 /**
  * @param {HTMLElement & HTMLInputElement} target 
  */
+function is_target_an_input_field(target) {
+    return (
+        target.tagName === 'INPUT' && (
+            target.type === 'text'   ||
+            target.type === 'number' ||
+            target.type === 'date' ||
+            target.type === 'datetime-local'
+        ) ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+    );
+}
+/**
+ * @param {HTMLElement & HTMLInputElement} target 
+ */
 function is_target_a_text_field(target) {
     return (
-        target.tagName === 'INPUT' && target.type === 'text'   ||
-        target.tagName === 'INPUT' && target.type === 'number' ||
+        target.tagName === 'INPUT' && (
+            target.type === 'text'   ||
+            target.type === 'number'
+        ) ||
         target.tagName === 'TEXTAREA' ||
         target.isContentEditable
     );
@@ -25,30 +42,38 @@ function is_target_nullable(/** @type {HTMLInputElement} */ target){
 }
 
 /**
+ * @param {any[]} items 
+ */
+function insert_separators(items) {
+    const filtered = items.filter(x => x.length !== 0);
+    return filtered.flatMap((x, index) => index === 0 ? x : [{is_separator: true}, ...x]);
+}
+
+/**
  * @param {Event} event
  */
 function handle_context_menu_event(event) {
     const target = /**@type {HTMLElement & HTMLInputElement} */ (event.target);
     console.log('Opening context menu', target.tagName, target, event);
     event.preventDefault();
-    if( is_target_a_text_field(target) ) {
+    if( is_target_an_input_field(target) ) {
+        const text     = is_target_a_text_field(target);
         const selected = is_selected_nonempty();
         const editable = is_target_editable(target);
         const nullable = is_target_nullable(target);
-        const common_items = [
+        const nullable_items = nullable && editable ? [
+            {label: "Zeruj", event: (e) => {target.dispatchEvent(new Event('set_as_null'))}},
+        ] : [];
+        const text_items = text ? [
             {label: "Wytnij", event: "request_clipboard_cut",   disabled: !selected || !editable},
             {label: "Kopiuj", event: "request_clipboard_copy",  disabled: !selected},
             {label: "Wklej",  event: "request_clipboard_paste", disabled: !editable},
             {label: "Zaznacz wszystko",  event: (e) => {target.select()}},
-        ]
-        const nullable_items = nullable && editable ? [
-            {label: "Zeruj", event: (e) => {target.dispatchEvent(new Event('set_as_null'))}},
-            {is_separator: true},
         ] : [];
-        showMenu({items: [
-            ...nullable_items,
-            ...common_items
-        ]});
+        showMenu({items: insert_separators([
+            nullable_items,
+            text_items
+        ])});
         return;
     }
     showMenu({items: [

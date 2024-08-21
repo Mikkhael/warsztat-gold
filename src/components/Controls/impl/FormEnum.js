@@ -7,11 +7,11 @@ import { convert_control_prop_to_reactive_props } from './utils';
  */
 
 /**
- * @param {{value: DatasetValuelike, readonly: boolean, nonull: boolean, options: any[], properties: any}} props 
+ * @param {{value: DatasetValuelike, readonly: boolean, nonull: boolean, options: any[]}} props 
  */
 function use_FormEnum(props) {
     const value = convert_control_prop_to_reactive_props(props);
-    console.log('VALUE CONTROL', value);
+    // console.log('VALUE CONTROL', value);
 
     // Lista wszystkich dozwolonych wartości [klucz: faktyczna wartość SQLValue, display: string]
     const options = computed(() => {

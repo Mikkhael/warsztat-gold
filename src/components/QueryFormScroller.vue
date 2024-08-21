@@ -94,7 +94,7 @@ defineExpose({
 	<input type="button" class="btn next" value=">" @click="click_next().catch(handle_err)">
 	<input type="button" class="btn next" value="|>" @click="click_last().catch(handle_err)">
 	<span  class="txt bounds as_input"> {{ state.bounds[0] }} .. {{ state.bounds[1] }} ({{ state.bounds[2] }}) </span>
-	<span  class="as_input"> | B: {{ state.is_bounds_utd }} | C: {{ state.is_curr_utd }} | E: {{ state.is_empty }} </span>
+	<!-- <span  class="as_input"> | B: {{ state.is_bounds_utd }} | C: {{ state.is_curr_utd }} | E: {{ state.is_empty }} </span> -->
 </div>
 
 </template>
