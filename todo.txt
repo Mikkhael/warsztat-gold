@@ -87,7 +87,7 @@
             + update only changed values
             + add transaction for update
             - better integrtation with scroller
-            - compact interface for src_query bindings
+            + compact interface for src_query bindings
             - aux queries
         + Query Form Scroller
             + working scroller
@@ -95,6 +95,7 @@
             - test for large arrays (bigint count)
         - Kontrolki
             + custom context menu
+                - make "Zaznacz Wszystko" on read-only inputs work
             - Labels
             + Input
                 + Integer

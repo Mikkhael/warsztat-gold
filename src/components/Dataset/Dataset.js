@@ -10,21 +10,24 @@ import ipc from "../../ipc";
 const dataset = new Dataset();
 
 const sync1 = dataset.create_table_sync('tab1');
-// inne potencjalne rodzaje synców...
+const src1  = dataset.create_source_query();
+
+// inne potencjalne rodzaje synców/sourceów...
 
 const r1 = ref(1);
 const r2 = ref(2);
 
 const val1 = dataset.create_value_raw   ('val1', 0);
-const val2 = dataset.create_value_raw   ('val2', r1);
-const val3 = dataset.create_value_raw   ('val3', 0, sync1, <'col3' = 'val3'>);
-const val4 = dataset.create_value_synced('val4', 0, sync1, <'col4' = 'val4'>);
+const val2 = dataset.create_value_raw   ('val2', r1);       // synchronized with ref
+// auto syncs/bindings
+const val3 = dataset.create_value_raw   ('val3', 0, sync1);
+const val4 = dataset.create_value_synced('val4', 0, src1);  
+const val5 = dataset.create_value_synced('val5', 0, [src1, 'a2.`col4`']);
+const val6 = dataset.create_value_synced('val6', 0, sync1, sync2, src1, [src2, 'a2.`col4`']);
 
 sync1.add_primary('prim1', r1)
 sync1.add_primary('prim2', val1)
 sync1.add_primary('prim3', 0)
-
-const src1 = dataset.create_source_query();
 
 // unbinded fields
 src1.select('col0');
@@ -35,11 +38,6 @@ src1.select_bind(val1, 'col1');
 src1.select_bind(val2, `col2`, 'a2.`col2`');
 src1.select_bind(r1,   'col3');
 src1.select_bind(r2,   'sum',  'decimal_add(`col4` + `col5`)');
-
-// fields binded with name given during dataset value creation (cannot be Refs)
-src1.select_auto(val1);
-src1.select_auto(val2, 'a2.`val2`');
-src1.select_auto(val3, 'decimal_add(`col4` + `col5`)');
 
 src1.set_body_query([
     'FROM ...',
@@ -82,7 +80,7 @@ dataset.perform_query_and_retcon_all()  .then(...).catch(...);
 /**@template {SQLValue} T */
 class DatasetValue {
     constructor(/**@type {import('vue').Ref<T> | T}*/ initial_value, /**@type {string} */ name) {
-        this.name    = name;
+        // this.name    = name;
         this.local   = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
         // this.changed = computed(() => false);
     }
@@ -282,13 +280,13 @@ class DatasetSourceQuery{
         this.column_binds[name] = binder;
     }
     
-    /**
-     * @param {DatasetValue} binder 
-     * @param {string=} definition 
-     */
-    select_auto(binder, definition) {
-        this.select_bind(binder, binder.name, definition);
-    }
+    // /**
+    //  * @param {DatasetValue} binder 
+    //  * @param {string=} definition 
+    //  */
+    // select_auto(binder, definition) {
+    //     this.select_bind(binder, binder.name, definition);
+    // }
 
     /**
      * @param {(string | DatasetValueReflike)[]} query_body_parts 
@@ -350,43 +348,64 @@ class Dataset {
     // TODO naprtawić templaty
 
     /**
+     * @typedef {DatasetTableSync | DatasetSourceQuery} AutoBindingTarget
+     * @typedef {AutoBindingTarget | [AutoBindingTarget, ...any]} AutoBindingTargetWithArgs
+     */
+
+
+    /**
      * @param {string} value_name 
      * @param {DatasetValue} value 
-     * @param {DatasetTableSync=} table_sync
-     * @param {string=} table_sync_column_name
+     * @param {...AutoBindingTargetWithArgs} auto_binding_targets
      */
-    #create_value_impl(value_name, value, table_sync, table_sync_column_name){
+    #create_value_impl(value_name, value, ...auto_binding_targets){
         if(this.values[value_name] !== undefined) {
             console.error(`Reinitializing Dataset Value with name: ${value_name}`);
         }
         this.values[value_name] = value;
-        if(table_sync) {
-            const column_name = table_sync_column_name ?? value_name;
-            table_sync.add_synced_value(column_name, value);
+
+        for(let binding_target_with_args of auto_binding_targets) {
+            let binding_target;
+            let binding_args = [];
+            if(binding_target_with_args instanceof Array) {
+                [binding_target, ...binding_args] = binding_target_with_args;
+            } else {
+                binding_target = binding_target_with_args;
+            }
+            // console.log(`PARSING AUTO BINDING`, value_name, binding_target, binding_args);
+            if(binding_target instanceof DatasetTableSync) {
+                // console.log('AUTO SYNC:',       binding_args[0] ?? value_name, value);
+                binding_target.add_synced_value(binding_args[0] ?? value_name, value);
+                continue;
+            }
+            if(binding_target instanceof DatasetSourceQuery) {
+                // console.log('AUTP BIND:',  value, binding_args[1] ?? value_name, binding_args[0]);
+                binding_target.select_bind(value, binding_args[1] ?? value_name, binding_args[0]);
+                continue;
+            }
         }
+
         return value;
     }
 
     /**
      * @param {string} value_name 
      * @param {SQLValuelike} initial_value 
-     * @param {DatasetTableSync=} table_sync
-     * @param {string=} table_sync_column_name
+     * @param {...AutoBindingTargetWithArgs} auto_binding_targets
      */
-    create_value_raw(value_name, initial_value = null, table_sync, table_sync_column_name){
+    create_value_raw(value_name, initial_value = null, ...auto_binding_targets){
         return this.#create_value_impl(value_name, new DatasetValue(initial_value, value_name), 
-                                        table_sync, table_sync_column_name);
+                                        ...auto_binding_targets);
     }
 
     /**
      * @param {string} value_name 
      * @param {SQLValuelike} initial_value 
-     * @param {DatasetTableSync=} table_sync
-     * @param {string=} table_sync_column_name
+     * @param {...AutoBindingTargetWithArgs} auto_binding_targets
      */
-    create_value_synced(value_name, initial_value = null, table_sync, table_sync_column_name){
+    create_value_synced(value_name, initial_value = null, ...auto_binding_targets){
         return this.#create_value_impl(value_name, new DatasetValueSynced(initial_value, value_name),
-                                        table_sync, table_sync_column_name);
+                                        ...auto_binding_targets);
     }
 
     async perform_update_all()            {return await Promise.all(this.table_syncs.map(x => x.perform_update()))}

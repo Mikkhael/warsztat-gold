@@ -34,32 +34,23 @@ const rowid = ref(0);
 
 const dataset1 = new Dataset();
 const src1 = dataset1.create_source_query();
-const sync_pracownicy = dataset1.create_table_sync('pracownicy');
+const sync_pracownicy = dataset1.create_table_sync('pracownicy',);
 const sync_place      = dataset1.create_table_sync('płace');
 
-const prac_rowid     = dataset1.create_value_synced("ID pracownika",     0,  sync_pracownicy);
-const prac_imie      = dataset1.create_value_synced("imię",              '', sync_pracownicy);
-const prac_nazwisko  = dataset1.create_value_synced("nazwisko",          '', sync_pracownicy);
-const prac_miejsce   = dataset1.create_value_raw   ("miejsce urodzenia", '');
+const prac_rowid     = dataset1.create_value_synced("ID pracownika",     0,  sync_pracownicy, src1);
+const prac_imie      = dataset1.create_value_synced("imię",              '', sync_pracownicy, src1);
+const prac_nazwisko  = dataset1.create_value_synced("nazwisko",          '', sync_pracownicy, src1);
+const prac_miejsce   = dataset1.create_value_raw   ("miejsce urodzenia", '', src1);
 
-const place_rowid    = dataset1.create_value_raw   ("max ID płac",    0);
-const place_kwota    = dataset1.create_value_synced("kwota",            '', sync_place);
-const place_podstawa = dataset1.create_value_synced("podstawa",         '', sync_place);
-const place_miesiac  = dataset1.create_value_synced("miesiąc płacenia", '', sync_place);
+const place_rowid    = dataset1.create_value_raw   ("max ID płac",      0,  [src1, 'max(`ID płac`)']);
+const place_kwota    = dataset1.create_value_synced("kwota",            '', sync_place, src1);
+const place_podstawa = dataset1.create_value_synced("podstawa",         '', sync_place, src1);
+const place_miesiac  = dataset1.create_value_synced("miesiąc płacenia", '', sync_place, src1);
 
 sync_pracownicy.add_primary("ID pracownika", prac_rowid);
 sync_place.add_primary("ID płac", place_rowid)
 
 const upper_imie = ref('');
-
-src1.select_auto(prac_rowid);
-src1.select_auto(prac_imie);
-src1.select_auto(prac_nazwisko);
-src1.select_auto(prac_miejsce);
-src1.select_auto(place_rowid, 'max(`ID płac`)');
-src1.select_auto(place_kwota);
-src1.select_auto(place_podstawa);
-src1.select_auto(place_miesiac);
 src1.select_bind(upper_imie, 'IMIĘ CAPS', 'upper(`imię`)');
 src1.select_raw('NAZWISKO CAPS', 'upper(`nazwisko`)');
 src1.set_body_query_and_finalize(['FROM `pracownicy` NATURAL LEFT JOIN `płace` WHERE `ID pracownika` = ', rowid])
