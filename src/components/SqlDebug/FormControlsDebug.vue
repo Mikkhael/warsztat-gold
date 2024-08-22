@@ -36,6 +36,8 @@ const dataset1 = new Dataset();
 const src1 = dataset1.create_source_query();
 const sync_pracownicy = dataset1.create_table_sync('pracownicy',);
 const sync_place      = dataset1.create_table_sync('płace');
+const podstawa_hints_src = dataset1.create_simple_source_query();
+const kwota_hints_src    = dataset1.create_simple_source_query();
 
 const prac_rowid     = dataset1.create_value_synced("ID pracownika",     0,  sync_pracownicy, src1);
 const prac_imie      = dataset1.create_value_synced("imię",              '', sync_pracownicy, src1);
@@ -56,20 +58,24 @@ src1.select_raw('NAZWISKO CAPS', 'upper(`nazwisko`)');
 src1.set_body_query_and_finalize(['FROM `pracownicy` NATURAL LEFT JOIN `płace` WHERE `ID pracownika` = ', rowid])
 
 
-// const podstawa_hints = form1.add_aux_query(`SELECT DISTINCT podstawa FROM \`płace\``);
-// const podstawa_hints_flat = computed(() => podstawa_hints.value[0].flat() );
+podstawa_hints_src.set_query(['SELECT DISTINCT podstawa FROM `płace`']);
+const podstawa_hints = podstawa_hints_src.to_computed((rows) => {
+    return rows.map(x => x[0]);
+});
 
-// const kwota_test_bnd = form1.add_aux_query(computed(() => 
-//     `SELECT K - S, K, K + S FROM (SELECT max(\`ID płac\`), kwota as K, \`ID pracownika\` as S FROM płace WHERE \`ID pracownika\` = ${rowid.as_sql()});`
-// ));
-// const kwota_test_bnd_procesed = computed(() => {
-//     return kwota_test_bnd.value[0][0];
-// })
+kwota_hints_src.set_query(['SELECT K - S, K, K + S FROM (SELECT max(`ID płac`), kwota as K, `ID pracownika` as S FROM płace WHERE `ID pracownika` = ', rowid, ')']);
+const kwota_hints = kwota_hints_src.to_computed((rows) => {
+    console.log('KWOTA ROWS', rows);
+    return rows.length > 0 ? rows[0] : [];
+});
+
+// DEBUG
 
 watch(rowid, async (newValue) => {
     let row = await dataset1.perform_query_and_replace_all().catch(err => {
-        console.error(err);
-        return {"Błąd": "Składni"};
+        console.error('Błąd podczas bierania z bazy danych', err);
+        msgManager.post('error', `Błąd podczas bierania z bazy danych: \`${err}\``)
+        return [];
     });
     update_debug_res(row);
 });
@@ -125,9 +131,11 @@ const debug_res_str = computed(() => {
 		r += key + ': ' + debug_res.value[key][0] + '\n';
 	return r;
 });
-function update_debug_res([res1]) {
+function update_debug_res(aha) {
+    console.log('UPDATE_DEBUG_RES', aha);
+    const [res1] = aha;
     const parsed = query_result_to_object(res1);
-    console.log('res1', res1, parsed);
+    // console.log('res1', res1, parsed);
     debug_res.value = parsed;
 }
 
@@ -183,8 +191,8 @@ defineExpose({
         NAZWISKO: <input type="text" v-model="prac_nazwisko.local.value" :class="{changed: prac_nazwisko.is_changed()}">  <br>
         <input type="button" value="ZNAJDŹ" @click="on_click_find">  <br>
     </div>
-    <!-- <p>{{ kwota_test_bnd_procesed }}</p> -->
-    <!-- <p>{{ place_miesiac }}</p> -->
+    <p>KWOTA_HINTS: {{ kwota_hints }}</p>
+    <p>PODSTAWA_HINTS: {{ podstawa_hints }}</p>
     <fieldset class="form_fieldset">
         <legend>FORM</legend>
         <form ref="form_elem" class="form">
@@ -192,15 +200,15 @@ defineExpose({
             <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :value="prac_imie"    pattern="[A-Z][a-z]+" nonull />
             <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :value="prac_nazwisko" :class="{wide: prac_rowid.local < 5}"            />
             <label class="label">KWOTA:            </label> <FormInput type="number"             :value="place_kwota"   class="wide" />
-            <!-- <label class="label">KWOTA HINT:       </label> <FormInput type="number"             :value="place_kwota"  :hints="kwota_test_bnd_procesed" class="wide" /> -->
+            <label class="label">KWOTA HINT:       </label> <FormInput type="number"             :value="place_kwota"  :hints="kwota_hints" class="wide" />
             <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :value="place_kwota"               />
             <label class="label">ROWID PŁAC:       </label> <FormInput type="integer"            :value="place_rowid"  readonly     />
             <label class="label">MIEJSCE URODZENIA:</label> <FormInput type="text"    :len="3"   :value="prac_miejsce" readonly     />
             <label class="label">PODSTAWA normal:  </label> <FormEnum  :value="place_podstawa" :options="['nadgodziny', ['premia', 'PREMIA+++'], 123, [456, 'liczba'], ['456', 'liczba str']]"  />
             <label class="label">PODSTAWA rdonly:  </label> <FormEnum  :value="place_podstawa" :options="['nadgodziny', ['premia', 'PRIA++'], 123]"  readonly   />
             <label class="label">PODSTAWA nonull:  </label> <FormEnum  :value="place_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  nonull   />
-            <!-- <label class="label">PODSTAWA Query:   </label> <FormEnum  :value="place_podstawa" :options="podstawa_hints_flat" /> -->
-            <!-- <label class="label">PODSTAWA Hint:    </label> <FormInput type="text" :value="place_podstawa" :hints="podstawa_hints_flat" /> -->
+            <label class="label">PODSTAWA UNIQUE:  </label> <FormEnum  :value="place_podstawa" :options="podstawa_hints" />
+            <label class="label">PODSTAWA Hint:    </label> <FormInput type="text" :value="place_podstawa" :hints="podstawa_hints" />
             <label class="label">Date:             </label> <FormInput type="date" :value="place_miesiac"/>
             <label class="label">Datetime-local:   </label> <FormInput type="datetime-local" :value="place_miesiac"/>
         </form>

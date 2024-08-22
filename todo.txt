@@ -88,7 +88,7 @@
             + add transaction for update
             - better integrtation with scroller
             + compact interface for src_query bindings
-            - aux queries
+            + aux queries
         + Query Form Scroller
             + working scroller
             + Simple Mode

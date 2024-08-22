@@ -11,6 +11,7 @@ const dataset = new Dataset();
 
 const sync1 = dataset.create_table_sync('tab1');
 const src1  = dataset.create_source_query();
+const src2  = dataset.create_simple_source_query();
 
 // inne potencjalne rodzaje synców/sourceów...
 
@@ -30,8 +31,8 @@ sync1.add_primary('prim2', val1)
 sync1.add_primary('prim3', 0)
 
 // unbinded fields
-src1.select('col0');
-src1.select(`a2col0`, 'a2.`col0`');
+src1.select_raw('col0');
+src1.select_raw(`a2col0`, 'a2.`col0`');
 
 // directly binded fields
 src1.select_bind(val1, 'col1');
@@ -45,6 +46,11 @@ src1.set_body_query([
     'AND Y = ', r1
 ]);
 
+// Advanced binding
+src2.set_query(['SELECT * FROM tab1 WHERE a = ', r1, ' AND b = ', val1]);
+src2.set_handler((rows, col_names) => {
+    ///...    
+})
 
 dataset.perform_update_all()            .then(...).catch(...);
 dataset.perform_query_all()             .then(...).catch(...);
@@ -232,12 +238,21 @@ class DatasetTableSync{
 
 ////////////////// Source Query ////////////////////////////////////////
 
+class SourceQuery{
+    async perform_query()             {return /**@type {import('../../ipc').IPCQueryResult} */ ([[], []]) }
+    async perform_query_and_replace() {return await this.perform_query(); }
+    async perform_query_and_refresh() {return await this.perform_query(); }
+    async perform_query_and_retcon () {return await this.perform_query(); }
+}
 
-class DatasetSourceQuery{
+class DatasetSourceQuery extends SourceQuery{
+
     constructor(){
+        super();
         this.column_binds     = /**@type {Object.<string, DatasetValueReflike>} */ ({});
         this.select_fields    = /**@type {import('vue').Ref<([string, string?])[]>} */ (ref([]));
         this.query_body_parts = /**@type {import('vue').Ref<(string | DatasetValueReflike)[]>} */ (ref([]));
+        this.advanced_binder_function = /**@type {QueryResultCallback?} */ (null);
 
         this.query_select_sql = computed(() => {
             return this.select_fields.value.map(([name, definition]) => {
@@ -256,7 +271,7 @@ class DatasetSourceQuery{
         });
 
         this.query_sql = computed(() => {
-            return 'SELECT ' + this.query_select_sql.value + ' ' + this.query_body_sql.value;
+            return 'SELECT ' + this.query_select_sql.value + ' ' + this.query_body_sql.value + ';';
         });
     }
 
@@ -297,7 +312,11 @@ class DatasetSourceQuery{
 
 
     async perform_query(){
-        return await ipc.db_query(this.query_sql.value);
+        const result = await ipc.db_query(this.query_sql.value);
+        if(this.advanced_binder_function) {
+            this.advanced_binder_function(result[0], result[1]);
+        }
+        return result;
     }
 
     /**
@@ -319,12 +338,69 @@ class DatasetSourceQuery{
 }
 
 
+class SimpleSourceQuery extends SourceQuery{
+
+    /**@typedef {(rows: any[][], column_names: string[]) => any} QueryResultCallback */
+
+    constructor(){
+        super();
+        this.query_handler = /**@type {QueryResultCallback?} */ (null);
+        this.query_parts = /**@type {import('vue').Ref<(string | DatasetValueReflike)[]>} */ (ref([]));
+        this.last_result = /**@type {import('vue').Ref<import('../../ipc').IPCQueryResult>} */ (ref([[], []]));
+        
+        this.query_sql = computed(() => {
+            return this.query_parts.value.map(part => {
+                if(typeof part === 'string')
+                    return part;
+                return escape_sql_value(DVUtil.as_value(part));
+            }).join('') + ';';
+        });
+    }
+
+    /**
+     * @param {(string | DatasetValueReflike)[]} query_parts 
+     */
+    set_query(query_parts) {
+        this.query_parts.value = query_parts;
+    }
+
+    /**
+     * @param {QueryResultCallback} query_handler 
+     */
+    set_handler(query_handler) {
+        this.query_handler = query_handler;
+    }
+
+    /**
+     * @param {QueryResultCallback} computed_definition 
+     */
+    to_computed(computed_definition) {
+        const res = computed(() => {
+            return computed_definition(this.last_result.value[0], this.last_result.value[1]);
+        });
+        return res;
+    }
+
+
+    async perform_query(){
+        // console.log("QUERY SQL: ", this.query_sql.value);
+        const result = await ipc.db_query(this.query_sql.value);
+        // console.log("QUERY RES: ", result, this.query_sql.value);
+        this.last_result.value = result;
+        if(this.query_handler) {
+            this.query_handler(result[0], result[1]);
+        }
+        return result;
+    }
+}
+
+
 ////////////////// Dataset ////////////////////////////////////////
 
 class Dataset {
     constructor(){
         this.table_syncs = /**@type {DatasetTableSync[]} */ ([]);
-        this.source_queries = /**@type {DatasetSourceQuery[]} */ ([]);
+        this.source_queries = /**@type {SourceQuery[]} */ ([]);
         this.values = /**@type {Object.<string, DatasetValue>} */ ({});
     }
 
@@ -339,6 +415,12 @@ class Dataset {
 
     create_source_query() {
         const src = new DatasetSourceQuery();
+        this.source_queries.push(src);
+        return src;
+    }
+
+    create_simple_source_query() {
+        const src = new SimpleSourceQuery();
         this.source_queries.push(src);
         return src;
     }

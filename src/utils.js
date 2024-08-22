@@ -100,6 +100,7 @@ function transpose_array(arr) {
  */
 
 function query_result_to_object(/**@type {RawQueryResult} */ query_res) {
+	if(!query_res) return {};
 	const [rows, col_names] = query_res;
 	const transpose = transpose_array(rows);
 	const res = Object.fromEntries(col_names.map((x,i) => [x, transpose[i]]));
