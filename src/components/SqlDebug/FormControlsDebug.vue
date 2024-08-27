@@ -72,7 +72,7 @@ const scroller_query_where = '';
 watch(rowid, async (newValue) => {
     let row = await dataset1.perform_query_and_replace_all().catch(err => {
         console.error('Błąd podczas bierania z bazy danych', err);
-        msgManager.post('error', `Błąd podczas bierania z bazy danych: \`${err}\``)
+        msgManager.postError(`Błąd podczas bierania z bazy danych: \`${err}\``);
         return [];
     });
     update_debug_res(row);
@@ -143,11 +143,7 @@ function handle_err(/**@type {Error} */ err) {
         return;
     }
     console.error(err);
-    if(typeof err === 'string'){
-        msgManager.post("error", err);
-    } else {
-        msgManager.post("error", err.message);
-    }
+    msgManager.postError(err);
 }
 
 defineExpose({

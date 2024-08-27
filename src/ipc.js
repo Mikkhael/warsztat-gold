@@ -50,7 +50,6 @@ function file_name(path) {
 
 //////////// Database //////////////////////
 
-
 async function db_open() {
     let path = await open({
         title: "Wybierz plik bazy danych",
@@ -61,6 +60,7 @@ async function db_open() {
         state.db_is_open = true;
         //@ts-ignore
         state.db_path = path;
+        window.dispatchEvent(new Event('db_opened'));
         return path;
     });
 }
@@ -68,6 +68,7 @@ function db_close() {
     return invoke("close_database").then(() => {
         state.db_is_open = false;
         state.db_path = "";
+        window.dispatchEvent(new Event('db_closed'));
     });
 }
 async function db_save() {

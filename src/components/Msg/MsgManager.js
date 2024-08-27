@@ -31,6 +31,22 @@ class MsgManager {
             }, timeout);
         }
     }
+    
+    /**
+     * @param {string | Error} err 
+     * @param {number} timeout
+     */
+    postError(err, timeout = 0, onclick = () => {}) {
+        if(typeof err === 'string'){
+            return this.post('error', err, timeout, onclick);
+        } else {
+            return this.post('error', err.message, timeout, onclick);
+        }
+    }
+
+    close_all_with_content(content) {
+        this.msgs = this.msgs.filter(x => x.content !== content);
+    }
 
     /**
      * @param {string} id 

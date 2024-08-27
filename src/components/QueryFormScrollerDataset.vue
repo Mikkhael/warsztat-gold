@@ -68,14 +68,12 @@ async function refresh_request() {
 }
 
 function handle_err(/**@type {Error} */ err) {
-    // console.error(err);
-    // if(typeof err === 'string'){
-    //     msgManager.post("error", err);
-    // } else {
-    //     msgManager.post("error", err.message);
-    // }
 	emit('error', err);
 }
+
+window.addEventListener('db_opened', () => {
+	scroller_ref.value.refresh(true);
+});
 
 
 defineExpose({

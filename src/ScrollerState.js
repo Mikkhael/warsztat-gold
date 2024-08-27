@@ -105,9 +105,9 @@ class ScrollerState {
 	 * @param {Value | undefined} base_offset
 	 * @returns 
 	 */
-	async #scroll(with_curr, dir_next, force_update = false, base_offset = undefined) {
+	async #scroll(with_curr, dir_next, force_update = false, base_offset = undefined, bypass_before_change = false) {
 		await this.update_bounds(force_update);
-		if(this.before_change){
+		if(!bypass_before_change && this.before_change){
 			const should_change = await this.before_change();
 			if(!should_change) return undefined;
 		}
@@ -133,8 +133,8 @@ class ScrollerState {
 	async goto_bound(/**@type {Boolean} */ to_last, force_update = false) {
 		return await this.#scroll(true, to_last, force_update, this.bounds.value[to_last ? 1 : 0]);
 	}
-	async refresh(dir_next = true) {
-		return await this.#scroll(true, dir_next, true);
+	async refresh(bypass_before_change = false, dir_next = true) {
+		return await this.#scroll(true, dir_next, true, undefined, bypass_before_change);
 	}
 }
 

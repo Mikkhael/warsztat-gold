@@ -13,15 +13,27 @@ import { writeText as clipboard_write, readText as clipboard_read} from "@tauri-
 const msgManager = useMainMsgManager();
 
 listen("request_db_open", async (e) => {
-    const path = await ipc.db_open();
-    if(path) {
-        msgManager.post('info', 'Otworzono bazę danych', 3000);
-    }
+    ipc.db_open().catch((err) => {
+        console.error(err);
+        msgManager.postError(err);
+    });
 });
 listen("request_db_close", async (e) => {
-    await ipc.db_close();
+    ipc.db_close().catch(err => {
+        console.error(err);
+        msgManager.postError(err);
+    });
+});
+
+window.addEventListener('db_opened', () => {
+    msgManager.post('info', 'Otworzono bazę danych', 3000);
+    msgManager.close_all_with_content('Nie otworzono bazy danych');
+});
+
+window.addEventListener('db_closed', () => {
     msgManager.post('info', 'Zamknięto bazę danych', 3000);
 });
+
 function get_selection_string(accept_empty) {
     const selection_string = window.getSelection()?.toString();
     if(selection_string === undefined || (accept_empty && selection_string === ""))

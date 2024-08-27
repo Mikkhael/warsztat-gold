@@ -16,8 +16,8 @@ const fwManager  = useMainFWManager();
 const msgManager = useMainMsgManager();
 
 function handle_error(msg) {
-    console.error(msgManager);
-    msgManager.post("error", msg);
+    console.error(msg);
+    msgManager.postError(msg);
 }
 
 //////////// TOOLBAR HANDLERS

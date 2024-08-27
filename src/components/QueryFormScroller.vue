@@ -34,14 +34,6 @@ const props = defineProps({
 const props_refs = toRefs(props);
 const emit = defineEmits(['changed','refresh_request','error']);
 
-// import useMainMsgManager from "./Msg/MsgManager";
-// const msgManager = useMainMsgManager();
-// function handle_err(err){
-// 	console.error(err);
-// 	msgManager.post("error", err);
-// 	is_error.value = true;
-// }
-
 const displayed_value = ref(props.initial_value);
 
 const state = new ScrollerState(props.initial_value, props.before_change);
@@ -130,10 +122,14 @@ async function update_scroll_from_input(event) {
 }
 
 
-async function refresh(dir_next = true) {
+async function refresh(bypass_before_change = false, dir_next = true) {
 	try{
-		await state.refresh(dir_next);
+		const res = await state.refresh(bypass_before_change, dir_next);
 		is_error.value = false;
+		if(res !== undefined) {
+			return handle_changed(res);
+		}
+		return res;
 	}catch(err) {
 		is_error.value = true;
 		throw err;
