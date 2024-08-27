@@ -7,7 +7,7 @@ import ipc from '../../ipc';
 import { Dataset } from '../Dataset/Dataset';
 import {FormInput, FormEnum} from '../Controls';
 
-import {useMainFWManager} from '../FloatingWindows/FWManager';
+import {FWManager} from '../FloatingWindows/FWManager';
 import FWCollection from '../FloatingWindows/FWCollection.vue';
 
 import QueryFormScrollerDataset from '../QueryFormScrollerDataset.vue';
@@ -20,7 +20,7 @@ const msgManager = useMainMsgManager();
 
 
 const form_scroller = /**@type { import('vue').Ref<QueryFormScrollerDataset> } */ (ref());
-const fwManager = useMainFWManager();
+const fwManager = new FWManager();
 
 const form_elem = ref();
 const rowid = ref(0);
@@ -99,6 +99,8 @@ function on_click_find() {
             ["`miesiąc płacenia`", "Miesiąc Płacenia"],
         ],
         query_from: "`pracownicy` as p1 LEFT JOIN (SELECT *, max(`ID płac`) FROM `płace` GROUP BY `ID pracownika` ) as p2 ON p1.rowid=p2.`ID pracownika`",
+        step: 3,
+        limit: 3,
         selectable: true,
     }, {
         select: handle_find
@@ -220,6 +222,8 @@ defineExpose({
         v-model:index="rowid"
         @error="handle_err"
         ref="form_scroller"/> 
+
+    <FWCollection :manager="fwManager" />
 
     
     <!-- <QueryFormScroller :query_props="query_props" v-model:value="rowid" ref="form_scroller" /> -->

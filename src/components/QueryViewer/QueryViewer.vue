@@ -22,8 +22,8 @@ const query_props_names = [
 ];
 const props = defineProps({
     query_select_fields: {
-        /**@type {import('vue').PropType<string | [string, string | undefined][]} */
-        type: undefined,
+        /**@type {import('vue').PropType<string | [string, string | undefined][]>} */
+        type: Array,
         required: true
     },
     query_from: {
@@ -40,13 +40,15 @@ const props = defineProps({
     },
     step:  {
         type: Number,
-        default: 1
+        default: 20
     },
     selectable: {
         type: Boolean,
         default: false
     },
 });
+
+console.log("QUERY VIEWER", props);
 
 const emit = defineEmits(['select']);
 
@@ -74,7 +76,7 @@ const query_result   = ref( /**@type {import('../../ipc').IPCQueryResult?} */ (n
 const query_columns_display      = ref(/**@type {string[]} */ ([]));
 const query_columns_true         = ref(/**@type {string[]} */ ([]));
 const query_columns_true_escaped = ref(/**@type {string[]} */ ([]));
-const query_columns_hide         = ref(/**@type {string[]} */ ([]));
+const query_columns_hide         = ref(/**@type {boolean[]} */ ([]));
 
 watch([query_result, toRef(props, "query_select_fields")], ([new_result, new_fileds]) => {
     if(typeof new_fileds === "string") {
@@ -91,13 +93,14 @@ watch([query_result, toRef(props, "query_select_fields")], ([new_result, new_fil
             query_columns_hide.value         = [];
         }
     } else {
-        query_columns_display.value      = new_fileds.map( x => x[1] );
+        query_columns_display.value      = new_fileds.map( x => x[1] ?? '' );
         query_columns_true.value         = new_fileds.map( x => x[0] );
         query_columns_true_escaped.value = new_fileds.map( x => x[0] );
         query_columns_hide.value         = new_fileds.map( x => x[1] === undefined );
     }
 });
 
+//@ts-ignore
 watch( query_props_names.map(x => toRef(props, x)), () => {
     orderings_list.clear();
     orderings.splice(0, orderings.length);

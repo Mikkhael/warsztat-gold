@@ -63,7 +63,7 @@ defineExpose({
 		<button @click="ipc.db_open()">OPEN</button>
 		<div>Query: <input type="text" v-model.lazy="query" style="width: 100%"></div>
 		<div>Index: <input type="text" v-model.lazy="index"></div>
-		<div>Step: <input type="text" v-model.lazy="step"></div>
+		<div>Step: <input type="text"  v-model.lazy="step"></div>
 	</div>
 
 	<div>

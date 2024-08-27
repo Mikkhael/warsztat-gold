@@ -81,6 +81,8 @@ class FWManager {
         box.removeControl("wb-full");
         const window = new FWWindow(component, box, props, listeners);
         this.opened_windows.set(title, window);
+        
+        console.log('OPENING WINDOW', title, window);
         return window;
     }
 
@@ -103,7 +105,7 @@ class FWManager {
      * @param {Object.<string, any>} props
      * @param {Object.<string, Function>} listeners
      */
-    open_or_reopen_window(title, component, props = {}, listeners = {}) {
+    open_or_reopen_window(title, component, props = {}, listeners = {}) {        
         this.close_window(title);
         return this.open_window_unchecked(title, component, props, listeners);
     }

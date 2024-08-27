@@ -12,6 +12,8 @@ function handle_err(err){
 	is_error.value = true;
 }
 
+/**@typedef {string | number | BigInt} BigIntable */
+
 // const props = defineProps(['query', 'index', 'step']);
 const props = defineProps({
 	query: {
@@ -20,17 +22,20 @@ const props = defineProps({
 	},
 	index: {
         /**@type {import('vue').PropType<bigint>} */
-		type: Object,
+		//@ts-ignore
+		type: BigInt,
 		required: true
 	},
 	step: {
-        /**@type {import('vue').PropType<bigint>} */
-		type: Object,
+        /**@type {import('vue').PropType<BigIntable>} */
+		//@ts-ignore
+		type: [BigInt, Number, String],
 		default: 1n
 	},
 	limit: {
-        /**@type {import('vue').PropType<bigint>} */
-		type: Object,
+        /**@type {import('vue').PropType<BigIntable>} */
+		//@ts-ignore
+		type: [BigInt, Number, String],
 		default: 1n
 	}
 });
@@ -73,30 +78,32 @@ watch(toRef(props, 'index'), async (newValue, oldValue) => {
 	}
 });
 
+
 async function update_current_index(index = props.index){
 	await state.goto(index);
 	is_error.value = false;
 }
 
-async function click_last() {
-	console.log("click last");
-	await state.goto(-props.limit);
+async function scroll(steps) {
+	await state.scroll(steps);
 	is_error.value = false;
 }
-async function click_frst() {
-	console.log("click first");
-	await state.goto(1);
+
+async function goto(target) {
+	await state.goto(target);
 	is_error.value = false;
 }
-async function click_prev() {
-	console.log("click prev");
-	await state.scroll(-props.step);
-	is_error.value = false;
-}
-async function click_next() {
-	console.log("click next");
-	await state.scroll(props.step);
-	is_error.value = false;
+function goto_first(){ return goto(1); }
+function goto_last() { return goto(-props.limit); }
+
+/**
+ * @param {Event} event 
+ */
+function handle_changed(event) {
+	//@ts-ignore
+	const value = /**@type {string} */ (event.target?.value);
+	const value_bigint = BigInt(value);
+	update_current_index(value_bigint).catch(handle_err);
 }
 
 defineExpose({
@@ -108,11 +115,13 @@ defineExpose({
 <template>
 
 <div class="form_scroller" :class="{is_error, is_empty: state.is_empty, is_count_oot: !state.is_count_utd}">
-	<input type="button" class="btn prev" value="<|" @click="click_frst().catch(handle_err)">
-	<input type="button" class="btn prev" value="<" @click="click_prev().catch(handle_err)">
-	<input type="text"   class="txt curr" :value="props.index" @change="update_current_index($event.target.value).catch(handle_err); $event.target.value = props.index;">
-	<input type="button" class="btn next" value=">" @click="click_next().catch(handle_err)">
-	<input type="button" class="btn next" value="|>" @click="click_last().catch(handle_err)">
+	<input type="button" class="btn prev bound" @click="goto_first().catch(handle_err)">
+	<input type="button" class="btn prev step2" @click="scroll(-props.step).catch(handle_err)">
+	<input type="button" class="btn prev step"  @click="scroll(-1).catch(handle_err)">
+	<input type="text"   class="txt curr" :value="props.index" @change="handle_changed($event)">
+	<input type="button" class="btn next step"  @click="scroll(1).catch(handle_err)">
+	<input type="button" class="btn next step2" @click="scroll(props.step).catch(handle_err)">
+	<input type="button" class="btn next bound" @click="goto_last().catch(handle_err)">
 	<span  class="txt count as_input"> ({{ state.count }}) </span>
 	<!-- <span  class="as_input"> | C: {{ state.is_count_utd }} | E: {{ state.is_empty }} </span> -->
 </div>
@@ -121,24 +130,57 @@ defineExpose({
 
 <style scoped>
 
+
+.btn.bound{
+	background-image: url("src/assets/icons/arrow_rb.svg");
+} 
+.btn.step{
+	background-image: url("src/assets/icons/arrow_r.svg");
+}
+.btn.step2{
+	background-image: url("src/assets/icons/arrow_r2.svg");
+}
+.btn.refresh{
+	background-image: url("src/assets/icons/refresh.svg");
+}
+.btn {
+	border: none;
+	height: 3ch;
+	width: 3ch;
+	cursor: pointer;
+	overflow: hidden;
+	transition: background-color 0.2s;
+	background-color: transparent;
+	background-size: cover;
+}
+.btn:focus{
+	background-color: transparent;
+}
+.btn.prev {
+	scale: -1;
+}
+.btn:hover {
+	background-color: #00ffd538;
+}
+.btn:active {
+	background-color: #0066ff3d;
+}
+
+.txt {
+	user-select: none;
+	color: grey;
+}
+
 .form_scroller {
-	display: flex;
-	flex-direction: row;
+	text-wrap: nowrap;
 	background-color: #e6e4e4;
 	border-top: 1px solid black;
 	padding: 1px;
 }
 
 .form_scroller.is_error {
-	color: red;
 	background-color: #ff7171;
-}
-
-.form_scroller.is_empty .count,
-.form_scroller.is_empty .curr,
-.form_scroller.is_count_oot .count {
-	background-color: #ebe1b4;
-	color: #ffc012;
+	color: black;
 }
 
 </style>

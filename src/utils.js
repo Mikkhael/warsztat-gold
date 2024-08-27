@@ -37,14 +37,11 @@ function escape_sql_value(value){
 	}
 }
 
-function escape_backtick(/**@type {string | undefined} */ value) {
-    if(typeof value == "string") {
-        if(value.indexOf('`') != -1) {
-            console.error("Invalid column name: ", value);
-        }
-        return "`" + value + "`";
-    }
-    return value;
+function escape_backtick(/**@type {string} */ value) {
+	if(value.indexOf('`') != -1) {
+		console.error("Invalid column name: ", value);
+	}
+	return "`" + value + "`";
 }
 
 function escape_like(/**@type {string} */ value) {
