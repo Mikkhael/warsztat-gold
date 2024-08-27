@@ -10,7 +10,7 @@ import {FormInput, FormEnum} from '../Controls';
 import {useMainFWManager} from '../FloatingWindows/FWManager';
 import FWCollection from '../FloatingWindows/FWCollection.vue';
 
-import QueryFormScroller from '../QueryFormScroller.vue';
+import QueryFormScrollerDataset from '../QueryFormScrollerDataset.vue';
 import QueryViewer from '../QueryViewer/QueryViewer.vue';
 import {ref, reactive, watch, computed, onMounted} from 'vue';
 
@@ -19,15 +19,8 @@ import useMainMsgManager from "../Msg/MsgManager";
 const msgManager = useMainMsgManager();
 
 
-const form_scroller = /**@type { import('vue').Ref<QueryFormScroller> } */ (ref());
+const form_scroller = /**@type { import('vue').Ref<QueryFormScrollerDataset> } */ (ref());
 const fwManager = useMainFWManager();
-
-
-const query_props = reactive({
-	value_name: "`rowid`",
-	where: "",
-	from: "`pracownicy`",
-});
 
 const form_elem = ref();
 const rowid = ref(0);
@@ -69,6 +62,11 @@ const kwota_hints = kwota_hints_src.to_computed((rows) => {
     return rows.length > 0 ? rows[0] : [];
 });
 
+
+const scroller_query_name  = 'rowid';
+const scroller_query_from  = '`pracownicy`';
+const scroller_query_where = '';
+
 // DEBUG
 
 watch(rowid, async (newValue) => {
@@ -89,16 +87,6 @@ function handle_find(columns, row) {
 
 function on_click_find() {
     fwManager.open_or_reopen_window("Test - Znajdź", QueryViewer, {
-        // query_select: `
-        //     p1.rowid as __rowid,
-        //     p1.\`ID pracownika\` as ID_prac   ,
-        //     \`imię\`                ,
-        //     \`nazwisko\`            ,
-        //     \`miejsce urodzenia\`   ,
-        //     \`ID płac\` as \`płace_ID płac\`,
-        //     \`kwota\`               ,
-        //     \`podstawa\`            ,
-        //     \`miesiąc płacenia\`    `,
         query_select_fields: [
             ["p1.rowid"],
             ["p1.`ID pracownika`", "ID pracownika"],
@@ -139,8 +127,10 @@ function update_debug_res(aha) {
     debug_res.value = parsed;
 }
 
-// TODO validate form
-async function update_all_and_refresh(){
+async function update_all_and_refresh(bypass_validation = false){
+    if(!bypass_validation && !form_elem.value.reportValidity()){
+        return;
+    }
     const [updated_rows] = await dataset1.perform_update_all();
     const [result]       = await dataset1.perform_query_and_refresh_all();
     console.log("Updated rows: ", updated_rows);
@@ -153,7 +143,11 @@ function handle_err(/**@type {Error} */ err) {
         return;
     }
     console.error(err);
-    msgManager.post("error", err);
+    if(typeof err === 'string'){
+        msgManager.post("error", err);
+    } else {
+        msgManager.post("error", err.message);
+    }
 }
 
 defineExpose({
@@ -179,9 +173,9 @@ defineExpose({
         <textarea>{{ debug_update_query }}</textarea> <br>
         <button @click="update_all_and_refresh()    .then(() => form_scroller.refresh()).catch(handle_err)" > UPDATE  </button>
         <button @click="update_all_and_refresh(true).then(() => form_scroller.refresh()).catch(handle_err)" > UPDATE  BYPASS</button> <br>
-        <button @click="dataset1.perform_query_and_refresh_all().then(update_res).catch(handle_err)" > REFRESH </button>
-        <button @click="dataset1.perform_query_and_replace_all().then(update_res).catch(handle_err)" > REPLACE </button>
-        <button @click="dataset1.perform_query_and_retcon_all() .then(update_res).catch(handle_err)" > RETCON  </button>
+        <button @click="dataset1.perform_query_and_refresh_all().then(update_debug_res).catch(handle_err)" > REFRESH </button>
+        <button @click="dataset1.perform_query_and_replace_all().then(update_debug_res).catch(handle_err)" > REPLACE </button>
+        <button @click="dataset1.perform_query_and_retcon_all() .then(update_debug_res).catch(handle_err)" > RETCON  </button>
 	</div>
 
 
@@ -198,7 +192,7 @@ defineExpose({
         <form ref="form_elem" class="form">
             <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :value="prac_rowid"   :max="30" nonull/>
             <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :value="prac_imie"    pattern="[A-Z][a-z]+" nonull />
-            <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :value="prac_nazwisko" :class="{wide: prac_rowid.local < 5}"            />
+            <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :value="prac_nazwisko" :class="{wide: prac_rowid.local.value < 5}"            />
             <label class="label">KWOTA:            </label> <FormInput type="number"             :value="place_kwota"   class="wide" />
             <label class="label">KWOTA HINT:       </label> <FormInput type="number"             :value="place_kwota"  :hints="kwota_hints" class="wide" />
             <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :value="place_kwota"               />
@@ -218,16 +212,44 @@ defineExpose({
 
 	<textarea cols="30" rows="10" :value="debug_res_str"></textarea>
 
+    <br>
+    <br>
 
-
-    <QueryFormScroller :query_props="query_props" v-model:value="rowid" ref="form_scroller" />
+    <QueryFormScrollerDataset
+        class="fixed_bottom"
+        :query_value_name="scroller_query_name"
+        :query_from="scroller_query_from"
+        :query_where="scroller_query_where"
+        :datasets="[dataset1]"
+        v-model:index="rowid"
+        @error="handle_err"
+        ref="form_scroller"/> 
 
     
-    <FWCollection :manager="fwManager" />
+    <!-- <QueryFormScroller :query_props="query_props" v-model:value="rowid" ref="form_scroller" /> -->
+     
+    <!-- <QueryFormScroller 
+        class="fixed_bottom"
+        :query_value_name="scroller_query_name"
+        :query_from="scroller_query_from"
+        :query_where="scroller_query_where"
+        :initial_value="rowid"
+        :before_change="before_change_scroll"
+        @changed="handle_changed_scroll"
+        @refresh_request="handle_refresh_request_scroll"
+        @error="handle_err"
+        ref="form_scroller"/> -->
 
 </template>
 
 <style scoped>
+
+    .fixed_bottom {
+        position: fixed;
+        bottom: 0px;
+        left: 0px;
+        right: 0px;
+    }
 
     .form {
         display: grid;

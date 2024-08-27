@@ -1,0 +1,12 @@
+<svg
+   xmlns="http://www.w3.org/2000/svg"
+   viewBox="0 0 24 24">
+  <path
+     fill="#000"
+     d="m 13.665641,9.865778 -4.5899998,-4.59 a 1,1 0 0 0 -1.41,0 1,1 0 0 0 0,1.42 l 4.5999998,4.58 a 1,1 0 0 1 0,1.42 l -4.5999998,4.58 a 1.0005623,1.0005623 0 0 0 1.41,1.42 l 4.5899998,-4.59 a 3,3 0 0 0 0,-4.24 z"
+     id="path2" />
+  <path
+     style="stroke:#000;stroke-width:2;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+     d="M 15.630157,5.9641577 V 18.007168"
+     id="path1331" />
+</svg>

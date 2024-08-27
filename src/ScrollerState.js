@@ -1,20 +1,25 @@
 //@ts-check
-
+import { ref } from "vue";
 import ipc from "./ipc"
 import { escape_sql_value } from "./utils";
 
+/**
+ * @typedef {string | number} Value
+ */
+
 class ScrollerState {
 	/**
-	 * @param {any} starting_value 
-	 * @param {(any) => void} emit_callback 
+	 * @param {string | number} starting_value 
+	 * @param {(() => Promise<boolean>)?} before_change
 	 */
-	constructor(starting_value, emit_callback) {
+	constructor(starting_value, before_change = null) {
 		// this.has_value_updated = false;
 		// this.update_queries(starting_value);
-		this.value = starting_value;
-		this.bounds = [starting_value, starting_value, 0];
-		this.emit_callback = emit_callback;
-		this.is_empty = true;
+		this.value = ref(starting_value);
+		this.bounds = ref(/**@type {[Value|undefined, Value|undefined, number]} */ ([undefined, undefined, 0]));
+		this.before_change = before_change;
+		this.is_empty = ref(true);
+		this.is_bounds_utd = ref(false);
 		this.expire();
 	}
 	/**
@@ -45,26 +50,30 @@ class ScrollerState {
 	}
 
 	expire() {
-		this.is_bounds_utd  = false;
-		this.is_curr_utd    = false;
+		this.is_bounds_utd.value  = false;
 	}
 
 
-	get_query(str = "") {
-		return str.replace("{{}}", escape_sql_value(this.value) ?? '0');
+	/**
+	 * 
+	 * @param {string} str 
+	 * @param {Value | undefined} base_offset 
+	 * @returns 
+	 */
+	#get_query(str = "", base_offset = undefined) {
+		if(base_offset === undefined) base_offset = this.value.value;
+		return str.replace("{{}}", escape_sql_value(base_offset) ?? '0');
 	}
 
 	/**
-	 * @param {any} value 
-	 * @param {boolean} emit 
+	 * @param {Value} value 
 	 */
-	set_value(value, emit) {
-			 if(typeof(this.value) === 'number') this.value = +value;
-		else if(typeof(this.value) === 'bigint') this.value = BigInt(value);
-		else 									 this.value = value;
-		if(isNaN(this.value)) 					 this.value = value;
-		if(emit && this.emit_callback)
-			this.emit_callback(this.value);
+	#set_value(value) {
+		let new_value = value;
+		// if(typeof(this.value.value) === 'number') new_value = +value || 0;
+		// else 							          new_value = value;
+		this.value.value = new_value;
+		return this.value.value;
 		// this.has_value_updated = true;
 	}
 	// poll_has_value_updated() {
@@ -75,60 +84,57 @@ class ScrollerState {
 
 	async update_bounds(force = false) {
 		if(this.is_bounds_utd && !force) return;
-		console.log("scroller - bounds");
-		const [rows, col_names] = await ipc.db_query(this.get_query(this.str_query_bounds));
-		if(rows.length <= 0 || rows[0][2] == 0) {
-			// console.log("scroller - bounds - empty");
-			this.bounds = [this.value,this.value,0];
-			this.is_empty  = true;
+		const [rows, col_names] = await ipc.db_query(this.#get_query(this.str_query_bounds));
+		if(rows.length <= 0 || rows[0][2] == 0) { // no rows returned, or count(*) is 0 
+			this.bounds.value[0] = undefined;
+			this.bounds.value[1] = undefined;
+			this.bounds.value[2] = 0;
+			this.is_empty.value  = true;
 		} else {
-			this.bounds = [rows[0][0], rows[0][1], rows[0][2]];
-			this.is_empty = false;
+			this.bounds.value[0] = rows[0][0];
+			this.bounds.value[1] = rows[0][1];
+			this.bounds.value[2] = Number(rows[0][2]);
+			this.is_empty.value = false;
 		}
-		this.is_bounds_utd = true;
-		// console.log("scroller - bounds - ", this.bounds);
+		this.is_bounds_utd.value = true;
 	}
 
 	/**
-	 * 
 	 * @param {boolean} with_curr 
 	 * @param {boolean} dir_next
+	 * @param {Value | undefined} base_offset
 	 * @returns 
 	 */
-	async scroll(with_curr, dir_next, emit = true, force = false) {
-		await this.update_bounds(force);
-		if(with_curr && this.is_curr_utd && !force) return;
-		console.log("scroller - scroll", with_curr, dir_next);
+	async #scroll(with_curr, dir_next, force_update = false, base_offset = undefined) {
+		await this.update_bounds(force_update);
+		if(this.before_change){
+			const should_change = await this.before_change();
+			if(!should_change) return undefined;
+		}
 		let str_query;
 			 if( with_curr &&  dir_next) str_query = this.str_query_ncur;
 		else if( with_curr && !dir_next) str_query = this.str_query_pcur;
 		else if(!with_curr &&  dir_next) str_query = this.str_query_next;
 		else if(!with_curr && !dir_next) str_query = this.str_query_prev;
-		const [rows, col_names] = await ipc.db_query(this.get_query(str_query));
+		const [rows, col_names] = await ipc.db_query(this.#get_query(str_query, base_offset));
 		if(rows.length <= 0) {
-			// console.log("scroller - scroll - none");
-			// this.is_empty  = true;
-			await this.update_bounds(force);
-			this.set_value(this.bounds[+dir_next], emit);
+			return this.#set_value(this.bounds.value[+dir_next] ?? 0); // if there is no next element, snap to bounds
 		} else {
-			this.is_empty = false;
-			this.set_value(rows[0][0], emit);
+			this.is_empty.value = false;
+			return this.#set_value(rows[0][0]);
 		}
-		this.is_curr_utd = true;
-		// console.log("scroller - scroll - ", this.value);
 	}
-	async goto(value, dir_next = true, emit = true) {
-		console.log("scroller - goto", value, dir_next);
-		this.set_value(value, emit);
-		await this.scroll(true, dir_next, emit, true);
+	async goto(/**@type {Value} */ value, force_update = false, dir_next = true) {
+		return await this.#scroll(true, dir_next, force_update, value);
 	}
-	async goto_bound(to_last = true, emit = true, force = false) {
-		await this.update_bounds(force);
-		this.set_value(this.bounds[+to_last], emit);
-		this.is_curr_utd = true;
+	async goto_step(/**@type {Boolean} */ direction_next, force_update = false) {
+		return await this.#scroll(false, direction_next, force_update);
 	}
-	refresh(dir_next = true, emit = true) {
-		return this.scroll(true, dir_next, emit, true);
+	async goto_bound(/**@type {Boolean} */ to_last, force_update = false) {
+		return await this.#scroll(true, to_last, force_update, this.bounds.value[to_last ? 1 : 0]);
+	}
+	async refresh(dir_next = true) {
+		return await this.#scroll(true, dir_next, true);
 	}
 }
 

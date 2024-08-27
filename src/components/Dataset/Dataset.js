@@ -490,6 +490,14 @@ class Dataset {
                                         ...auto_binding_targets);
     }
 
+    is_changed() {
+        for(let value_name in this.values) {
+            const value = this.values[value_name];
+            if(DVUtil.is_changed(value)) return true;
+        }
+        return false;
+    }
+
     async perform_update_all()            {return await Promise.all(this.table_syncs.map(x => x.perform_update()))}
 
     async perform_query_all()             {return await Promise.all(this.source_queries.map(x => x.perform_query()))}

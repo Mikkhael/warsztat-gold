@@ -20,17 +20,17 @@ const props = defineProps({
 	},
 	index: {
         /**@type {import('vue').PropType<bigint>} */
-		type: undefined,
+		type: Object,
 		required: true
 	},
 	step: {
         /**@type {import('vue').PropType<bigint>} */
-		type: undefined,
+		type: Object,
 		default: 1n
 	},
 	limit: {
         /**@type {import('vue').PropType<bigint>} */
-		type: undefined,
+		type: Object,
 		default: 1n
 	}
 });
@@ -119,7 +119,7 @@ defineExpose({
 
 </template>
 
-<style>
+<style scoped>
 
 .form_scroller {
 	display: flex;
