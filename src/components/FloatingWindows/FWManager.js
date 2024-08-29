@@ -30,6 +30,12 @@ class FWManager {
     constructor() {
         this.cointainer = /**@type {Element=}*/ (undefined);
         this.opened_windows = reactive(/**@type {Map.<string, FWWindow>} */ (new Map()));
+        this.viewport = {
+            left:   /**@type {string=} */(undefined),
+            right:  /**@type {string=} */(undefined),
+            top:    /**@type {string=} */(undefined),
+            bottom: /**@type {string=} */(undefined),
+        }
         // this.opened_windows = reactive(/**@type {string[]} */ ([]));
     }
     /**@return {FWManager} */
@@ -42,6 +48,10 @@ class FWManager {
      */
     set_cointainer(cointainer){
         this.cointainer = markRaw(cointainer);
+    }
+
+    set_viewport({left, right, top, bottom}) {
+        Object.assign(this.viewport, {left, right, top, bottom});
     }
 
     /**
@@ -74,6 +84,10 @@ class FWManager {
             x: "center",
             y: "center",
             minheight: 35 + 10,
+            top:    this.viewport.top,
+            bottom: this.viewport.bottom,
+            left:   this.viewport.left,
+            right:  this.viewport.right,
             onclose: (force) => {
                 this.opened_windows.delete(title);
             }

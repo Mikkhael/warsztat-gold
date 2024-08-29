@@ -109,6 +109,82 @@ button {
 }
 
 
+/* /////////////////////// FORM SCROLLER //////////////////////////// */
+
+
+.form_scroller .btn.bound{
+	background-image: url("src/assets/icons/arrow_rb.svg");
+} 
+.form_scroller .btn.step{
+	background-image: url("src/assets/icons/arrow_r.svg");
+}
+.form_scroller .btn.step2{
+	background-image: url("src/assets/icons/arrow_r2.svg");
+}
+.form_scroller .btn.refresh{
+	background-image: url("src/assets/icons/refresh.svg");
+}
+.form_scroller .btn.insert{
+	background-image: url("src/assets/icons/plus.svg");
+}
+.form_scroller .btn.save{
+	background-image: url("src/assets/icons/disk.svg");
+}
+
+.form_scroller .btn {
+	border: none;
+	height: 3ch;
+	min-width: 3ch;
+	cursor: pointer;
+	overflow: hidden;
+	transition: background-color 0.2s;
+	background-color: transparent;
+	background-size: cover;
+}
+.form_scroller .btn:focus{
+	background-color: transparent;
+}
+.form_scroller .btn.prev {
+	scale: -1;
+}
+.form_scroller .btn:hover {
+	background-color: #00ffd538;
+}
+.form_scroller.insert_mode .btn.insert,
+.form_scroller             .btn:active {
+	background-color: #0066ff3d;
+}
+
+.form_scroller .curr {
+	min-width: 3ch;
+}
+
+.form_scroller .txt {
+	user-select: none;
+	color: grey;
+	min-width: 0ch;
+	overflow: hidden;
+}
+
+.form_scroller {
+	display: flex;
+	flex-wrap: nowrap;
+	text-wrap: nowrap;
+	background-color: #e6e4e4;
+	border-top: 1px solid black;
+	padding: 1px;
+}
+
+.form_scroller .spacer {
+	flex-grow: 1;
+}
+
+.form_scroller.is_error {
+	background-color: #ff7171;
+	color: black;
+}
+
+
 /*
 @media (prefers-color-scheme: dark) {
   :root {

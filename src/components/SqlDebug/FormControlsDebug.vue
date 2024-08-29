@@ -19,7 +19,7 @@ import useMainMsgManager from "../Msg/MsgManager";
 const msgManager = useMainMsgManager();
 
 
-const form_scroller = /**@type { import('vue').Ref<QueryFormScrollerDataset> } */ (ref());
+const scroller_ref = /**@type { import('vue').Ref<QueryFormScrollerDataset> } */ (ref());
 const fwManager = new FWManager();
 
 const form_elem = ref();
@@ -82,7 +82,8 @@ watch(rowid, async (newValue) => {
 
 function handle_find(columns, row) {
     fwManager.close_window("Test - Znajdź");
-    rowid.value = row[0];
+    scroller_ref.value.goto(row[0]);
+    // rowid.value = row[0];
 }
 
 function on_click_find() {
@@ -169,8 +170,8 @@ defineExpose({
 		<div>Curr Value: <input type="text" v-model.lazy="rowid"></div>
         <button @click="update_debug_update_query">Update Query Refresh</button> <br>
         <textarea>{{ debug_update_query }}</textarea> <br>
-        <button @click="update_all_and_refresh()    .then(() => form_scroller.refresh()).catch(handle_err)" > UPDATE  </button>
-        <button @click="update_all_and_refresh(true).then(() => form_scroller.refresh()).catch(handle_err)" > UPDATE  BYPASS</button> <br>
+        <button @click="update_all_and_refresh()    .then(() => scroller_ref.refresh()).catch(handle_err)" > UPDATE  </button>
+        <button @click="update_all_and_refresh(true).then(() => scroller_ref.refresh()).catch(handle_err)" > UPDATE  BYPASS</button> <br>
         <button @click="dataset1.perform_query_and_refresh_all().then(update_debug_res).catch(handle_err)" > REFRESH </button>
         <button @click="dataset1.perform_query_and_replace_all().then(update_debug_res).catch(handle_err)" > REPLACE </button>
         <button @click="dataset1.perform_query_and_retcon_all() .then(update_debug_res).catch(handle_err)" > RETCON  </button>
@@ -190,7 +191,7 @@ defineExpose({
         <form ref="form_elem" class="form">
             <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :value="prac_rowid"   :max="30" nonull/>
             <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :value="prac_imie"    pattern="[A-Z][a-z]+" nonull />
-            <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :value="prac_nazwisko" :class="{wide: prac_rowid.local.value < 5}"            />
+            <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :value="prac_nazwisko" :class="{wide: (prac_rowid.local.value?.toString().length ?? 0) < 5}"            />
             <label class="label">KWOTA:            </label> <FormInput type="number"             :value="place_kwota"   class="wide" />
             <label class="label">KWOTA HINT:       </label> <FormInput type="number"             :value="place_kwota"  :hints="kwota_hints" class="wide" />
             <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :value="place_kwota"               />
@@ -221,12 +222,13 @@ defineExpose({
         :datasets="[dataset1]"
         v-model:index="rowid"
         @error="handle_err"
-        ref="form_scroller"/> 
+        insertable
+        ref="scroller_ref"/> 
 
     <FWCollection :manager="fwManager" />
 
     
-    <!-- <QueryFormScroller :query_props="query_props" v-model:value="rowid" ref="form_scroller" /> -->
+    <!-- <QueryFormScroller :query_props="query_props" v-model:value="rowid" ref="scroller_ref" /> -->
      
     <!-- <QueryFormScroller 
         class="fixed_bottom"
@@ -238,13 +240,14 @@ defineExpose({
         @changed="handle_changed_scroll"
         @refresh_request="handle_refresh_request_scroll"
         @error="handle_err"
-        ref="form_scroller"/> -->
+        ref="scroller_ref"/> -->
 
 </template>
 
 <style scoped>
 
     .fixed_bottom {
+        overflow-x: auto;
         position: fixed;
         bottom: 0px;
         left: 0px;

@@ -15,6 +15,8 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 const fwManager  = useMainFWManager();
 const msgManager = useMainMsgManager();
 
+fwManager.set_viewport({top: '24px'});
+
 function handle_error(msg) {
     console.error(msg);
     msgManager.postError(msg);
@@ -96,7 +98,7 @@ function tool_klienci(){
 
 .toolbar {
     padding: 2px;
-    min-height: 24px;
+    height: 24px;
     background-color: #d8d8d8;
     display: flex;
 }

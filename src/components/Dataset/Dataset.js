@@ -64,37 +64,27 @@ dataset.perform_query_and_retcon_all()  .then(...).catch(...);
 ////////////////// Dataset Values ////////////////////////////////////////
 
 
-/**@typedef {number | string | null} SQLValue */
 /**
- * @template {SQLValue} [T=SQLValue]
- * @typedef {T | import('vue').Ref<T>} SQLValuelike
- * */
-/**
- * @template {SQLValue} [T=SQLValue]
- * @typedef {T | import('vue').Ref<T> | DatasetValue<T>} DatasetValuelike 
- * */
-/**
- * @template {SQLValue} [T=SQLValue]
- * @typedef {import('vue').Ref<T> | DatasetValue<T>} DatasetValueReflike 
- * */
+ * @typedef {number | string | null} SQLValue 
+ * @typedef {SQLValue | import('vue').Ref<SQLValue>} SQLValuelike
+ * @typedef {SQLValue | import('vue').Ref<SQLValue> | DatasetValue} DatasetValuelike 
+ * @typedef {import('vue').Ref<SQLValue> | DatasetValue} DatasetValueReflike 
+ * @typedef {{local: SQLValue, remote: SQLValue | undefined, changed: boolean}} ReactiveDatasetValue
+ *  */
 
-/** 
- * @template {SQLValue} [T=SQLValue]
- * @typedef {{local: T, remote: T | undefined, changed: boolean}} ReactiveDatasetValue
- * */
-
-/**@template {SQLValue} T */
 class DatasetValue {
-    constructor(/**@type {import('vue').Ref<T> | T}*/ initial_value, /**@type {string} */ name) {
+    constructor(/**@type {SQLValuelike}*/ initial_value, /**@type {string} */ name) {
         // this.name    = name;
-        this.local   = /**@type {import('vue').Ref<T>} */ (ref(initial_value));
+        this.local         = /**@type {import('vue').Ref<SQLValue>} */ (ref(initial_value));
+        this.initial_value = unref(initial_value);
         // this.changed = computed(() => false);
     }
 
-    set    (/**@type {T}*/ new_value) { this.local.value = unref(new_value); }
-    replace(/**@type {T}*/ new_value) { this.local.value = unref(new_value); }
-    refresh(/**@type {T}*/ new_value) { this.local.value = unref(new_value); }
-    retcon (/**@type {T}*/ new_value) {}
+    reinitialize() {this.local.value = this.initial_value;}
+    set    (/**@type {SQLValuelike}*/ new_value) { this.local.value = unref(new_value); }
+    replace(/**@type {SQLValuelike}*/ new_value) { this.local.value = unref(new_value); }
+    refresh(/**@type {SQLValuelike}*/ new_value) { this.local.value = unref(new_value); }
+    retcon (/**@type {SQLValuelike}*/ new_value) {}
     revert(){}
 
     is_changed()   { return false; }
@@ -108,7 +98,7 @@ class DatasetValue {
 
     as_sql() {return escape_sql_value(this.as_local());}
 
-    /** @returns {ReactiveDatasetValue<T>}*/
+    /** @returns {ReactiveDatasetValue}*/
     to_reactive_values() {return reactive({
             local:  this.local,
             remote: undefined,
@@ -116,28 +106,28 @@ class DatasetValue {
         });
     }
 }
-
-/**
- * @template {SQLValue} T 
- * @extends DatasetValue<T>
-*/
 class DatasetValueSynced extends DatasetValue {
-    constructor(/**@type {import('vue').Ref<T> | T}*/ initial_value, /**@type {string} */ name) {
+    constructor(/**@type {SQLValuelike}*/ initial_value, /**@type {string} */ name) {
         super(initial_value, name);
-        this.remote = /**@type {import('vue').Ref<T>} */ (ref(unref(initial_value)));
+        this.remote = /**@type {import('vue').Ref<SQLValue>} */ (ref(unref(initial_value)));
         this.changed = computed(() => this.local.value !== this.remote.value);
     }
 
-    replace(/**@type {T}*/ new_value) {
+    reinitialize() {
+        this.local.value  = this.initial_value;
+        this.remote.value = null;
+    }
+
+    replace(/**@type {SQLValuelike}*/ new_value) {
         this.local.value  = unref(new_value);
         this.remote.value = unref(new_value);
     }
-    refresh(/**@type {T}*/ new_value) {
+    refresh(/**@type {SQLValuelike}*/ new_value) {
         if(!this.is_changed())
             this.local.value = unref(new_value);
         this.remote.value = unref(new_value);
     }
-    retcon(/**@type {T}*/ new_value) { this.remote.value = unref(new_value); }
+    retcon(/**@type {SQLValuelike}*/ new_value) { this.remote.value = unref(new_value); }
     revert() { this.local.value = this.remote.value; }
 
     is_changed()   { return this.changed.value; }
@@ -149,6 +139,7 @@ class DatasetValueSynced extends DatasetValue {
     as_local()       { return this.local.value; }
     as_remote()      { return this.remote.value; }
     
+    /** @returns {ReactiveDatasetValue}*/
     to_reactive_values() {return reactive({
             local:   this.local,
             remote:  this.remote,
@@ -490,16 +481,14 @@ class Dataset {
                                         ...auto_binding_targets);
     }
 
-    is_changed() {
-        for(let value_name in this.values) {
-            const value = this.values[value_name];
-            if(DVUtil.is_changed(value)) return true;
-        }
-        return false;
-    }
+
+    
+    is_to_update() { return Object.values(this.values).some(x => x.is_to_update()); }
+    is_changed()   { return Object.values(this.values).some(x => x.is_changed()); }
+    
+    reinitialize_all() { Object.values(this.values).forEach(x => x.reinitialize()); }
 
     async perform_update_all()            {return await Promise.all(this.table_syncs.map(x => x.perform_update()))}
-
     async perform_query_all()             {return await Promise.all(this.source_queries.map(x => x.perform_query()))}
     async perform_query_and_replace_all() {return await Promise.all(this.source_queries.map(x => x.perform_query_and_replace()))}
     async perform_query_and_refresh_all() {return await Promise.all(this.source_queries.map(x => x.perform_query_and_refresh()))}

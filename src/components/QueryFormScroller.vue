@@ -1,6 +1,6 @@
 <script setup>
 //@ts-check
-import { watch, ref, readonly, toRef, toRefs } from "vue";
+import { watch, ref, readonly, toRef, toRefs, computed } from "vue";
 import ScrollerState from "../ScrollerState";
 
 const props = defineProps({
@@ -26,15 +26,36 @@ const props = defineProps({
 		type: [String, Number],
 		required: true
 	},
+	insert_mode: {
+		type: Boolean,
+		default: false
+	},
 	norefresh: {
+		type: Boolean,
+		default: false
+	},
+	nosave: {
+		type: Boolean,
+		default: false
+	},
+	insertable:{
 		type: Boolean,
 		default: false
 	}
 });
 const props_refs = toRefs(props);
-const emit = defineEmits(['changed','refresh_request','error']);
+const emit = defineEmits([
+	'update:insert_mode',
+	'error',
+	'changed',
+	'insert_request',
+	'refresh_request',
+	'save_request',
+]);
 
-const displayed_value = ref(props.initial_value);
+const insert_mode           = ref(false);
+const displayed_value       = ref(props.initial_value);
+const displayed_placeholder = computed(() => insert_mode.value ? '***' : '');
 
 const state = new ScrollerState(props.initial_value, props.before_change);
 const is_error = ref(true);
@@ -53,6 +74,7 @@ function handle_err(err) {
 function handle_changed(new_value) {
 	if(new_value === undefined) return new_value;
 	displayed_value.value = new_value;
+	set_insert_mode(false);
 	emit('changed', new_value);
 	return new_value;
 }
@@ -136,28 +158,47 @@ async function refresh(bypass_before_change = false, dir_next = true) {
 	}
 }
 
+function set_insert_mode(value) {
+	if(insert_mode.value === value) return;
+	insert_mode.value = value;
+	emit('update:insert_mode', value);
+	if(value) {
+		displayed_value.value = '';
+	}
+}
+
 defineExpose({
 	refresh,
 	goto,
-	scroll
+	scroll,
+	set_insert_mode
 });
 
 function show_error(err) {
 	console.error(err)
 }
 
+// const bounds_str = computed(() => {
+// 	const min   = state.bounds.value[0];
+// 	const max   = state.bounds.value[1];
+// 	const count = state.bounds.value[2];
+// });
+
 </script>
 
 <template>
 
-<div class="form_scroller" :class="{is_error, is_empty: state.is_empty, is_bounds_oot: !state.is_bounds_utd}">
+<div class="form_scroller" :class="{is_error, is_empty: state.is_empty, is_bounds_oot: !state.is_bounds_utd, insert_mode}">
 	<input type="button" class="btn prev bound" @click="scroll(true,  false).catch(show_error)">
 	<input type="button" class="btn prev step"  @click="scroll(false, false).catch(show_error)">
-	<input type="text"   class="txt curr"       :value="displayed_value" @change="update_scroll_from_input($event).catch(show_error)">
+	<input type="text"   class="curr"           :value="displayed_value" @change="update_scroll_from_input($event).catch(show_error)" :placeholder="displayed_placeholder">
 	<input type="button" class="btn next step"  @click="scroll(false, true).catch(show_error)">
 	<input type="button" class="btn next bound" @click="scroll(true,  true).catch(show_error)">
-	<span  class="txt bounds as_input"> {{ state.bounds.value[0] }} - {{ state.bounds.value[1] }} ({{ state.bounds.value[2] }}) </span>
+	<span  class="txt bounds as_input">  ({{ state.bounds.value[2] }}) {{ state.bounds.value[0] }} - {{ state.bounds.value[1] }} </span>
 	<input type="button" class="btn refresh"    @click="emit('refresh_request')" v-if="!props.norefresh">
+	<input type="button" class="btn insert"     @click="insert_mode || emit('insert_request')"  v-if="props.insertable">
+	<div class="spacer"></div>
+	<input type="button" class="btn save"       @click="emit('save_request')" v-if="!props.nosave">
 	<!-- <span  class="as_input"> | B: {{ state.is_bounds_utd }} | C: {{ state.is_curr_utd }} | E: {{ state.is_empty }} </span> -->
 </div>
 
@@ -165,54 +206,6 @@ function show_error(err) {
 
 <style scoped>
 
-.btn.bound{
-	background-image: url("src/assets/icons/arrow_rb.svg");
-} 
-.btn.step{
-	background-image: url("src/assets/icons/arrow_r.svg");
-}
-.btn.refresh{
-	background-image: url("src/assets/icons/refresh.svg");
-}
-.btn {
-	border: none;
-	height: 3ch;
-	width: 3ch;
-	cursor: pointer;
-	overflow: hidden;
-	transition: background-color 0.2s;
-	background-color: transparent;
-	background-size: cover;
-}
-.btn:focus{
-	background-color: transparent;
-}
-.btn.prev {
-	scale: -1;
-}
-.btn:hover {
-	background-color: #00ffd538;
-}
-.btn:active {
-	background-color: #0066ff3d;
-}
-
-.txt {
-	user-select: none;
-	color: grey;
-}
-
-.form_scroller {
-	text-wrap: nowrap;
-	background-color: #e6e4e4;
-	border-top: 1px solid black;
-	padding: 1px;
-}
-
-.form_scroller.is_error {
-	background-color: #ff7171;
-	color: black;
-}
 
 
 </style>

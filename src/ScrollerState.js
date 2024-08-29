@@ -107,6 +107,9 @@ class ScrollerState {
 	 */
 	async #scroll(with_curr, dir_next, force_update = false, base_offset = undefined, bypass_before_change = false) {
 		await this.update_bounds(force_update);
+		// check if already at bounds. tp not trigger update
+		if(this.value.value === this.bounds.value[0] && !dir_next) return this.value.value;
+		if(this.value.value === this.bounds.value[1] &&  dir_next) return this.value.value;
 		if(!bypass_before_change && this.before_change){
 			const should_change = await this.before_change();
 			if(!should_change) return undefined;
