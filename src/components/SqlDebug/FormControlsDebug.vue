@@ -197,6 +197,7 @@ function on_changed(new_index, rows) {
     </div>
     <p>KWOTA_HINTS: {{ kwota_hints }}</p>
     <p>PODSTAWA_HINTS: {{ podstawa_hints }}</p>
+    <p>CHANGED: {{ dataset1.is_changed_ref }}</p>
     <fieldset class="form_fieldset">
         <legend>FORM</legend>
         <form ref="form_elem" class="form">

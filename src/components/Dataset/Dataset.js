@@ -1,5 +1,5 @@
 //@ts-check
-import { computed, unref, ref, reactive } from "vue";
+import { computed, unref, ref, reactive, shallowRef } from "vue";
 import { escape_backtick, escape_sql_value, iterate_query_result_values, iterate_query_result_values_single_row } from "../../utils";
 import ipc from "../../ipc";
 
@@ -394,9 +394,16 @@ class Dataset {
         this.source_queries = /**@type {SourceQuery[]} */ ([]);
         this.values = /**@type {Object.<string, DatasetValue>} */ ({});
 
+        this.synced_values =  shallowRef(/**@type {DatasetValueSynced[]} */ ([]));
+
         this.insert_mode = ref(false);
         this.forms = /**@type {import('vue').Ref<HTMLFormElement>[]} */ ([]);
         this.index = ref(/**@type {SQLValue} */ (null));
+
+        this.is_changed_ref = computed(() => {
+            const changed_list = this.synced_values.value.map(x => x.changed.value);
+            return changed_list.indexOf(true) !== -1;
+        });
     }
 
     /**
@@ -506,8 +513,10 @@ class Dataset {
      * @param {...AutoBindingTargetWithArgs} auto_binding_targets
      */
     create_value_synced(value_name, initial_value = null, ...auto_binding_targets){
-        return this.#create_value_impl(value_name, new DatasetValueSynced(initial_value, value_name),
+        const value = this.#create_value_impl(value_name, new DatasetValueSynced(initial_value, value_name),
                                         ...auto_binding_targets);
+        this.synced_values.value.push( /**@type {DatasetValueSynced} */ (value));
+        return value;
     }
 
 

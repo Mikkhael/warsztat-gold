@@ -42,6 +42,10 @@ const props = defineProps({
 	insertable:{
 		type: Boolean,
 		default: false
+	},
+	indicate_save:{
+		type: Boolean,
+		default: false,
 	}
 });
 const props_refs = toRefs(props);
@@ -58,7 +62,7 @@ const insert_mode           = ref(false);
 const displayed_value       = ref(props.initial_value);
 const displayed_placeholder = computed(() => insert_mode.value ? '***' : '');
 
-const state = new ScrollerState(props.initial_value, props.before_change);
+const state = new ScrollerState(props.initial_value ?? null, props.before_change);
 const is_error = ref(true);
 
 /**
@@ -179,6 +183,13 @@ function show_error(err) {
 	console.error(err)
 }
 
+/**
+ * @param {MouseEvent} event 
+ */
+function clicked_save(event){
+	emit('save_request', event.shiftKey);
+}
+
 // const bounds_str = computed(() => {
 // 	const min   = state.bounds.value[0];
 // 	const max   = state.bounds.value[1];
@@ -199,7 +210,7 @@ function show_error(err) {
 	<input type="button" class="btn refresh"    @click="emit('refresh_request')" v-if="!props.norefresh">
 	<input type="button" class="btn insert"     @click="insert_mode || emit('insert_request')"  v-if="props.insertable">
 	<div class="spacer"></div>
-	<input type="button" class="btn save"       @click="emit('save_request')" v-if="!props.nosave">
+	<input type="button" class="btn save"       @click="clicked_save" v-if="!props.nosave" :class="{indicate: props.indicate_save}">
 	<!-- <span  class="as_input"> | B: {{ state.is_bounds_utd }} | C: {{ state.is_curr_utd }} | E: {{ state.is_empty }} </span> -->
 </div>
 

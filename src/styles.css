@@ -147,6 +147,11 @@ button {
 .form_scroller .btn.prev {
 	scale: -1;
 }
+
+.form_scroller .btn.indicate{
+  background-color: yellow;
+}
+
 .form_scroller .btn:hover {
 	background-color: #00ffd538;
 }

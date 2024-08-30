@@ -1,6 +1,6 @@
 <script setup>
 //@ts-check
-import {onMounted, ref, watch} from 'vue'
+import {computed, onMounted, ref, watch} from 'vue'
 import QueryFormScroller from "./QueryFormScroller.vue"
 import useMainMsgManager from './Msg/MsgManager'
 
@@ -52,6 +52,12 @@ const scroller_ref = ref();
 
 const insert_mode = ref(false);
 
+const is_any_dataset_changed = computed(() => {
+	const is_changed_list = props.datasets.map(x => x.is_changed_ref.value);
+	console.log('is_any_dataset_changed', is_changed_list);
+	return is_changed_list.indexOf(true) !== -1;
+});
+
 watch(insert_mode, (new_value) => {
 	emit('set_insert_mode', new_value);
 }, {immediate: true});
@@ -89,7 +95,7 @@ async function before_save(is_insert, bypass_validation) {
 			return true;
 		}
         if(props.datasets.some(x => !x.reportFormValidity())){
-            msgManager.post('info', 'Nie można zapisać zmian. Niektóre pola mają nieprawidłową wartość.')
+            msgManager.post('info', 'Niektóre pola mają nieprawidłową wartość. Przytrzymaj SHIFT, aby zapisać mimo to.')
             return false;
         }
 		return true;
@@ -145,14 +151,18 @@ async function perform_save(bypass_validation = false){
 	await perform_refresh();
 }
 
-async function save_request() {
-	console.log('SAVE REQUEST');
+/**
+ * @param {boolean} with_shift 
+ */
+async function save_request(with_shift) {
+	console.log('SAVE REQUEST', with_shift);
 	if(insert_mode.value) {
 		console.error('INSERTING NOT YET IMPLEMENTED');
 		return;
 	}
 	try{
-		await perform_save();
+		const bypass_validation = with_shift;
+		await perform_save(bypass_validation);
 	} catch (err) {
 		handle_err(err);
 	}
@@ -183,6 +193,7 @@ defineExpose({
         :query_value_name="props.query_value_name"
         :query_from="props.query_from"
         :query_where="props.query_where"
+		:indicate_save="is_any_dataset_changed"
         :initial_value="null"
         :before_change="before_change"
 		v-model:insert_mode="insert_mode"
