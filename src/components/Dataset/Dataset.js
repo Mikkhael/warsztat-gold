@@ -393,6 +393,10 @@ class Dataset {
         this.table_syncs = /**@type {DatasetTableSync[]} */ ([]);
         this.source_queries = /**@type {SourceQuery[]} */ ([]);
         this.values = /**@type {Object.<string, DatasetValue>} */ ({});
+
+        this.insert_mode = ref(false);
+        this.forms = /**@type {import('vue').Ref<HTMLFormElement>[]} */ ([]);
+        this.index = ref(/**@type {SQLValue} */ (null));
     }
 
     /**
@@ -417,8 +421,33 @@ class Dataset {
     }
 
 
+    /**
+     * @param {boolean} value 
+     */
+    set_insert_mode(value){
+        this.insert_mode.value = value;
+    }
+    /**
+     * @param {SQLValue} value 
+     */
+    set_index(value){
+        this.index.value = value;
+    }
+    get_index_ref() { return this.index; }
+    get_index()     { return this.index.value; }
 
-    // TODO naprtawić templaty
+    /**
+     * 
+     * @param {import('vue').Ref<HTMLFormElement>} value 
+     */
+    assosiate_form(value) {
+        this.forms.push(value);
+    }
+
+    reportFormValidity(){
+        return this.forms.map(x => x.value.reportValidity()).every(x => x);
+    }
+
 
     /**
      * @typedef {DatasetTableSync | DatasetSourceQuery} AutoBindingTarget

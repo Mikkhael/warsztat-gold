@@ -23,9 +23,11 @@ const scroller_ref = /**@type { import('vue').Ref<QueryFormScrollerDataset> } */
 const fwManager = new FWManager();
 
 const form_elem = ref();
-const rowid = ref(0);
 
 const dataset1 = new Dataset();
+const rowid    = dataset1.get_index_ref();
+dataset1.assosiate_form(form_elem);
+
 const src1 = dataset1.create_source_query();
 const sync_pracownicy = dataset1.create_table_sync('pracownicy',);
 const sync_place      = dataset1.create_table_sync('płace');
@@ -69,14 +71,18 @@ const scroller_query_where = '';
 
 // DEBUG
 
-watch(rowid, async (newValue) => {
-    let row = await dataset1.perform_query_and_replace_all().catch(err => {
-        console.error('Błąd podczas bierania z bazy danych', err);
-        msgManager.postError(`Błąd podczas bierania z bazy danych: \`${err}\``);
-        return [];
-    });
-    update_debug_res(row);
-});
+
+
+// watch([rowid, dataset1.insert_mode], async ([newValue]) => {
+//     let row = await dataset1.perform_query_and_replace_all().catch(err => {
+//         console.error('Błąd podczas bierania z bazy danych', err);
+//         msgManager.postError(`Błąd podczas bierania z bazy danych: \`${err}\``);
+//         return [];
+//     });
+//     update_debug_res(row);
+// });
+
+
 
 // FIND
 
@@ -130,6 +136,7 @@ function update_debug_res(aha) {
     debug_res.value = parsed;
 }
 
+
 async function update_all_and_refresh(bypass_validation = false){
     if(!bypass_validation && !form_elem.value.reportValidity()){
         return;
@@ -156,6 +163,10 @@ defineExpose({
 // console.log('QUERY PROPS', query_props);
 // console.log('ROWID', rowid, rowid.value);
 // console.log('VALUES', prac_rowid, prac_imie, prac_nazwisko);
+
+function on_changed(new_index, rows) {
+    update_debug_res(rows[0]);
+}
 
 </script>
 
@@ -220,7 +231,7 @@ defineExpose({
         :query_from="scroller_query_from"
         :query_where="scroller_query_where"
         :datasets="[dataset1]"
-        v-model:index="rowid"
+        @changed="on_changed"
         @error="handle_err"
         insertable
         ref="scroller_ref"/> 

@@ -17,14 +17,6 @@ const props = defineProps({
 		type: String,
 		default: ''
 	},
-	index: {
-		type: [String, Number],
-		required: true
-	},
-	insert_mode: {
-		type: Boolean,
-		default: false
-	},
 	datasets: {
 		/**@type {import('vue').PropType<import('./Dataset/Dataset').Dataset[]>} */
 		type: Array,
@@ -36,11 +28,17 @@ const props = defineProps({
 		type: Function,
 		default: null
 	}
+	// before_save: {
+	// 	/**@type {import('vue').PropType<((is_insert: boolean) => Promise<boolean>)?>} */
+	// 	//@ts-ignore
+	// 	type: Function,
+	// 	default: null
+	// }
 });
 
 const emit = defineEmits([
-	'update:index',
-	'update:insert_mode',
+	'changed',
+	'set_insert_mode',
 	'error',
 	'changed',
 
@@ -53,8 +51,9 @@ const msgManager = useMainMsgManager();
 const scroller_ref = ref();
 
 const insert_mode = ref(false);
+
 watch(insert_mode, (new_value) => {
-	emit('update:insert_mode', new_value);
+	emit('set_insert_mode', new_value);
 }, {immediate: true});
 function set_insert_mode(value) {
 	scroller_ref.value.set_insert_mode(value);
@@ -81,9 +80,32 @@ async function before_change() {
     return true;
 }
 
-function handle_changed(new_value) {
+async function before_save(is_insert, bypass_validation) {
+    if(is_insert) {
+		msgManager.postError('Nie zaimplementowano oddawania nowych elementów'); // TODO
+		return false;
+    } else {
+		if(bypass_validation){
+			return true;
+		}
+        if(props.datasets.some(x => !x.reportFormValidity())){
+            msgManager.post('info', 'Nie można zapisać zmian. Niektóre pola mają nieprawidłową wartość.')
+            return false;
+        }
+		return true;
+    }
+}
+
+async function handle_changed(new_value) {
     // console.log('New index: ', new_value);
-    emit('update:index', new_value);
+
+	try{
+		props.datasets.forEach(x => x.set_index(new_value));
+		const responses = await Promise.all( props.datasets.map(x => x.perform_query_and_replace_all()) );
+		emit('changed', new_value, responses);
+	} catch (err) {
+		msgManager.postError(`Błąd podczas pobierania z bazy danych: \`${err}\``);
+	}
 }
 
 async function insert_request() {
@@ -114,7 +136,10 @@ async function refresh_request() {
     }
 }
 
-async function perform_save(){
+async function perform_save(bypass_validation = false){
+	const confirm = await before_save(insert_mode.value, bypass_validation);
+	if(!confirm) return;
+	
 	const updates = await Promise.all(props.datasets.map(x => x.perform_update_all()));
 	console.log('SAVED updates: ', updates.flat());
 	await perform_refresh();
@@ -158,7 +183,7 @@ defineExpose({
         :query_value_name="props.query_value_name"
         :query_from="props.query_from"
         :query_where="props.query_where"
-        :initial_value="props.index"
+        :initial_value="null"
         :before_change="before_change"
 		v-model:insert_mode="insert_mode"
         @changed="handle_changed"

@@ -23,8 +23,9 @@ const props = defineProps({
 		default: null
 	},
 	initial_value: {
+		/**@type {import('vue').PropType<string | number | null>} */
 		type: [String, Number],
-		required: true
+		required: false
 	},
 	insert_mode: {
 		type: Boolean,
@@ -69,7 +70,7 @@ function handle_err(err) {
 }
 
 /**
- * @param {string | number | undefined} new_value 
+ * @param {string | number | null | undefined} new_value 
  */
 function handle_changed(new_value) {
 	if(new_value === undefined) return new_value;

@@ -4,12 +4,12 @@ import ipc from "./ipc"
 import { escape_sql_value } from "./utils";
 
 /**
- * @typedef {string | number} Value
+ * @typedef {string | number | null} Value
  */
 
 class ScrollerState {
 	/**
-	 * @param {string | number} starting_value 
+	 * @param {Value} starting_value 
 	 * @param {(() => Promise<boolean>)?} before_change
 	 */
 	constructor(starting_value, before_change = null) {
