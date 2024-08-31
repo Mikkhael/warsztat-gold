@@ -132,7 +132,9 @@ async function scroll(to_bound, to_next, force_update = false) {
  */
 async function goto(value, force_update = false, dir_next = true, bypass_before_change = false) {
 	try {
+		console.log("GOING TO ", ...arguments);
 		const res = await state.goto(value, force_update || is_error.value, dir_next, bypass_before_change);
+		console.log("GOINT TO RES = ", res);
 		if(res !== undefined) {
 			is_error.value = false;
 			return handle_changed(res);

@@ -533,8 +533,17 @@ class Dataset {
     
     reinitialize_all() { Object.values(this.values).forEach(x => x.reinitialize()); }
 
-    async perform_insert_all()            {return await Promise.all(this.table_syncs.map(x => x.perform_insert()))}
-    async perform_update_all()            {return await Promise.all(this.table_syncs.map(x => x.perform_update()))}
+    /**
+     * @param {(sync: DatasetTableSync) => Promise<number>} callback_per_sync 
+     */
+    async #do_all_as_transaction(callback_per_sync) {
+        return await ipc.db_as_transaction(() => {
+            return Promise.all(this.table_syncs.map(callback_per_sync));
+        });
+    }
+
+    async perform_insert_all()            {return await this.#do_all_as_transaction(x => x.perform_insert())}
+    async perform_update_all()            {return await this.#do_all_as_transaction(x => x.perform_update())}
     async perform_query_all()             {return await Promise.all(this.source_queries.map(x => x.perform_query()))}
     async perform_query_and_replace_all() {return await Promise.all(this.source_queries.map(x => x.perform_query_and_replace()))}
     async perform_query_and_refresh_all() {return await Promise.all(this.source_queries.map(x => x.perform_query_and_refresh()))}

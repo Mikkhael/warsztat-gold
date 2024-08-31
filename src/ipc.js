@@ -131,6 +131,23 @@ async function db_execute_batch(query) {
     return await invoke("perform_execute_batch", {query});
 }
 
+
+/**
+ * @template T
+ * @param {() => Promise<T>} callback 
+ */
+async function db_as_transaction(callback) {
+    try {
+        await db_execute("BEGIN TRANSACTION;");
+        const res = await callback();
+        await db_execute("COMMIT TRANSACTION;");
+        return res;
+    } catch (err) {
+        await db_execute("ROLLBACK TRANSACTION;");
+        throw err;
+    }
+}
+
 /**
  * @typedef IPCQueryResult
  * @type {[any[][], string[]]} 
@@ -170,4 +187,6 @@ export default {
     db_execute,
     db_execute_batch,
     db_query,
+
+    db_as_transaction,
 }
