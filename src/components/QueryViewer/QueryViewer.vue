@@ -193,8 +193,8 @@ watch(query_sql_full, refresh_routine);
 
 <template>
 
-    <QueryFormScrollerSimple v-model:index="offset" :query="query_sql_for_scroller" :step="props.step" :limit="props.limit"/>
     <div class="container">
+        <QueryFormScrollerSimple v-model:index="offset" :query="query_sql_for_scroller" :step="props.step" :limit="props.limit"/>
         <table class="result" :class="{selectable: props.selectable}">
             <tr>
                 <th></th>

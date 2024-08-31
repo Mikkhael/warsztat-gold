@@ -76,6 +76,8 @@
             - highlight
         - update
         - insert
+        - automate form integration
+        - fix scrolling back to 0, when changing search fields
     - Forms API
         - Dataset and Forms
             + standerd form value
