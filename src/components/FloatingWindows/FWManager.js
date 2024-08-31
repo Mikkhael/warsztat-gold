@@ -20,6 +20,18 @@ class FWWindow {
         this.listeners = listeners;
     }
 
+    /**
+     * 
+     * @param {(force: boolean) => Promise<boolean>} onclose 
+     */
+    add_before_close(onclose){
+        const temp = this.box.onclose;
+        this.box.onclose = async (force) => {
+            if(await onclose(force)) return true;
+            return temp(force);
+        }
+    }
+
     get_mount_selector(){
         return '#' + this.box.id + " .wb-body";
     }
@@ -141,5 +153,5 @@ function useMainFWManager() {
     return main_fw_manager;
 }
 
-export {FWManager, useMainFWManager};
+export {FWManager, FWWindow, useMainFWManager};
 export default useMainFWManager;

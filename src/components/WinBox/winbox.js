@@ -466,10 +466,10 @@ function register(self){
         self.addClass("no-full");
     }
 
-    addListener(getByClass(self.dom, "wb-close"), "click", function(event){
+    addListener(getByClass(self.dom, "wb-close"), "click", async function(event){
 
         preventEvent(event);
-        self.close() || (self = null);
+        (await self.close()) || (self = null);
     });
 
     addListener(self.dom, "mousedown", function(event){
@@ -1202,12 +1202,13 @@ function cancel_fullscreen(){
  * @this WinBox
  */
 
-WinBox.prototype.close = function(force) {
+WinBox.prototype.close = async function(force) {
 
-    if(this.onclose && this.onclose(force)){
+    if(this.onclose && await this.onclose(force)){
 
         return true;
     }
+
 
     if(this.min){
 
