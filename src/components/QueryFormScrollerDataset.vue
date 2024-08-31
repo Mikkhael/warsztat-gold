@@ -27,6 +27,12 @@ const props = defineProps({
 		//@ts-ignore
 		type: Function,
 		default: null
+	},
+	index_after_insert: {
+		/**@type {import('vue').PropType<((rowids: number[][]) => Promise<string | number>)?>} */
+		//@ts-ignore
+		type: Function,
+		default: null
 	}
 	// before_save: {
 	// 	/**@type {import('vue').PropType<((is_insert: boolean) => Promise<boolean>)?>} */
@@ -48,13 +54,12 @@ const emit = defineEmits([
 ]);
 
 const msgManager = useMainMsgManager();
-const scroller_ref = ref();
+const scroller_ref = /**@type {import('vue').Ref<QueryFormScroller>} */ (ref());
 
 const insert_mode = ref(false);
 
 const is_any_dataset_changed = computed(() => {
 	const is_changed_list = props.datasets.map(x => x.is_changed_ref.value);
-	console.log('is_any_dataset_changed', is_changed_list);
 	return is_changed_list.indexOf(true) !== -1;
 });
 
@@ -88,8 +93,8 @@ async function before_change() {
 
 async function before_save(is_insert, bypass_validation) {
     if(is_insert) {
-		msgManager.postError('Nie zaimplementowano oddawania nowych elementów'); // TODO
-		return false;
+		// msgManager.postError('Nie zaimplementowano oddawania nowych elementów'); // TODO
+		return true;
     } else {
 		if(bypass_validation){
 			return true;
@@ -142,8 +147,32 @@ async function refresh_request() {
     }
 }
 
+/**
+ * @param {number[][]} rowids 
+ */
+async function set_index_after_insert(rowids){
+	let new_index = /**@type {string | number | undefined | null} */ (rowids[0][0]);
+	if(props.index_after_insert){
+		new_index = await props.index_after_insert(rowids);
+	}
+	if(new_index === undefined){
+		return;
+	}
+	return await scroller_ref.value.goto(new_index, true, true, true);
+}
+
+async function perform_insert(bypass_validation = false) {
+	const confirm = await before_save(true, bypass_validation);
+	if(!confirm) return;
+	
+	const inserts = await Promise.all(props.datasets.map(x => x.perform_insert_all()));
+	console.log('Inserted rowids: ', inserts.flat());
+	return await set_index_after_insert(inserts);
+	// await perform_refresh();
+}
+
 async function perform_save(bypass_validation = false){
-	const confirm = await before_save(insert_mode.value, bypass_validation);
+	const confirm = await before_save(false, bypass_validation);
 	if(!confirm) return;
 	
 	const updates = await Promise.all(props.datasets.map(x => x.perform_update_all()));
@@ -155,14 +184,15 @@ async function perform_save(bypass_validation = false){
  * @param {boolean} with_shift 
  */
 async function save_request(with_shift) {
-	console.log('SAVE REQUEST', with_shift);
-	if(insert_mode.value) {
-		console.error('INSERTING NOT YET IMPLEMENTED');
-		return;
-	}
+	console.log('SAVE REQUEST', with_shift, insert_mode.value);
+	const bypass_validation = with_shift;
 	try{
-		const bypass_validation = with_shift;
-		await perform_save(bypass_validation);
+		if(insert_mode.value) {
+			// console.error('INSERTING NOT YET IMPLEMENTED');
+			await perform_insert(bypass_validation);
+		}else{
+			await perform_save(bypass_validation);
+		}
 	} catch (err) {
 		handle_err(err);
 	}

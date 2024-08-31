@@ -130,9 +130,9 @@ async function scroll(to_bound, to_next, force_update = false) {
 /**
  * @param {string | number} value 
  */
-async function goto(value, force_update = false, dir_next = true) {
+async function goto(value, force_update = false, dir_next = true, bypass_before_change = false) {
 	try {
-		const res = await state.goto(value, force_update || is_error.value, dir_next);
+		const res = await state.goto(value, force_update || is_error.value, dir_next, bypass_before_change);
 		if(res !== undefined) {
 			is_error.value = false;
 			return handle_changed(res);

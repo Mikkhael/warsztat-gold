@@ -216,12 +216,27 @@ class DatasetTableSync{
         const query = `UPDATE \`${this.table_name}\` SET ${set} WHERE ${where};`;
         return query;
     }
+    
+    get_insert_query() {
+        const cols = Object.entries(this.synced_values);
+
+        const names  = cols.map(([name, val]) => escape_backtick(name)).join(",");
+        const values = cols.map(([name, val]) => escape_sql_value(DVUtil.as_value(val))).join(",");
+        
+        const query = `INSERT INTO \`${this.table_name}\` (${names}) VALUES (${values});`;
+        return query;
+    }
 
     async perform_update(force = false) {
         const update_query = this.get_update_query(force);
         if(update_query === "")
             return 0;
         return await ipc.db_execute(update_query);
+    }
+
+    async perform_insert() {
+        const insert_query = this.get_insert_query();
+        return await ipc.db_insert(insert_query);
     }
 }
 
@@ -396,7 +411,6 @@ class Dataset {
 
         this.synced_values =  shallowRef(/**@type {DatasetValueSynced[]} */ ([]));
 
-        this.insert_mode = ref(false);
         this.forms = /**@type {import('vue').Ref<HTMLFormElement>[]} */ ([]);
         this.index = ref(/**@type {SQLValue} */ (null));
 
@@ -427,13 +441,6 @@ class Dataset {
         return src;
     }
 
-
-    /**
-     * @param {boolean} value 
-     */
-    set_insert_mode(value){
-        this.insert_mode.value = value;
-    }
     /**
      * @param {SQLValue} value 
      */
@@ -526,6 +533,7 @@ class Dataset {
     
     reinitialize_all() { Object.values(this.values).forEach(x => x.reinitialize()); }
 
+    async perform_insert_all()            {return await Promise.all(this.table_syncs.map(x => x.perform_insert()))}
     async perform_update_all()            {return await Promise.all(this.table_syncs.map(x => x.perform_update()))}
     async perform_query_all()             {return await Promise.all(this.source_queries.map(x => x.perform_query()))}
     async perform_query_and_replace_all() {return await Promise.all(this.source_queries.map(x => x.perform_query_and_replace()))}

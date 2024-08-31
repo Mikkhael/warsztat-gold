@@ -22,6 +22,8 @@ const msgManager = useMainMsgManager();
 const scroller_ref = /**@type { import('vue').Ref<QueryFormScrollerDataset> } */ (ref());
 const fwManager = new FWManager();
 
+
+const insert_mode = ref(false);
 const form_elem = ref();
 
 const dataset1 = new Dataset();
@@ -34,9 +36,10 @@ const sync_place      = dataset1.create_table_sync('płace');
 const podstawa_hints_src = dataset1.create_simple_source_query();
 const kwota_hints_src    = dataset1.create_simple_source_query();
 
-const prac_rowid     = dataset1.create_value_synced("ID pracownika",     0,  sync_pracownicy, src1);
+const prac_rowid     = dataset1.create_value_synced("ID pracownika",     0,  sync_pracownicy, sync_place, src1);
 const prac_imie      = dataset1.create_value_synced("imię",              '', sync_pracownicy, src1);
 const prac_nazwisko  = dataset1.create_value_synced("nazwisko",          '', sync_pracownicy, src1);
+const prac_uro       = dataset1.create_value_synced("data urodzenia",    '', sync_pracownicy, src1);
 const prac_miejsce   = dataset1.create_value_raw   ("miejsce urodzenia", '', src1);
 
 const place_rowid    = dataset1.create_value_raw   ("max ID płac",      0,  [src1, 'max(`ID płac`)']);
@@ -60,7 +63,6 @@ const podstawa_hints = podstawa_hints_src.to_computed((rows) => {
 
 kwota_hints_src.set_query(['SELECT K - S, K, K + S FROM (SELECT max(`ID płac`), kwota as K, `ID pracownika` as S FROM płace WHERE `ID pracownika` = ', rowid, ')']);
 const kwota_hints = kwota_hints_src.to_computed((rows) => {
-    console.log('KWOTA ROWS', rows);
     return rows.length > 0 ? rows[0] : [];
 });
 
@@ -68,21 +70,6 @@ const kwota_hints = kwota_hints_src.to_computed((rows) => {
 const scroller_query_name  = 'rowid';
 const scroller_query_from  = '`pracownicy`';
 const scroller_query_where = '';
-
-// DEBUG
-
-
-
-// watch([rowid, dataset1.insert_mode], async ([newValue]) => {
-//     let row = await dataset1.perform_query_and_replace_all().catch(err => {
-//         console.error('Błąd podczas bierania z bazy danych', err);
-//         msgManager.postError(`Błąd podczas bierania z bazy danych: \`${err}\``);
-//         return [];
-//     });
-//     update_debug_res(row);
-// });
-
-
 
 // FIND
 
@@ -117,7 +104,11 @@ function on_click_find() {
 // Unnesesary
 const debug_update_query = ref('');
 function update_debug_update_query() {
-    debug_update_query.value = sync_pracownicy.get_update_query() + '\n' + sync_place.get_update_query();
+    if(insert_mode.value){
+        debug_update_query.value = sync_pracownicy.get_insert_query() + '\n' + sync_place.get_insert_query();
+    }else{
+        debug_update_query.value = sync_pracownicy.get_update_query() + '\n' + sync_place.get_update_query();
+    }
 }
 update_debug_update_query();
 
@@ -198,12 +189,14 @@ function on_changed(new_index, rows) {
     <p>KWOTA_HINTS: {{ kwota_hints }}</p>
     <p>PODSTAWA_HINTS: {{ podstawa_hints }}</p>
     <p>CHANGED: {{ dataset1.is_changed_ref }}</p>
+    <p>INSERT: {{ insert_mode }}</p>
     <fieldset class="form_fieldset">
         <legend>FORM</legend>
         <form ref="form_elem" class="form">
             <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :value="prac_rowid"   :max="30" nonull/>
             <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :value="prac_imie"    pattern="[A-Z][a-z]+" nonull />
             <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :value="prac_nazwisko" :class="{wide: (prac_rowid.local.value?.toString().length ?? 0) < 5}"            />
+            <label class="label">URODZINY:         </label> <FormInput type="date"               :value="prac_uro"             />
             <label class="label">KWOTA:            </label> <FormInput type="number"             :value="place_kwota"   class="wide" />
             <label class="label">KWOTA HINT:       </label> <FormInput type="number"             :value="place_kwota"  :hints="kwota_hints" class="wide" />
             <label class="label">KWOTA D:          </label> <FormInput type="decimal"            :value="place_kwota"               />
@@ -232,6 +225,7 @@ function on_changed(new_index, rows) {
         :query_from="scroller_query_from"
         :query_where="scroller_query_where"
         :datasets="[dataset1]"
+        v-model:insert_mode="insert_mode"
         @changed="on_changed"
         @error="handle_err"
         insertable

@@ -1,11 +1,12 @@
 <script setup>
+//@ts-check
 import { ref, onMounted } from "vue";
 import ipc from "../../ipc";
 // import { invoke } from "@tauri-apps/api/tauri";
 
 const query_string  = ref("");
 const query_history_select = ref();
-const query_history = ref([]);
+const query_history = ref(/**@type {string[]}*/ ([]));
 const returned_rows = ref([]);
 const returend_col_names = ref([]);
 const last_status_success  = ref(true);
@@ -17,6 +18,11 @@ function handle_error(err_message){
     last_status_message.value = err_message;
 }
 
+function handle_success_insert(rowid){
+    last_status_success.value = true;
+    last_status_message.value = `Inserted rowid ${rowid}`;
+    // returned_rows.value = [];
+}
 function handle_success_execute(count){
     last_status_success.value = true;
     last_status_message.value = `Query affected ${count} rows`;
@@ -53,6 +59,10 @@ function save_query_to_history(query){
 function perform_select(){
     save_query_to_history(query_string.value);
     return ipc.db_query(query_string.value).then(handle_success_query).catch(handle_error);
+}
+function perform_insert(){
+    save_query_to_history(query_string.value);
+    return ipc.db_insert(query_string.value).then(handle_success_insert).catch(handle_error);
 }
 function perform_execute(){
     save_query_to_history(query_string.value);
@@ -127,6 +137,7 @@ defineExpose({
     </select>
     <div class="control">
         <button @click="perform_select()">SELECT</button>
+        <button @click="perform_insert()">INSERT</button>
         <button @click="perform_execute()">EXE1</button>
         <button @click="perform_execute_batch()">EXECUTE</button>
         <button @click="open()">OPEN</button>

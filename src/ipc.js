@@ -107,19 +107,28 @@ async function db_import_csv() {
     return await invoke("import_csv", {importPath: path}).then(() => path);
 }
 
+
 /**
  * @param {string} query 
  * @returns {Promise<number>}
  */
-function db_execute(query) {
-    return invoke("perform_execute", {query});
+async function db_insert(query) {
+    return await invoke("perform_insert", {query});
+}
+
+/**
+ * @param {string} query 
+ * @returns {Promise<number>}
+ */
+async function db_execute(query) {
+    return await invoke("perform_execute", {query});
 }
 
 /**
  * @param {string} query 
  */
-function db_execute_batch(query) {
-    return invoke("perform_execute_batch", {query});
+async function db_execute_batch(query) {
+    return await invoke("perform_execute_batch", {query});
 }
 
 /**
@@ -132,8 +141,8 @@ function db_execute_batch(query) {
  * @param {string} query 
  * @returns {Promise<IPCQueryResult>}
  */
-function db_query(query) {
-    return invoke("perform_query", {query});
+async function db_query(query) {
+    return await invoke("perform_query", {query});
 }
 
 function refresh_state(){
@@ -157,6 +166,7 @@ export default {
     db_save,
     db_export_csv,
     db_import_csv,
+    db_insert,
     db_execute,
     db_execute_batch,
     db_query,

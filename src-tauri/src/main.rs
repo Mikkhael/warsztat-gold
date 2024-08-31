@@ -41,6 +41,7 @@ fn main() {
         sqlite_manager::save_database,
         sqlite_manager::export_csv,
         sqlite_manager::import_csv,
+        sqlite_manager::perform_insert,
         sqlite_manager::perform_execute,
         sqlite_manager::perform_execute_batch,
         sqlite_manager::perform_query,

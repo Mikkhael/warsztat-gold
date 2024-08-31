@@ -127,8 +127,8 @@ class ScrollerState {
 			return this.#set_value(rows[0][0]);
 		}
 	}
-	async goto(/**@type {Value} */ value, force_update = false, dir_next = true) {
-		return await this.#scroll(true, dir_next, force_update, value);
+	async goto(/**@type {Value} */ value, force_update = false, dir_next = true, bypass_before_change = false) {
+		return await this.#scroll(true, dir_next, force_update, value, bypass_before_change);
 	}
 	async goto_step(/**@type {Boolean} */ direction_next, force_update = false) {
 		return await this.#scroll(false, direction_next, force_update);
