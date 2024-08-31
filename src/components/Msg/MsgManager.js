@@ -37,6 +37,7 @@ class MsgManager {
      * @param {number} timeout
      */
     postError(err, timeout = 0, onclick = () => {}) {
+        console.error(err);
         if(typeof err === 'string'){
             return this.post('error', err, timeout, onclick);
         } else {

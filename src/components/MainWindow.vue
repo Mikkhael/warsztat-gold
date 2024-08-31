@@ -18,7 +18,6 @@ const msgManager = useMainMsgManager();
 fwManager.set_viewport({top: '24px'});
 
 function handle_error(msg) {
-    console.error(msg);
     msgManager.postError(msg);
 }
 

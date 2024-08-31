@@ -122,6 +122,7 @@ function iterate_query_result_values(result, callback) {
  */
 function iterate_query_result_values_single_row(result, callback, row_id=0) {
 	const [rows, columns] = result;
+	if(rows.length < 1) return;
 	const row = rows[row_id];
 	columns.forEach((col_name, col_id) => {
 		callback(row[col_id], col_name);

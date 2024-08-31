@@ -14,13 +14,11 @@ const msgManager = useMainMsgManager();
 
 listen("request_db_open", async (e) => {
     ipc.db_open().catch((err) => {
-        console.error(err);
         msgManager.postError(err);
     });
 });
 listen("request_db_close", async (e) => {
     ipc.db_close().catch(err => {
-        console.error(err);
         msgManager.postError(err);
     });
 });

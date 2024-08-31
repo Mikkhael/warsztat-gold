@@ -11,7 +11,6 @@ import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 import useMainMsgManager from "../Msg/MsgManager";
 const msgManager = useMainMsgManager();
 function handle_err(err){
-	console.error(err);
 	msgManager.postError(err);
 }
 

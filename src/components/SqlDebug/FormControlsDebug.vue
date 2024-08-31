@@ -71,6 +71,36 @@ const scroller_query_name  = 'rowid';
 const scroller_query_from  = '`pracownicy`';
 const scroller_query_where = '';
 
+
+// dataset2
+
+// ID płac	ID pracownika	data	kwota	podstawa	miesiąc płacenia
+
+const insert_mode2 = ref(false);
+const form_elem2   = ref();
+
+const dataset2 = new Dataset();
+const index2   = dataset2.get_index_ref();
+dataset2.assosiate_form(form_elem2);
+
+const p2_src  = dataset2.create_source_query();
+const p2_sync = dataset2.create_table_sync('płace');
+
+const p2_id       = dataset2.create_value_raw   ("ID płac",          null, p2_src);
+const p2_data     = dataset2.create_value_synced("data",             null, p2_src, p2_sync);
+const p2_kwota    = dataset2.create_value_synced("kwota",            null, p2_src, p2_sync);
+const p2_podstawa = dataset2.create_value_synced("podstawa",         null, p2_src, p2_sync);
+const p2_miesiac  = dataset2.create_value_synced("miesiąc płacenia", null, p2_src, p2_sync);
+
+p2_sync.add_primary('ID płac', p2_id);
+
+p2_src.set_body_query_and_finalize(['FROM `płace` WHERE `ID pracownika` = ', rowid, ' AND `ID płac` = ', index2]);
+
+const p2_scroller_query_name  = 'rowid';
+const p2_scroller_query_from  = '`płace`';
+const p2_scroller_query_where = computed(() => `\`ID pracownika\` = ${rowid.value}`);
+
+
 // FIND
 
 function handle_find(columns, row) {
@@ -143,7 +173,6 @@ function handle_err(/**@type {Error} */ err) {
         console.log('Form Invalid');
         return;
     }
-    console.error(err);
     msgManager.postError(err);
 }
 
@@ -210,6 +239,22 @@ function on_changed(new_index, rows) {
             <label class="label">Date:             </label> <FormInput type="date" :value="place_miesiac"/>
             <label class="label">Datetime-local:   </label> <FormInput type="datetime-local" :value="place_miesiac"/>
         </form>
+        <fieldset class="form_fieldset" :class="{hidden: insert_mode}">
+            <legend>SUBFORM</legend>
+            <form ref="form_elem2" class="form">
+                <label class="label">KWOTA:            </label> <FormInput type="number"  step="0.01" :value="p2_kwota" />
+                <label class="label">PODSTAWA:         </label> <FormEnum  :value="p2_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  />
+                <label class="label">DATA:             </label> <FormInput type="text" :value="p2_data"/>
+                <label class="label">MIESIĄC PŁACENIA: </label> <FormInput type="date" :value="p2_miesiac"/>
+            </form>
+            
+                <QueryFormScrollerDataset
+                    :query_value_name="p2_scroller_query_name"
+                    :query_from="p2_scroller_query_from"
+                    :query_where="p2_scroller_query_where"
+                    :datasets="[dataset2]"
+                    @error="handle_err"/> 
+        </fieldset>
     </fieldset>
     
     <br>
@@ -258,6 +303,13 @@ function on_changed(new_index, rows) {
         bottom: 0px;
         left: 0px;
         right: 0px;
+    }
+
+    .hidden {
+        background-color: grey;
+    }
+    .hidden * {
+        visibility: hidden;
     }
 
     .form {

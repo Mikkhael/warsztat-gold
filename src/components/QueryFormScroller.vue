@@ -95,7 +95,7 @@ watch([props_refs.query_value_name, props_refs.query_from, props_refs.query_wher
 		newValues[2]);
 	is_error.value = false;
 	try{
-		const new_value = await state.refresh();
+		const new_value = await state.refresh(true);
 		is_error.value = false;
 		handle_changed(new_value);
 	} catch (err) {

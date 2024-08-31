@@ -7,7 +7,6 @@ import SimpleScrollerState from "../SimpleSrollerState";
 import useMainMsgManager from "./Msg/MsgManager";
 const msgManager = useMainMsgManager();
 function handle_err(err){
-	console.error(err);
 	msgManager.postError(err);
 	is_error.value = true;
 }

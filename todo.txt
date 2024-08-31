@@ -77,8 +77,6 @@
         - update
         - insert
     - Forms API
-        - create example form
-        - default form layout component
         - Dataset and Forms
             + standerd form value
             + table update manager
@@ -91,11 +89,14 @@
             + aux queries
             + automate form validation
             + insert
-            - transactions for batch operations
+            + transactions for batch operations
+            - sub datasets
+            - delete
+            - detect and dont display empty results
         + Query Form Scroller
             + working scroller
             + Simple Mode
-            - test for large arrays (bigint count)
+            - toggle for simple
         - Kontrolki
             + custom context menu
                 - make "Zaznacz Wszystko" on read-only inputs work
@@ -107,6 +108,7 @@
                 + Decimal
                 + Text
                 + Datetime
+                    - allow format YY-MM-DD (płace -> data)
                 + Input constrains
                     + min/max
                     + length
