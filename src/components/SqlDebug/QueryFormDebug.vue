@@ -105,7 +105,7 @@ defineExpose({
 			:query_where="query_props.where"
 			:initial_value="value"
 			:before_change="before_change"
-			@changed="handle_changed"
+			@changed_index="handle_changed"
 			@error="handle_error"
 			ref="scroller_ref"/>
 	</div>

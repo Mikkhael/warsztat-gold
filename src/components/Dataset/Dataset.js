@@ -529,7 +529,7 @@ class Dataset {
 
     
     is_to_update() { return Object.values(this.values).some(x => x.is_to_update()); }
-    is_changed()   { return Object.values(this.values).some(x => x.is_changed()); }
+    is_changed()   { return this.is_changed_ref.value; }
     
     reinitialize_all() { Object.values(this.values).forEach(x => x.reinitialize()); }
 

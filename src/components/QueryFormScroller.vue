@@ -27,10 +27,6 @@ const props = defineProps({
 		type: [String, Number],
 		required: false
 	},
-	insert_mode: {
-		type: Boolean,
-		default: false
-	},
 	norefresh: {
 		type: Boolean,
 		default: false
@@ -50,9 +46,9 @@ const props = defineProps({
 });
 const props_refs = toRefs(props);
 const emit = defineEmits([
-	'update:insert_mode',
 	'error',
-	'changed',
+	'changed_index',
+	'changed_insert_mode',
 	'insert_request',
 	'refresh_request',
 	'save_request',
@@ -74,123 +70,115 @@ function handle_err(err) {
 }
 
 /**
- * @param {string | number | null | undefined} new_value 
+ * @param {string | number | null | undefined} new_index 
  */
-function handle_changed(new_value) {
-	if(new_value === undefined) return new_value;
-	displayed_value.value = new_value;
+function set_index(new_index) {
+	if(new_index === undefined) return;
+	displayed_value.value = new_index;
 	set_insert_mode(false);
-	emit('changed', new_value);
-	return new_value;
+	emit('changed_index', new_index);
+}
+/**
+ * @param {boolean} new_mode
+ */
+function set_insert_mode(new_mode) {
+	if(insert_mode.value === new_mode) return;
+	insert_mode.value = new_mode;
+	emit('changed_insert_mode', new_mode);
+	if(new_mode) {
+		displayed_value.value = '';
+	}
+}
+function clear_error() {
+	is_error.value = false;
 }
 
+const props_query_parts_refs = [
+	props_refs.query_value_name,
+	props_refs.query_from,
+	props_refs.query_where
+];
 
-
-watch([props_refs.query_value_name, props_refs.query_from, props_refs.query_where], async (newValues, oldValues) => {
-	console.log("Updating query props", oldValues, newValues);
-	// console.log(queries);
+/**
+ * @param {string[]} new_query_parts
+ */
+function reinitialize_query(new_query_parts) {
 	state.update_queries(
-		newValues[0], 
-		newValues[1], 
-		newValues[2]);
-	is_error.value = false;
-	try{
-		const new_value = await state.refresh(true);
-		is_error.value = false;
-		handle_changed(new_value);
-	} catch (err) {
-		handle_err(err);
-	}
+		new_query_parts[0], 
+		new_query_parts[1], 
+		new_query_parts[2]
+	);
+	clear_error();
+	return index_change_wrapper( state.refresh(true) );
+}
+
+watch(props_query_parts_refs, (new_parts, old_parts) => {
+	// console.log("Updating query props", new_parts, old_parts);
+	reinitialize_query(new_parts);
 }, {immediate: true});
 
+
+/**
+ * @param {Promise.<string | number | null | undefined>} new_index_promise
+ */
+ function index_change_wrapper(new_index_promise) {
+	return new_index_promise.then(new_index => {
+		if(new_index !== undefined) {
+			clear_error();
+			set_index(new_index);
+		}
+		return new_index;
+	}).catch(err => {
+		handle_err(err);
+		throw err;
+	});
+}
 
 /**
  * @param {boolean} to_bound 
  * @param {boolean} to_next 
  */
-async function scroll(to_bound, to_next, force_update = false) {
-	try{
-		let res;
-		if(to_bound) {
-			res = await state.goto_bound(to_next, force_update || is_error.value);
-		} else {
-			res = await state.goto_step(to_next, force_update || is_error.value);
-		}
-		if(res !== undefined) {
-			is_error.value = false;
-			return handle_changed(res);
-		}
-		return res;
-	} catch (err) {
-		handle_err(err);
-		throw err;
-	}
+function scroll(to_bound, to_next, force_update = false) {
+	return index_change_wrapper( to_bound ? 
+		state.goto_bound(to_next, force_update || is_error.value) :
+		state.goto_step (to_next, force_update || is_error.value)
+	);
 }
 
 /**
  * @param {string | number} value 
  */
-async function goto(value, force_update = false, dir_next = true, bypass_before_change = false) {
-	try {
-		console.log("GOING TO ", ...arguments);
-		const res = await state.goto(value, force_update || is_error.value, dir_next, bypass_before_change);
-		console.log("GOINT TO RES = ", res);
-		if(res !== undefined) {
-			is_error.value = false;
-			return handle_changed(res);
-		}
-		return res;
-	} catch (err) {
-		handle_err(err);
-		throw err;
-	}
+function goto(value, force_update = false, dir_next = true, bypass_before_change = false) {
+	return index_change_wrapper(
+		state.goto(value, force_update || is_error.value, dir_next, bypass_before_change)
+	);
 }
 
-async function update_scroll_from_input(event) {
-	return await goto(event.target.value, is_error.value);
+function refresh(bypass_before_change = false, dir_next = true) {
+	return index_change_wrapper(
+		state.refresh(bypass_before_change, dir_next)
+	);
 }
 
-
-async function refresh(bypass_before_change = false, dir_next = true) {
-	try{
-		const res = await state.refresh(bypass_before_change, dir_next);
-		is_error.value = false;
-		if(res !== undefined) {
-			return handle_changed(res);
-		}
-		return res;
-	}catch(err) {
-		is_error.value = true;
-		throw err;
-	}
+function update_index_from_input(event) {
+	return goto(event.target.value);
 }
 
-function set_insert_mode(value) {
-	if(insert_mode.value === value) return;
-	insert_mode.value = value;
-	emit('update:insert_mode', value);
-	if(value) {
-		displayed_value.value = '';
-	}
-}
 
 defineExpose({
-	refresh,
-	goto,
+	set_insert_mode,
 	scroll,
-	set_insert_mode
+	goto,
+	refresh
 });
 
 function show_error(err) {
 	console.error(err)
 }
 
-/**
- * @param {MouseEvent} event 
- */
-function clicked_save(event){
-	emit('save_request', event.shiftKey);
-}
+function clicked_refresh( /**@type {MouseEvent} */ event){ emit('refresh_request'); }
+function clicked_insert ( /**@type {MouseEvent} */ event){ emit('insert_request'); }
+function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', event.shiftKey); }
 
 // const bounds_str = computed(() => {
 // 	const min   = state.bounds.value[0];
@@ -205,12 +193,12 @@ function clicked_save(event){
 <div class="form_scroller" :class="{is_error, is_empty: state.is_empty, is_bounds_oot: !state.is_bounds_utd, insert_mode}">
 	<input type="button" class="btn prev bound" @click="scroll(true,  false).catch(show_error)">
 	<input type="button" class="btn prev step"  @click="scroll(false, false).catch(show_error)">
-	<input type="text"   class="curr"           :value="displayed_value" @change="update_scroll_from_input($event).catch(show_error)" :placeholder="displayed_placeholder">
+	<input type="text"   class="curr"           :value="displayed_value" @change="update_index_from_input($event).catch(show_error)" :placeholder="displayed_placeholder">
 	<input type="button" class="btn next step"  @click="scroll(false, true).catch(show_error)">
 	<input type="button" class="btn next bound" @click="scroll(true,  true).catch(show_error)">
 	<span  class="txt bounds as_input">  ({{ state.bounds.value[2] }}) {{ state.bounds.value[0] }} - {{ state.bounds.value[1] }} </span>
-	<input type="button" class="btn refresh"    @click="emit('refresh_request')" v-if="!props.norefresh">
-	<input type="button" class="btn insert"     @click="insert_mode || emit('insert_request')"  v-if="props.insertable">
+	<input type="button" class="btn refresh"    @click="clicked_refresh" v-if="!props.norefresh">
+	<input type="button" class="btn insert"     @click="clicked_insert"  v-if="props.insertable">
 	<div class="spacer"></div>
 	<input type="button" class="btn save"       @click="clicked_save" v-if="!props.nosave" :class="{indicate: props.indicate_save}">
 	<!-- <span  class="as_input"> | B: {{ state.is_bounds_utd }} | C: {{ state.is_curr_utd }} | E: {{ state.is_empty }} </span> -->

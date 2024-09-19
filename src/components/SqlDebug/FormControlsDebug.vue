@@ -270,8 +270,8 @@ function on_changed(new_index, rows) {
         :query_from="scroller_query_from"
         :query_where="scroller_query_where"
         :datasets="[dataset1]"
-        v-model:insert_mode="insert_mode"
-        @changed="on_changed"
+        @changed_insert_mode="x => insert_mode = x"
+        @changed_index="on_changed"
         @error="handle_err"
         insertable
         ref="scroller_ref"/> 

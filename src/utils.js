@@ -139,6 +139,14 @@ function object_map(object, map_function) {
 	return Object.fromEntries(Object.entries(object).map(([key, value]) => map_function(value, key)));
 }
 
+/**
+ * @template T
+ * @param {()=>Promise.<T>} async_function 
+ */
+function as_promise(async_function) {
+	return async_function();
+}
+
 export {
 	generate_UID,
 	escape_sql_value,
@@ -150,5 +158,6 @@ export {
 	iterate_query_result_values,
 	iterate_query_result_values_single_row,
 	object_map,
-	typeofpl
+	typeofpl,
+	as_promise
 }

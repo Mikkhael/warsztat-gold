@@ -1,8 +1,9 @@
 <script setup>
 //@ts-check
-import {computed, onMounted, ref, watch} from 'vue'
+import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
 import QueryFormScroller from "./QueryFormScroller.vue"
 import useMainMsgManager from './Msg/MsgManager'
+import { as_promise } from '../utils';
 
 const props = defineProps({
 	query_value_name: {
@@ -43,40 +44,64 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
-	'changed',
-	'set_insert_mode',
+	'changed_index',
+	'changed_insert_mode',
 	'error',
-	'changed',
 
 	// 'insert_mode_changed',
 	// 'refresh_request',
 	// 'save_request',
 ]);
 
+//// VARIABLES, STATE and HANDLERS /////
+
 const msgManager = useMainMsgManager();
 const scroller_ref = /**@type {import('vue').Ref<QueryFormScroller>} */ (ref());
 
 const insert_mode = ref(false);
+
+function handle_changed_insert_mode(new_mode) {
+	insert_mode.value = new_mode;
+	emit('changed_insert_mode', new_mode);
+}
+function set_insert_mode(new_mode) {
+	scroller_ref.value.set_insert_mode(new_mode);
+}
+
+async function handle_changed_index(new_index) {
+	try{
+		props.datasets.forEach(x => x.set_index(new_index));
+		const responses = await Promise.all( props.datasets.map(x => x.perform_query_and_replace_all()) );
+		emit('changed_index', new_index, responses);
+	} catch (err) {
+		msgManager.postError(`Błąd podczas pobierania z bazy danych: \`${err}\``);
+	}
+}
+
+function handle_err(/**@type {Error} */ err) {
+	emit('error', err);
+}
+
+const db_opened_listener = () => {
+	scroller_ref.value.refresh(true);
+}
+onMounted  (() => {	window.addEventListener   ('db_opened', db_opened_listener); });
+onUnmounted(() => { window.removeEventListener('db_opened', db_opened_listener); });
+
+//// DATASETS CHANGES CONFIRMATION /////
 
 const is_any_dataset_changed = computed(() => {
 	const is_changed_list = props.datasets.map(x => x.is_changed_ref.value);
 	return is_changed_list.indexOf(true) !== -1;
 });
 
-watch(insert_mode, (new_value) => {
-	emit('set_insert_mode', new_value);
-}, {immediate: true});
-function set_insert_mode(value) {
-	scroller_ref.value.set_insert_mode(value);
-}
-
 async function confirm_discard_changes(){
-	const is_any_changed = props.datasets.some(x => x.is_changed());
-    if(is_any_changed) {
-		const changed_entries = props.datasets.map(x => Object.entries(x.values).filter(xx => xx[1].is_changed()));
-		const changed_objects = changed_entries.map(x => Object.fromEntries(x));
-		console.log('CHANGED VALEUS: ', changed_objects[0]);
-        const resp = confirm("Niektóre pola zostały zmienione. Naciśnij OK, aby odrzucić zmiany.");
+    if(is_any_dataset_changed.value) {
+		// debug
+			const changed_entries = props.datasets.map(x => Object.entries(x.values).filter(xx => xx[1].is_changed()));
+			const changed_objects = changed_entries.map(x => Object.fromEntries(x));
+			console.log('CHANGED VALEUS: ', changed_objects[0]);
+        const resp = await confirm("Niektóre pola zostały zmienione. Naciśnij OK, aby odrzucić zmiany.");
         return resp;
     }
 	return true;
@@ -91,122 +116,95 @@ async function before_change() {
     return true;
 }
 
-async function before_save(is_insert, bypass_validation) {
-    if(is_insert) {
-		// msgManager.postError('Nie zaimplementowano oddawania nowych elementów'); // TODO
-		return true;
-    } else {
-		if(bypass_validation){
-			return true;
-		}
-        if(props.datasets.some(x => !x.reportFormValidity())){
-            msgManager.post('info', 'Niektóre pola mają nieprawidłową wartość. Przytrzymaj SHIFT, aby zapisać mimo to.')
-            return false;
-        }
-		return true;
-    }
-}
-
-async function handle_changed(new_value) {
-    // console.log('New index: ', new_value);
-
-	try{
-		props.datasets.forEach(x => x.set_index(new_value));
-		const responses = await Promise.all( props.datasets.map(x => x.perform_query_and_replace_all()) );
-		emit('changed', new_value, responses);
-	} catch (err) {
-		msgManager.postError(`Błąd podczas pobierania z bazy danych: \`${err}\``);
+async function before_save_or_insert(bypass_validation = false, is_insert = false) {
+	if(bypass_validation) return true;
+	if(props.datasets.some(x => !x.reportFormValidity())){
+		msgManager.post('info', 'Niektóre pola mają nieprawidłową wartość. Przytrzymaj SHIFT, aby zapisać mimo to.')
+		return false;
 	}
+	return true;
+}
+function before_save  (bypass_validation = false) {return before_save_or_insert(bypass_validation, false);}
+function before_insert(bypass_validation = false) {return before_save_or_insert(bypass_validation, true);}
+
+
+//// REQUEST HANDLERS ////
+
+/**
+ * @template T
+ * @param {Promise.<boolean>} confirm_promise 
+ * @param {()=>Promise.<T>} callback 
+ */
+function before_check_wrapper(confirm_promise, callback){
+	return as_promise(async () => {
+		const confirmed = await confirm_promise;
+		if(!confirmed) return;
+		return await callback();
+	}).catch(handle_err);
 }
 
-async function insert_request() {
-	try{
-		const confirmed = await confirm_discard_changes();
-		if(!confirmed) return;
+/**
+ * @param {boolean} bypass Czy naciśnięty był SHIFT
+ */
+ function save_request(bypass) {
+	console.log('SAVE REQUEST', bypass, insert_mode.value);
+	if(insert_mode.value) return before_check_wrapper(before_insert(bypass), perform_insert);
+	else                  return before_check_wrapper(before_save  (bypass), perform_save);
+}
+
+function insert_request() {
+	if(insert_mode.value) return Promise.resolve();
+	return before_check_wrapper(confirm_discard_changes(), async () => {
 		props.datasets.map(x => x.reinitialize_all());
 		set_insert_mode(true);
-	} catch (err) {
-		handle_err(err);
-	}
+	});
 }
+
+function refresh_request() {
+	return before_check_wrapper(confirm_discard_changes(), async () => {
+		return perform_refresh();
+	});
+}
+
+
+//// PERFORMING ACTIONS ////
+
 
 async function perform_refresh(){
 	await Promise.all(
 		props.datasets.map(x => x.perform_query_and_replace_all())
-	)
+	);
 	await scroller_ref.value.refresh();
 }
 
-async function refresh_request() {
-    try{
-		const confirmed = await confirm_discard_changes();
-		if(!confirmed) return;
-		await perform_refresh();
-    } catch(err) {
-        handle_err(err);
-    }
-}
-
 /**
- * @param {number[][]} rowids 
+ * @param {number[][]} inserted_indexes 
  */
-async function set_index_after_insert(rowids){
-	let new_index = /**@type {string | number | undefined | null} */ (rowids[0][0]);
+async function set_index_after_insert(inserted_indexes){
+	let new_index = inserted_indexes[0][0];
 	if(props.index_after_insert){
-		new_index = await props.index_after_insert(rowids);
+		new_index = await props.index_after_insert(inserted_indexes);
 	}
 	if(new_index === undefined){
 		return;
 	}
-	return await scroller_ref.value.goto(new_index, true, true, true);
+	return await scroller_ref.value.goto(new_index, true, true, true); // force_refresh, next, bypass
 }
 
-async function perform_insert(bypass_validation = false) {
-	const confirm = await before_save(true, bypass_validation);
-	if(!confirm) return;
-	
+async function perform_insert() {
 	const inserts = await Promise.all(props.datasets.map(x => x.perform_insert_all()));
-	console.log('Inserted rowids: ', inserts.flat());
-	return await set_index_after_insert(inserts);
+	console.log('INSERTED rowids: ', inserts.flat());
+	await set_index_after_insert(inserts);
 	// await perform_refresh();
 }
 
-async function perform_save(bypass_validation = false){
-	const confirm = await before_save(false, bypass_validation);
-	if(!confirm) return;
-	
+async function perform_save(){
 	const updates = await Promise.all(props.datasets.map(x => x.perform_update_all()));
 	console.log('SAVED updates: ', updates.flat());
 	await perform_refresh();
 }
 
-/**
- * @param {boolean} with_shift 
- */
-async function save_request(with_shift) {
-	console.log('SAVE REQUEST', with_shift, insert_mode.value);
-	const bypass_validation = with_shift;
-	try{
-		if(insert_mode.value) {
-			// console.error('INSERTING NOT YET IMPLEMENTED');
-			await perform_insert(bypass_validation);
-		}else{
-			await perform_save(bypass_validation);
-		}
-	} catch (err) {
-		handle_err(err);
-	}
-
-}
-
-
-function handle_err(/**@type {Error} */ err) {
-	emit('error', err);
-}
-
-window.addEventListener('db_opened', () => {
-	scroller_ref.value.refresh(true);
-});
+//// EXPOSE ////
 
 defineExpose({
 	refresh:		 (...args) => {scroller_ref.value.refresh(...args)},
@@ -226,8 +224,8 @@ defineExpose({
 		:indicate_save="is_any_dataset_changed"
         :initial_value="null"
         :before_change="before_change"
-		v-model:insert_mode="insert_mode"
-        @changed="handle_changed"
+		@changed_insert_mode="handle_changed_insert_mode"
+        @changed_index="handle_changed_index"
 		@insert_request="insert_request" 
         @refresh_request="refresh_request"
 		@save_request="save_request"
