@@ -100,7 +100,7 @@
             + Simple Mode
             + toggle for simple
             - better indicators for empty/ood states
-            - (BUG) alert box not showing, when scrolling by step while on bound
+            + (BUG) alert box not showing, when scrolling by step while on bound
         - Kontrolki
             + custom context menu
                 - make "Zaznacz Wszystko" on read-only inputs work
