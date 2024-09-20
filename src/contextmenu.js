@@ -14,6 +14,7 @@ function is_target_an_input_field(target) {
             target.type === 'datetime-local'
         ) ||
         target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
         target.isContentEditable
     );
 }
@@ -36,6 +37,9 @@ function is_selected_nonempty() {
 }
 function is_target_editable(/** @type {HTMLInputElement} */ target){
     return !target.disabled;
+}
+function is_target_changed(/** @type {HTMLInputElement} */ target){
+    return target.classList.contains('changed');
 }
 function is_target_nullable(/** @type {HTMLInputElement} */ target){
     return target.getAttribute('nullable') === 'true';
@@ -61,8 +65,12 @@ function handle_context_menu_event(event) {
         const selected = is_selected_nonempty();
         const editable = is_target_editable(target);
         const nullable = is_target_nullable(target);
+        const changed  = is_target_changed(target);
         const nullable_items = nullable && editable ? [
             {label: "Zeruj", event: (e) => {target.dispatchEvent(new Event('set_as_null'))}},
+        ] : [];
+        const resetable_items = editable ? [
+            {label: "Cofnij zmianę", event: (e) => {target.dispatchEvent(new Event('reset_changes'))}, disabled: !changed},
         ] : [];
         const text_items = text ? [
             {label: "Wytnij", event: "request_clipboard_cut",   disabled: !selected || !editable},
@@ -71,7 +79,10 @@ function handle_context_menu_event(event) {
             {label: "Zaznacz wszystko",  event: (e) => {target.select()}},
         ] : [];
         showMenu({items: insert_separators([
-            nullable_items,
+            [
+                ...nullable_items,
+                ...resetable_items
+            ],
             text_items
         ])});
         return;

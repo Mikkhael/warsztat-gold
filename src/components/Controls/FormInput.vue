@@ -40,6 +40,11 @@ const impl = use_FormInput(props);
 function set_as_null() {
     impl.local = null;
 }
+function reset_changes(){
+    if(impl.changed) {
+        impl.local = impl.remote;
+    }
+}
 
 const elem = ref();
 watch(toRef(impl, "custom_validity_message"), (new_value) => {
@@ -65,6 +70,7 @@ const HINTS_UID = ref(uid + '_hint');
                  :id="INPUT_UID"
                  :nullable="!props.nonull"
                  @set_as_null="set_as_null()"
+                 @reset_changes="reset_changes()"
         />
         <datalist v-if="use_datalist" :id="HINTS_UID">
             <option v-for="v in props.hints" :value="v">{{ v }}</option>
