@@ -92,13 +92,16 @@
             + automate form validation
             + insert
             + transactions for batch operations
+            - automatic scroller query generation
             - sub datasets
             - delete
             - detect and dont display empty results
         + Query Form Scroller
             + working scroller
             + Simple Mode
-            - toggle for simple
+            + toggle for simple
+            - better indicators for empty/ood states
+            - (BUG) alert box not showing, when scrolling by step while on bound
         - Kontrolki
             + custom context menu
                 - make "Zaznacz Wszystko" on read-only inputs work

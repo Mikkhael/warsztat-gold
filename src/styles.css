@@ -188,6 +188,10 @@ button {
 	background-color: #ff7171;
 	color: black;
 }
+.form_scroller.is_empty {
+	background-color: #7e7e7e;
+	color: black;
+}
 
 
 /*

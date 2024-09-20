@@ -5,7 +5,8 @@ import { reactive, computed, ref, watch, toRef } from "vue";
 import ipc from "../../ipc";
 import { escape_backtick, escape_like, escape_sql_value } from "../../utils";
 // import { invoke } from "@tauri-apps/api/tauri";
-import QueryFormScrollerSimple from "../QueryFormScrollerSimple.vue";
+// import QueryFormScrollerSimple from "../QueryFormScrollerSimple.vue";
+import QueryFormScroller from "../QueryFormScroller.vue";
 import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 
 import useMainMsgManager from "../Msg/MsgManager";
@@ -52,7 +53,7 @@ console.log("QUERY VIEWER", props);
 const emit = defineEmits(['select']);
 
 
-const offset = ref(0n);
+const offset = ref(0);
 const orderings = reactive(/**@type {number[]}*/ ([]));
 const searches  = reactive(/**@type {string[]}*/ ([]));
 
@@ -167,7 +168,7 @@ const query_sql_full = computed(() => {
     const where_sql   = apply_if_defined(' WHERE',    where_sql_true.value);
     const orderby_sql = apply_if_defined(' ORDER BY', orderings_sql.value);
     const limit_sql   = apply_if_defined(' LIMIT',    props.limit);
-    const offset_sql  = apply_if_defined(' OFFSET',   offset.value - 1n);
+    const offset_sql  = apply_if_defined(' OFFSET',   offset.value - 1);
     // console.log('orderby', orderby_sql, orderings_sql.value);
     return select_sql + from_sql + where_sql + orderby_sql + limit_sql + offset_sql;
 });
@@ -194,7 +195,14 @@ watch(query_sql_full, refresh_routine);
 <template>
 
     <div class="container">
-        <QueryFormScrollerSimple v-model:index="offset" :query="query_sql_for_scroller" :step="props.step" :limit="props.limit"/>
+        <!-- <QueryFormScrollerSimple v-model:index="offset" :query="query_sql_for_scroller" :step="props.step" :limit="props.limit"/> -->
+        <QueryFormScroller simple 
+        :limit="props.limit"
+        :query_from="query_sql_for_scroller" 
+        nosave 
+        norefresh
+        @changed_index="x => offset = x"/>
+
         <table class="result" :class="{selectable: props.selectable}">
             <tr>
                 <th></th>
@@ -212,7 +220,7 @@ watch(query_sql_full, refresh_routine);
                 </th>
             </tr>
             <tr v-for="(row, row_i) in query_rows" class="data_tr" @click="handle_select(row_i)">
-                <td class="cell_index" >{{ offset + BigInt(row_i) }}:</td>
+                <td class="cell_index" >{{ offset + row_i }}:</td>
                 <td v-for="(cell, cell_i) in row" :class="{
                         cell_number: typeof(cell) == 'number',
                         cell_text: typeof(cell) == 'string',

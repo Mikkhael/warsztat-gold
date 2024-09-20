@@ -1,9 +1,17 @@
 <script setup>
 //@ts-check
 import { watch, ref, readonly, toRef, toRefs, computed } from "vue";
-import ScrollerState from "../ScrollerState";
+import {ScrollerState, ScrollerStateSimple} from "../ScrollerState";
 
 const props = defineProps({
+	simple: {
+		type: Boolean,
+		default: false
+	},
+	limit: {
+		type: Number,
+		default: 1
+	},
 	query_value_name: {
 		type: String,
 		default: 'rowid'
@@ -58,7 +66,9 @@ const insert_mode           = ref(false);
 const displayed_value       = ref(props.initial_value);
 const displayed_placeholder = computed(() => insert_mode.value ? '***' : '');
 
-const state = new ScrollerState(props.initial_value ?? null, props.before_change);
+const state = props.simple ?
+	new ScrollerStateSimple(props.initial_value ?? null, props.before_change, props_refs.limit) :
+	new ScrollerState      (props.initial_value ?? null, props.before_change);
 const is_error = ref(true);
 
 /**
@@ -103,11 +113,15 @@ const props_query_parts_refs = [
  * @param {string[]} new_query_parts
  */
 function reinitialize_query(new_query_parts) {
-	state.update_queries(
-		new_query_parts[0], 
-		new_query_parts[1], 
-		new_query_parts[2]
-	);
+	if(state instanceof ScrollerState) {
+		state.update_queries(
+			new_query_parts[0], 
+			new_query_parts[1], 
+			new_query_parts[2]
+		);
+	}else{
+		state.update_query(new_query_parts[1]);
+	}
 	clear_error();
 	return index_change_wrapper( state.refresh(true) );
 }
@@ -135,20 +149,27 @@ watch(props_query_parts_refs, (new_parts, old_parts) => {
 }
 
 /**
- * @param {boolean} to_bound 
- * @param {boolean} to_next 
+ * @param {boolean} to_last 
  */
-function scroll(to_bound, to_next, force_update = false) {
-	return index_change_wrapper( to_bound ? 
-		state.goto_bound(to_next, force_update || is_error.value) :
-		state.goto_step (to_next, force_update || is_error.value)
+function goto_bound(to_last, force_update = false) {
+	return index_change_wrapper(
+		state.goto_bound(to_last, force_update || is_error.value)
+	);
+}
+
+/**
+ * @param {number} steps 
+ */
+function scroll_by(steps, force_update = false) {
+	return index_change_wrapper(
+		state.scroll_by(steps, force_update || is_error.value)
 	);
 }
 
 /**
  * @param {string | number} value 
  */
-function goto(value, force_update = false, dir_next = true, bypass_before_change = false) {
+function goto(value, force_update = false, bypass_before_change = false, dir_next = true) {
 	return index_change_wrapper(
 		state.goto(value, force_update || is_error.value, dir_next, bypass_before_change)
 	);
@@ -167,7 +188,8 @@ function update_index_from_input(event) {
 
 defineExpose({
 	set_insert_mode,
-	scroll,
+	scroll_by,
+	goto_bound,
 	goto,
 	refresh
 });
@@ -190,18 +212,21 @@ function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', 
 
 <template>
 
-<div class="form_scroller" :class="{is_error, is_empty: state.is_empty, is_bounds_oot: !state.is_bounds_utd, insert_mode}">
-	<input type="button" class="btn prev bound" @click="scroll(true,  false).catch(show_error)">
-	<input type="button" class="btn prev step"  @click="scroll(false, false).catch(show_error)">
+<div class="form_scroller" :class="{is_error, is_empty: state.is_empty.value, is_bounds_oot: !state.is_bounds_utd.value, insert_mode}">
+	<input type="button" class="btn prev bound" @click="goto_bound(false).catch(show_error)">
+	<input type="button" class="btn prev step2" @click="scroll_by(-props.limit).catch(show_error)" v-if="props.simple && props.limit > 1">
+	<input type="button" class="btn prev step"  @click="scroll_by(-1).catch(show_error)">
 	<input type="text"   class="curr"           :value="displayed_value" @change="update_index_from_input($event).catch(show_error)" :placeholder="displayed_placeholder">
-	<input type="button" class="btn next step"  @click="scroll(false, true).catch(show_error)">
-	<input type="button" class="btn next bound" @click="scroll(true,  true).catch(show_error)">
-	<span  class="txt bounds as_input">  ({{ state.bounds.value[2] }}) {{ state.bounds.value[0] }} - {{ state.bounds.value[1] }} </span>
+	<input type="button" class="btn next step"  @click="scroll_by(+1).catch(show_error)">
+	<input type="button" class="btn prev step2" @click="scroll_by(+props.limit).catch(show_error)" v-if="props.simple && props.limit > 1">
+	<input type="button" class="btn next bound" @click="goto_bound(true).catch(show_error)">
+	<span v-if="props.simple" class="txt bounds as_input">  ({{ state.count.value }}) </span>
+	<span v-else              class="txt bounds as_input">  ({{ state.bounds.value[2] }}) {{ state.bounds.value[0] }} - {{ state.bounds.value[1] }} </span>
 	<input type="button" class="btn refresh"    @click="clicked_refresh" v-if="!props.norefresh">
 	<input type="button" class="btn insert"     @click="clicked_insert"  v-if="props.insertable">
 	<div class="spacer"></div>
+	<span  class="as_input"> | UTD: {{ state.is_bounds_utd }} | EMPTY: {{ state.is_empty }} | </span>
 	<input type="button" class="btn save"       @click="clicked_save" v-if="!props.nosave" :class="{indicate: props.indicate_save}">
-	<!-- <span  class="as_input"> | B: {{ state.is_bounds_utd }} | C: {{ state.is_curr_utd }} | E: {{ state.is_empty }} </span> -->
 </div>
 
 </template>

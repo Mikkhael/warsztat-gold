@@ -6,6 +6,14 @@ import useMainMsgManager from './Msg/MsgManager'
 import { as_promise } from '../utils';
 
 const props = defineProps({
+	simple: {
+		type: Boolean,
+		default: false
+	},
+	limit: {
+		type: Number,
+		default: 1
+	},
 	query_value_name: {
 		type: String,
 		default: 'rowid'
@@ -35,22 +43,12 @@ const props = defineProps({
 		type: Function,
 		default: null
 	}
-	// before_save: {
-	// 	/**@type {import('vue').PropType<((is_insert: boolean) => Promise<boolean>)?>} */
-	// 	//@ts-ignore
-	// 	type: Function,
-	// 	default: null
-	// }
 });
 
 const emit = defineEmits([
 	'changed_index',
 	'changed_insert_mode',
 	'error',
-
-	// 'insert_mode_changed',
-	// 'refresh_request',
-	// 'save_request',
 ]);
 
 //// VARIABLES, STATE and HANDLERS /////
@@ -188,7 +186,10 @@ async function set_index_after_insert(inserted_indexes){
 	if(new_index === undefined){
 		return;
 	}
-	return await scroller_ref.value.goto(new_index, true, true, true); // force_refresh, next, bypass
+	if(props.simple) {
+		return await scroller_ref.value.goto_bound(true, true); // to_last, force_update
+	}
+	return await scroller_ref.value.goto(new_index, true, true); // new_index, force_refresh, bypass
 }
 
 async function perform_insert() {
@@ -207,10 +208,11 @@ async function perform_save(){
 //// EXPOSE ////
 
 defineExpose({
-	refresh:		 (...args) => {scroller_ref.value.refresh(...args)},
-	goto:   		 (...args) => {scroller_ref.value.goto(...args)},
-	scroll: 		 (...args) => {scroller_ref.value.scroll(...args)},
 	set_insert_mode: (...args) => {scroller_ref.value.set_insert_mode(...args)},
+	scroll_by: 		 (...args) => {scroller_ref.value.scroll_by(...args)},
+	goto_bound:		 (...args) => {scroller_ref.value.goto_bound(...args)},
+	goto:   		 (...args) => {scroller_ref.value.goto(...args)},
+	refresh:		 (...args) => {scroller_ref.value.refresh(...args)},
 });
 </script>
 
@@ -218,6 +220,8 @@ defineExpose({
 <template>
 
 <QueryFormScroller 
+		:simple="props.simple"
+		:limit="props.limit"
         :query_value_name="props.query_value_name"
         :query_from="props.query_from"
         :query_where="props.query_where"

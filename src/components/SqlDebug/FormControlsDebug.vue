@@ -84,21 +84,49 @@ const index2   = dataset2.get_index_ref();
 dataset2.assosiate_form(form_elem2);
 
 const p2_src  = dataset2.create_source_query();
-const p2_sync = dataset2.create_table_sync('płace');
+// const p2_sync = dataset2.create_table_sync('płace');
 
 const p2_id       = dataset2.create_value_raw   ("ID płac",          null, p2_src);
-const p2_data     = dataset2.create_value_synced("data",             null, p2_src, p2_sync);
-const p2_kwota    = dataset2.create_value_synced("kwota",            null, p2_src, p2_sync);
-const p2_podstawa = dataset2.create_value_synced("podstawa",         null, p2_src, p2_sync);
-const p2_miesiac  = dataset2.create_value_synced("miesiąc płacenia", null, p2_src, p2_sync);
+const p2_data     = dataset2.create_value_synced("data",             null, p2_src, /*p2_sync*/);
+const p2_kwota    = dataset2.create_value_synced("kwota",            null, p2_src, /*p2_sync*/);
+const p2_podstawa = dataset2.create_value_synced("podstawa",         null, p2_src, /*p2_sync*/);
+const p2_miesiac  = dataset2.create_value_synced("miesiąc płacenia", null, p2_src, /*p2_sync*/);
 
-p2_sync.add_primary('ID płac', p2_id);
+// p2_sync.add_primary('ID płac', p2_id);
 
 p2_src.set_body_query_and_finalize(['FROM `płace` WHERE `ID pracownika` = ', rowid, ' AND `ID płac` = ', index2]);
 
 const p2_scroller_query_name  = 'rowid';
 const p2_scroller_query_from  = '`płace`';
 const p2_scroller_query_where = computed(() => `\`ID pracownika\` = ${rowid.value}`);
+
+// dataset3 Simple
+
+// ID płac	ID pracownika	data	kwota	podstawa	miesiąc płacenia
+
+const form_elem3   = ref();
+
+const dataset3 = new Dataset();
+const index3   = dataset3.get_index_ref();
+const offset3  = computed(() => index3.value - 1);
+dataset3.assosiate_form(form_elem3);
+
+const p3_src  = dataset3.create_source_query();
+const p3_sync = dataset3.create_table_sync('płace');
+
+const p3_id       = dataset3.create_value_raw   ("ID płac",          null, p3_src);
+const p3_data     = dataset3.create_value_synced("data",             null, p3_src, p3_sync);
+const p3_kwota    = dataset3.create_value_synced("kwota",            null, p3_src, p3_sync);
+const p3_podstawa = dataset3.create_value_synced("podstawa",         null, p3_src, p3_sync);
+const p3_miesiac  = dataset3.create_value_synced("miesiąc płacenia", null, p3_src, p3_sync);
+
+p3_sync.add_primary('ID płac', p3_id);
+
+
+p3_src.set_body_query_and_finalize(['FROM `płace` WHERE `ID pracownika` = ', rowid, ' LIMIT 1 OFFSET ', offset3]);
+
+// TODO streamline query creation for scrollers 
+const p3_scroller_query_from  = computed(() => `\`płace\` WHERE \`ID pracownika\` = ${rowid.value}`);
 
 
 // FIND
@@ -177,7 +205,9 @@ function handle_err(/**@type {Error} */ err) {
 }
 
 defineExpose({
-    dataset1
+    dataset1,
+    dataset2,
+    dataset3
 });
 
 // console.log('QUERY PROPS', query_props);
@@ -253,6 +283,20 @@ function on_changed(new_index, rows) {
                     :query_from="p2_scroller_query_from"
                     :query_where="p2_scroller_query_where"
                     :datasets="[dataset2]"
+                    @error="handle_err"/> 
+        </fieldset>
+        <fieldset class="form_fieldset" :class="{hidden: insert_mode}">
+            <legend>SUBFORM SIMPLE</legend>
+            <form ref="form_elem3" class="form">
+                <label class="label">KWOTA:            </label> <FormInput type="number"  step="0.01" :value="p3_kwota" />
+                <label class="label">PODSTAWA:         </label> <FormEnum  :value="p3_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  />
+                <label class="label">DATA:             </label> <FormInput type="text" :value="p3_data"/>
+                <label class="label">MIESIĄC PŁACENIA: </label> <FormInput type="date" :value="p3_miesiac"/>
+            </form>
+            
+                <QueryFormScrollerDataset simple
+                    :query_from="p3_scroller_query_from"
+                    :datasets="[dataset3]"
                     @error="handle_err"/> 
         </fieldset>
     </fieldset>
