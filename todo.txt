@@ -92,7 +92,7 @@
             + automate form validation
             + insert
             + transactions for batch operations
-            - sub datasets
+            + sub datasets
             - delete
             - detect and dont display empty results
         + Query Form Scroller

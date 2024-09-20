@@ -79,7 +79,7 @@ const scroller_query_where = '';
 const insert_mode2 = ref(false);
 const form_elem2   = ref();
 
-const dataset2 = new Dataset();
+const dataset2 = dataset1.create_sub_dataset();
 const index2   = dataset2.get_index_ref();
 dataset2.assosiate_form(form_elem2);
 
@@ -106,7 +106,7 @@ const p2_scroller_query_where = DVUtil.sql_parts_ref(['`ID pracownika` = ', rowi
 
 const form_elem3   = ref();
 
-const dataset3 = new Dataset();
+const dataset3 = dataset1.create_sub_dataset();
 const index3   = dataset3.get_index_ref();
 const offset3  = computed(() => index3.value - 1);
 dataset3.assosiate_form(form_elem3);

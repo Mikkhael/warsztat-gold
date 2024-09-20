@@ -423,15 +423,17 @@ class Dataset {
         this.table_syncs = /**@type {DatasetTableSync[]} */ ([]);
         this.source_queries = /**@type {SourceQuery[]} */ ([]);
         this.values = /**@type {Object.<string, DatasetValue>} */ ({});
-
+        
         this.synced_values =  shallowRef(/**@type {DatasetValueSynced[]} */ ([]));
-
+        
         this.forms = /**@type {import('vue').Ref<HTMLFormElement>[]} */ ([]);
         this.index = ref(/**@type {SQLValue} */ (null));
+        
+        this.sub_datasets = shallowRef(/**@type {Dataset[]} */ ([]));
 
         this.is_changed_ref = computed(() => {
             const changed_list = this.synced_values.value.map(x => x.changed.value);
-            return changed_list.indexOf(true) !== -1;
+            return (changed_list.indexOf(true) !== -1) || this.sub_datasets.value.some(x => x.is_changed_ref.value);
         });
     }
 
@@ -454,6 +456,12 @@ class Dataset {
         const src = new SimpleSourceQuery();
         this.source_queries.push(src);
         return src;
+    }
+
+    create_sub_dataset(){
+        const sub_dataset = new Dataset();
+        this.sub_datasets.value.push(sub_dataset);
+        return sub_dataset;
     }
 
     /**
@@ -543,26 +551,66 @@ class Dataset {
 
 
     
-    is_to_update() { return Object.values(this.values).some(x => x.is_to_update()); }
+    is_to_update() { return Object.values(this.values).some(x => x.is_to_update()) || this.sub_datasets.value.some(x => x.is_to_update()); }
     is_changed()   { return this.is_changed_ref.value; }
     
-    reinitialize_all() { Object.values(this.values).forEach(x => x.reinitialize()); }
+    /**
+     * @template T
+     * @param {(dataset: Dataset) => T} callback 
+     * @returns {T[]}
+     */
+    do_for_all_deep(callback) {
+        const subs_res = this.sub_datasets.value.map(x => x.do_for_all_deep(callback)).flat();
+        const this_res = callback(this);
+        return [this_res, ...subs_res];
+    }
+    
+    /**
+     * @template T,K
+     * @param {(dataset: Dataset) => K[]} prop_callback 
+     * @param {(prop: K) => T} callback 
+     * @returns {T[]}
+     */
+    do_for_all_deep_prop_arr(prop_callback, callback, no_deep = false) {
+        if(no_deep) {
+            return prop_callback(this).map(callback);
+        } else {
+            return this.do_for_all_deep(dataset => prop_callback(dataset).map(callback)).flat();
+        }
+    }
 
     /**
-     * @param {(sync: DatasetTableSync) => Promise<number>} callback_per_sync 
+     * @template T
+     * @param {(sync: DatasetTableSync) => T} callback
      */
-    async #do_all_as_transaction(callback_per_sync) {
-        return await ipc.db_as_transaction(() => {
-            return Promise.all(this.table_syncs.map(callback_per_sync));
+    do_for_all_deep_syncs(callback, no_deep = false) {
+        return this.do_for_all_deep_prop_arr(x => x.table_syncs, callback, no_deep);
+    }
+    /**
+     * @template T
+     * @param {(source: SourceQuery) => T} callback
+     */
+    do_for_all_deep_sources(callback, no_deep = false) {
+        return this.do_for_all_deep_prop_arr(x => x.source_queries, callback, no_deep);
+    }
+    
+    /**
+     * @param {(sync: DatasetTableSync) => Promise<number>} callback_per_sync 
+    */
+   async #do_for_all_deep_syncs_as_transaction(callback_per_sync, no_deep = false) {
+       return await ipc.db_as_transaction(() => {
+           return Promise.all(this.do_for_all_deep_syncs(callback_per_sync, no_deep));
         });
     }
 
-    async perform_insert_all()            {return await this.#do_all_as_transaction(x => x.perform_insert())}
-    async perform_update_all()            {return await this.#do_all_as_transaction(x => x.perform_update())}
-    async perform_query_all()             {return await Promise.all(this.source_queries.map(x => x.perform_query()))}
-    async perform_query_and_replace_all() {return await Promise.all(this.source_queries.map(x => x.perform_query_and_replace()))}
-    async perform_query_and_refresh_all() {return await Promise.all(this.source_queries.map(x => x.perform_query_and_refresh()))}
-    async perform_query_and_retcon_all () {return await Promise.all(this.source_queries.map(x => x.perform_query_and_retcon()))}
+    reinitialize_all() { this.do_for_all_deep(dataset => Object.values(dataset.values).forEach(x => x.reinitialize())); }
+    
+    async perform_insert_all           (no_deep = true)  {return await this.#do_for_all_deep_syncs_as_transaction(x => x.perform_insert(), no_deep)}
+    async perform_update_all           (no_deep = false) {return await this.#do_for_all_deep_syncs_as_transaction(x => x.perform_update(), no_deep)}
+    async perform_query_all            (no_deep = false) {return await Promise.all(this.do_for_all_deep_sources(x => x.perform_query(),             no_deep));}
+    async perform_query_and_replace_all(no_deep = false) {return await Promise.all(this.do_for_all_deep_sources(x => x.perform_query_and_replace(), no_deep));}
+    async perform_query_and_refresh_all(no_deep = false) {return await Promise.all(this.do_for_all_deep_sources(x => x.perform_query_and_refresh(), no_deep));}
+    async perform_query_and_retcon_all (no_deep = false) {return await Promise.all(this.do_for_all_deep_sources(x => x.perform_query_and_retcon(),  no_deep));}
 }
 
 
