@@ -162,7 +162,26 @@ class DVUtil {
     static refresh(/**@type {DatasetValueReflike} */ value, /**@type {SQLValue}*/ new_value) { (value instanceof DatasetValue) ? value.refresh(new_value) : (value.value = unref(new_value)); }
     static retcon (/**@type {DatasetValueReflike} */ value, /**@type {SQLValue}*/ new_value) { (value instanceof DatasetValue) && value.retcon(new_value) }
     static revert (/**@type {DatasetValueReflike} */ value )                                 { (value instanceof DatasetValue) && value.revert(); }
+
+
+    /**
+     * @param {(string | DatasetValueReflike)[]} parts 
+     */
+    static sql_parts(parts) {
+        return parts.map(part => {
+            if(typeof part === 'string') return part;
+            else                         return escape_sql_value(DVUtil.as_value(part));
+        }).join('');
+    }
+    
+    /**
+     * @param {(string | DatasetValueReflike)[]} parts 
+     */
+    static sql_parts_ref(parts) {
+        return computed(() => DVUtil.sql_parts(parts));
+    }
 }
+
 
 
 ////////////////// Table Sync ////////////////////////////////////////
@@ -269,11 +288,7 @@ class DatasetSourceQuery extends SourceQuery{
         });
         
         this.query_body_sql = computed(() => {
-            return this.query_body_parts.value.map(part => {
-                if(typeof part === 'string')
-                    return part;
-                return escape_sql_value(DVUtil.as_value(part));
-            }).join('');
+            return DVUtil.sql_parts(this.query_body_parts.value);
         });
 
         this.query_sql = computed(() => {

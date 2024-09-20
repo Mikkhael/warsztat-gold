@@ -4,7 +4,7 @@
 import { escape_sql_value, query_result_to_object, query_row_to_object } from '../../utils';
 import ipc from '../../ipc';
 
-import { Dataset } from '../Dataset/Dataset';
+import { Dataset, DVUtil } from '../Dataset/Dataset';
 import {FormInput, FormEnum} from '../Controls';
 
 import {FWManager} from '../FloatingWindows/FWManager';
@@ -53,7 +53,7 @@ sync_place.add_primary("ID płac", place_rowid)
 const upper_imie = ref('');
 src1.select_bind(upper_imie, 'IMIĘ CAPS', 'upper(`imię`)');
 src1.select_raw('NAZWISKO CAPS', 'upper(`nazwisko`)');
-src1.set_body_query_and_finalize(['FROM `pracownicy` NATURAL LEFT JOIN `płace` WHERE `ID pracownika` = ', rowid])
+src1.set_body_query_and_finalize(['FROM `pracownicy` NATURAL LEFT JOIN `płace` WHERE `ID pracownika` = ', rowid]);
 
 
 podstawa_hints_src.set_query(['SELECT DISTINCT podstawa FROM `płace`']);
@@ -98,7 +98,7 @@ p2_src.set_body_query_and_finalize(['FROM `płace` WHERE `ID pracownika` = ', ro
 
 const p2_scroller_query_name  = 'rowid';
 const p2_scroller_query_from  = '`płace`';
-const p2_scroller_query_where = computed(() => `\`ID pracownika\` = ${rowid.value}`);
+const p2_scroller_query_where = DVUtil.sql_parts_ref(['`ID pracownika` = ', rowid]);
 
 // dataset3 Simple
 
@@ -125,8 +125,8 @@ p3_sync.add_primary('ID płac', p3_id);
 
 p3_src.set_body_query_and_finalize(['FROM `płace` WHERE `ID pracownika` = ', rowid, ' LIMIT 1 OFFSET ', offset3]);
 
-// TODO streamline query creation for scrollers 
-const p3_scroller_query_from  = computed(() => `\`płace\` WHERE \`ID pracownika\` = ${rowid.value}`);
+const p3_scroller_query_from  = DVUtil.sql_parts_ref(['`płace` WHERE `ID pracownika` = ', rowid]);
+// const p3_scroller_query_from  = computed(() => `\`płace\` WHERE \`ID pracownika\` = ${rowid.value}`);
 
 
 // FIND
