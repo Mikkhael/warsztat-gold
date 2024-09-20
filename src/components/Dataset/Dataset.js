@@ -1,5 +1,5 @@
 //@ts-check
-import { computed, unref, ref, reactive, shallowRef } from "vue";
+import { computed, unref, ref, reactive, shallowRef, watch } from "vue";
 import { escape_backtick, escape_sql_value, iterate_query_result_values, iterate_query_result_values_single_row } from "../../utils";
 import ipc from "../../ipc";
 
@@ -428,6 +428,10 @@ class Dataset {
         
         this.forms = /**@type {import('vue').Ref<HTMLFormElement>[]} */ ([]);
         this.index = ref(/**@type {SQLValue} */ (null));
+        this.empty = computed(() => this.index.value === null);
+        // watch(this.empty, (new_empty) => {
+        //     if(new_empty) this.reinitialize_all();
+        // });
         
         this.sub_datasets = shallowRef(/**@type {Dataset[]} */ ([]));
 
@@ -465,10 +469,13 @@ class Dataset {
     }
 
     /**
-     * @param {SQLValue} value 
+     * @param {SQLValue} new_index 
      */
-    set_index(value){
-        this.index.value = value;
+    set_index(new_index){
+        this.index.value = new_index;
+        if(new_index === null) { // IS EMPTY
+            this.reinitialize_all();
+        }
     }
     get_index_ref() { return this.index; }
     get_index()     { return this.index.value; }
@@ -481,8 +488,11 @@ class Dataset {
         this.forms.push(value);
     }
 
+    /**
+     * @returns {boolean}
+     */
     reportFormValidity(){
-        return this.forms.map(x => x.value.reportValidity()).every(x => x);
+        return this.forms.map(x => x.value.reportValidity()).every(x => x) && this.sub_datasets.value.map(x => x.reportFormValidity()).every(x => x);
     }
 
 

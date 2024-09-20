@@ -117,6 +117,7 @@ class ScrollerState extends ScrollerStateBase {
 			this.bounds.value[1] = undefined;
 			this.bounds.value[2] = 0;
 			this.is_empty.value  = true;
+			this.index.value = null;
 		} else {
 			this.bounds.value[0] = rows[0][0];
 			this.bounds.value[1] = rows[0][1];
@@ -134,6 +135,7 @@ class ScrollerState extends ScrollerStateBase {
 	 */
 	async #scroll(with_curr, dir_next, force_update = false, base_offset = undefined, bypass_before_change = false) {
 		await this.update_bounds(force_update);
+		if(this.is_empty.value) return null;
 		// check if already at bounds. tp not trigger update
 		if(base_offset === undefined && this.index.value === this.bounds.value[0] && !dir_next) return this.index.value;
 		if(base_offset === undefined && this.index.value === this.bounds.value[1] &&  dir_next) return this.index.value;
@@ -178,7 +180,7 @@ class ScrollerStateSimple extends ScrollerStateBase {
 		super(starting_index, before_change);
 		this.limit = limit;
 		this.count = ref(0);
-		this.is_empty  = computed(() => this.count.value === 0);
+		// this.is_empty  = computed(() => this.count.value === 0);
 		this.max_index = computed(() => this.count.value - (this.limit.value - 1));
 		this.str_query_count = '';
 	}
@@ -204,8 +206,11 @@ class ScrollerStateSimple extends ScrollerStateBase {
 		const [rows, col_names] = await ipc.db_query(this.str_query_count);
 		if(rows.length <= 0 || rows[0][0] === 0) { // no rows returned, or count(*) is 0 
 			this.count.value = 0;
+			this.is_empty.value = true;
+			this.index.value = null;
 		} else {
 			this.count.value = Number(rows[0][0]);
+			this.is_empty.value = false;
 		}
 		this.is_bounds_utd.value = true;
 	}
@@ -216,6 +221,7 @@ class ScrollerStateSimple extends ScrollerStateBase {
 	 */
 	async #scroll(new_index, with_limit = false, force_update = false, bypass_before_change = false) {
 		await this.update_count(force_update);
+		if(this.is_empty.value) return null;
 		const max_index = with_limit ? this.max_index.value : this.count.value;
 		if(new_index > max_index) new_index = max_index;
 		if(new_index < 1)         new_index = 1;

@@ -68,7 +68,10 @@ function set_insert_mode(new_mode) {
 
 async function handle_changed_index(new_index) {
 	try{
-		props.datasets.forEach(x => x.set_index(new_index));
+		props.datasets.forEach(x => {
+			x.set_index(new_index);
+			if(new_index === null) x.reinitialize_all();
+		});
 		const responses = await Promise.all( props.datasets.map(x => x.perform_query_and_replace_all()) );
 		emit('changed_index', new_index, responses);
 	} catch (err) {

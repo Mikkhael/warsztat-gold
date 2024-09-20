@@ -83,8 +83,8 @@ const dataset2 = dataset1.create_sub_dataset();
 const index2   = dataset2.get_index_ref();
 dataset2.assosiate_form(form_elem2);
 
-const p2_src  = dataset2.create_source_query();
 // const p2_sync = dataset2.create_table_sync('płace');
+const p2_src  = dataset2.create_source_query();
 
 const p2_id       = dataset2.create_value_raw   ("ID płac",          null, p2_src);
 const p2_data     = dataset2.create_value_synced("data",             null, p2_src, /*p2_sync*/);
@@ -121,8 +121,6 @@ const p3_podstawa = dataset3.create_value_synced("podstawa",         null, p3_sr
 const p3_miesiac  = dataset3.create_value_synced("miesiąc płacenia", null, p3_src, p3_sync);
 
 p3_sync.add_primary('ID płac', p3_id);
-
-
 p3_src.set_body_query_and_finalize(['FROM `płace` WHERE `ID pracownika` = ', rowid, ' LIMIT 1 OFFSET ', offset3]);
 
 const p3_scroller_query_from  = DVUtil.sql_parts_ref(['`płace` WHERE `ID pracownika` = ', rowid]);
@@ -163,9 +161,9 @@ function on_click_find() {
 const debug_update_query = ref('');
 function update_debug_update_query() {
     if(insert_mode.value){
-        debug_update_query.value = sync_pracownicy.get_insert_query() + '\n' + sync_place.get_insert_query();
+        debug_update_query.value = sync_pracownicy.get_insert_query() + '\n' + sync_place.get_insert_query() + '\n' + p3_sync.get_insert_query();
     }else{
-        debug_update_query.value = sync_pracownicy.get_update_query() + '\n' + sync_place.get_update_query();
+        debug_update_query.value = sync_pracownicy.get_update_query() + '\n' + sync_place.get_update_query() + '\n' + p3_sync.get_update_query();
     }
 }
 update_debug_update_query();
@@ -251,7 +249,7 @@ function on_changed(new_index, rows) {
     <p>INSERT: {{ insert_mode }}</p>
     <fieldset class="form_fieldset">
         <legend>FORM</legend>
-        <form ref="form_elem" class="form">
+        <form ref="form_elem" class="form" :class="{hidden: dataset1.empty.value}">
             <label class="label">ROWID PRAC:       </label> <FormInput type="integer"            :value="prac_rowid"   :max="30" nonull/>
             <label class="label">IMIĘ:             </label> <FormInput type="text"    :len="15"  :value="prac_imie"    pattern="[A-Z][a-z]+" nonull />
             <label class="label">NAZWISKO:         </label> <FormInput type="text"    :len="15"  :value="prac_nazwisko" :class="{wide: (prac_rowid.local.value?.toString().length ?? 0) < 5}"            />
@@ -271,7 +269,7 @@ function on_changed(new_index, rows) {
         </form>
         <fieldset class="form_fieldset" :class="{hidden: insert_mode}">
             <legend>SUBFORM</legend>
-            <form ref="form_elem2" class="form">
+            <form ref="form_elem2" class="form" :class="{hidden: dataset2.empty.value}">
                 <label class="label">KWOTA:            </label> <FormInput type="number"  step="0.01" :value="p2_kwota" />
                 <label class="label">PODSTAWA:         </label> <FormEnum  :value="p2_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  />
                 <label class="label">DATA:             </label> <FormInput type="text" :value="p2_data"/>
@@ -287,7 +285,7 @@ function on_changed(new_index, rows) {
         </fieldset>
         <fieldset class="form_fieldset" :class="{hidden: insert_mode}">
             <legend>SUBFORM SIMPLE</legend>
-            <form ref="form_elem3" class="form">
+            <form ref="form_elem3" class="form" :class="{hidden: dataset3.empty.value}">
                 <label class="label">KWOTA:            </label> <FormInput type="number"  step="0.01" :value="p3_kwota" />
                 <label class="label">PODSTAWA:         </label> <FormEnum  :value="p3_podstawa" :options="['nadgodziny', 'premia', 'wypłata']"  />
                 <label class="label">DATA:             </label> <FormInput type="text" :value="p3_data"/>
@@ -297,7 +295,8 @@ function on_changed(new_index, rows) {
                 <QueryFormScrollerDataset simple
                     :query_from="p3_scroller_query_from"
                     :datasets="[dataset3]"
-                    @error="handle_err"/> 
+                    @error="handle_err"
+                    @changed_index="x => console.log('CHANGED INDEX 3', x)"/> 
         </fieldset>
     </fieldset>
     
@@ -350,9 +349,6 @@ function on_changed(new_index, rows) {
     }
 
     .hidden {
-        background-color: grey;
-    }
-    .hidden * {
         visibility: hidden;
     }
 
