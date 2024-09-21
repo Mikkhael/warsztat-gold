@@ -113,6 +113,7 @@ const props_query_parts_refs = [
  * @param {string[]} new_query_parts
  */
 function reinitialize_query(new_query_parts) {
+	// console.log('NEW QUERY', new_query_parts);
 	if(state instanceof ScrollerState) {
 		state.update_queries(
 			new_query_parts[0], 
@@ -218,7 +219,7 @@ function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', 
 	<input type="button" class="btn prev step"  @click="scroll_by(-1).catch(show_error)">
 	<input type="text"   class="curr"           :value="displayed_value" @change="update_index_from_input($event).catch(show_error)" :placeholder="displayed_placeholder">
 	<input type="button" class="btn next step"  @click="scroll_by(+1).catch(show_error)">
-	<input type="button" class="btn prev step2" @click="scroll_by(+props.limit).catch(show_error)" v-if="props.simple && props.limit > 1">
+	<input type="button" class="btn next step2" @click="scroll_by(+props.limit).catch(show_error)" v-if="props.simple && props.limit > 1">
 	<input type="button" class="btn next bound" @click="goto_bound(true).catch(show_error)">
 	<span v-if="props.simple" class="txt bounds as_input">  ({{ state.count.value }}) </span>
 	<span v-else              class="txt bounds as_input">  ({{ state.bounds.value[2] }}) {{ state.bounds.value[0] }} - {{ state.bounds.value[1] }} </span>

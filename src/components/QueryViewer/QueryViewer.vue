@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { reactive, computed, ref, watch, toRef } from "vue";
+import { reactive, computed, ref, watch, toRef, onMounted, onUnmounted } from "vue";
 import ipc from "../../ipc";
 import { escape_backtick, escape_like, escape_sql_value } from "../../utils";
 // import { invoke } from "@tauri-apps/api/tauri";
@@ -34,14 +34,6 @@ const props = defineProps({
         type: String,
         default: ""
     },
-    limit: {
-        type: Number,
-        default: 20
-    },
-    step:  {
-        type: Number,
-        default: 20
-    },
     selectable: {
         type: Boolean,
         default: false
@@ -49,6 +41,35 @@ const props = defineProps({
 });
 
 console.log("QUERY VIEWER", props);
+
+const scroller_ref   = ref();
+const row_ref        = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
+const container_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
+const scroller_limit = ref(1);
+
+function recalculate_limit() {
+    const container_height = container_ref.value?.clientHeight;
+    const scroller_height  = row_ref      .value?.clientHeight;
+    console.log('ROWS HEIGHT', container_height, scroller_height);
+    if(!container_height || !scroller_height) {
+        scroller_limit.value = 1;
+        return;
+    }
+    const rows_to_fit = Math.floor(container_height / scroller_height);
+    scroller_limit.value = Math.max(rows_to_fit - 3, 1);
+};
+
+const resizeObserver = new ResizeObserver(() => {
+    recalculate_limit();
+}); 
+onMounted(() => {
+    console.log('CONTAINER REF', container_ref.value);
+    resizeObserver.observe(container_ref.value);
+});
+onUnmounted(() => {
+    resizeObserver.disconnect();
+});
+
 
 const emit = defineEmits(['select']);
 
@@ -114,30 +135,37 @@ const query_rows = computed(() => {
 });
 
 const searches_sql = ref('');
-watch( [searches, query_columns_true_escaped], ([new_searches, new_query_columns_true]) => {
+watch( [searches, query_columns_true_escaped], ([new_searches, new_query_columns_true_escaped]) => {
     let res = [];
-    console.log('new_searches', new_searches);
+    // console.log('new_searches', new_searches);
+
     for(let index in new_searches) {
-        console.log('index', index);
+        // console.log('index', index);
         const value = new_searches[index];
-        console.log('value', value);
+        // console.log('value', value);
         if(value == "") continue;
-        res.push(`${ new_query_columns_true[index] } LIKE "%${escape_like(value)}%" ESCAPE '\\'`);
+        res.push(`${ new_query_columns_true_escaped[index] } LIKE "%${escape_like(value)}%" ESCAPE '\\'`);
     }
     searches_sql.value = res.join(' AND ');
 });
 
 const orderings_sql = ref('');
-watch( [orderings_list, query_columns_true_escaped], ([new_orderings_list, new_query_columns_true]) => {
+watch( [orderings_list, query_columns_true_escaped], ([new_orderings_list, new_query_columns_true_escaped]) => {
     const res = Array.from(new_orderings_list.entries())
                 // .reverse()
                 .map(([col_i, ordering]) => 
-                    new_query_columns_true[col_i] +
+                    new_query_columns_true_escaped[col_i] +
                     (ordering > 0 ? " ASC" : " DESC"))
                 .join(', ');
     // console.log('debug_list', res);
     orderings_sql.value = res;
 });
+
+// TODO reset offset?
+// watch( [searches, orderings_list], ([searches1, orderings_list1]) => {
+//     console.log('aha', searches1, orderings_list1)
+//     scroller_ref.value.goto(1);
+// });
 
 const where_sql_true = computed(() => {
     return [props.query_where, searches_sql.value].filter(x => x != "").map(x => `(${x})`).join(' AND ');
@@ -167,7 +195,7 @@ const query_sql_full = computed(() => {
     const from_sql    = apply_if_defined(' FROM',     props.query_from);
     const where_sql   = apply_if_defined(' WHERE',    where_sql_true.value);
     const orderby_sql = apply_if_defined(' ORDER BY', orderings_sql.value);
-    const limit_sql   = apply_if_defined(' LIMIT',    props.limit);
+    const limit_sql   = apply_if_defined(' LIMIT',    scroller_limit.value);
     const offset_sql  = apply_if_defined(' OFFSET',   offset.value - 1);
     // console.log('orderby', orderby_sql, orderings_sql.value);
     return select_sql + from_sql + where_sql + orderby_sql + limit_sql + offset_sql;
@@ -194,17 +222,17 @@ watch(query_sql_full, refresh_routine);
 
 <template>
 
-    <div class="container">
-        <!-- <QueryFormScrollerSimple v-model:index="offset" :query="query_sql_for_scroller" :step="props.step" :limit="props.limit"/> -->
-        <QueryFormScroller simple 
-        :limit="props.limit"
+    <div class="container" ref="container_ref">
+        <QueryFormScroller simple
+        ref="scroller_ref"
+        :limit="scroller_limit"
         :query_from="query_sql_for_scroller" 
         nosave 
         norefresh
         @changed_index="x => offset = x"/>
 
         <table class="result" :class="{selectable: props.selectable}">
-            <tr>
+            <tr ref="row_ref">
                 <th></th>
                 <th v-for="(col_name, col_i) in query_columns_display" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">
                     <input type="text" class="search_input" v-model="searches[col_i]" required>
@@ -238,7 +266,8 @@ watch(query_sql_full, refresh_routine);
 
     .container {
         /* width: 100%; */
-        overflow-x: scroll;
+        /* overflow-x: scroll; */
+        height: 100%;
     }
     .ordering_btns {
         margin-left: 1ch;
@@ -253,8 +282,12 @@ watch(query_sql_full, refresh_routine);
     td, th{
         /* padding: 2px 5px; */
         padding: 2px 5px;
+        height: 2.5ch;
         text-wrap: nowrap;
         border: 1px solid black;
+    }
+    table{
+        border-collapse: collapse;
     }
 
     td.hidden, th.hidden {

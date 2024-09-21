@@ -91,8 +91,6 @@ function on_click_find() {
             ["`nr nadwozia`", "Nr Nadwozia"],
         ],
         query_from: "`samochody klientów`",
-        step: 20,
-        limit: 20,
         selectable: true,
     }, {
         select: handle_find

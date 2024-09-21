@@ -30,26 +30,34 @@ function toggle(new_value) {
 <template>
 
 <div class="btn_container">
-    <button :class="{selected: props.value > 0}" @click="toggle( 1)">^</button>
-    <button :class="{selected: props.value < 0}" @click="toggle(-1)">V</button>
+    <div :class="{selected: props.value > 0}" @click="toggle( 1)" class="sort_btn"        ></div>
+    <div :class="{selected: props.value < 0}" @click="toggle(-1)" class="sort_btn reverse"></div>
 </div>
 
 </template>
 
 <style scoped>
 
-    div.btn_container {
-        display: inline-flex;
-        flex-direction: row;
-        overflow: hidden;
+    .btn_container {
+        display: inline-block;
+        height: 80%;
+        width: 2ch;
     }
-    button {
-        border: 1px outset black;
-        background-color: lightgray;
+    .sort_btn {
+        height: 50%;
+        cursor: pointer;
+        background-image: url('./../../assets/icons/sort_off.svg');
+        background-size: contain;
+        background-repeat: no-repeat;
     }
-    button.selected {
-        border-style: inset;
-        background-color: lightblue;
+    .sort_btn.reverse {
+        transform: scaleY(-1);
+    }
+    .sort_btn.selected {
+        background-image: url('./../../assets/icons/sort_on.svg');
+    }
+    .sort_btn:hover{
+        background-color: rgba(0, 0, 255, 0.185);
     }
 
 </style>
