@@ -10,8 +10,8 @@ import {FormInput, FormEnum} from '../Controls';
 import {FWManager} from '../FloatingWindows/FWManager';
 import FWCollection from '../FloatingWindows/FWCollection.vue';
 
+import QueryViewerOpenBtn from '../QueryViewer/QueryViewerOpenBtn.vue';
 import QueryFormScrollerDataset from '../QueryFormScrollerDataset.vue';
-import QueryViewer from '../QueryViewer/QueryViewer.vue';
 import {ref, reactive, watch, computed, onMounted} from 'vue';
 
 
@@ -129,33 +129,20 @@ const p3_scroller_query_from  = DVUtil.sql_parts_ref(['`płace` WHERE `ID pracow
 
 // FIND
 
-function handle_find(columns, row) {
-    fwManager.close_window("Test - Znajdź");
-    scroller_ref.value.goto(row[0]);
-    // rowid.value = row[0];
-}
-
-function on_click_find() {
-    fwManager.open_or_reopen_window("Test - Znajdź", QueryViewer, {
-        query_select_fields: [
-            ["p1.rowid"],
-            ["p1.`ID pracownika`", "ID pracownika"],
-            ["`imię`", "Imię"],
-            ["`nazwisko`", "Nazwisko"],
-            ["`miejsce urodzenia`", "Miejce Urodzenia"],
-            ["`ID płac`", "ID płac"],
-            ["`kwota`", "Kwota"],
-            ["`podstawa`", "Podstawa"],
-            ["`miesiąc płacenia`", "Miesiąc Płacenia"],
-        ],
-        query_from: "`pracownicy` as p1 LEFT JOIN (SELECT *, max(`ID płac`) FROM `płace` GROUP BY `ID pracownika` ) as p2 ON p1.rowid=p2.`ID pracownika`",
-        step: 3,
-        limit: 3,
-        selectable: true,
-    }, {
-        select: handle_find
-    });
-}
+const find_options = {
+    query_select_fields: [
+        ["p1.rowid"],
+        ["p1.`ID pracownika`", "ID pracownika"],
+        ["`imię`", "Imię"],
+        ["`nazwisko`", "Nazwisko"],
+        ["`miejsce urodzenia`", "Miejce Urodzenia"],
+        ["`ID płac`", "ID płac"],
+        ["`kwota`", "Kwota"],
+        ["`podstawa`", "Podstawa"],
+        ["`miesiąc płacenia`", "Miesiąc Płacenia"],
+    ],
+    query_from: "`pracownicy` as p1 LEFT JOIN (SELECT *, max(`ID płac`) FROM `płace` GROUP BY `ID pracownika` ) as p2 ON p1.rowid=p2.`ID pracownika`",
+};
 
 // Unnesesary
 const debug_update_query = ref('');
@@ -241,7 +228,9 @@ function on_changed(new_index, rows) {
         ROWID:    <input type="number" v-model="prac_rowid.local.value" :class="{changed: prac_rowid.is_changed()}"> <br>
         IMIĘ:     <input type="text" v-model="prac_imie.local.value" :class="{changed: prac_imie.is_changed()}">  <br>
         NAZWISKO: <input type="text" v-model="prac_nazwisko.local.value" :class="{changed: prac_nazwisko.is_changed()}">  <br>
-        <input type="button" value="ZNAJDŹ" @click="on_click_find">  <br>
+        <!-- <input type="button" value="ZNAJDŹ" @click="on_click_find">  <br> -->
+        <QueryViewerOpenBtn v-bind="find_options" :scroller="scroller_ref" :fwManager="fwManager" @select="(x,y) => console.log('select', x, y)"/>
+
     </div>
     <p>KWOTA_HINTS: {{ kwota_hints }}</p>
     <p>PODSTAWA_HINTS: {{ podstawa_hints }}</p>

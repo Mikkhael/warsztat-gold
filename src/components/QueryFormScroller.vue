@@ -226,7 +226,7 @@ function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', 
 	<input type="button" class="btn refresh"    @click="clicked_refresh" v-if="!props.norefresh">
 	<input type="button" class="btn insert"     @click="clicked_insert"  v-if="props.insertable">
 	<div class="spacer"></div>
-	<span  class="as_input"> | UTD: {{ state.is_bounds_utd }} | EMPTY: {{ state.is_empty }} | </span>
+	<!-- <span  class="as_input"> | UTD: {{ state.is_bounds_utd }} | EMPTY: {{ state.is_empty }} | </span> -->
 	<input type="button" class="btn save"       @click="clicked_save" v-if="!props.nosave" :class="{indicate: props.indicate_save}">
 </div>
 
