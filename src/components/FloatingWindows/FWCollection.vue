@@ -15,7 +15,7 @@ const props = defineProps({
 
     <div class="FW_collection">
 
-        <div class="FW_window" v-for="([title, window]) in props.manager.opened_windows">
+        <div class="FW_window" v-for="([title, window]) in props.manager.opened_windows" :key="title">
 <!-- 
             title: {{ title.toString() }} <br>
             component: {{ window.box.id.toString() }} -->

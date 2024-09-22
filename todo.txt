@@ -144,5 +144,5 @@
     + mounting components
     + fix viewport update when resize
     - parent windows
-    - (BUG) Windows remount, when closing a window opened before
-        - OPEN1 -> OPEN2 -> CLOSE1 -> CLOSE2 => alert box shows twice!! (Once per previously opened/closed WINDOW1)
+    + (BUG) Windows remount, when closing a window opened before
+        + OPEN1 -> OPEN2 -> CLOSE1 -> CLOSE2 => alert box shows twice!! (Once per previously opened/closed WINDOW1)
