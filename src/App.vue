@@ -36,7 +36,7 @@ const main_components_names = readonly([
   "QueryViewerDebug",
   "AlertsDebug"
 ]);
-const current_main_component_index = ref(4);
+const current_main_component_index = ref(0);
 const current_main_component = ref();
 
 const msg_manager = useMainMsgManager();

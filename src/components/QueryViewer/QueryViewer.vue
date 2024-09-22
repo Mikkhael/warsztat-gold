@@ -211,7 +211,7 @@ function handle_select(row_i) {
     if(!props.selectable) return;
     const cols = query_columns_true.value;
     const row  = query_rows.value[row_i];
-    emit("select", cols, row);
+    emit("select", cols, row, row_i);
 }
 
 async function refresh_routine() {return refresh().catch(handle_err);}

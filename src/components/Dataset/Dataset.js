@@ -428,6 +428,7 @@ class Dataset {
         
         this.forms = /**@type {import('vue').Ref<HTMLFormElement>[]} */ ([]);
         this.index = ref(/**@type {SQLValue} */ (null));
+        this.offset = computed(() => Number(this.index.value) - 1);
         this.empty = computed(() => this.index.value === null);
         // watch(this.empty, (new_empty) => {
         //     if(new_empty) this.reinitialize_all();
@@ -477,8 +478,9 @@ class Dataset {
             this.reinitialize_all();
         }
     }
-    get_index_ref() { return this.index; }
-    get_index()     { return this.index.value; }
+    get_offset_ref() { return this.offset; }
+    get_index_ref()  { return this.index; }
+    get_index()      { return this.index.value; }
 
     /**
      * 

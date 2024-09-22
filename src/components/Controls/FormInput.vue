@@ -9,7 +9,7 @@ const props = defineProps({
     type: {
         /**@type {import('vue').PropType<import('./impl/FormInput').FormInputType} */
         type: String,
-        required: true
+        default: "text"
     },
     value: {
         /**@type {import('vue').PropType<import('../Dataset/Dataset').DatasetValuelike>} */

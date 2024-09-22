@@ -76,9 +76,18 @@
             - highlight
         - update
         - insert
-        - automate form integration
+        + automate form integration
         - fix scrolling back to 0, when changing search fields
     - Forms API
+        + Example form (Klienci)
+            + display
+            + search
+            - save
+            - inserts
+            - restrictions
+        - Automatic Form Creation
+            - common form and grid css
+            - automatic dataset generation, from predefined specs, for simple forms
         - Dataset and Forms
             + standerd form value
             + table update manager
@@ -98,6 +107,7 @@
         + Query Form Scroller
             + working scroller
             + Simple Mode
+                - test inserts
             + toggle for simple
             - better indicators for empty/ood states
             + (BUG) alert box not showing, when scrolling by step while on bound

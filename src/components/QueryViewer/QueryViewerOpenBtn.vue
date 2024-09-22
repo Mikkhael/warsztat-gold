@@ -31,6 +31,10 @@ const props = defineProps({
     scroller: {
         type: Object,
         required: false
+    },
+    simple: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -46,11 +50,15 @@ function on_click_find() {
         query_where: props.query_where,
         selectable: !props.noselect,
     }, {
-        select: (columns, row) => {
+        select: (columns, row, offset) => {
             fwManager.close_window("Znajdź");
-            emit('select', columns, row);
+            emit('select', columns, row, offset);
             if(props.scroller) {
-                props.scroller.goto(row[0]);
+                if(props.simple){
+                    props.scroller.goto(offset + 1);
+                } else {
+                    props.scroller.goto(row[0]);
+                }
             }
         }
     });

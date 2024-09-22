@@ -1,16 +1,15 @@
 <script setup>
 //@ts-check
 
-import { Dataset } from '../components/Dataset/Dataset';
+import { Dataset, DVUtil } from '../components/Dataset/Dataset';
 import {FormInput, FormEnum} from '../components/Controls';
 
-import useMainFWManager from '../components/FloatingWindows/FWManager';
 import useMainMsgManager from '../components/Msg/MsgManager';
 
 import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue';
 import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
-import {onMounted, ref} from 'vue';
+import {computed, onMounted, reactive, ref, toRef, watch} from 'vue';
 
 
 const props = defineProps({
@@ -18,10 +17,18 @@ const props = defineProps({
         /**@type {import('vue').PropType<import('../components/FloatingWindows/FWManager').FWWindow>} */
         type: Object,
         required: false
+    },
+    parent_dataset: {
+        /**@type {import('vue').PropType<import('../components/Dataset/Dataset').Dataset>} */
+        type: Object,
+        required: false
+    },
+    id_klienta: {
+        type: Number,
+        required: false   
     }
 });
 
-const fwManager  = useMainFWManager();
 const msgManager = useMainMsgManager();
 
 
@@ -30,8 +37,8 @@ const msgManager = useMainMsgManager();
 const car_form = ref();
 const car_scroller = ref();
 
-const car_dataset = new Dataset();
-const index   = car_dataset.get_index_ref();
+const car_dataset = props.parent_dataset?.create_sub_dataset() ?? new Dataset();
+const offset = car_dataset.get_offset_ref();
 car_dataset.assosiate_form(car_form);
 
 const car_src  = car_dataset.create_source_query();
@@ -46,12 +53,22 @@ const car_sinlink  = car_dataset.create_value_synced("nr silnika",    null, car_
 const car_nadwozie = car_dataset.create_value_synced("nr nadwozia",   null, car_src, car_sync);
 
 car_sync.add_primary('ID', car_id);
-
-car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID` = ', index]);
+car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID klienta` = ', toRef(props,'id_klienta') , ' LIMIT 1 OFFSET ', offset]);
+// car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID` = ', index]);
 
 const car_scroller_query_name  = 'rowid';
 const car_scroller_query_from  = '`samochody klientów`';
-const car_scroller_query_where = '';
+const car_scroller_query_where = computed(() => {
+    return props.id_klienta === null ? '' :
+        DVUtil.sql_parts(['`ID klienta` = ', toRef(props,'id_klienta')]);
+});
+
+console.log('PROPS', props);
+console.log('WHERE', car_scroller_query_where);
+
+watch(car_scroller_query_where, (new_where) => {
+    console.log("new where: ", new_where);
+})
 
 
 onMounted(() => {
@@ -73,7 +90,7 @@ function handle_err(/**@type {Error} */ err) {
 
 // FIND
 
-const find_options = {
+const find_options = reactive({
     query_select_fields: [
         ["`ID`"],
         ["`marka`",       "Marka"],
@@ -84,7 +101,12 @@ const find_options = {
         ["`nr nadwozia`", "Nr Nadwozia"],
     ],
     query_from: "`samochody klientów`",
-}
+    query_where: car_scroller_query_where
+});
+
+defineExpose({
+    dataset: car_dataset
+});
 
 </script>
 
@@ -101,9 +123,9 @@ const find_options = {
                 <label class="label">Nr Silnika </label>   <FormInput type="text" :value="car_sinlink"  nonull/>
                 <label class="label">Nr Nadwozia</label>   <FormInput type="text" :value="car_nadwozie" nonull/>
             </form>
-            <QueryViewerOpenBtn v-bind="find_options" :scroller="car_scroller"/>
+            <QueryViewerOpenBtn v-bind="find_options" :scroller="car_scroller" simple/>
         </div>
-        <QueryFormScrollerDataset
+        <QueryFormScrollerDataset simple
         :query_value_name="car_scroller_query_name"
         :query_from="car_scroller_query_from"
         :query_where="car_scroller_query_where"

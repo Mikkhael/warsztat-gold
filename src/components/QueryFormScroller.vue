@@ -121,7 +121,11 @@ function reinitialize_query(new_query_parts) {
 			new_query_parts[2]
 		);
 	}else{
-		state.update_query(new_query_parts[1]);
+		if(new_query_parts[2]) {
+			state.update_query(new_query_parts[1] + ' WHERE ' + new_query_parts[2]);
+		} else {
+			state.update_query(new_query_parts[1]);
+		}
 	}
 	clear_error();
 	return index_change_wrapper( state.refresh(true) );
@@ -234,6 +238,8 @@ function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', 
 
 <style scoped>
 
-
+	.curr{
+		max-width: 7ch;
+	}
 
 </style>

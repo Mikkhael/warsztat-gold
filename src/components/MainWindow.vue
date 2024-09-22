@@ -9,6 +9,7 @@ import useMainMsgManager from "./Msg/MsgManager";
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
 import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
 
+import Klienci from "../Forms/Klienci.vue";
 import SamochodyKlientow from "../Forms/SamochodyKlientow.vue";
 
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
@@ -40,7 +41,8 @@ function tool_zlecenia(){
 }
 
 function tool_klienci(){
-    fwManager.open_or_focus_window("Klienci (temp samochody)", SamochodyKlientow);
+    // fwManager.open_or_focus_window("Klienci (temp samochody)", SamochodyKlientow);
+    fwManager.open_or_focus_window("Klienci", Klienci);
 }
 
 </script>
