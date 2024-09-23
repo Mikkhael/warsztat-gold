@@ -439,6 +439,12 @@ class Dataset {
             const changed_list = this.synced_values.value.map(x => x.changed.value);
             return (changed_list.indexOf(true) !== -1) || this.sub_datasets.value.some(x => x.is_changed_ref.value);
         });
+
+        this.debug_all_changed_values = computed(() => {
+            const local = this.synced_values.value.filter(x => x.changed.value);
+            const deep  = this.sub_datasets.value.map(x => x.debug_all_changed_values.value);
+            return [local, ...deep];
+        })
     }
 
     /**
@@ -501,10 +507,11 @@ class Dataset {
     /**
      * @returns {boolean}
      */
-    reportFormValidity(){
+    reportFormValidity(empty_as_valid = true){
         console.log('FORMY: ', this.forms);
         const good = this.forms.map(x => x.value.reportValidity()).every(x => x);
-        const deep = this.sub_datasets.value.map(x => x.reportFormValidity()).every(x => x);
+        const subs = empty_as_valid ? this.sub_datasets.value.filter(x => !x.empty) : this.sub_datasets.value;
+        const deep = subs.map(x => x.reportFormValidity()).every(x => x);
         return good && deep;
     }
 

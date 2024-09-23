@@ -86,7 +86,7 @@
             - car reasigment
             + save
             + inserts
-            - restrictions
+            + restrictions
         - Automatic Form Creation
             - common form and grid css
             - automatic dataset generation, from predefined specs, for simple forms

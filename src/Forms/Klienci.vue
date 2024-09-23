@@ -147,21 +147,21 @@ function handle_err(/**@type {Error} */ err) {
                 </div>
             </div>
 
-            <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull class="main_input_field"/>
-            <label>Odbierający Fakturę</label>  <FormInput :value="odbier"         class="main_input_field"/>
-            <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  nonull class="main_input_field"/>
+            <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull :len="60" class="main_input_field"/>
+            <label>Odbierający Fakturę</label>  <FormInput :value="odbier"         :len="50" class="main_input_field"/>
+            <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  nonull :len="30" class="main_input_field"/>
             <label>Kod i Miejscowość  </label>  
             <div class="flex_auto main_input_field" > 
-                <FormInput :value="kod   "  nonull style="width: 7ch" class="nogrow"/> 
-                <FormInput :value="miasto"  nonull /> 
+                <FormInput :value="kod   "  nonull :len="10" style="width: 7ch" class="nogrow"/> 
+                <FormInput :value="miasto"  nonull :len="20" /> 
             </div>
-            <label>NIP                </label>  <FormInput :value="nip   "         />
-            <label>Telefon            </label>  <FormInput :value="tele1 "         />
-            <label>Drugi Telefon      </label>  <FormInput :value="tele2 "         />
+            <label>NIP                </label>  <FormInput :value="nip   " :len="13"         />
+            <label>Telefon            </label>  <FormInput :value="tele1 " :len="17"         />
+            <label>Drugi Telefon      </label>  <FormInput :value="tele2 " :len="17"         />
             <div c="2"></div>
-            <label>wpisał             </label>  <FormInput :value="kto   "         />
-            <label>dnia               </label>  <FormInput :value="kiedy " type="date" />
-            <label>stały upust        </label>  <FormInput :value="upust "         />
+            <label>wpisał             </label>  <FormInput :value="kto   " :len="8"                />
+            <label>dnia               </label>  <FormInput :value="kiedy "         type="date"    />
+            <label>stały upust        </label>  <FormInput :value="upust "         type="integer" />
 
 
         </form>

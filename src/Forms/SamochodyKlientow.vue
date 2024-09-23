@@ -54,7 +54,7 @@ const car_id       = car_dataset.create_value_raw   ("ID",            null,     
 const car_marka    = car_dataset.create_value_synced("marka",         null,            car_src, car_sync);
 const car_model    = car_dataset.create_value_synced("model",         null,            car_src, car_sync);
 const car_nrrej    = car_dataset.create_value_synced("nr rej",        null,            car_src, car_sync);
-const car_klient   = car_dataset.create_value_synced("ID klienta",    prop_id_klienta, car_src, car_sync);
+const car_klient   = car_dataset.create_value_raw   ("ID klienta",    prop_id_klienta, car_src, car_sync);
 const car_sinlink  = car_dataset.create_value_synced("nr silnika",    null,            car_src, car_sync);
 const car_nadwozie = car_dataset.create_value_synced("nr nadwozia",   null,            car_src, car_sync);
 
@@ -123,11 +123,11 @@ defineExpose({
 
         <div class="content">
             <form ref="car_form" class="form">
-                <label class="label">Marka      </label>   <FormInput type="text" :value="car_marka"    nonull/>
-                <label class="label">Model      </label>   <FormInput type="text" :value="car_model"    nonull/>
-                <label class="label">Nr Rej.    </label>   <FormInput type="text" :value="car_nrrej"    nonull/>
-                <label class="label">Nr Silnika </label>   <FormInput type="text" :value="car_sinlink"  nonull/>
-                <label class="label">Nr Nadwozia</label>   <FormInput type="text" :value="car_nadwozie" nonull/>
+                <label class="label">Marka      </label>   <FormInput :value="car_marka"    nonull :len="15"/>
+                <label class="label">Model      </label>   <FormInput :value="car_model"    nonull :len="15"/>
+                <label class="label">Nr Rej.    </label>   <FormInput :value="car_nrrej"    nonull :len="15"/>
+                <label class="label">Nr Silnika </label>   <FormInput :value="car_sinlink"  nonull :len="20"/>
+                <label class="label">Nr Nadwozia</label>   <FormInput :value="car_nadwozie" nonull :len="25"/>
             </form>
             <QueryViewerOpenBtn v-bind="find_options" :scroller="car_scroller" simple/>
         </div>

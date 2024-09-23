@@ -102,9 +102,9 @@ const is_any_dataset_changed = computed(() => {
 async function confirm_discard_changes(){
     if(is_any_dataset_changed.value) {
 		// debug
-			const changed_entries = props.datasets.map(x => Object.entries(x.values).filter(xx => xx[1].is_changed()));
-			const changed_objects = changed_entries.map(x => Object.fromEntries(x));
-			console.log('CHANGED VALEUS: ', changed_objects[0]);
+			// const changed_entries = props.datasets.map(x => Object.entries(x.values).filter(xx => xx[1].is_changed()));
+			// const changed_objects = changed_entries.map(x => Object.fromEntries(x));
+			console.log('CHANGED VALEUS: ', props.datasets.map(x => x.debug_all_changed_values.value));
         const resp = await confirm("Niektóre pola zostały zmienione. Naciśnij OK, aby odrzucić zmiany.");
         return resp;
     }
