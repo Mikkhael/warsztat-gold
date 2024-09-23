@@ -426,9 +426,10 @@ class Dataset {
         
         this.forms = /**@type {import('vue').Ref<HTMLFormElement>[]} */ ([]);
         this.index = ref(/**@type {SQLValue} */ (null));
+        this.insert_mode = ref(false);
         this.offset = computed(() => Number(this.index.value) - 1);
         this.empty = computed(() => this.index.value === null);
-        this.insert_mode = ref(false);
+        this.disabled = computed(() => this.empty.value && !this.insert_mode.value);
         // watch(this.empty, (new_empty) => {
         //     if(new_empty) this.reinitialize_all();
         // });

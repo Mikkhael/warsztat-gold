@@ -248,18 +248,17 @@ button {
   display: flex;
 }
 
-.flex_row {
-  display: flex;
-  flex-direction: row;
-}
-.flex_col {
-  display: flex;
-  flex-direction: column;
-}
-.flex_grow {
-  flex-grow: 1;
-}
 
+.form.disabled {
+  cursor: not-allowed;
+  opacity: 15%;
+  background-color: #c0c0c0;
+}
+.form.disabled * {
+  pointer-events: none;
+  user-select: none;
+  /* visibility: hidden; */
+}
 
 /*
 @media (prefers-color-scheme: dark) {

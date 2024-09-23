@@ -104,6 +104,7 @@
             + insert
             + transactions for batch operations
             + sub datasets
+            - better manage nesting with inserting
             - delete
             - detect and dont display empty results
         + Query Form Scroller

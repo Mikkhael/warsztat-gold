@@ -125,7 +125,7 @@ function handle_err(/**@type {Error} */ err) {
 
     <div ref="root_container">
 
-        <form ref="form" class="grid">
+        <form ref="form" class="grid form" :class="{disabled: dataset.disabled.value}">
             
 
             <fieldset class="subform_cars_field">

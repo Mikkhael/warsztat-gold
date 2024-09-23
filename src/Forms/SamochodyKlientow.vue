@@ -121,16 +121,16 @@ defineExpose({
 
     <div>
 
-        <div class="content">
-            <form ref="car_form" class="form">
+        <form ref="car_form" class="form" :class="{disabled: car_dataset.disabled.value}">
+            <div>
                 <label class="label">Marka      </label>   <FormInput :value="car_marka"    nonull :len="15"/>
                 <label class="label">Model      </label>   <FormInput :value="car_model"    nonull :len="15"/>
                 <label class="label">Nr Rej.    </label>   <FormInput :value="car_nrrej"    nonull :len="15"/>
                 <label class="label">Nr Silnika </label>   <FormInput :value="car_sinlink"  nonull :len="20"/>
                 <label class="label">Nr Nadwozia</label>   <FormInput :value="car_nadwozie" nonull :len="25"/>
-            </form>
+            </div>
             <QueryViewerOpenBtn v-bind="find_options" :scroller="car_scroller" simple/>
-        </div>
+        </form>
         <QueryFormScrollerDataset simple
         :query_value_name="car_scroller_query_name"
         :query_from="car_scroller_query_from"
@@ -146,14 +146,14 @@ defineExpose({
 
 <style scoped>
 
-    .content {
+    .form {
         display: flex;
         flex-direction: row;
         justify-content: space-evenly;
         align-items: center;
     }
 
-    .form {
+    .form > *:nth-child(1) {
         justify-self: start;
         display: grid;
         grid: auto / auto auto;
