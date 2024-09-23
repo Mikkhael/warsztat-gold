@@ -82,7 +82,8 @@
         + Example form (Klienci)
             + display
             + search
-            - search by car
+            + search by car
+            - car reasigment
             - save
             - inserts
             - restrictions
@@ -110,6 +111,7 @@
             + Simple Mode
                 - test inserts
             + toggle for simple
+            - scroll support
             - better sizing when scrolling horizonatly / fixed style
             - better indicators for empty/ood states
             + (BUG) alert box not showing, when scrolling by step while on bound

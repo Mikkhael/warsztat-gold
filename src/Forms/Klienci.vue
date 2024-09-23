@@ -81,6 +81,19 @@ const find_options = {
     query_from: "`klienci`",
 }
 
+const find_by_car_options = {
+    query_select_fields: [
+        // ["`ID`"],
+        ["`ID klienta`"],
+        ["`marka`",       "Marka"],
+        ["`model`",       "Model"],
+        ["`nr rej`",      "Nr Rej."],
+        ["`nr silnika`",  "Nr Silnika"],
+        ["`nr nadwozia`", "Nr Nadwozia"],
+    ],
+    query_from: "`samochody klientów`",
+};
+
 
 
 onMounted(() => {
@@ -120,12 +133,12 @@ function handle_err(/**@type {Error} */ err) {
             
             <div class="row flex_auto">
                 <div>
-                    Znajdź Klienta
                     <QueryViewerOpenBtn v-bind="find_options" :scroller="scroller" />
+                    Znajdź Klienta
                 </div>
                 <div>
-                    Znajdź Klienta po Samochodzie
                     <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" />
+                    Znajdź Klienta po Samochodzie
                 </div>
             </div>
 
