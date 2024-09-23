@@ -14,6 +14,7 @@ import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue
 import SamochodyKlientow from './SamochodyKlientow.vue';
 
 import {onMounted, ref} from 'vue';
+import { datetime_now } from '../utils';
 
 
 const props = defineProps({
@@ -35,26 +36,29 @@ const scroller = ref();
 
 const root_container = ref();
 
-const dataset = new Dataset();
-const index   = dataset.get_index_ref();
+const dataset     = new Dataset();
+const index       = dataset.get_index_ref();
+const insert_mode = dataset.get_insert_mode_ref();
 dataset.assosiate_form(form);
 
 const src  = dataset.create_source_query();
-const sync = dataset.create_table_sync('samochody klientów');
+const sync = dataset.create_table_sync('klienci');
 
-const id     = dataset.create_value_raw   ("ID",                      null,         src);
-const nazwa  = dataset.create_value_synced("NAZWA",                   null,         src, sync);
-const miasto = dataset.create_value_synced("MIASTO",                  null,         src, sync);
-const ulica  = dataset.create_value_synced("ULICA",                   null,         src, sync);
-const kod    = dataset.create_value_synced("KOD_POCZT",               null,         src, sync);
-const tele1  = dataset.create_value_synced("TELEFON1",                null,         src, sync);
-const tele2  = dataset.create_value_synced("TELEFON2",                null,         src, sync);
-const nip    = dataset.create_value_synced("NIP",                     null,         src, sync);
-const odbier = dataset.create_value_synced("odbierający fakturę",     null,         src, sync);
-const kto    = dataset.create_value_synced("KTO",                     "Gold",       src, sync);
-const kiedy  = dataset.create_value_synced("KIEDY",                   new Date(),   src, sync);
-const upust  = dataset.create_value_synced("UPUST",                   0,            src, sync);
-const list   = dataset.create_value_synced("list",                    null,         src, sync);
+const id     = dataset.create_value_raw   ("ID",                      null,           src);
+const nazwa  = dataset.create_value_synced("NAZWA",                   null,           src, sync);
+const miasto = dataset.create_value_synced("MIASTO",                  null,           src, sync);
+const ulica  = dataset.create_value_synced("ULICA",                   null,           src, sync);
+const kod    = dataset.create_value_synced("KOD_POCZT",               null,           src, sync);
+const tele1  = dataset.create_value_synced("TELEFON1",                null,           src, sync);
+const tele2  = dataset.create_value_synced("TELEFON2",                null,           src, sync);
+const nip    = dataset.create_value_synced("NIP",                     null,           src, sync);
+const odbier = dataset.create_value_synced("odbierający fakturę",     null,           src, sync);
+const kto    = dataset.create_value_synced("KTO",                     "Gold",         src, sync);
+const kiedy  = dataset.create_value_synced("KIEDY",                   datetime_now(), src, sync);
+const upust  = dataset.create_value_synced("UPUST",                   0,              src, sync);
+const list   = dataset.create_value_synced("list",                    null,           src, sync);
+
+console.log(datetime_now());
 
 const id_ref = id.as_ref_local();
 
@@ -121,7 +125,7 @@ function handle_err(/**@type {Error} */ err) {
 
     <div ref="root_container">
 
-        <form ref="form_elem" class="grid">
+        <form ref="form" class="grid">
             
 
             <fieldset class="subform_cars_field">

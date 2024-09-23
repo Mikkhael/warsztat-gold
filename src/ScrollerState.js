@@ -35,7 +35,7 @@ class ScrollerStateBase {
 	async scroll_by(/**@type {number} */ steps, force_update = false) {
 		return Promise.resolve(/**@type {Value | undefined} */ (undefined));
 	}
-	async goto_bound(/**@type {Boolean} */ to_last, force_update = false) {
+	async goto_bound(/**@type {Boolean} */ to_last, force_update = false, bypass_before_change = false) {
 		return Promise.resolve(/**@type {Value | undefined} */ (undefined));
 	}
 	async refresh(bypass_before_change = false, dir_next = true) {
@@ -162,8 +162,8 @@ class ScrollerState extends ScrollerStateBase {
 	async scroll_by(/**@type {number} */ steps, force_update = false) {
 		return await this.#scroll(false, steps > 0, force_update);
 	}
-	async goto_bound(/**@type {Boolean} */ to_last, force_update = false) {
-		return await this.#scroll(true, to_last, force_update, this.bounds.value[to_last ? 1 : 0]);
+	async goto_bound(/**@type {Boolean} */ to_last, force_update = false, bypass_before_change = false) {
+		return await this.#scroll(true, to_last, force_update, this.bounds.value[to_last ? 1 : 0], bypass_before_change);
 	}
 	async refresh(bypass_before_change = false, dir_next = true) {
 		return await this.#scroll(true, dir_next, true, undefined, bypass_before_change);
@@ -240,8 +240,8 @@ class ScrollerStateSimple extends ScrollerStateBase {
 	async scroll_by(/**@type {number} */ steps, force_update = false) {
 		return await this.#scroll(Number(this.index.value) + steps, true, force_update);
 	}
-	async goto_bound(/**@type {Boolean} */ to_last, force_update = false) {
-		return await this.#scroll(to_last ? Infinity : 0, true, force_update);
+	async goto_bound(/**@type {Boolean} */ to_last, force_update = false, bypass_before_change = false) {
+		return await this.#scroll(to_last ? Infinity : 0, true, force_update, bypass_before_change);
 	}
 	async refresh(bypass_before_change = false, dir_next = true) {
 		return await this.#scroll(Number(this.index.value), false, true, bypass_before_change);

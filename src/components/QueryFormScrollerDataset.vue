@@ -60,6 +60,9 @@ const insert_mode = ref(false);
 
 function handle_changed_insert_mode(new_mode) {
 	insert_mode.value = new_mode;
+	props.datasets.forEach(x => {
+		x.set_insert_mode(new_mode);
+	});
 	emit('changed_insert_mode', new_mode);
 }
 function set_insert_mode(new_mode) {
@@ -190,7 +193,7 @@ async function set_index_after_insert(inserted_indexes){
 		return;
 	}
 	if(props.simple) {
-		return await scroller_ref.value.goto_bound(true, true); // to_last, force_update
+		return await scroller_ref.value.goto_bound(true, true, true); // to_last, force_update, bypass
 	}
 	return await scroller_ref.value.goto(new_index, true, true); // new_index, force_refresh, bypass
 }

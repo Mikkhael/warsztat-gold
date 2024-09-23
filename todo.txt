@@ -84,8 +84,8 @@
             + search
             + search by car
             - car reasigment
-            - save
-            - inserts
+            + save
+            + inserts
             - restrictions
         - Automatic Form Creation
             - common form and grid css
@@ -109,7 +109,7 @@
         + Query Form Scroller
             + working scroller
             + Simple Mode
-                - test inserts
+                + test inserts
             + toggle for simple
             + scroll support
             + better sizing when scrolling horizonatly / fixed style

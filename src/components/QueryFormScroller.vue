@@ -164,9 +164,9 @@ watch(props_query_parts_refs, (new_parts, old_parts) => {
 /**
  * @param {boolean} to_last 
  */
-function goto_bound(to_last, force_update = false) {
+function goto_bound(to_last, force_update = false, bypass_before_change = false) {
 	return index_change_wrapper(
-		state.goto_bound(to_last, force_update || is_error.value)
+		state.goto_bound(to_last, force_update || is_error.value, bypass_before_change)
 	);
 }
 

@@ -246,7 +246,7 @@ watch(query_sql_full, refresh_routine);
         norefresh
         @changed_index="x => offset = x"/>
 
-        <table class="result" :class="{selectable: props.selectable}" @wheel="handle_scroll">
+        <table class="result" :class="{selectable: props.selectable}" @wheel.passive="handle_scroll">
             <tr ref="row_ref">
                 <th></th>
                 <th v-for="(col_name, col_i) in query_columns_display" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">

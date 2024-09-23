@@ -25,6 +25,7 @@ const props = defineProps({
     },
     id_klienta: {
         type: Number,
+        default: null,
         required: false   
     }
 });
@@ -37,6 +38,11 @@ const msgManager = useMainMsgManager();
 const car_form = ref();
 const car_scroller = ref();
 
+/**@type {import('vue').Ref<Number?>*/
+const prop_id_klienta = toRef(props, 'id_klienta');
+
+console.log('prop_id_klienta', prop_id_klienta);
+
 const car_dataset = props.parent_dataset?.create_sub_dataset() ?? new Dataset();
 const offset = car_dataset.get_offset_ref();
 car_dataset.assosiate_form(car_form);
@@ -44,31 +50,31 @@ car_dataset.assosiate_form(car_form);
 const car_src  = car_dataset.create_source_query();
 const car_sync = car_dataset.create_table_sync('samochody klientów');
 
-const car_id       = car_dataset.create_value_raw   ("ID",            null, car_src);
-const car_marka    = car_dataset.create_value_synced("marka",         null, car_src, car_sync);
-const car_model    = car_dataset.create_value_synced("model",         null, car_src, car_sync);
-const car_nrrej    = car_dataset.create_value_synced("nr rej",        null, car_src, car_sync);
-const car_klient   = car_dataset.create_value_synced("ID klienta",    null, car_src, car_sync);
-const car_sinlink  = car_dataset.create_value_synced("nr silnika",    null, car_src, car_sync);
-const car_nadwozie = car_dataset.create_value_synced("nr nadwozia",   null, car_src, car_sync);
+const car_id       = car_dataset.create_value_raw   ("ID",            null,            car_src);
+const car_marka    = car_dataset.create_value_synced("marka",         null,            car_src, car_sync);
+const car_model    = car_dataset.create_value_synced("model",         null,            car_src, car_sync);
+const car_nrrej    = car_dataset.create_value_synced("nr rej",        null,            car_src, car_sync);
+const car_klient   = car_dataset.create_value_synced("ID klienta",    prop_id_klienta, car_src, car_sync);
+const car_sinlink  = car_dataset.create_value_synced("nr silnika",    null,            car_src, car_sync);
+const car_nadwozie = car_dataset.create_value_synced("nr nadwozia",   null,            car_src, car_sync);
 
+// TODO allow for form to work without providing prop_id_klienta
 car_sync.add_primary('ID', car_id);
-car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID klienta` = ', toRef(props,'id_klienta') , ' LIMIT 1 OFFSET ', offset]);
+car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID klienta` = ', prop_id_klienta , ' LIMIT 1 OFFSET ', offset]);
 // car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID` = ', index]);
 
 const car_scroller_query_name  = 'rowid';
 const car_scroller_query_from  = '`samochody klientów`';
 const car_scroller_query_where = computed(() => {
     return props.id_klienta === null ? '' :
-        DVUtil.sql_parts(['`ID klienta` = ', toRef(props,'id_klienta')]);
+        DVUtil.sql_parts(['`ID klienta` = ', prop_id_klienta]);
 });
 
-console.log('PROPS', props);
-console.log('WHERE', car_scroller_query_where);
-
-watch(car_scroller_query_where, (new_where) => {
-    console.log("new where: ", new_where);
-})
+// console.log('PROPS', props);
+// console.log('WHERE', car_scroller_query_where);
+// watch(car_scroller_query_where, (new_where) => {
+//     console.log("new where: ", new_where);
+// })
 
 
 onMounted(() => {
@@ -116,7 +122,7 @@ defineExpose({
     <div>
 
         <div class="content">
-            <form ref="form_elem" class="form">
+            <form ref="car_form" class="form">
                 <label class="label">Marka      </label>   <FormInput type="text" :value="car_marka"    nonull/>
                 <label class="label">Model      </label>   <FormInput type="text" :value="car_model"    nonull/>
                 <label class="label">Nr Rej.    </label>   <FormInput type="text" :value="car_nrrej"    nonull/>

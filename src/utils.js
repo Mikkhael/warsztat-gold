@@ -139,6 +139,32 @@ function object_map(object, map_function) {
 	return Object.fromEntries(Object.entries(object).map(([key, value]) => map_function(value, key)));
 }
 
+function pad(str, width = 2, space = '0') {
+	str = str.toString();
+	if(str.length < width){
+		return space.repeat(width - str.length) + str;
+	}
+	return str;
+}
+
+/**@param {Date} d */
+function date(d) {
+	return pad(d.getFullYear(), 4) + '-' + pad(d.getMonth()) + '-' + pad(d.getDate());
+}
+/**@param {Date} d */
+function time(d){
+	return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+/**@param {Date} d */
+function datetime(d){
+	return date(d) + ' ' + time(d);
+}
+
+function date_now()    { return date    (new Date()); };
+function time_now()    { return time    (new Date()); };
+function datetime_now(){ return datetime(new Date()); };
+
+
 /**
  * @template T
  * @param {()=>Promise.<T>} async_function 
@@ -146,6 +172,7 @@ function object_map(object, map_function) {
 function as_promise(async_function) {
 	return async_function();
 }
+
 
 export {
 	generate_UID,
@@ -159,5 +186,12 @@ export {
 	iterate_query_result_values_single_row,
 	object_map,
 	typeofpl,
-	as_promise
+	as_promise,
+
+	date,
+	time,
+	datetime,
+	date_now,
+	time_now,
+	datetime_now,
 }

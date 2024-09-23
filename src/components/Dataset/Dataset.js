@@ -74,13 +74,11 @@ dataset.perform_query_and_retcon_all()  .then(...).catch(...);
 
 class DatasetValue {
     constructor(/**@type {SQLValuelike}*/ initial_value, /**@type {string} */ name) {
-        // this.name    = name;
-        this.local         = /**@type {import('vue').Ref<SQLValue>} */ (ref(initial_value));
-        this.initial_value = unref(initial_value);
-        // this.changed = computed(() => false);
+        this.local         = /**@type {import('vue').Ref<SQLValue>} */ (ref(unref(initial_value)));
+        this.initial_value = initial_value;
     }
 
-    reinitialize() {this.local.value = this.initial_value;}
+    reinitialize() {this.local.value = unref(this.initial_value);}
     set    (/**@type {SQLValuelike}*/ new_value) { this.local.value = unref(new_value); }
     replace(/**@type {SQLValuelike}*/ new_value) { this.local.value = unref(new_value); }
     refresh(/**@type {SQLValuelike}*/ new_value) { this.local.value = unref(new_value); }
@@ -114,7 +112,7 @@ class DatasetValueSynced extends DatasetValue {
     }
 
     reinitialize() {
-        this.local.value  = this.initial_value;
+        this.local.value  = unref(this.initial_value);
         this.remote.value = null;
     }
 
@@ -430,6 +428,7 @@ class Dataset {
         this.index = ref(/**@type {SQLValue} */ (null));
         this.offset = computed(() => Number(this.index.value) - 1);
         this.empty = computed(() => this.index.value === null);
+        this.insert_mode = ref(false);
         // watch(this.empty, (new_empty) => {
         //     if(new_empty) this.reinitialize_all();
         // });
@@ -484,6 +483,15 @@ class Dataset {
 
     /**
      * 
+     * @param {Boolean} new_mode 
+     */
+    set_insert_mode(new_mode)     {
+        this.insert_mode.value = new_mode;
+    }
+    get_insert_mode_ref() {return this.insert_mode;}
+
+    /**
+     * 
      * @param {import('vue').Ref<HTMLFormElement>} value 
      */
     assosiate_form(value) {
@@ -494,7 +502,10 @@ class Dataset {
      * @returns {boolean}
      */
     reportFormValidity(){
-        return this.forms.map(x => x.value.reportValidity()).every(x => x) && this.sub_datasets.value.map(x => x.reportFormValidity()).every(x => x);
+        console.log('FORMY: ', this.forms);
+        const good = this.forms.map(x => x.value.reportValidity()).every(x => x);
+        const deep = this.sub_datasets.value.map(x => x.reportFormValidity()).every(x => x);
+        return good && deep;
     }
 
 
