@@ -1261,6 +1261,30 @@ WinBox.prototype.move = function(x, y, _skip_update){
  * @this WinBox
  */
 
+WinBox.prototype.resize_true = function(w, h, _skip_update){
+    return this.resize(w, h + 35, _skip_update);
+}
+
+WinBox.prototype.resize_to_content = function(snap = false){
+    const content = this.body.children[0];
+    if(!content) return this;
+    const width  = content.clientWidth;
+    const height = content.clientHeight;
+    if(snap){
+        this.body.parentNode.style.transitionDuration = '0s';
+        setTimeout(() => this.body.parentNode.style.transitionDuration = '', 0);
+    }
+    this.resize_true(width, height);
+    return this;
+}
+
+/**
+ * @param {number|string=} w
+ * @param {number|string=} h
+ * @param {boolean=} _skip_update
+ * @this WinBox
+ */
+
 WinBox.prototype.resize = function(w, h, _skip_update){
 
     if(!w && (w !== 0)){

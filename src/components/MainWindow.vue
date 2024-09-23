@@ -29,7 +29,6 @@ function handle_error(msg) {
 function tool_open() {
     return ipc.db_open().then(path => {
         if(path === null) return;
-        set_last_state_info(`Otworzono bazę "${path}"`);
     }).catch(handle_error);
 }
 function tool_sql() {

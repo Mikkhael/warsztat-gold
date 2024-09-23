@@ -105,7 +105,8 @@ onMounted(() => {
         }
         return false;
     });
-    props.parent_window?.box.resize(undefined, root_container.value.clientHeight);
+    // props.parent_window?.box.resize_true(root_container.value.clientWidth, root_container.value.clientHeight);
+    props.parent_window?.box.resize_to_content(true);
 });
 
 
