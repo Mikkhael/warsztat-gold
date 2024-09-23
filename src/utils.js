@@ -4,7 +4,7 @@ let last_UID = 0n;
 function generate_UID(){
 	const uid = `UID_${last_UID}`;
 	last_UID = last_UID + 1n;
-	console.log("NEW UID", uid);
+	// console.log("NEW UID", uid);
 	return uid;
 }
 

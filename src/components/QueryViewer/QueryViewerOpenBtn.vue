@@ -55,7 +55,7 @@ function on_click_find() {
             emit('select', columns, row, offset);
             if(props.scroller) {
                 if(props.simple){
-                    props.scroller.goto(offset + 1);
+                    props.scroller.goto(offset);
                 } else {
                     props.scroller.goto(row[0]);
                 }

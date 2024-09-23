@@ -99,8 +99,8 @@ const query_columns_true         = ref(/**@type {string[]} */ ([]));
 const query_columns_true_escaped = ref(/**@type {string[]} */ ([]));
 const query_columns_hide         = ref(/**@type {boolean[]} */ ([]));
 
-watch([query_result, toRef(props, "query_select_fields")], ([new_result, new_fileds]) => {
-    if(typeof new_fileds === "string") {
+if(typeof props.query_select_fields === 'string') {
+    watch(query_result, (new_result) => {
         if(new_result === null) {
             query_columns_display.value      = [];
             query_columns_true.value         = [];
@@ -113,13 +113,15 @@ watch([query_result, toRef(props, "query_select_fields")], ([new_result, new_fil
             query_columns_true_escaped.value = new_result[1].map(escape_backtick);
             query_columns_hide.value         = [];
         }
-    } else {
+    });
+} else {
+    watch(toRef(props, "query_select_fields"), (new_fileds) => {
         query_columns_display.value      = new_fileds.map( x => x[1] ?? '' );
         query_columns_true.value         = new_fileds.map( x => x[0] );
         query_columns_true_escaped.value = new_fileds.map( x => x[0] );
         query_columns_hide.value         = new_fileds.map( x => x[1] === undefined );
-    }
-});
+    }, {immediate: true});
+}
 
 //@ts-ignore
 watch( query_props_names.map(x => toRef(props, x)), () => {
@@ -159,6 +161,8 @@ watch( [orderings_list, query_columns_true_escaped], ([new_orderings_list, new_q
                 .join(', ');
     // console.log('debug_list', res);
     orderings_sql.value = res;
+    scroller_ref.value.goto(0, true, true);
+    // console.log(new_orderings_list, new_query_columns_true_escaped);
 });
 
 // TODO reset offset?
@@ -207,11 +211,21 @@ async function refresh() {
 }
 
 function handle_select(row_i) {
-    console.log("SELECTING...", row_i, props.selectable);
+    console.log("SELECTING...",  offset.value, row_i, props.selectable);
     if(!props.selectable) return;
     const cols = query_columns_true.value;
     const row  = query_rows.value[row_i];
-    emit("select", cols, row, row_i);
+    emit("select", cols, row, offset.value + row_i);
+}
+
+/**
+ * @param {WheelEvent} event
+ */
+function handle_scroll(event) {
+    if(event.shiftKey) return;
+    const scroll_dist = (event.deltaY / 100) * (event.ctrlKey ? scroller_limit.value : 1);
+    scroller_ref.value.scroll_by(scroll_dist);
+
 }
 
 async function refresh_routine() {return refresh().catch(handle_err);}
@@ -227,11 +241,12 @@ watch(query_sql_full, refresh_routine);
         ref="scroller_ref"
         :limit="scroller_limit"
         :query_from="query_sql_for_scroller" 
+        reset_on_query_change
         nosave 
         norefresh
         @changed_index="x => offset = x"/>
 
-        <table class="result" :class="{selectable: props.selectable}">
+        <table class="result" :class="{selectable: props.selectable}" @wheel="handle_scroll">
             <tr ref="row_ref">
                 <th></th>
                 <th v-for="(col_name, col_i) in query_columns_display" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">

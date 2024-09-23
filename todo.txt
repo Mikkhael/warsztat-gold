@@ -77,7 +77,7 @@
         - update
         - insert
         + automate form integration
-        - fix scrolling back to 0, when changing search fields
+        + fix scrolling back to 0, when changing search fields
     - Forms API
         + Example form (Klienci)
             + display
@@ -111,8 +111,8 @@
             + Simple Mode
                 - test inserts
             + toggle for simple
-            - scroll support
-            - better sizing when scrolling horizonatly / fixed style
+            + scroll support
+            + better sizing when scrolling horizonatly / fixed style
             - better indicators for empty/ood states
             + (BUG) alert box not showing, when scrolling by step while on bound
         - Kontrolki
@@ -157,6 +157,7 @@
     + core (open, focus, close)
     + mounting components
     + fix viewport update when resize
+    - cascade
     - automatic sizing
     - parent windows
     + (BUG) Windows remount, when closing a window opened before

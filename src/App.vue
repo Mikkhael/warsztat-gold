@@ -68,3 +68,9 @@ onMounted(() => {
   <CornerMsgContainer :manager="msg_manager" class="msg_container"/>
 
 </template>
+
+<style>
+  .msg_container{
+    z-index: 10000;
+  }
+</style>

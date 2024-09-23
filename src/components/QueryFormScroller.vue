@@ -1,6 +1,6 @@
 <script setup>
 //@ts-check
-import { watch, ref, readonly, toRef, toRefs, computed } from "vue";
+import { watch, ref, readonly, toRef, toRefs, computed, onMounted, onUnmounted } from "vue";
 import {ScrollerState, ScrollerStateSimple} from "../ScrollerState";
 
 const props = defineProps({
@@ -23,6 +23,10 @@ const props = defineProps({
 	query_where: {
 		type: String,
 		default: ''
+	},
+	reset_on_query_change: {
+		type: Boolean,
+		default: false
 	},
 	before_change: {
 		/**@type {import('vue').PropType<(() => Promise<boolean>)?>} */
@@ -128,7 +132,11 @@ function reinitialize_query(new_query_parts) {
 		}
 	}
 	clear_error();
-	return index_change_wrapper( state.refresh(true) );
+	if(props.reset_on_query_change) {
+		return index_change_wrapper( state.goto(0, true, true) );
+	} else {
+		return index_change_wrapper( state.refresh(true) );
+	}
 }
 
 watch(props_query_parts_refs, (new_parts, old_parts) => {
@@ -213,11 +221,47 @@ function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', 
 // 	const count = state.bounds.value[2];
 // });
 
+const scroller_ref = ref();
+const scroller_container = computed(() => scroller_ref.value.parentElement?.parentElement);
+
+let wait_for_frame = false;
+let scroller_position_to_set = /**@type {[Number, Number]} */ ([0, 0]);
+function fix_position() {
+	const elem = scroller_container.value;
+	if(!elem) return;
+	scroller_position_to_set =  [
+		elem.scrollLeft, 
+		elem.scrollHeight - elem.scrollTop - elem.clientHeight
+	];
+	if(wait_for_frame) return;
+	wait_for_frame = true;
+	window.requestAnimationFrame(() => {
+		scroller_ref.value.style.left   = scroller_position_to_set[0] + 'px';
+		scroller_ref.value.style.bottom = scroller_position_to_set[1] + 'px';
+		wait_for_frame = false;
+	});
+}
+
+const scroller_container_observer = new ResizeObserver(fix_position);
+
+onMounted(() => {
+	// console.log(scroller_ref.value);
+	if(scroller_container.value?.classList.contains('wb-body')){
+		scroller_container.value?.addEventListener('scroll', fix_position);
+		scroller_container_observer.observe(scroller_container.value);
+	}
+});
+onUnmounted(() => {
+	scroller_container.value?.removeEventListener('scroll', fix_position);
+	scroller_container_observer.disconnect();
+});
+
+
 </script>
 
 <template>
 
-<div class="form_scroller" :class="{is_error, is_empty: state.is_empty.value, is_bounds_oot: !state.is_bounds_utd.value, insert_mode}">
+<div ref="scroller_ref" class="form_scroller" :class="{is_error, is_empty: state.is_empty.value, is_bounds_oot: !state.is_bounds_utd.value, insert_mode}">
 	<input type="button" class="btn prev bound" @click="goto_bound(false).catch(show_error)">
 	<input type="button" class="btn prev step2" @click="scroll_by(-props.limit).catch(show_error)" v-if="props.simple && props.limit > 1">
 	<input type="button" class="btn prev step"  @click="scroll_by(-1).catch(show_error)">
@@ -240,6 +284,10 @@ function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', 
 
 	.curr{
 		max-width: 7ch;
+	}
+	.form_scroller {
+		position: relative;
+		overflow-x: auto;
 	}
 
 </style>

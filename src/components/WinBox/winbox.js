@@ -1264,8 +1264,9 @@ WinBox.prototype.move = function(x, y, _skip_update){
 WinBox.prototype.resize = function(w, h, _skip_update){
 
     if(!w && (w !== 0)){
-
         w = this.width;
+    }
+    if(!h && (h !== 0)){
         h = this.height;
     }
     else if(!_skip_update){
