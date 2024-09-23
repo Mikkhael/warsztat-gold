@@ -67,14 +67,14 @@ const scroller_query_from = '`klienci`';
 const find_options = {
     query_select_fields: [
         ["`ID`",],
-        ["`NAZWA`",               "NAZWA"               ],
-        ["`odbierający fakturę`", "ODBIERAJĄCY FAKTURĘ" ],
-        ["`MIASTO`",              "MIASTO"              ],
-        ["`ULICA`",               "ULICA"               ],
-        ["`KOD_POCZT`",           "KOD"                 ],
+        ["`NAZWA`",               "Nazwa"               ],
+        ["`odbierający fakturę`", "Odbierający Fakturę" ],
+        ["`MIASTO`",              "Miasto"              ],
+        ["`ULICA`",               "Ulica"               ],
+        ["`KOD_POCZT`",           "Kod"                 ],
         ["`NIP`",                 "NIP"                 ],
-        ["`TELEFON1`",            "TELEFON"             ],
-        ["`TELEFON2`",            "TELEFON2"            ],
+        ["`TELEFON1`",            "Telefon"             ],
+        ["`TELEFON2`",            "Telefon2"            ],
         ["`KTO`",                 "wpisał"              ],
         ["`KIEDY`",               "dnia"                ],
     ],
@@ -107,34 +107,46 @@ function handle_err(/**@type {Error} */ err) {
 
     <div ref="root_container">
 
-        <div class="content">
-            <form ref="form_elem" class="form">
+        <form ref="form_elem" class="grid">
+            
 
-                <QueryViewerOpenBtn v-bind="find_options" :scroller="scroller" /> <span c="2"></span>
-                <span>NAZWA              </span>  <FormInput :value="nazwa "  nonull c="2"/>
-                <span>ODBIERAJĄCY FAKTURĘ</span>  <FormInput :value="odbier"         c="2"/>
-                <span>ULICA i NR DOMU    </span>  <FormInput :value="ulica "  nonull c="2"/>
-                <span>KOD i MIEJSCOWOŚĆ  </span>  <div class="addr_div" c="2"> 
-                    <FormInput :value="kod   "  nonull /> 
-                    <FormInput :value="miasto"  nonull /> 
-                </div>
-                <span>NIP                </span>  <FormInput :value="nip   "         />
-                <fieldset r="7">
-                    <legend>Samochody Klienta</legend>
-                    <SamochodyKlientow 
+            <fieldset class="subform_cars_field">
+                <legend>Samochody Klienta</legend>
+                <SamochodyKlientow 
                     :parent_dataset="dataset"
                     :id_klienta="id_ref"
-                    />
-                </fieldset>
-                <span>TELEFON            </span>  <FormInput :value="tele1 "         />
-                <span>DRUGI TELEFON      </span>  <FormInput :value="tele2 "         />
-                <span c="2">&nbsp;</span>
-                <span>wpisał             </span>  <FormInput :value="kto   "         />
-                <span>dnia               </span>  <FormInput :value="kiedy " type="date" />
-                <span>stały upust        </span>  <FormInput :value="upust "         />
+                />
+            </fieldset>
+            
+            <div class="row flex_auto">
+                <div>
+                    Znajdź Klienta
+                    <QueryViewerOpenBtn v-bind="find_options" :scroller="scroller" />
+                </div>
+                <div>
+                    Znajdź Klienta po Samochodzie
+                    <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" />
+                </div>
+            </div>
 
-            </form>
-        </div>
+            <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull class="main_input_field"/>
+            <label>Odbierający Fakturę</label>  <FormInput :value="odbier"         class="main_input_field"/>
+            <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  nonull class="main_input_field"/>
+            <label>Kod i Miejscowość  </label>  
+            <div class="flex_auto main_input_field" > 
+                <FormInput :value="kod   "  nonull style="width: 7ch" class="nogrow"/> 
+                <FormInput :value="miasto"  nonull /> 
+            </div>
+            <label>NIP                </label>  <FormInput :value="nip   "         />
+            <label>Telefon            </label>  <FormInput :value="tele1 "         />
+            <label>Drugi Telefon      </label>  <FormInput :value="tele2 "         />
+            <div c="2"></div>
+            <label>wpisał             </label>  <FormInput :value="kto   "         />
+            <label>dnia               </label>  <FormInput :value="kiedy " type="date" />
+            <label>stały upust        </label>  <FormInput :value="upust "         />
+
+
+        </form>
         <QueryFormScrollerDataset
         :query_from="scroller_query_from"
         :datasets="[dataset]"
@@ -148,47 +160,25 @@ function handle_err(/**@type {Error} */ err) {
 
 <style scoped>
 
-    .form {
-        justify-self: start;
-        display: grid;
-        grid: auto / auto auto 1fr;
+    .grid {
+        padding: 1px 10px;
+        grid: repeat(12, 1fr) / auto [fields-start] auto [cars-start] 1fr [fields-end cars-end];
         gap: 1px 2px;
         align-items: center;
-        justify-items: left;
-        justify-content: left;
-        /* width: 100%; */
     }
 
-    .form > :deep(input) ,
-    .form > :deep(fieldset) ,
-    .form > :deep(div) {
-        justify-self: stretch;
+    .grid > :deep(.main_input_field){
+        grid-column: fields-start / fields-end;
+    }
+
+    .grid > :deep(.subform_cars_field) {
+        grid-row: 6 / -1;
+        grid-column: cars-start / cars-end;
     }
 
     fieldset {
         padding: 0px;
     }
-
-    .form > :deep(*[c="2"]) {
-        grid-column: span 2;
-    }
-    .form > :deep(*[r="2"]) {
-        grid-row: span 2;
-    }
-    .form > :deep(*[r="7"]) {
-        grid-row: span 7;
-    }
-
-    .addr_div {
-        display: flex;
-    }
-    .addr_div > :deep( *:nth-child(1) ) {
-        width: 7ch; 
-    }
-    .addr_div > :deep( *:nth-child(2) ) {
-        flex-grow: 1; 
-    }
-
     
 
 </style>

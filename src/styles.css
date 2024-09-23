@@ -51,6 +51,7 @@ button {
 .button {
   cursor: pointer;
   border: 1px solid black;
+  background-color: white;
   /* padding: 2px; */
 }
 .button:hover {
@@ -119,6 +120,11 @@ button {
 
 /* /////////////////////// FORM SCROLLER //////////////////////////// */
 
+.element_with_bottom_scroller {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
 
 .form_scroller .btn.bound{
 	background-image: url("src/assets/icons/arrow_rb.svg");
@@ -183,7 +189,7 @@ button {
 	display: flex;
 	flex-wrap: nowrap;
 	text-wrap: nowrap;
-	background-color: #e6e4e4;
+	background-color: #cacaca;
 	border-top: 1px solid black;
 	padding: 1px;
 }
@@ -199,6 +205,55 @@ button {
 .form_scroller.is_empty {
 	background-color: #7e7e7e;
 	color: black;
+}
+
+/******************** GRID **********************/
+
+.grid{
+  display: grid;
+  justify-content: start;
+  justify-items: stretch;
+  align-items:   stretch;
+}
+
+.grid > *[c="2"] { grid-column: span 2; }
+.grid > *[c="3"] { grid-column: span 3; }
+.grid > *[c="4"] { grid-column: span 4; }
+.grid > *[c="5"] { grid-column: span 5; }
+.grid > *[c="6"] { grid-column: span 6; }
+.grid > *[c="7"] { grid-column: span 7; }
+.grid > *[c="8"] { grid-column: span 8; }
+.grid > *[c="9"] { grid-column: span 9; }
+
+.grid > *[r="2"] { grid-row:    span 2; }
+.grid > *[r="3"] { grid-row:    span 3; }
+.grid > *[r="4"] { grid-row:    span 4; }
+.grid > *[r="5"] { grid-row:    span 5; }
+.grid > *[r="6"] { grid-row:    span 6; }
+.grid > *[r="7"] { grid-row:    span 7; }
+.grid > *[r="8"] { grid-row:    span 8; }
+.grid > *[r="9"] { grid-row:    span 9; }
+
+.grid > .col {grid-row:    1 / -1;}
+.grid > .row {grid-column: 1 / -1;}
+
+.grid .flex_auto.col {  flex-direction: column; }
+.grid .flex_auto > * { flex-grow: 1; }
+.grid .flex_auto > .nogrow {flex-grow: unset;}
+.grid .flex_auto {
+  display: flex;
+}
+
+.flex_row {
+  display: flex;
+  flex-direction: row;
+}
+.flex_col {
+  display: flex;
+  flex-direction: column;
+}
+.flex_grow {
+  flex-grow: 1;
 }
 
 

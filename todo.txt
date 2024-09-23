@@ -82,6 +82,7 @@
         + Example form (Klienci)
             + display
             + search
+            - search by car
             - save
             - inserts
             - restrictions
@@ -109,6 +110,7 @@
             + Simple Mode
                 - test inserts
             + toggle for simple
+            - better sizing when scrolling horizonatly / fixed style
             - better indicators for empty/ood states
             + (BUG) alert box not showing, when scrolling by step while on bound
         - Kontrolki
@@ -153,6 +155,7 @@
     + core (open, focus, close)
     + mounting components
     + fix viewport update when resize
+    - automatic sizing
     - parent windows
     + (BUG) Windows remount, when closing a window opened before
         + OPEN1 -> OPEN2 -> CLOSE1 -> CLOSE2 => alert box shows twice!! (Once per previously opened/closed WINDOW1)
