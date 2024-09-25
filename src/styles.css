@@ -122,6 +122,26 @@ button {
 }
 
 
+/* /////////////////////// FORM  //////////////////////////// */
+
+.form_container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.form_container > .form_content {
+  overflow: auto;
+}
+
+.form_container > .form_scroller {
+  flex-shrink: 0;
+}
+
+
+
+
 /* /////////////////////// FORM SCROLLER //////////////////////////// */
 
 .element_with_bottom_scroller {

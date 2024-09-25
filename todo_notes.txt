@@ -1,1 +1,2 @@
 jest klient z telefonem 997
+dane taty są wpisane na sztywno w raport "zlecenie naprawy"

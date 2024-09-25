@@ -236,7 +236,7 @@ watch(query_sql_full, refresh_routine);
 
 <template>
 
-    <div class="container" ref="container_ref">
+    <div class="form_container" ref="container_ref">
         <QueryFormScroller simple
         ref="scroller_ref"
         :limit="scroller_limit"
@@ -246,44 +246,49 @@ watch(query_sql_full, refresh_routine);
         norefresh
         @changed_index="x => offset = x"/>
 
-        <table class="result" :class="{selectable: props.selectable}" @wheel.passive="handle_scroll">
-            <tr ref="row_ref">
-                <th></th>
-                <th v-for="(col_name, col_i) in query_columns_display" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">
-                    <input type="text" class="search_input" v-model="searches[col_i]" required>
-                </th>
-            </tr>
-            <tr>
-                <th>#</th>
-                <th v-for="(col_name, col_i) in query_columns_display" :class="{hidden: query_columns_hide[col_i]}">
-                    <span class="col_name">
-                        {{ col_name }}
-                    </span>
-                    <QueryOrderingBtn class="ordering_btns" v-model:value="orderings[col_i]" @update:value="event => set_orderings_list(col_i, event)"/>
-                </th>
-            </tr>
-            <tr v-for="(row, row_i) in query_rows" class="data_tr" @click="handle_select(row_i)">
-                <td class="cell_index" >{{ offset + row_i }}:</td>
-                <td v-for="(cell, cell_i) in row" :class="{
-                        cell_number: typeof(cell) == 'number',
-                        cell_text: typeof(cell) == 'string',
-                        hidden: query_columns_hide[cell_i]
-                }">
-                    {{cell === null ? '~' : cell}}
-                </td>
-            </tr>
-        </table>
+        <div class="form_content">
+
+            <table class="result" :class="{selectable: props.selectable}" @wheel.passive="handle_scroll">
+                <tr ref="row_ref">
+                    <th></th>
+                    <th v-for="(col_name, col_i) in query_columns_display" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">
+                        <input type="text" class="search_input" v-model="searches[col_i]" required>
+                    </th>
+                </tr>
+                <tr>
+                    <th>#</th>
+                    <th v-for="(col_name, col_i) in query_columns_display" :class="{hidden: query_columns_hide[col_i]}">
+                        <span class="col_name">
+                            {{ col_name }}
+                        </span>
+                        <QueryOrderingBtn class="ordering_btns" v-model:value="orderings[col_i]" @update:value="event => set_orderings_list(col_i, event)"/>
+                    </th>
+                </tr>
+                <tr v-for="(row, row_i) in query_rows" class="data_tr" @click="handle_select(row_i)">
+                    <td class="cell_index" >{{ offset + row_i }}:</td>
+                    <td v-for="(cell, cell_i) in row" :class="{
+                            cell_number: typeof(cell) == 'number',
+                            cell_text: typeof(cell) == 'string',
+                            hidden: query_columns_hide[cell_i]
+                    }">
+                        {{cell === null ? '~' : cell}}
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 
 </template>
 
 <style scoped>
 
-    .container {
-        /* width: 100%; */
-        /* overflow-x: scroll; */
-        height: 100%;
+    .form_container {
+        justify-content: start;
     }
+    .form_content {
+        overflow-y: hidden;
+    }
+
     .ordering_btns {
         margin-left: 1ch;
     }

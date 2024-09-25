@@ -222,39 +222,6 @@ function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', 
 // });
 
 const scroller_ref = ref();
-const scroller_container = computed(() => scroller_ref.value.parentElement?.parentElement);
-
-let wait_for_frame = false;
-let scroller_position_to_set = /**@type {[Number, Number]} */ ([0, 0]);
-function fix_position() {
-	const elem = scroller_container.value;
-	if(!elem) return;
-	scroller_position_to_set =  [
-		elem.scrollLeft, 
-		elem.scrollHeight - elem.scrollTop - elem.clientHeight
-	];
-	if(wait_for_frame) return;
-	wait_for_frame = true;
-	window.requestAnimationFrame(() => {
-		scroller_ref.value.style.left   = scroller_position_to_set[0] + 'px';
-		scroller_ref.value.style.bottom = scroller_position_to_set[1] + 'px';
-		wait_for_frame = false;
-	});
-}
-
-const scroller_container_observer = new ResizeObserver(fix_position);
-
-onMounted(() => {
-	// console.log(scroller_ref.value);
-	if(scroller_container.value?.classList.contains('wb-body')){
-		scroller_container.value?.addEventListener('scroll', fix_position);
-		scroller_container_observer.observe(scroller_container.value);
-	}
-});
-onUnmounted(() => {
-	scroller_container.value?.removeEventListener('scroll', fix_position);
-	scroller_container_observer.disconnect();
-});
 
 
 </script>
@@ -286,7 +253,7 @@ onUnmounted(() => {
 		max-width: 7ch;
 	}
 	.form_scroller {
-		position: relative;
+		/* position: relative; */
 		overflow-x: auto;
 	}
 
