@@ -65,10 +65,11 @@ car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID klien
 
 const car_scroller_query_name  = 'rowid';
 const car_scroller_query_from  = '`samochody klientów`';
-const car_scroller_query_where = computed(() => {
-    return props.id_klienta === null ? '' :
-        DVUtil.sql_parts(['`ID klienta` = ', prop_id_klienta]);
-});
+const car_scroller_query_where = DVUtil.sql_parts_ref(['`ID klienta` = ', prop_id_klienta]);
+// const car_scroller_query_where = computed(() => {
+//     return props.id_klienta === null ? '' :
+//         DVUtil.sql_parts(['`ID klienta` = ', prop_id_klienta]);
+// });
 
 // console.log('PROPS', props);
 // console.log('WHERE', car_scroller_query_where);

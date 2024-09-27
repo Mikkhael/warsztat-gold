@@ -620,53 +620,35 @@ class Dataset {
         const this_res = callback(this);
         return [this_res, ...subs_res];
     }
-    
-    /**
-     * @template T,K
-     * @param {(dataset: Dataset) => K[]} prop_callback 
-     * @param {(prop: K) => T} callback 
-     * @returns {T[]}
-     */
-    do_for_all_deep_prop_arr(prop_callback, callback, no_deep = false) {
-        if(no_deep) {
-            return prop_callback(this).map(callback);
-        } else {
-            return this.do_for_all_deep(dataset => prop_callback(dataset).map(callback)).flat();
-        }
-    }
-
-    /**
-     * @template T
-     * @param {(sync: DatasetTableSync) => T} callback
-     */
-    do_for_all_deep_syncs(callback, no_deep = false) {
-        return this.do_for_all_deep_prop_arr(x => x.table_syncs, callback, no_deep);
-    }
-    /**
-     * @template T
-     * @param {(source: SourceQuery) => T} callback
-     */
-    do_for_all_deep_sources(callback, no_deep = false) {
-        return this.do_for_all_deep_prop_arr(x => x.source_queries, callback, no_deep);
-    }
-    
-    /**
-     * @param {(sync: DatasetTableSync) => Promise<number>} callback_per_sync 
-    */
-   async #do_for_all_deep_syncs_as_transaction(callback_per_sync, no_deep = false) {
-       return await ipc.db_as_transaction(() => {
-           return Promise.all(this.do_for_all_deep_syncs(callback_per_sync, no_deep));
-        });
-    }
 
     reinitialize_all() { this.do_for_all_deep(dataset => Object.values(dataset.values).forEach(x => x.reinitialize())); }
     
-    async perform_insert_all           (no_deep = true)  {return await this.#do_for_all_deep_syncs_as_transaction(x => x.perform_insert(), no_deep)}
-    async perform_update_all           (no_deep = false) {return await this.#do_for_all_deep_syncs_as_transaction(x => x.perform_update(), no_deep)}
-    async perform_query_all            (no_deep = false) {return await Promise.all(this.do_for_all_deep_sources(x => x.perform_query(),             no_deep));}
-    async perform_query_and_replace_all(no_deep = false) {return await Promise.all(this.do_for_all_deep_sources(x => x.perform_query_and_replace(), no_deep));}
-    async perform_query_and_refresh_all(no_deep = false) {return await Promise.all(this.do_for_all_deep_sources(x => x.perform_query_and_refresh(), no_deep));}
-    async perform_query_and_retcon_all (no_deep = false) {return await Promise.all(this.do_for_all_deep_sources(x => x.perform_query_and_retcon(),  no_deep));}
+    /**
+     * @template T
+     * @param {(dataset: Dataset) => Promise<T>[]} callback
+     * @returns {Promise<T[]>}
+     */
+    async helper_perform_all(callback, no_deep = false, allow_empty = false) {
+        if(this.empty.value && !allow_empty) {
+            return [];
+        }
+        /**@type {T[]} */
+        let res = await Promise.all(callback(this));
+        for(let d of this.sub_datasets.value) {
+            res.push( ... await d.helper_perform_all(callback, no_deep, allow_empty) );
+        }
+        return res;
+    }
+
+    async perform_insert_all()  { return ipc.db_as_transaction(() => {
+        return Promise.all( this.table_syncs.map(x => x.perform_insert()) );
+    });}
+
+    async perform_update_all           (no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.table_syncs   .map(xx => xx.perform_update()),            no_deep, allow_empty);}
+    async perform_query_all            (no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.source_queries.map(xx => xx.perform_query()),             no_deep, allow_empty);}
+    async perform_query_and_replace_all(no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.source_queries.map(xx => xx.perform_query_and_replace()), no_deep, allow_empty);}
+    async perform_query_and_refresh_all(no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.source_queries.map(xx => xx.perform_query_and_refresh()), no_deep, allow_empty);}
+    async perform_query_and_retcon_all (no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.source_queries.map(xx => xx.perform_query_and_retcon()),  no_deep, allow_empty);}
 }
 
 
