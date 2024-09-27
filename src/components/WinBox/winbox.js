@@ -1276,8 +1276,8 @@ function get_dimensions_to_fit_content(body) {
     if(inner && inner.classList.contains('form_container') && inner.children.length >= 2) {
         const content  = inner.children[0];
         const scroller = inner.children[1];
-        const w2 = content.scrollWidth + 5;
-        const h2 = content.scrollHeight + scroller.scrollHeight + 5;
+        const w2 = content.scrollWidth;
+        const h2 = content.scrollHeight + scroller.scrollHeight;
         // console.log('DIMS2', w1, h1, w2, h2);
         return [
             Math.max(w1, w2),
@@ -1288,15 +1288,30 @@ function get_dimensions_to_fit_content(body) {
     return [w1, h1];
 }
 
+function is_scroller_visible(body) {
+    const inner = body.children[0];
+    if(inner && inner.classList.contains('form_container') && inner.children.length >= 2) {
+        return is_scroller_visible(body.children[0].children[0]);
+    }
+    if(body.scrollWidth > body.clientWidth || body.scrollHeight > body.clientHeight) {
+        return true;
+    }
+    return false;
+}
+
 WinBox.prototype.resize_to_content = function(snap = false){
     // const content = this.body.children[0];
     // if(!content) return this;
+    // this.resize_true(50,50);
     const dims = get_dimensions_to_fit_content(this.body);
     if(snap){
         this.body.parentNode.style.transitionDuration = '0s';
         setTimeout(() => this.body.parentNode.style.transitionDuration = '', 0);
     }
     this.resize_true(dims[0], dims[1]);
+    if(is_scroller_visible(this.body)){
+        this.resize_true(dims[0] + 20, dims[1] + 20);
+    }
     // console.log("AAA2", this.body.clientWidth, this.body.clientHeight, this.body.scrollWidth, this.body.scrollHeight);
     return this;
 }

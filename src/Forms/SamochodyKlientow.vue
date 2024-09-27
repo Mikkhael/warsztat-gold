@@ -18,7 +18,7 @@ const props = defineProps({
         type: Object,
         required: false
     },
-    parent_dataset: {
+    dataset: {
         /**@type {import('vue').PropType<import('../components/Dataset/Dataset').Dataset>} */
         type: Object,
         required: false
@@ -43,7 +43,7 @@ const prop_id_klienta = toRef(props, 'id_klienta');
 
 console.log('prop_id_klienta', prop_id_klienta);
 
-const car_dataset = props.parent_dataset?.create_sub_dataset() ?? new Dataset();
+const car_dataset = props.dataset ?? new Dataset();
 const offset = car_dataset.get_offset_ref();
 car_dataset.assosiate_form(car_form);
 

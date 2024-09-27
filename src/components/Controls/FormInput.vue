@@ -11,6 +11,14 @@ const props = defineProps({
         type: String,
         default: "text"
     },
+    textarea: {
+        type: Boolean,
+        default: false
+    },
+    nospin: {
+        type: Boolean,
+        default: false
+    },
     value: {
         /**@type {import('vue').PropType<import('../Dataset/Dataset').DatasetValuelike>} */
         type: Object,
@@ -60,10 +68,10 @@ const HINTS_UID = ref(uid + '_hint');
 </script>
 
 <template>
-        <input  ref="elem"
+        <input v-if="!props.textarea" ref="elem"
                  v-model="impl.local_proxy" 
                  class="FormControl FormControlInput" 
-                 :class="{changed: impl.changed, null: impl.local === null}"
+                 :class="{changed: impl.changed, null: impl.local === null, nospin: props.nospin}"
                  v-bind="{...impl.attributes, ...fallthrough_attrs}"
                  :list="use_datalist ? HINTS_UID : ''"
                  :placeholder="impl.local === null ? '~' : ''"
@@ -72,6 +80,18 @@ const HINTS_UID = ref(uid + '_hint');
                  @set_as_null="set_as_null()"
                  @reset_changes="reset_changes()"
         />
+        <textarea v-else ref="elem"
+                 v-model="impl.local_proxy" 
+                 class="FormControl FormControlInput" 
+                 :class="{changed: impl.changed, null: impl.local === null, nospin: props.nospin}"
+                 v-bind="{...impl.attributes, ...fallthrough_attrs}"
+                 :list="use_datalist ? HINTS_UID : ''"
+                 :placeholder="impl.local === null ? '~' : ''"
+                 :id="INPUT_UID"
+                 :nullable="!props.nonull"
+                 @set_as_null="set_as_null()"
+                 @reset_changes="reset_changes()"
+        ></textarea>
         <datalist v-if="use_datalist" :id="HINTS_UID">
             <option v-for="v in props.hints" :value="v">{{ v }}</option>
         </datalist>

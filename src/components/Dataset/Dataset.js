@@ -1,5 +1,5 @@
 //@ts-check
-import { computed, unref, ref, reactive, shallowRef, watch } from "vue";
+import { computed, unref, ref, reactive, shallowRef, watch, triggerRef, shallowReactive, toRef } from "vue";
 import { escape_backtick, escape_sql_value, iterate_query_result_values, iterate_query_result_values_single_row } from "../../utils";
 import ipc from "../../ipc";
 
@@ -420,7 +420,7 @@ class Dataset {
     constructor(){
         this.table_syncs = /**@type {DatasetTableSync[]} */ ([]);
         this.source_queries = /**@type {SourceQuery[]} */ ([]);
-        this.values = /**@type {Object.<string, DatasetValue>} */ ({});
+        this.values = shallowReactive(/**@type {Object.<string, DatasetValue>} */ ({}));
         
         this.synced_values =  shallowRef(/**@type {DatasetValueSynced[]} */ ([]));
         
@@ -428,7 +428,7 @@ class Dataset {
         this.index = ref(/**@type {SQLValue} */ (null));
         this.insert_mode = ref(false);
         this.offset = computed(() => Number(this.index.value) - 1);
-        this.empty = computed(() => this.index.value === null);
+        this.empty = computed(() => this.index.value === null && !this.insert_mode.value);
         this.disabled = computed(() => this.empty.value && !this.insert_mode.value);
         // watch(this.empty, (new_empty) => {
         //     if(new_empty) this.reinitialize_all();
@@ -438,7 +438,8 @@ class Dataset {
 
         this.is_changed_ref = computed(() => {
             const changed_list = this.synced_values.value.map(x => x.changed.value);
-            return (changed_list.indexOf(true) !== -1) || this.sub_datasets.value.some(x => x.is_changed_ref.value);
+            const changed_list_deep = this.sub_datasets.value.map(x => x.is_changed_ref.value);
+            return !this.empty.value && ([...changed_list, ...changed_list_deep].indexOf(true) !== -1);
         });
 
         this.debug_all_changed_values = computed(() => {
@@ -472,8 +473,18 @@ class Dataset {
     create_sub_dataset(){
         const sub_dataset = new Dataset();
         this.sub_datasets.value.push(sub_dataset);
+        triggerRef(this.sub_datasets);
         return sub_dataset;
     }
+
+
+    // /**
+    //  * @param {Dataset} new_dataset 
+    //  */
+    // add_sub_dataset(new_dataset) {
+    //     this.sub_datasets.value.push(new_dataset);
+    //     triggerRef(this.sub_datasets);
+    // }
 
     /**
      * @param {SQLValue} new_index 
@@ -496,6 +507,20 @@ class Dataset {
         this.insert_mode.value = new_mode;
     }
     get_insert_mode_ref() {return this.insert_mode;}
+
+
+    /**
+     * @param {string}   value_name 
+     * @param {SQLValue} default_value
+     */
+    get(value_name, default_value = null) {
+        return computed(() => {
+            if(this.values[value_name]) {
+                return this.values[value_name].local.value;
+            }
+            return default_value;
+        });
+    }
 
     /**
      * 

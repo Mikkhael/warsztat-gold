@@ -12,8 +12,9 @@ import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue
 
 
 import SamochodyKlientow from './SamochodyKlientow.vue';
+import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 
-import {onMounted, ref} from 'vue';
+import {onMounted, ref, watch, computed, nextTick} from 'vue';
 import { datetime_now } from '../utils';
 
 
@@ -22,7 +23,12 @@ const props = defineProps({
         /**@type {import('vue').PropType<import('../components/FloatingWindows/FWManager').FWWindow>} */
         type: Object,
         required: false
-    }
+    },
+    dataset: {
+        /**@type {import('vue').PropType<import('../components/Dataset/Dataset').Dataset>} */
+        type: Object,
+        required: false
+    },
 });
 
 const msgManager = useMainMsgManager();
@@ -34,10 +40,14 @@ const msgManager = useMainMsgManager();
 const form     = ref();
 const scroller = ref();
 
+const samochody_form = ref();
+
 const dataset     = new Dataset();
 const index       = dataset.get_index_ref();
 const insert_mode = dataset.get_insert_mode_ref();
-dataset.assosiate_form(form);
+
+const car_dataset  = dataset.create_sub_dataset();
+const zlec_dataset = dataset.create_sub_dataset();
 
 const src  = dataset.create_source_query();
 const sync = dataset.create_table_sync('klienci');
@@ -56,6 +66,12 @@ const kiedy  = dataset.create_value_synced("KIEDY",                   datetime_n
 const upust  = dataset.create_value_synced("UPUST",                   0,              src, sync);
 const list   = dataset.create_value_synced("list",                    null,           src, sync);
 
+const id_samochodu = car_dataset.get('ID');
+
+// watch(id_samochodu, x => {
+//     console.log('ID SAM', x);
+// })
+
 console.log(datetime_now());
 
 const id_ref = id.as_ref_local();
@@ -63,6 +79,7 @@ const id_ref = id.as_ref_local();
 sync.add_primary('ID', id);
 src.set_body_query_and_finalize(['FROM `klienci` WHERE `ID` = ', index]);
 const scroller_query_from = '`klienci`';
+
 
 // FIND
 
@@ -96,6 +113,13 @@ const find_by_car_options = {
     query_from: "`samochody klientów`",
 };
 
+const show_zlecenia = ref(false);
+function click_zlecenia(){
+    show_zlecenia.value = !show_zlecenia.value;
+    nextTick().then(() => {
+        props.parent_window?.box.resize_to_content(true);
+    });
+}
 
 
 onMounted(() => {
@@ -115,6 +139,10 @@ function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
+defineExpose({
+    dataset
+});
+
 </script>
 
 
@@ -122,49 +150,61 @@ function handle_err(/**@type {Error} */ err) {
 
     <div class="form_container">
 
-        <div class="form_content">
-            <form ref="form" class="form" :class="{disabled: dataset.disabled.value}">
+        <form ref="form" class="form form_content flex_auto" :class="{disabled: dataset.disabled.value}">
+            
+            <div class="grid">
+
+                <fieldset class="subform_cars_field">
+                    <legend>Samochody Klienta</legend>
+                    <SamochodyKlientow 
+                        ref="samochody_form"
+                        :dataset="car_dataset"
+                        :id_klienta="id_ref"
+                    />
+                </fieldset>
                 
-                <div class="grid">
-
-                    <fieldset class="subform_cars_field">
-                        <legend>Samochody Klienta</legend>
-                        <SamochodyKlientow 
-                            :parent_dataset="dataset"
-                            :id_klienta="id_ref"
-                        />
-                    </fieldset>
-                    
-                    <div class="row flex_auto">
-                        <div>
-                            <QueryViewerOpenBtn v-bind="find_options" :scroller="scroller" />
-                            Znajdź Klienta
-                        </div>
-                        <div>
-                            <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" />
-                            Znajdź Klienta po Samochodzie
-                        </div>
+                <div class="row flex_auto">
+                    <div>
+                        <QueryViewerOpenBtn v-bind="find_options" :scroller="scroller" />
+                        Znajdź Klienta
                     </div>
-
-                    <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull :len="60" class="main_input_field"/>
-                    <label>Odbierający Fakturę</label>  <FormInput :value="odbier"         :len="50" class="main_input_field"/>
-                    <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  nonull :len="30" class="main_input_field"/>
-                    <label>Kod i Miejscowość  </label>  
-                    <div class="flex_auto main_input_field" > 
-                        <FormInput :value="kod   "  nonull :len="10" style="width: 7ch" class="nogrow"/> 
-                        <FormInput :value="miasto"  nonull :len="20" /> 
+                    <div>
+                        <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" />
+                        Znajdź Klienta po Samochodzie
                     </div>
-                    <label>NIP                </label>  <FormInput :value="nip   " :len="13"         />
-                    <label>Telefon            </label>  <FormInput :value="tele1 " :len="17"         />
-                    <label>Drugi Telefon      </label>  <FormInput :value="tele2 " :len="17"         />
-                    <div c="2"></div>
-                    <label>wpisał             </label>  <FormInput :value="kto   " :len="8"                />
-                    <label>dnia               </label>  <FormInput :value="kiedy "         type="date"    />
-                    <label>stały upust        </label>  <FormInput :value="upust "         type="integer" />
-
+                    <button @click.prevent="click_zlecenia">ZLECENIA</button>
                 </div>
-            </form>
-        </div>
+
+                <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull :len="60" class="main_input_field"/>
+                <label>Odbierający Fakturę</label>  <FormInput :value="odbier"         :len="50" class="main_input_field"/>
+                <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  nonull :len="30" class="main_input_field"/>
+                <label>Kod i Miejscowość  </label>  
+                <div class="flex_auto main_input_field" > 
+                    <FormInput :value="kod   "  nonull :len="10" style="width: 7ch" class="nogrow"/> 
+                    <FormInput :value="miasto"  nonull :len="20" /> 
+                </div>
+                <label>NIP                </label>  <FormInput :value="nip   " :len="13"         />
+                <label>Telefon            </label>  <FormInput :value="tele1 " :len="17"         />
+                <label>Drugi Telefon      </label>  <FormInput :value="tele2 " :len="17"         />
+                <div c="2"></div>
+                <label>wpisał             </label>  <FormInput :value="kto   " :len="8"                />
+                <label>dnia               </label>  <FormInput :value="kiedy "         type="date"    />
+                <label>stały upust        </label>  <FormInput :value="upust "         type="integer" />
+
+            </div>
+
+            <fieldset class="zlecenia" :style="{display: show_zlecenia ? 'unset' : 'none'}">
+                <legend>Zlecenia Naprawy</legend>
+                <ZleceniaNaprawy 
+                    :dataset="zlec_dataset"
+                    :id_klienta="id_ref"
+                    :id_samochodu="id_samochodu"
+                />
+                
+            </fieldset>
+
+        </form>
+
         <QueryFormScrollerDataset
         :query_from="scroller_query_from"
         :datasets="[dataset]"
@@ -184,6 +224,7 @@ function handle_err(/**@type {Error} */ err) {
         gap: 1px 2px;
         align-items: center;
         text-wrap: nowrap;
+        justify-content: start;
     }
 
     .grid > :deep(.main_input_field){
@@ -197,6 +238,10 @@ function handle_err(/**@type {Error} */ err) {
 
     fieldset {
         padding: 0px;
+    }
+
+    .zlecenia {
+        flex-grow: 30;
     }
     
 

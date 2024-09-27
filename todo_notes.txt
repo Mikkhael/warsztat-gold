@@ -1,2 +1,11 @@
 jest klient z telefonem 997
 dane taty są wpisane na sztywno w raport "zlecenie naprawy"
+do czego jest list w klientach ??
+pomocnicy i mechanik w "zlecenia naprawy" jest niewykorzystywany (albo inaczej niż jest opisane, np. Jako mail albo telefon, albo zaimek)
+
+
+
+
+
+
+Dowolny, nawet pusty button, reloaduje Vite

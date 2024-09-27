@@ -107,6 +107,7 @@
             - better manage nesting with inserting
             - delete
             - detect and dont display empty results
+            - (IMPR) don't make sql requests, if results would be empty
         + Query Form Scroller
             + working scroller
             + Simple Mode
