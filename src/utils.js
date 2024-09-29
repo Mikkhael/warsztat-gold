@@ -165,6 +165,18 @@ function time_now()    { return time    (new Date()); };
 function datetime_now(){ return datetime(new Date()); };
 
 
+const date_offset_ms = new Date().getTimezoneOffset() * 1000 * 60;
+function str_to_date_local(/**@type {string} */ date_str) {
+	return new Date(Date.parse(date_str) + date_offset_ms);
+}
+
+// a.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'})
+function format_date_str_local(/**@type {string} */ date_str) {
+	const date = str_to_date_local(date_str);
+	return date.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'});
+}
+
+
 /**
  * @template T
  * @param {()=>Promise.<T>} async_function 
@@ -194,4 +206,7 @@ export {
 	date_now,
 	time_now,
 	datetime_now,
+
+	str_to_date_local,
+	format_date_str_local
 }

@@ -434,19 +434,29 @@ class Dataset {
         //     if(new_empty) this.reinitialize_all();
         // });
         
-        this.sub_datasets = shallowRef(/**@type {Dataset[]} */ ([]));
+        this.sub_datasets = shallowReactive(/**@type {Object.<string, Dataset>} */ ({}));
+        this.parent_dataset = /**@type {Dataset | null} */ (null);
+
 
         this.is_changed_ref = computed(() => {
             const changed_list = this.synced_values.value.map(x => x.changed.value);
-            const changed_list_deep = this.sub_datasets.value.map(x => x.is_changed_ref.value);
+            const changed_list_deep = this.#foreach_dataset(x => x.is_changed_ref.value);
             return !this.empty.value && ([...changed_list, ...changed_list_deep].indexOf(true) !== -1);
         });
 
         this.debug_all_changed_values = computed(() => {
             const local = this.synced_values.value.filter(x => x.changed.value);
-            const deep  = this.sub_datasets.value.map(x => x.debug_all_changed_values.value);
+            const deep  = this.#foreach_dataset(x => x.debug_all_changed_values.value);
             return [local, ...deep];
         })
+    }
+
+    /**
+     * @template T
+     * @param {(dataset: Dataset) => T} callback 
+     */
+    #foreach_dataset(callback) {
+        return Object.values(this.sub_datasets).map(callback);
     }
 
     /**
@@ -470,21 +480,12 @@ class Dataset {
         return src;
     }
 
-    create_sub_dataset(){
+    create_sub_dataset(name){
         const sub_dataset = new Dataset();
-        this.sub_datasets.value.push(sub_dataset);
-        triggerRef(this.sub_datasets);
+        sub_dataset.parent_dataset = this;
+        this.sub_datasets[name] = sub_dataset;
         return sub_dataset;
     }
-
-
-    // /**
-    //  * @param {Dataset} new_dataset 
-    //  */
-    // add_sub_dataset(new_dataset) {
-    //     this.sub_datasets.value.push(new_dataset);
-    //     triggerRef(this.sub_datasets);
-    // }
 
     /**
      * @param {SQLValue} new_index 
@@ -509,14 +510,39 @@ class Dataset {
     get_insert_mode_ref() {return this.insert_mode;}
 
 
+    
     /**
      * @param {string}   value_name 
      * @param {SQLValue} default_value
-     */
-    get(value_name, default_value = null) {
+    */
+   get(value_name, default_value = null) {
+       if(this.values[value_name]) {
+           return this.values[value_name].local;
+        }
         return computed(() => {
             if(this.values[value_name]) {
                 return this.values[value_name].local.value;
+            }
+            return default_value;
+        });
+    }
+    
+    // TODO optimize, if they already exist
+    /**
+     * @param {string[]} path 
+     * @param {SQLValue} default_value
+     */
+    get_deep(path = [], default_value = null) {
+        return computed(() => {
+            /**@type {Dataset} */
+            let dataset = this;
+            let i = 0;
+            while(i < path.length - 1) {
+                dataset = dataset.sub_datasets[path[i]];
+                if(!dataset) return default_value;
+            }
+            if(dataset.values[path[i]]) {
+                return dataset.values[path[i]].local.value;
             }
             return default_value;
         });
@@ -536,8 +562,7 @@ class Dataset {
     reportFormValidity(empty_as_valid = true){
         console.log('FORMY: ', this.forms);
         const good = this.forms.map(x => x.value.reportValidity()).every(x => x);
-        const subs = empty_as_valid ? this.sub_datasets.value.filter(x => !x.empty) : this.sub_datasets.value;
-        const deep = subs.map(x => x.reportFormValidity()).every(x => x);
+        const deep = this.#foreach_dataset(x => (x.empty.value && empty_as_valid) || x.reportFormValidity()).every(x => x);
         return good && deep;
     }
 
@@ -607,7 +632,7 @@ class Dataset {
 
 
     
-    is_to_update() { return Object.values(this.values).some(x => x.is_to_update()) || this.sub_datasets.value.some(x => x.is_to_update()); }
+    is_to_update() { return Object.values(this.values).some(x => x.is_to_update()) || this.#foreach_dataset(x => x.is_to_update()).some(x => x); }
     is_changed()   { return this.is_changed_ref.value; }
     
     /**
@@ -616,7 +641,7 @@ class Dataset {
      * @returns {T[]}
      */
     do_for_all_deep(callback) {
-        const subs_res = this.sub_datasets.value.map(x => x.do_for_all_deep(callback)).flat();
+        const subs_res = this.#foreach_dataset(x => x.do_for_all_deep(callback)).flat();
         const this_res = callback(this);
         return [this_res, ...subs_res];
     }
@@ -634,7 +659,7 @@ class Dataset {
         }
         /**@type {T[]} */
         let res = await Promise.all(callback(this));
-        for(let d of this.sub_datasets.value) {
+        for(let d of Object.values(this.sub_datasets)) {
             res.push( ... await d.helper_perform_all(callback, no_deep, allow_empty) );
         }
         return res;

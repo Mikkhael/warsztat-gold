@@ -5,11 +5,11 @@ import { Dataset, DVUtil } from '../components/Dataset/Dataset';
 import {FormInput, FormEnum} from '../components/Controls';
 
 import useMainMsgManager from '../components/Msg/MsgManager';
+import useMainFWManager from '../components/FloatingWindows/FWManager';
 
 import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
-
-import SamochodyKlientow from './SamochodyKlientow.vue';
+import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import {onMounted, ref, toRef, watch} from 'vue';
 import { date_now } from '../utils';
@@ -39,6 +39,7 @@ const props = defineProps({
 });
 
 const msgManager = useMainMsgManager();
+const fwManager  = useMainFWManager();
 
 // #	ID	ID klienta	ID samochodu	data otwarcia	        data zamknięcia	        zysk z części	zysk z robocizny	mechanik prowadzący	% udziału	pomocnik 1	  % udziału p1	pomocnik 2	% udziału p2	zgłoszone naprawy	                                    uwagi o naprawie
 // 0:	1	92	        17	            1998-09-02 00:00:00	    1947-01-12 00:00:00	    0.00	        0.00	            Dąbrowski Stanisław	0	        ~NULL~	      0	            ~NULL~	    0	            PINELES Naprawa blacharska przedniej cząści samochodu	1 2 3
@@ -49,6 +50,8 @@ const prop_id_car     = toRef(props, 'id_samochodu');
 
 const form     = ref();
 const scroller = ref();
+
+const repZlecenieNaprawy_ref = ref();
 
 const dataset     = props.dataset ?? new Dataset();
 // const index       = dataset.get_index_ref();
@@ -111,6 +114,21 @@ function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
+function open_print_window() {
+    // fwManager.open_or_reopen_window('Zlecenie Naprawy - Drukuj', ZlecenieNaprawy,{
+    //     dataset
+    // });
+
+    /**@type {HTMLElement} */
+    const page = repZlecenieNaprawy_ref.value;
+    console.log('PAGE', page);
+    const win  = window.open('about:blank', 'printwindow');
+    win.document.head.innerHTML = document.head.innerHTML;
+    win.document.body.innerHTML = page.innerHTML;
+
+    win.print();
+}
+
 
 defineExpose({
     dataset
@@ -146,8 +164,8 @@ defineExpose({
                     <div>pomocnik 1</div>   <FormInput :value="pom1"/> <FormInput type="integer" :value="pom1_p" nospin min="0" max="100"/> <span>%</span>
                     <div>pomocnik 2</div>   <FormInput :value="pom2"/> <FormInput type="integer" :value="pom2_p" nospin min="0" max="100"/> <span>%</span>
                 </div>
-                <div class="buttons flex_auto">
-                    <div>Druk</div>
+                <div class="buttons">
+                    <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
                     <div>Części</div>
                     <div>Czynności</div>
                 </div>
@@ -171,6 +189,13 @@ defineExpose({
         
     </div>
 
+
+    <div class="print_render" ref="repZlecenieNaprawy_ref">
+        <RepZlecenieNaprawy 
+            :dataset="dataset"
+        />
+    </div>
+
 </template>
 
 <style scoped>
@@ -178,6 +203,23 @@ defineExpose({
     /* .form_container {
         width: 100%;
     } */
+
+    .print_render {
+        display: none;
+    }
+
+    img{
+        height: 7ch;
+        width:  7ch;
+        padding: 5px;
+        box-sizing: border-box;
+    }
+
+    .buttons{
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+    }
 
     :deep(textarea) {
         resize: none;

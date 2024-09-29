@@ -46,8 +46,8 @@ const dataset     = new Dataset();
 const index       = dataset.get_index_ref();
 const insert_mode = dataset.get_insert_mode_ref();
 
-const car_dataset  = dataset.create_sub_dataset();
-const zlec_dataset = dataset.create_sub_dataset();
+const car_dataset  = dataset.create_sub_dataset("car");
+const zlec_dataset = dataset.create_sub_dataset("zlec");
 
 const src  = dataset.create_source_query();
 const sync = dataset.create_table_sync('klienci');
