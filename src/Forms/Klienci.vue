@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { Dataset } from '../components/Dataset/Dataset';
+import { Dataset, DVUtil, QueryBuilder } from '../components/Dataset/Dataset';
 import {FormInput, FormEnum} from '../components/Controls';
 
 import useMainFWManager from '../components/FloatingWindows/FWManager';
@@ -14,7 +14,8 @@ import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue
 import SamochodyKlientow from './SamochodyKlientow.vue';
 import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 
-import {onMounted, ref, watch, computed, nextTick} from 'vue';
+import {onMounted, ref, watch, computed, readonly, nextTick} from 'vue';
+import { init_form_parent_window } from './FormCommon';
 import { datetime_now } from '../utils';
 
 
@@ -77,13 +78,23 @@ console.log(datetime_now());
 const id_ref = id.as_ref_local();
 
 sync.add_primary('ID', id);
-src.set_body_query_and_finalize(['FROM `klienci` WHERE `ID` = ', index]);
-const scroller_query_from = '`klienci`';
+
+const query = new QueryBuilder(dataset, 'ID');
+query.set_from_table('klienci');
+
+query.set_source_query_index(src);
+const scroller_query = query.get_scroller_query();
+const viewwer_query  = query.get_viewer_query();
+
+
+// src.set_body_query_and_finalize(['FROM `klienci` WHERE `ID` = ', index]);
+// src.set_body_query_and_finalize(DVUtil.sql_parts_ref(['FROM `klienci` WHERE `ID` = ', index]));
+// const scroller_query_from = '`klienci`';
 
 
 // FIND
 
-const find_options = {
+const find_options = readonly({
     query_select_fields: [
         ["`ID`",],
         ["`NAZWA`",               "Nazwa"               ],
@@ -97,8 +108,8 @@ const find_options = {
         ["`KTO`",                 "wpisał"              ],
         ["`KIEDY`",               "dnia"                ],
     ],
-    query_from: "`klienci`",
-}
+    ...viewwer_query
+});
 
 const find_by_car_options = {
     query_select_fields: [
@@ -123,15 +134,7 @@ function click_zlecenia(){
 
 
 onMounted(() => {
-    props.parent_window?.add_before_close(async (force) => {
-        if(force) return false;
-        if(dataset.is_changed()){
-            const confirmed = await window.confirm('Posiadasz niezapisane zmiany. Czy chesz zamnknąć okno?');
-            return !confirmed;
-        }
-        return false;
-    });
-    props.parent_window?.box.resize_to_content(true);
+    init_form_parent_window([dataset], props);
 });
 
 
@@ -206,7 +209,7 @@ defineExpose({
         </form>
 
         <QueryFormScrollerDataset
-        :query_from="scroller_query_from"
+        v-bind="scroller_query"
         :datasets="[dataset]"
         @error="handle_err"
         insertable

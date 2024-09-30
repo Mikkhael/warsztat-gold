@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { Dataset, DVUtil } from '../components/Dataset/Dataset';
+import { Dataset, DVUtil, QueryBuilder } from '../components/Dataset/Dataset';
 import {FormInput, FormEnum} from '../components/Controls';
 
 import useMainMsgManager from '../components/Msg/MsgManager';
@@ -9,7 +9,8 @@ import useMainMsgManager from '../components/Msg/MsgManager';
 import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue';
 import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
-import {computed, onMounted, reactive, ref, toRef, watch} from 'vue';
+import {computed, onMounted, reactive, readonly, ref, toRef, watch} from 'vue';
+import { init_form_parent_window } from './FormCommon';
 
 
 const props = defineProps({
@@ -44,7 +45,6 @@ const prop_id_klienta = toRef(props, 'id_klienta');
 console.log('prop_id_klienta', prop_id_klienta);
 
 const car_dataset = props.dataset ?? new Dataset();
-const offset = car_dataset.get_offset_ref();
 car_dataset.assosiate_form(car_form);
 
 const car_src  = car_dataset.create_source_query();
@@ -60,12 +60,25 @@ const car_nadwozie = car_dataset.create_value_synced("nr nadwozia",   null,     
 
 // TODO allow for form to work without providing prop_id_klienta
 car_sync.add_primary('ID', car_id);
-car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID klienta` = ', prop_id_klienta , ' LIMIT 1 OFFSET ', offset]);
+
+const query = new QueryBuilder(car_dataset);
+query.set_from_table('samochody klientów');
+query.add_simple_condition('ID klienta', prop_id_klienta, true);
+
+
+console.log("BUILDER", query);
+
+query.set_source_query_offset(car_src);
+const car_scroller_query = query.get_scroller_query();
+const car_viewer_query   = query.get_viewer_query();
+
+// car_src.set_body_query_and_finalize(DVUtil.sql_parts_ref(['FROM `samochody klientów` WHERE `ID klienta` = ', prop_id_klienta , ' LIMIT 1 OFFSET ', offset]));
+// car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID klienta` = ', prop_id_klienta , ' LIMIT 1 OFFSET ', offset]);
 // car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID` = ', index]);
 
-const car_scroller_query_name  = 'rowid';
-const car_scroller_query_from  = '`samochody klientów`';
-const car_scroller_query_where = DVUtil.sql_parts_ref(['`ID klienta` = ', prop_id_klienta]);
+// const car_scroller_query_name  = 'rowid';
+// const car_scroller_query_from  = '`samochody klientów`';
+// const car_scroller_query_where = DVUtil.sql_parts_ref(['`ID klienta` = ', prop_id_klienta]);
 // const car_scroller_query_where = computed(() => {
 //     return props.id_klienta === null ? '' :
 //         DVUtil.sql_parts(['`ID klienta` = ', prop_id_klienta]);
@@ -79,14 +92,7 @@ const car_scroller_query_where = DVUtil.sql_parts_ref(['`ID klienta` = ', prop_i
 
 
 onMounted(() => {
-    props.parent_window?.add_before_close(async (force) => {
-        if(force) return false;
-        if(car_dataset.is_changed()){
-            const confirmed = await window.confirm('Posiadasz niezapisane zmiany. Czy chesz zamnknąć okno?');
-            return !confirmed;
-        }
-        return false;
-    });
+    init_form_parent_window([car_dataset], props);
 });
 
 
@@ -97,7 +103,7 @@ function handle_err(/**@type {Error} */ err) {
 
 // FIND
 
-const find_options = reactive({
+const find_options = readonly({
     query_select_fields: [
         ["`ID`"],
         ["`marka`",       "Marka"],
@@ -107,8 +113,9 @@ const find_options = reactive({
         ["`nr silnika`",  "Nr Silnika"],
         ["`nr nadwozia`", "Nr Nadwozia"],
     ],
-    query_from: "`samochody klientów`",
-    query_where: car_scroller_query_where
+    // query_from: "`samochody klientów`",
+    // query_where: car_scroller_query_where
+    ...car_viewer_query
 });
 
 defineExpose({
@@ -133,9 +140,7 @@ defineExpose({
             <QueryViewerOpenBtn v-bind="find_options" :scroller="car_scroller" simple/>
         </form>
         <QueryFormScrollerDataset simple
-        :query_value_name="car_scroller_query_name"
-        :query_from="car_scroller_query_from"
-        :query_where="car_scroller_query_where"
+        v-bind="car_scroller_query"
         :datasets="[car_dataset]"
         @error="handle_err"
         insertable

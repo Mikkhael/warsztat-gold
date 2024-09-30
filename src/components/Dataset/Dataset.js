@@ -1,5 +1,5 @@
 //@ts-check
-import { computed, unref, ref, reactive, shallowRef, watch, triggerRef, shallowReactive, toRef } from "vue";
+import { computed, unref, ref, reactive, shallowRef, watch, triggerRef, shallowReactive, toRef, readonly } from "vue";
 import { escape_backtick, escape_sql_value, iterate_query_result_values, iterate_query_result_values_single_row } from "../../utils";
 import ipc from "../../ipc";
 
@@ -181,6 +181,145 @@ class DVUtil {
 }
 
 
+////////////////// Query Builder ////////////////////////////////////////
+
+/**
+ * Potrzebne do:
+ *  - Scroller 
+ *      - value name
+ *      - from
+ *      - where bez indeksu
+ *  - Source
+ *      - from
+ *      - where z indeksem
+ *  - Find
+ *      - from
+ *      - where bez indeksu
+ *  - Sync
+ *      - table_name
+ *      - primary keys
+ * 
+ * 
+ * 
+ * 
+ */
+
+
+
+/**
+ * @typedef {(string | DatasetValueReflike)[]} QueryParts
+ */
+
+/**
+ * @param {string} str 
+ */
+function escape_backtick_smart(str) {
+    return str.indexOf('`') === -1 ? escape_backtick(str) : str;
+}
+
+class QueryBuilder {
+    /**
+     * @param {Dataset} dataset 
+     * @param {string} index_name 
+     */
+    constructor(dataset, index_name = 'rowid') {
+        this.index_name   = index_name;
+        this.index_value  = dataset.get_index_ref();
+        this.offset_value = dataset.get_offset_ref();
+
+        this.from = ref('');
+
+        this.conditions_common           = shallowRef(/**@type {QueryParts[]} */ ([]));
+        this.conditions_optional         = shallowRef(/**@type {QueryParts[]} */ ([]));
+
+        this.conditions_merged = computed(() => {
+            const all_conditions = [
+                ...this.conditions_common.value,
+                ...this.conditions_optional.value.filter(x => !x.some(xx => DVUtil.as_value(xx) === null))
+            ];
+            return all_conditions.map(x => '(' + DVUtil.sql_parts(x) + ')').join(' AND ');
+        });
+        
+        this.sql_from       = this.from;
+        this.sql_where_conditions = this.conditions_merged;
+        this.sql_index      = computed(() => DVUtil.sql_parts(['(', unref(this.index_name), ' = ', this.index_value, ')']) );
+        this.sql_offset     = computed(() => DVUtil.sql_parts(['LIMIT 1 OFFSET ', this.offset_value]));
+
+        this.sql_where_full_noindex = this.sql_where_conditions;
+        this.sql_where_full_index   = computed(() => [this.sql_where_conditions.value, this.sql_index.value].filter(x => x.length > 0).join(' AND '));
+
+        this.sql_rest_full_noindex = this.sql_where_full_noindex;
+        this.sql_rest_full_index   = this.sql_where_full_index;
+        this.sql_rest_full_offset  = computed(() => this.sql_rest_full_noindex.value + ' ' + this.sql_offset.value);
+
+        this.where_keyword = computed(() => this.sql_where_full_noindex.value.length > 0 ? ' WHERE ' : ' ');
+
+
+        this.sql_full_index  = computed(() => 'FROM ' + this.sql_from.value + ' WHERE ' + this.sql_rest_full_index.value);
+        this.sql_full_offset = computed(() => 'FROM ' + this.sql_from.value + this.where_keyword.value + this.sql_rest_full_offset.value);
+    }
+
+
+    set_from_table(table_name) {
+        this.from.value = escape_backtick_smart(table_name);
+    }
+    set_from_advanced(sql) {
+        this.from.value = sql;
+    }
+
+    /**
+     * @param {string} field_name 
+     * @param {QueryParts | DatasetValueReflike} value 
+     */
+    add_simple_condition(field_name, value, is_optional = false) {
+        let value_parts = (value instanceof Array) ? value : [value];
+        const to_add = [escape_backtick_smart(field_name) + ' = ', ...value_parts];
+        if(is_optional){
+            this.conditions_optional.value.push(to_add);
+            triggerRef(this.conditions_optional);
+        } else {
+            this.conditions_common.value.push(to_add);
+            triggerRef(this.conditions_common);
+        }
+    }
+
+
+    get_scroller_query() {
+        return readonly({
+            query_value_name:   this.index_name,
+            query_from:         this.sql_from,
+            query_where:        this.sql_rest_full_noindex,
+        });
+    }
+
+    get_src_query_index() {
+        return this.sql_full_index;
+    }
+    get_src_query_offset() {
+        return this.sql_full_offset;
+    }
+
+    get_viewer_query() {
+        return {
+            query_from:  this.sql_from,
+            query_where: this.sql_rest_full_noindex,
+        }
+    }
+
+    /**
+     * @param {DatasetSourceQuery} src 
+     */
+    set_source_query_index(src) {
+        src.set_body_query_and_finalize(this.get_src_query_index());
+    }
+    /**
+     * @param {DatasetSourceQuery} src 
+     */
+    set_source_query_offset(src) {
+        src.set_body_query_and_finalize(this.get_src_query_offset());
+    }
+}
+
 
 ////////////////// Table Sync ////////////////////////////////////////
 
@@ -274,7 +413,7 @@ class DatasetSourceQuery extends SourceQuery{
         super();
         this.column_binds     = /**@type {Object.<string, DatasetValueReflike>} */ ({});
         this.select_fields    = /**@type {import('vue').Ref<([string, string?])[]>} */ (ref([]));
-        this.query_body_parts = /**@type {import('vue').Ref<(string | DatasetValueReflike)[]>} */ (ref([]));
+        // this.query_body_parts = /**@type {import('vue').Ref<(string | DatasetValueReflike)[]>} */ (ref([]));
         this.advanced_binder_function = /**@type {QueryResultCallback?} */ (null);
 
         this.query_select_sql = computed(() => {
@@ -285,12 +424,14 @@ class DatasetSourceQuery extends SourceQuery{
             }).join(', ');
         });
         
-        this.query_body_sql = computed(() => {
-            return DVUtil.sql_parts(this.query_body_parts.value);
-        });
+        // this.query_body_sql = computed(() => {
+        //     return DVUtil.sql_parts(this.query_body_parts.value);
+        // });
+        /**@type {import('vue').ShallowRef<string | import('vue').Ref<string>>} */
+        this.query_body_sql = shallowRef('');
 
         this.query_sql = computed(() => {
-            return 'SELECT ' + this.query_select_sql.value + ' ' + this.query_body_sql.value + ';';
+            return 'SELECT ' + this.query_select_sql.value + ' ' + unref(this.query_body_sql.value) + ';';
         });
     }
 
@@ -323,10 +464,10 @@ class DatasetSourceQuery extends SourceQuery{
     // }
 
     /**
-     * @param {(string | DatasetValueReflike)[]} query_body_parts 
+     * @param {import('vue').ComputedRef<string>} query_body_sql 
      */
-    set_body_query_and_finalize(query_body_parts) {
-        this.query_body_parts.value = query_body_parts;
+    set_body_query_and_finalize(query_body_sql) {
+        this.query_body_sql.value = query_body_sql;
     }
 
 
@@ -691,6 +832,8 @@ class Dataset {
 
 
 export {
+    QueryBuilder,
+
     Dataset,
     DVUtil,
     DatasetValue,

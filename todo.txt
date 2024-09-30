@@ -153,11 +153,13 @@
             + editable
             + font
         - printer template
+        - afterprint
 
     - create toolbars
 
-- Query Builder ?
-- query whitespace remover
++ Query Builder
+    + for forms (simple)
+    - general queries
 
 
 + WinBox

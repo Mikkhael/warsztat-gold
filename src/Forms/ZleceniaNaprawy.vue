@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { Dataset, DVUtil } from '../components/Dataset/Dataset';
+import { Dataset, DVUtil, QueryBuilder } from '../components/Dataset/Dataset';
 import {FormInput, FormEnum} from '../components/Controls';
 
 import useMainMsgManager from '../components/Msg/MsgManager';
@@ -11,7 +11,8 @@ import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue
 
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
-import {onMounted, ref, toRef, watch} from 'vue';
+import {onMounted, ref, toRef, readonly, watch} from 'vue';
+import { init_form_parent_window } from './FormCommon';
 import { date_now } from '../utils';
 
 
@@ -80,17 +81,32 @@ const zgloszenie = dataset.create_value_synced("zgłoszone naprawy",        null
 const uwagi      = dataset.create_value_synced("uwagi o naprawie",         null,           src, sync);
 
 sync.add_primary('ID', id);
-src.set_body_query_and_finalize([
-    'FROM `zlecenia naprawy` WHERE ', 
-          ' `ID klienta` = ',   prop_id_klienta,
-    ' AND `ID samochodu` = ', prop_id_car,
-    ` LIMIT 1 OFFSET `, offset
-]);
-const scroller_query_from  = '`zlecenia naprawy`';
-const scroller_query_where = DVUtil.sql_parts_ref([
-          ' `ID klienta` = ', prop_id_klienta,
-    ' AND `ID samochodu` = ', prop_id_car,
-]);
+
+const query = new QueryBuilder(dataset);
+query.set_from_table('zlecenia naprawy');
+query.add_simple_condition('ID klienta', prop_id_klienta, true);
+query.add_simple_condition('ID samochodu', prop_id_car, true);
+
+query.set_source_query_offset(src);
+const scroller_query = query.get_scroller_query();
+
+// src.set_body_query_and_finalize(DVUtil.sql_parts_ref([
+//     'FROM `zlecenia naprawy` WHERE ', 
+//           ' `ID klienta` = ',   prop_id_klienta,
+//     ' AND `ID samochodu` = ', prop_id_car,
+//     ` LIMIT 1 OFFSET `, offset
+// ]));
+// src.set_body_query_and_finalize([
+//     'FROM `zlecenia naprawy` WHERE ', 
+//           ' `ID klienta` = ',   prop_id_klienta,
+//     ' AND `ID samochodu` = ', prop_id_car,
+//     ` LIMIT 1 OFFSET `, offset
+// ]);
+// const scroller_query_from  = '`zlecenia naprawy`';
+// const scroller_query_where = DVUtil.sql_parts_ref([
+//           ' `ID klienta` = ', prop_id_klienta,
+//     ' AND `ID samochodu` = ', prop_id_car,
+// ]);
 
 // watch(props, (new_props, old_props) => {
 //     console.log('ZLECENIA PORPS', new_props, old_props);
@@ -98,15 +114,7 @@ const scroller_query_where = DVUtil.sql_parts_ref([
 
 
 onMounted(() => {
-    props.parent_window?.add_before_close(async (force) => {
-        if(force) return false;
-        if(dataset.is_changed()){
-            const confirmed = await window.confirm('Posiadasz niezapisane zmiany. Czy chesz zamnknąć okno?');
-            return !confirmed;
-        }
-        return false;
-    });
-    props.parent_window?.box.resize_to_content(true);
+    init_form_parent_window([dataset], props);
 });
 
 
@@ -180,8 +188,7 @@ defineExpose({
         </form>
 
         <QueryFormScrollerDataset simple
-        :query_from="scroller_query_from"
-        :query_where="scroller_query_where"
+        v-bind="scroller_query"
         :datasets="[dataset]"
         @error="handle_err"
         insertable
