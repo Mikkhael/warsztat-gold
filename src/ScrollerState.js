@@ -218,10 +218,9 @@ class ScrollerStateSimple extends ScrollerStateBase {
 
 	/**
 	 * @param {number} new_index
-	 * @returns 
 	 */
 	async #scroll(new_index, with_limit = false, force_update = false, bypass_before_change = false) {
-		// console.log("SCROLL SIMPLE", new_index, with_limit, force_update, bypass_before_change);
+		console.log("SCROLL SIMPLE", new_index, with_limit, force_update, bypass_before_change);
 		await this.update_count(force_update);
 		if(this.is_empty.value) return null;
 		const max_index = with_limit ? this.max_index.value : this.count.value;

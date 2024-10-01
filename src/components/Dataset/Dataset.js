@@ -233,15 +233,16 @@ class QueryBuilder {
         this.conditions_optional         = shallowRef(/**@type {QueryParts[]} */ ([]));
 
         this.conditions_merged = computed(() => {
-            const all_conditions = [
+            return [
                 ...this.conditions_common.value,
                 ...this.conditions_optional.value.filter(x => !x.some(xx => DVUtil.as_value(xx) === null))
             ];
-            return all_conditions.map(x => '(' + DVUtil.sql_parts(x) + ')').join(' AND ');
         });
+        this.sql_where_conditions = computed(() => {
+            return this.conditions_merged.value.map(x => '(' + DVUtil.sql_parts(x) + ')').join(' AND ');
+        })
         
         this.sql_from       = this.from;
-        this.sql_where_conditions = this.conditions_merged;
         this.sql_index      = computed(() => DVUtil.sql_parts(['(', unref(this.index_name), ' = ', this.index_value, ')']) );
         this.sql_offset     = computed(() => DVUtil.sql_parts(['LIMIT 1 OFFSET ', this.offset_value]));
 
@@ -255,8 +256,15 @@ class QueryBuilder {
         this.where_keyword = computed(() => this.sql_where_full_noindex.value.length > 0 ? ' WHERE ' : ' ');
 
 
-        this.sql_full_index  = computed(() => 'FROM ' + this.sql_from.value + ' WHERE ' + this.sql_rest_full_index.value);
-        this.sql_full_offset = computed(() => 'FROM ' + this.sql_from.value + this.where_keyword.value + this.sql_rest_full_offset.value);
+        this.sql_full_index   = computed(() => 'FROM ' + this.sql_from.value + ' WHERE ' + this.sql_rest_full_index.value);
+        this.sql_full_noindex = computed(() => 'FROM ' + this.sql_from.value + this.where_keyword.value + this.sql_rest_full_noindex.value);
+        this.sql_full_offset  = computed(() => 'FROM ' + this.sql_from.value + this.where_keyword.value + this.sql_rest_full_offset.value);
+
+        
+        // SELECT off FROM (SELECT row_number() OVER () as off, rowid as id FROM `samochody klientów` WHERE `ID klienta` BETWEEN 91 AND 95) WHERE `id` = 19
+        this.sql_full_rownumber_select_parts = computed(() => {
+            return ['SELECT n FROM (SELECT row_number() OVER () as n, ',' as i ' + this.sql_full_noindex.value + ') WHERE i = '];
+        })
     }
 
 
@@ -305,6 +313,23 @@ class QueryBuilder {
             query_where: this.sql_rest_full_noindex,
         }
     }
+    /**
+     * @param {SQLValue} value 
+     */
+    get_rownumber_select(value, name = 'rowid') {
+        name = escape_backtick_smart(name);
+        const parts = this.sql_full_rownumber_select_parts.value;
+        return parts[0] + name + parts[1] + escape_sql_value(value);
+    }
+
+    /**
+     * @param {SQLValue} value 
+     */
+    async perform_rownumber_select(value, name = 'rowid') {
+        const res = await ipc.db_query(this.get_rownumber_select(value, name));
+        return res[0]?.[0]?.[0];
+    }
+
 
     /**
      * @param {DatasetSourceQuery} src 

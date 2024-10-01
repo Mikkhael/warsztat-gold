@@ -42,6 +42,7 @@ const form     = ref();
 const scroller = ref();
 
 const samochody_form = ref();
+const zlecenia_form  = ref();
 
 const dataset     = new Dataset();
 const index       = dataset.get_index_ref();
@@ -113,15 +114,28 @@ const find_options = readonly({
 
 const find_by_car_options = {
     query_select_fields: [
-        // ["`ID`"],
         ["`ID klienta`"],
+        ["`ID`"],
+        // ["`ID`", 'ID samochodu'],
+        // ["row_number() OVER (PARTITION BY `ID klienta`)", 'offset'],
+        ["`nr rej`",      "Nr Rej."],
         ["`marka`",       "Marka"],
         ["`model`",       "Model"],
-        ["`nr rej`",      "Nr Rej."],
         ["`nr silnika`",  "Nr Silnika"],
         ["`nr nadwozia`", "Nr Nadwozia"],
     ],
     query_from: "`samochody klientów`",
+};
+const find_by_zlec_options = {
+    query_select_fields: [
+        ["`ID klienta`"],
+        ["`ID`",                'ID zlecenia'],
+        ["`data otwarcia`",     'Otwarcie'],
+        ["`data zamknięcia`",   'Zamknięcie'],
+        ["`zgłoszone naprawy`", 'Zgłoszenie'],
+        ["`uwagi o naprawie`",  'Uwagi'],
+    ],
+    query_from: "`zlecenia naprawy`",
 };
 
 const show_zlecenia = ref(false);
@@ -130,6 +144,15 @@ function click_zlecenia(){
     nextTick().then(() => {
         props.parent_window?.box.resize_to_content(true);
     });
+}
+
+async function handle_select_by_car(columns, rows, offset) {
+    // await samochody_form.value.scroller.goto(rows[1]);
+    await samochody_form.value.goto_by_id(rows[1]);
+}
+
+async function handle_select_by_zlec(columns, rows, offset) {
+    await zlecenia_form.value.goto_by_id(rows[1]);
 }
 
 
@@ -172,8 +195,12 @@ defineExpose({
                         Znajdź Klienta
                     </div>
                     <div>
-                        <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" />
-                        Znajdź Klienta po Samochodzie
+                        <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" @select="handle_select_by_car"/>
+                        Znajdź Samochód
+                    </div>
+                    <div>
+                        <QueryViewerOpenBtn v-bind="find_by_zlec_options" :scroller="scroller" @select="handle_select_by_zlec"/>
+                        Znajdź Zlecenie
                     </div>
                     <button @click.prevent="click_zlecenia">ZLECENIA</button>
                 </div>
@@ -199,6 +226,7 @@ defineExpose({
             <fieldset class="zlecenia" :style="{display: show_zlecenia ? 'unset' : 'none'}">
                 <legend>Zlecenia Naprawy</legend>
                 <ZleceniaNaprawy 
+                    ref="zlecenia_form"
                     :dataset="zlec_dataset"
                     :id_klienta="id_ref"
                     :id_samochodu="id_samochodu"

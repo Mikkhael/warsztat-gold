@@ -72,6 +72,14 @@ query.set_source_query_offset(car_src);
 const car_scroller_query = query.get_scroller_query();
 const car_viewer_query   = query.get_viewer_query();
 
+async function goto_by_id(id) {
+    const offset = await query.perform_rownumber_select(id);
+    if(offset !== undefined){
+        return car_scroller.value.goto_complete(offset);
+    }
+}
+
+
 // car_src.set_body_query_and_finalize(DVUtil.sql_parts_ref(['FROM `samochody klientów` WHERE `ID klienta` = ', prop_id_klienta , ' LIMIT 1 OFFSET ', offset]));
 // car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID klienta` = ', prop_id_klienta , ' LIMIT 1 OFFSET ', offset]);
 // car_src.set_body_query_and_finalize(['FROM `samochody klientów` WHERE `ID` = ', index]);
@@ -119,7 +127,9 @@ const find_options = readonly({
 });
 
 defineExpose({
-    dataset: car_dataset
+    dataset: car_dataset,
+    scroller: car_scroller,
+    goto_by_id,
 });
 
 </script>

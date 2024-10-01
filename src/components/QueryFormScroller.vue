@@ -86,11 +86,13 @@ function handle_err(err) {
 /**
  * @param {string | number | null | undefined} new_index 
  */
-function set_index(new_index) {
+function set_index(new_index, no_emit_event_changed = false) {
 	if(new_index === undefined) return;
 	displayed_value.value = new_index;
 	set_insert_mode(false);
-	emit('changed_index', new_index);
+	if(!no_emit_event_changed){
+		emit('changed_index', new_index);
+	}
 }
 /**
  * @param {boolean} new_mode
@@ -148,11 +150,11 @@ watch(props_query_parts_refs, (new_parts, old_parts) => {
 /**
  * @param {Promise.<string | number | null | undefined>} new_index_promise
  */
- function index_change_wrapper(new_index_promise) {
+ function index_change_wrapper(new_index_promise, no_emit_event_changed = false) {
 	return new_index_promise.then(new_index => {
 		if(new_index !== undefined) {
 			clear_error();
-			set_index(new_index);
+			set_index(new_index, no_emit_event_changed);
 		}
 		return new_index;
 	}).catch(err => {
@@ -188,6 +190,17 @@ function goto(value, force_update = false, bypass_before_change = false, dir_nex
 	);
 }
 
+/**
+ * @param {string | number} value 
+ */
+ function goto_no_emit(value, force_update = false, bypass_before_change = false, dir_next = true) {
+	return index_change_wrapper(
+		state.goto(value, true, true, true),
+		true
+	);
+}
+
+
 function refresh(bypass_before_change = false, dir_next = true) {
 	return index_change_wrapper(
 		state.refresh(bypass_before_change, dir_next)
@@ -204,6 +217,7 @@ defineExpose({
 	scroll_by,
 	goto_bound,
 	goto,
+	goto_no_emit,
 	refresh
 });
 

@@ -73,10 +73,11 @@ async function handle_changed_index(new_index) {
 	try{
 		props.datasets.forEach(x => {
 			x.set_index(new_index);
-			if(new_index === null) x.reinitialize_all();
 		});
 		const responses = await Promise.all( props.datasets.map(x => x.perform_query_and_replace_all()) );
+		// console.log('CHANGED INDEX', new_index, responses);
 		emit('changed_index', new_index, responses);
+		return [new_index, responses];
 	} catch (err) {
 		msgManager.postError(`Błąd podczas pobierania z bazy danych: \`${err}\``);
 	}
@@ -214,11 +215,16 @@ async function perform_save(){
 //// EXPOSE ////
 
 defineExpose({
-	set_insert_mode: (...args) => {scroller_ref.value.set_insert_mode(...args)},
-	scroll_by: 		 (...args) => {scroller_ref.value.scroll_by(...args)},
-	goto_bound:		 (...args) => {scroller_ref.value.goto_bound(...args)},
-	goto:   		 (...args) => {scroller_ref.value.goto(...args)},
-	refresh:		 (...args) => {scroller_ref.value.refresh(...args)},
+	set_insert_mode: (...args) => {return scroller_ref.value.set_insert_mode(...args)},
+	scroll_by: 		 (...args) => {return scroller_ref.value.scroll_by(...args)},
+	goto_bound:		 (...args) => {return scroller_ref.value.goto_bound(...args)},
+	goto:   		 (...args) => {return scroller_ref.value.goto(...args)},
+	refresh:		 (...args) => {return scroller_ref.value.refresh(...args)},
+	goto_complete:   async (...args) => {
+		const new_index = await scroller_ref.value.goto_no_emit(...args);
+		if(new_index === undefined) return;
+		return handle_changed_index(new_index);
+	}
 });
 </script>
 

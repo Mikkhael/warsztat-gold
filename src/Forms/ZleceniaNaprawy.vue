@@ -90,6 +90,14 @@ query.add_simple_condition('ID samochodu', prop_id_car, true);
 query.set_source_query_offset(src);
 const scroller_query = query.get_scroller_query();
 
+async function goto_by_id(id) {
+    const offset = await query.perform_rownumber_select(id);
+    if(offset !== undefined){
+        return scroller.value.goto_complete(offset);
+    }
+}
+
+
 // src.set_body_query_and_finalize(DVUtil.sql_parts_ref([
 //     'FROM `zlecenia naprawy` WHERE ', 
 //           ' `ID klienta` = ',   prop_id_klienta,
@@ -139,7 +147,8 @@ function open_print_window() {
 
 
 defineExpose({
-    dataset
+    dataset,
+    goto_by_id
 });
 
 </script>
@@ -174,8 +183,8 @@ defineExpose({
                 </div>
                 <div class="buttons">
                     <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
-                    <div>Części</div>
-                    <div>Czynności</div>
+                    <!-- <div>Części</div>
+                    <div>Czynności</div> -->
                 </div>
             </div>
 

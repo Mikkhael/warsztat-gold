@@ -50,16 +50,17 @@ function on_click_find() {
         query_where: props.query_where,
         selectable: !props.noselect,
     }, {
-        select: (columns, row, offset) => {
+        select: async (columns, row, offset) => {
             fwManager.close_window("Znajdź");
-            emit('select', columns, row, offset);
+            // console.log('SCROLLER', props.scroller);
             if(props.scroller) {
                 if(props.simple){
-                    props.scroller.goto(offset);
+                    await props.scroller.goto_complete(offset);
                 } else {
-                    props.scroller.goto(row[0]);
+                    await props.scroller.goto_complete(row[0]);
                 }
             }
+            emit('select', columns, row, offset);
         }
     });
 }
