@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { reactive, computed, ref, watch, toRef, onMounted, onUnmounted } from "vue";
+import { reactive, computed, ref, watch, toRef, onMounted, onUnmounted, toRefs } from "vue";
 import ipc from "../../ipc";
 import { escape_backtick, escape_like, escape_sql_value } from "../../utils";
 // import { invoke } from "@tauri-apps/api/tauri";
@@ -14,12 +14,6 @@ const msgManager = useMainMsgManager();
 function handle_err(err){
 	msgManager.postError(err);
 }
-
-const query_props_names = [
-    "query_select_fields",
-    "query_from",
-    "query_where",
-];
 const props = defineProps({
     query_select_fields: {
         /**@type {import('vue').PropType<string | [string, string | undefined][]>} */
@@ -42,15 +36,19 @@ const props = defineProps({
 
 console.log("QUERY VIEWER", props);
 
+const props_ref = toRefs(props);
+
 const scroller_ref   = ref();
 const row_ref        = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const container_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const scroller_limit = ref(1);
 
+
+/////////////////// RESIZING ///////////////////////////////
+
 function recalculate_limit() {
     const container_height = container_ref.value?.clientHeight;
     const scroller_height  = row_ref      .value?.clientHeight;
-    console.log('ROWS HEIGHT', container_height, scroller_height);
     if(!container_height || !scroller_height) {
         scroller_limit.value = 1;
         return;
@@ -63,41 +61,39 @@ const resizeObserver = new ResizeObserver(() => {
     recalculate_limit();
 }); 
 onMounted(() => {
-    console.log('CONTAINER REF', container_ref.value);
     resizeObserver.observe(container_ref.value);
 });
 onUnmounted(() => {
     resizeObserver.disconnect();
 });
 
+/////////////////// MAIN LOGIC ///////////////////////////////
 
 const emit = defineEmits(['select']);
 
-
-const offset = ref(0);
-const orderings = reactive(/**@type {number[]}*/ ([]));
-const searches  = reactive(/**@type {string[]}*/ ([]));
-
+const offset         = ref(0);
+const searches       = ref(/**@type {string[]}*/ ([]));
+const orderings      = ref(/**@type {number[]}*/ ([]));
 const orderings_list = reactive(new Map());
 function set_orderings_list(column_index, ordering_value) {
-    // console.log('set', arguments);
-    if(ordering_value === undefined) {
-        orderings_list.delete(column_index);
-        return;
-    }
-    if(orderings_list.has(column_index)) {
+    if(orderings_list.has(column_index) || ordering_value === 0) {
         orderings_list.delete(column_index);
     }
-    if(ordering_value != 0){
+    if(ordering_value !== 0) {
         orderings_list.set(column_index, ordering_value);
     }
 }
+
+
+/////////////////// SQL ///////////////////////////////
 
 const query_result   = ref( /**@type {import('../../ipc').IPCQueryResult?} */ (null));
 const query_columns_display      = ref(/**@type {string[]} */ ([]));
 const query_columns_true         = ref(/**@type {string[]} */ ([]));
 const query_columns_true_escaped = ref(/**@type {string[]} */ ([]));
 const query_columns_hide         = ref(/**@type {boolean[]} */ ([]));
+
+const query_rows = computed(() => query_result.value === null ? [] : query_result.value[0]);
 
 if(typeof props.query_select_fields === 'string') {
     watch(query_result, (new_result) => {
@@ -123,63 +119,29 @@ if(typeof props.query_select_fields === 'string') {
     }, {immediate: true});
 }
 
-//@ts-ignore
-watch( query_props_names.map(x => toRef(props, x)), () => {
-    orderings_list.clear();
-    orderings.splice(0, orderings.length);
-    searches.splice(0, searches.length);
-});
-const query_rows = computed(() => {
-    if(query_result.value === null) {
-        return [];
-    }
-    return query_result.value[0];
+/////////////////// WHERE and ORDER ///////////////////////////////
+
+const searches_sql = computed(() => {
+    return searches.value
+        .map   ( (x, i)  => [x,i])
+        .filter(([x, i]) => x != "")
+        .map   (([x, i]) => `(${ query_columns_true_escaped.value[i] } LIKE "%${escape_like(x)}%" ESCAPE '\\')`)
+        .join  (' AND ');
 });
 
-const searches_sql = ref('');
-watch( [searches, query_columns_true_escaped], ([new_searches, new_query_columns_true_escaped]) => {
-    let res = [];
-    // console.log('new_searches', new_searches);
-
-    for(let index in new_searches) {
-        // console.log('index', index);
-        const value = new_searches[index];
-        // console.log('value', value);
-        if(value == "") continue;
-        res.push(`${ new_query_columns_true_escaped[index] } LIKE "%${escape_like(value)}%" ESCAPE '\\'`);
-    }
-    searches_sql.value = res.join(' AND ');
+const orderings_sql = computed(() => {
+    return Array.from(orderings_list.entries())
+        // .reverse()
+        .map(([col_i, ordering]) => query_columns_true_escaped.value[col_i] + (ordering > 0 ? " ASC" : " DESC"))
+        .join(', ');
 });
-
-const orderings_sql = ref('');
-watch( [orderings_list, query_columns_true_escaped], ([new_orderings_list, new_query_columns_true_escaped]) => {
-    const res = Array.from(new_orderings_list.entries())
-                // .reverse()
-                .map(([col_i, ordering]) => 
-                    new_query_columns_true_escaped[col_i] +
-                    (ordering > 0 ? " ASC" : " DESC"))
-                .join(', ');
-    // console.log('debug_list', res);
-    orderings_sql.value = res;
-    scroller_ref.value.goto(0, true, true);
-    // console.log(new_orderings_list, new_query_columns_true_escaped);
-});
-
-// TODO reset offset?
-// watch( [searches, orderings_list], ([searches1, orderings_list1]) => {
-//     console.log('aha', searches1, orderings_list1)
-//     scroller_ref.value.goto(1);
-// });
 
 const where_sql_true = computed(() => {
     return [props.query_where, searches_sql.value].filter(x => x != "").map(x => `(${x})`).join(' AND ');
 })
 
-const query_sql_for_scroller = computed(() => {
-    const apply_if_defined = (prefix, value) => value == "" ? "" : `${prefix} ${value}`;
-    const where_sql   = apply_if_defined(' WHERE',    where_sql_true.value);
-    return props.query_from + where_sql;
-});
+/////////////////// SELECT ///////////////////////////////
+
 const query_sql_select = computed(() => {
     const fields = props.query_select_fields;
     if(typeof fields === "string") {
@@ -192,24 +154,51 @@ const query_sql_select = computed(() => {
     );
     return res.join(', ');
 });
+
+/////////////////// FULL SQL ///////////////////////////////
+
 const query_sql_full = computed(() => {
     const apply_if_defined = (prefix, value) => value == "" ? "" : `${prefix} ${value}`;
-
-    const select_sql  = apply_if_defined('SELECT',    query_sql_select.value);
-    const from_sql    = apply_if_defined(' FROM',     props.query_from);
-    const where_sql   = apply_if_defined(' WHERE',    where_sql_true.value);
-    const orderby_sql = apply_if_defined(' ORDER BY', orderings_sql.value);
-    const limit_sql   = apply_if_defined(' LIMIT',    scroller_limit.value);
-    const offset_sql  = apply_if_defined(' OFFSET',   offset.value - 1);
-    // console.log('orderby', orderby_sql, orderings_sql.value);
-    return select_sql + from_sql + where_sql + orderby_sql + limit_sql + offset_sql;
+    const result = [
+        apply_if_defined('SELECT',   query_sql_select.value),
+        apply_if_defined('FROM',     props.query_from),
+        apply_if_defined('WHERE',    where_sql_true.value),
+        apply_if_defined('ORDER BY', orderings_sql.value),
+        apply_if_defined('LIMIT',    scroller_limit.value),
+        apply_if_defined('OFFSET',   offset.value - 1),
+    ].join(' ');
+    // console.log('RESULT', result);
+    return result;
 });
+
+/////////////////// REFRESHING ///////////////////////////////
+
 async function refresh() {
     const result = await ipc.db_query(query_sql_full.value);
     query_result.value = result;
     return result;
 }
+async function reset() {
+    searches.value  = [];
+    orderings.value = [];
+    orderings_list.clear();
+}
 
+watch(query_sql_full, () => { refresh().catch(handle_err); });
+watch(orderings_sql,  () => { scroller_ref.value.goto(0, true, true); });
+watch( [
+    props_ref.query_select_fields,
+    props_ref.query_from,
+    props_ref.query_where,
+], reset);
+
+
+
+/////////////////// EVENT HANDLERS ///////////////////////////////
+
+/**
+ * @param {number} row_i
+ */
 function handle_select(row_i) {
     console.log("SELECTING...",  offset.value, row_i, props.selectable);
     if(!props.selectable) return;
@@ -228,10 +217,6 @@ function handle_scroll(event) {
 
 }
 
-async function refresh_routine() {return refresh().catch(handle_err);}
-
-watch(query_sql_full, refresh_routine);
-
 </script>
 
 <template>
@@ -239,8 +224,10 @@ watch(query_sql_full, refresh_routine);
     <div class="form_container" ref="container_ref">
         <QueryFormScroller simple
         ref="scroller_ref"
+        @error="handle_err"
         :limit="scroller_limit"
-        :query_from="query_sql_for_scroller" 
+        :query_from="props.query_from" 
+        :query_where="where_sql_true" 
         reset_on_query_change
         nosave 
         norefresh
