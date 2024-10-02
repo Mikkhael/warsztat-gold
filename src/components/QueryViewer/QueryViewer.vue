@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { reactive, computed, ref, watch, toRef, onMounted, onUnmounted, toRefs } from "vue";
+import { reactive, computed, ref, watch, toRef, onMounted, onUnmounted, toRefs, nextTick } from "vue";
 import ipc from "../../ipc";
 import { escape_backtick, escape_like, escape_sql_value } from "../../utils";
 // import { invoke } from "@tauri-apps/api/tauri";
@@ -43,29 +43,6 @@ const row_ref        = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const container_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const scroller_limit = ref(1);
 
-
-/////////////////// RESIZING ///////////////////////////////
-
-function recalculate_limit() {
-    const container_height = container_ref.value?.clientHeight;
-    const scroller_height  = row_ref      .value?.clientHeight;
-    if(!container_height || !scroller_height) {
-        scroller_limit.value = 1;
-        return;
-    }
-    const rows_to_fit = Math.floor(container_height / scroller_height);
-    scroller_limit.value = Math.max(rows_to_fit - 3, 1);
-};
-
-const resizeObserver = new ResizeObserver(() => {
-    recalculate_limit();
-}); 
-onMounted(() => {
-    resizeObserver.observe(container_ref.value);
-});
-onUnmounted(() => {
-    resizeObserver.disconnect();
-});
 
 /////////////////// MAIN LOGIC ///////////////////////////////
 
@@ -173,9 +150,18 @@ const query_sql_full = computed(() => {
 
 /////////////////// REFRESHING ///////////////////////////////
 
+let was_init_columns_sizes = false;
+let disable_table_search = ref(true);
 async function refresh() {
     const result = await ipc.db_query(query_sql_full.value);
     query_result.value = result;
+    if(!was_init_columns_sizes) {
+        was_init_columns_sizes = true;
+        nextTick().then(() => {
+            disable_table_search.value = false;
+            init_columns_sizes();
+        });
+    }
     return result;
 }
 async function reset() {
@@ -193,6 +179,59 @@ watch( [
 ], reset);
 
 
+/////////////////// RESIZING AND STYLING ///////////////////////////////
+
+function recalculate_limit() {
+    const container_height = container_ref.value?.clientHeight;
+    const scroller_height  = row_ref      .value?.getBoundingClientRect().height;
+    if(!container_height || !scroller_height) {
+        scroller_limit.value = 1;
+        return;
+    }
+    const rows_to_fit = Math.floor(container_height / scroller_height);
+    const result = Math.max(rows_to_fit - 2, 1);
+    console.log("RESIZE", result);
+    scroller_limit.value = result;
+};
+
+const resizeObserver = new ResizeObserver(recalculate_limit); 
+
+let   current_resize_col_i = -1;
+const col_refs     = ref(/**@type {HTMLElement[]} */ ([]));
+const column_sizes = ref(/**@type {number[]} */ ([]));
+
+function handle_mouse_move(/**@type {MouseEvent} */ event) {
+    const delta = event.movementX;
+    if(current_resize_col_i !== -1) {
+        console.log('MOVE', delta, column_sizes.value[current_resize_col_i]);
+        window.getSelection()?.removeAllRanges();
+        column_sizes.value[current_resize_col_i] += delta;
+    }
+}
+function handle_mouse_up() {
+    console.log('UP');
+    current_resize_col_i = -1;
+}
+function handle_mouse_down_on_resizer(/**@type {MouseEvent} */ event, col_i){
+    console.log('DOWN', col_i, event.target.parentNode.getBoundingClientRect().width);
+    column_sizes.value[col_i] = event.target.parentNode.getBoundingClientRect().width;
+    current_resize_col_i = col_i;
+}
+function init_columns_sizes() {
+    for(let col_i in col_refs.value) {
+        column_sizes.value[col_i] = col_refs.value[col_i].getBoundingClientRect().width;
+    }
+}
+
+const current_hovered_row_i = ref(-1);
+function handle_row_hover(row_i) {
+    current_hovered_row_i.value = row_i;
+}
+function handle_row_unhover(row_i) {
+    if(current_hovered_row_i.value === row_i){
+        current_hovered_row_i.value = -1;
+    }
+}
 
 /////////////////// EVENT HANDLERS ///////////////////////////////
 
@@ -214,14 +253,24 @@ function handle_scroll(event) {
     if(event.shiftKey) return;
     const scroll_dist = (event.deltaY / 100) * (event.ctrlKey ? scroller_limit.value : 1);
     scroller_ref.value.scroll_by(scroll_dist);
-
 }
+
+onMounted(() => {
+    resizeObserver.observe(container_ref.value);
+    window.addEventListener('mouseup', handle_mouse_up);
+    window.addEventListener('mousemove', handle_mouse_move);
+});
+onUnmounted(() => {
+    resizeObserver.disconnect();
+    window.removeEventListener('mouseup', handle_mouse_up);
+    window.removeEventListener('mousemove', handle_mouse_move);
+});
 
 </script>
 
 <template>
 
-    <div class="form_container" ref="container_ref">
+    <div class="form_container">
         <QueryFormScroller simple
         ref="scroller_ref"
         @error="handle_err"
@@ -233,35 +282,43 @@ function handle_scroll(event) {
         norefresh
         @changed_index="x => offset = x"/>
 
-        <div class="form_content">
+        <div class="form_content" ref="container_ref" @wheel.passive="handle_scroll">
+            <div class="table_container" :class="{disable_table_search}">
 
-            <table class="result" :class="{selectable: props.selectable}" @wheel.passive="handle_scroll">
-                <tr ref="row_ref">
-                    <th></th>
-                    <th v-for="(col_name, col_i) in query_columns_display" class="search_input_cell" :class="{hidden: query_columns_hide[col_i]}">
-                        <input type="text" class="search_input" v-model="searches[col_i]" required>
-                    </th>
-                </tr>
-                <tr>
-                    <th>#</th>
-                    <th v-for="(col_name, col_i) in query_columns_display" :class="{hidden: query_columns_hide[col_i]}">
-                        <span class="col_name">
-                            {{ col_name }}
-                        </span>
+                <div class="table_column iterators">
+                    <div class="header" ref="row_ref"> </div>
+                    <div class="header">#</div>
+                    <div class="data" v-for="(row, row_i) in query_rows" @click="handle_select(row_i)"
+                            :class="{hovered: current_hovered_row_i === row_i}">
+                        {{ offset + row_i }}:
+                    </div>
+                </div>
+
+                <div class="table_column results" v-for="(col_name, col_i) in query_columns_display" ref="col_refs"
+                    :class="{
+                        hidden: query_columns_hide[col_i],
+                        type_number: typeof(query_rows[0]?.[col_i]) == 'number',
+                        type_text:   typeof(query_rows[0]?.[col_i]) == 'string',
+                    }"
+                    :style="{width: column_sizes[col_i] === undefined ? undefined : column_sizes[col_i] + 'px' }"
+                >
+                    <div class="header col_search_cell">
+                        <input type="text" class="col_search" v-model="searches[col_i]" required>
+                        <div class="resizer" @mousedown="e => handle_mouse_down_on_resizer(e, col_i)"></div>
+                    </div>
+                    <div class="header col_name_cell">
                         <QueryOrderingBtn class="ordering_btns" v-model:value="orderings[col_i]" @update:value="event => set_orderings_list(col_i, event)"/>
-                    </th>
-                </tr>
-                <tr v-for="(row, row_i) in query_rows" class="data_tr" @click="handle_select(row_i)">
-                    <td class="cell_index" >{{ offset + row_i }}:</td>
-                    <td v-for="(cell, cell_i) in row" :class="{
-                            cell_number: typeof(cell) == 'number',
-                            cell_text: typeof(cell) == 'string',
-                            hidden: query_columns_hide[cell_i]
-                    }">
-                        {{cell === null ? '~' : cell}}
-                    </td>
-                </tr>
-            </table>
+                        <div class="col_name">{{ col_name }}</div>
+                    </div>
+                    <div class="data data_cell" v-for="(row, row_i) in query_rows" 
+                            :class="{hovered: current_hovered_row_i === row_i}"
+                            @click="handle_select(row_i)"
+                            @mouseenter="handle_row_hover  (row_i)"
+                            @mouseleave="handle_row_unhover(row_i)">
+                        {{row[col_i] ?? '~'}}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -271,37 +328,85 @@ function handle_scroll(event) {
 
     .form_container {
         justify-content: start;
+        align-items: stretch;
     }
     .form_content {
         overflow-y: hidden;
     }
 
-    .ordering_btns {
-        margin-left: 1ch;
-    }
-    .search_input {
-        width: calc(100% - 10px);
-    }
-    .search_input:valid {
-        background-color: #fffaaa;
+    .table_container {
+        display: flex;
+        flex-direction: row;
     }
 
-    td, th{
-        /* padding: 2px 5px; */
-        padding: 2px 5px;
+    .table_column {
+        /* width: 15ch; */
+        min-width: 6ch;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }
+    .table_column.iterators {
+        width: unset;
+    }
+
+    .header,
+    .data {
+        /* box-sizing: border-box; */
+        /* width:  100%; */
         height: 2.5ch;
+        padding: 2px 5px;
         text-wrap: nowrap;
         border: 1px solid black;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    table{
-        border-collapse: collapse;
+    .header {
+        font-weight: bold;
+    }
+    .data {
+        cursor: pointer;
+    }
+    .data.hovered {
+        background-color: #d7fffc;
     }
 
-    td.hidden, th.hidden {
+    .col_search_cell{
+        position: relative;
+    }
+    .col_search_cell .col_search {
+        width: calc(100% - 10px);
+    }
+    .disable_table_search .col_search {
+        display: none;
+    }
+    .col_search_cell .col_search:valid {
+        background-color: #fffaaa;
+    }
+    .col_search_cell .resizer{
+        position: absolute;
+        top:    0px;
+        bottom: 0px;
+        right:  0px;
+        width:  4px;
+        cursor: col-resize;
+        background-color: black;
+    }
+
+    .col_name_cell {
+        display: flex;
+        flex-direction: row;
+        justify-content: start;
+    }
+    .col_name_cell :deep(.ordering_btns) {
+        flex-shrink: 0;
+    }
+
+    .hidden {
         display: none;
     }
 
-    .selectable .data_tr {
+    /* .selectable .data_tr {
         cursor: pointer;
     }
 
@@ -317,6 +422,6 @@ function handle_scroll(event) {
     }
     .cell_text {
         font-style: italic;
-    }
+    } */
 
 </style>

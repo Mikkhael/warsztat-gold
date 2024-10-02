@@ -39,12 +39,16 @@ function toggle(new_value) {
 <style scoped>
 
     .btn_container {
-        display: inline-block;
+        /* display: inline-block; */
         height: 80%;
         width: 2ch;
+        /* display: flex;
+        flex-direction: column;
+        justify-content: center; */
     }
     .sort_btn {
         height: 50%;
+        /* flex-grow: 1; */
         cursor: pointer;
         background-image: url('./../../assets/icons/sort_off.svg');
         background-size: contain;

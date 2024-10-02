@@ -129,6 +129,7 @@ const find_by_car_options = {
 const find_by_zlec_options = {
     query_select_fields: [
         ["`ID klienta`"],
+        ["`ID samochodu`"],
         ["`ID`",                'ID zlecenia'],
         ["`data otwarcia`",     'Otwarcie'],
         ["`data zamknięcia`",   'Zamknięcie'],
@@ -152,7 +153,8 @@ async function handle_select_by_car(columns, rows, offset) {
 }
 
 async function handle_select_by_zlec(columns, rows, offset) {
-    await zlecenia_form.value.goto_by_id(rows[1]);
+    await samochody_form.value.goto_by_id(rows[1]);
+    await zlecenia_form.value.goto_by_id(rows[2]);
 }
 
 
