@@ -73,6 +73,7 @@ const car_nrrej    = car_dataset.get("nr rej", );
         <option value="Courier New"       > Courier New       </option>
         <option value="Brush Script MT"   > Brush Script MT   </option>
     </select>
+    <div class="over_page">
     <div class="page" ref="page" contenteditable="true">
 
         <div class="header_right">
@@ -128,6 +129,7 @@ const car_nrrej    = car_dataset.get("nr rej", );
             <div class="bordered">{{ uwagi }}</div>
         </div>
 
+    </div>
     </div>
 
 </template>
