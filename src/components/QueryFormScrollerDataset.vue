@@ -1,6 +1,6 @@
 <script setup>
 //@ts-check
-import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
+import {computed, onMounted, onUnmounted, readonly, ref, watch} from 'vue'
 import QueryFormScroller from "./QueryFormScroller.vue"
 import useMainMsgManager from './Msg/MsgManager'
 import { as_promise } from '../utils';
@@ -58,11 +58,15 @@ const scroller_ref = /**@type {import('vue').Ref<QueryFormScroller>} */ (ref());
 
 const insert_mode = ref(false);
 
+watch(insert_mode, (new_mode) => {
+	console.log("CHANGED INSERT MODE", new_mode, Object.keys(props.datasets[0].values));
+});
+
 function handle_changed_insert_mode(new_mode) {
 	insert_mode.value = new_mode;
-	props.datasets.forEach(x => {
-		x.set_insert_mode(new_mode);
-	});
+	// props.datasets.forEach(x => {
+	// 	x.set_insert_mode(new_mode);
+	// });
 	emit('changed_insert_mode', new_mode);
 }
 function set_insert_mode(new_mode) {
@@ -99,13 +103,17 @@ const is_any_dataset_changed = computed(() => {
 	const is_changed_list = props.datasets.map(x => x.is_changed_ref.value);
 	return is_changed_list.indexOf(true) !== -1;
 });
+const is_any_dataset_disabled = computed(() => {
+	const disabled_list = props.datasets.map(x => x.disabled.value);
+	return disabled_list.indexOf(true) !== -1;
+});
 
 async function confirm_discard_changes(){
     if(is_any_dataset_changed.value) {
 		// debug
 			// const changed_entries = props.datasets.map(x => Object.entries(x.values).filter(xx => xx[1].is_changed()));
 			// const changed_objects = changed_entries.map(x => Object.fromEntries(x));
-			console.log('CHANGED VALEUS: ', props.datasets.map(x => x.debug_all_changed_values.value));
+			console.log('CHANGED VALEUS: ', props.datasets.map(x => x.debug_all_changed_values.value), props.datasets.map(x => x.insert_mode.value));
         const resp = await confirm("Niektóre pola zostały zmienione. Naciśnij OK, aby odrzucić zmiany.");
         return resp;
     }
@@ -121,7 +129,7 @@ async function before_change() {
     return true;
 }
 
-async function before_save_or_insert(bypass_validation = false, is_insert = false) {
+async function before_save_or_insert(bypass_validation = false) {
 	if(bypass_validation) return true;
 	if(props.datasets.some(x => !x.reportFormValidity())){
 		msgManager.post('info', 'Niektóre pola mają nieprawidłową wartość. Przytrzymaj SHIFT, aby zapisać mimo to.')
@@ -129,8 +137,8 @@ async function before_save_or_insert(bypass_validation = false, is_insert = fals
 	}
 	return true;
 }
-function before_save  (bypass_validation = false) {return before_save_or_insert(bypass_validation, false);}
-function before_insert(bypass_validation = false) {return before_save_or_insert(bypass_validation, true);}
+// function before_save  (bypass_validation = false) {return before_save_or_insert(bypass_validation, false);}
+// function before_insert(bypass_validation = false) {return before_save_or_insert(bypass_validation, true);}
 
 
 //// REQUEST HANDLERS ////
@@ -153,12 +161,15 @@ function before_check_wrapper(confirm_promise, callback){
  */
  function save_request(bypass) {
 	console.log('SAVE REQUEST', bypass, insert_mode.value);
-	if(insert_mode.value) return before_check_wrapper(before_insert(bypass), perform_insert);
-	else                  return before_check_wrapper(before_save  (bypass), perform_save);
+	if(is_any_dataset_disabled.value) return Promise.resolve();
+	// if(insert_mode.value) return before_check_wrapper(before_insert(bypass), perform_insert);
+	// else                  return before_check_wrapper(before_save  (bypass), perform_save);
+	return before_check_wrapper(before_save_or_insert(bypass), perform_automatic_save_or_insert);
 }
 
 function insert_request() {
-	if(insert_mode.value) return Promise.resolve();
+	if(insert_mode.value)             return Promise.resolve();
+	if(is_any_dataset_disabled.value) return Promise.resolve();
 	return before_check_wrapper(confirm_discard_changes(), async () => {
 		props.datasets.map(x => x.reinitialize_all());
 		set_insert_mode(true);
@@ -166,6 +177,7 @@ function insert_request() {
 }
 
 function refresh_request() {
+	if(is_any_dataset_disabled.value) return Promise.resolve();
 	return before_check_wrapper(confirm_discard_changes(), async () => {
 		return perform_refresh();
 	});
@@ -177,19 +189,24 @@ function refresh_request() {
 
 async function perform_refresh(){
 	await Promise.all(
-		props.datasets.map(x => x.perform_query_and_replace_all())
+		props.datasets.map(x => {
+			x.set_insert_mode(false);
+			return x.perform_query_and_replace_all();
+		})
 	);
-	await scroller_ref.value.refresh();
+	await scroller_ref.value.refresh(true);
 }
 
 /**
  * @param {number[][]} inserted_indexes 
  */
 async function set_index_after_insert(inserted_indexes){
-	let new_index = inserted_indexes[0][0];
+	console.log('AFTER INDEX', inserted_indexes, props.datasets[0]);
 	if(props.index_after_insert){
-		new_index = await props.index_after_insert(inserted_indexes);
+		const new_index = await props.index_after_insert(inserted_indexes);
+		return await scroller_ref.value.goto(new_index, true, true);
 	}
+	const new_index = inserted_indexes[0];
 	if(new_index === undefined){
 		return;
 	}
@@ -202,7 +219,7 @@ async function set_index_after_insert(inserted_indexes){
 async function perform_insert() {
 	const inserts = await Promise.all(props.datasets.map(x => x.perform_insert_all()));
 	console.log('INSERTED rowids: ', inserts.flat());
-	await set_index_after_insert(inserts);
+	await set_index_after_insert(inserts[0]);
 	// await perform_refresh();
 }
 
@@ -212,9 +229,21 @@ async function perform_save(){
 	await perform_refresh();
 }
 
+async function perform_automatic_save_or_insert() {
+	const results = await Promise.all(props.datasets.map(x => x.perform_automatic_save_or_insert_all()));
+	const results_flat = results.flat();
+	console.log('INSERTED/UPDATED results: ', results_flat);
+	for(let [values, was_insert, dataset] of results_flat.reverse()) {
+		if(was_insert && dataset.associated_dataset_scroller){
+			await dataset.associated_dataset_scroller.set_index_after_insert(values);
+		}
+	}
+	await perform_refresh();
+}
+
 //// EXPOSE ////
 
-defineExpose({
+const exposed_props = {
 	set_insert_mode: (...args) => {return scroller_ref.value.set_insert_mode(...args)},
 	scroll_by: 		 (...args) => {return scroller_ref.value.scroll_by(...args)},
 	goto_bound:		 (...args) => {return scroller_ref.value.goto_bound(...args)},
@@ -224,8 +253,18 @@ defineExpose({
 		const new_index = await scroller_ref.value.goto_no_emit(...args);
 		if(new_index === undefined) return;
 		return handle_changed_index(new_index);
-	}
-});
+	},
+
+	insert_mode: readonly(insert_mode),
+	set_index_after_insert
+}
+
+
+props.datasets.forEach(d => {
+	d.assosiate_dataset_scroller(exposed_props);
+})
+
+defineExpose(exposed_props);
 </script>
 
 

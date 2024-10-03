@@ -48,8 +48,8 @@ const dataset     = new Dataset();
 const index       = dataset.get_index_ref();
 const insert_mode = dataset.get_insert_mode_ref();
 
-const car_dataset  = dataset.create_sub_dataset("car");
-const zlec_dataset = dataset.create_sub_dataset("zlec");
+const car_dataset  =     dataset.create_sub_dataset("car");
+const zlec_dataset = car_dataset.create_sub_dataset("zlec");
 
 const src  = dataset.create_source_query();
 const sync = dataset.create_table_sync('klienci');
@@ -68,6 +68,7 @@ const kiedy  = dataset.create_value_synced("KIEDY",                   datetime_n
 const upust  = dataset.create_value_synced("UPUST",                   0,              src, sync);
 const list   = dataset.create_value_synced("list",                    null,           src, sync);
 
+const id_ref = id.as_ref_local();
 const id_samochodu = car_dataset.get('ID');
 
 // watch(id_samochodu, x => {
@@ -76,7 +77,6 @@ const id_samochodu = car_dataset.get('ID');
 
 console.log(datetime_now());
 
-const id_ref = id.as_ref_local();
 
 sync.add_primary('ID', id);
 
@@ -139,7 +139,7 @@ const find_by_zlec_options = {
     query_from: "`zlecenia naprawy`",
 };
 
-const show_zlecenia = ref(false);
+const show_zlecenia = ref(true); // TODO change to false in final version
 function click_zlecenia(){
     show_zlecenia.value = !show_zlecenia.value;
     nextTick().then(() => {
@@ -176,9 +176,9 @@ defineExpose({
 
 <template>
 
-    <div class="form_container">
+    <div class="form_container" :class="dataset.form_container_classes">
 
-        <form ref="form" class="form form_content flex_auto" :class="{disabled: dataset.disabled.value}">
+        <form ref="form" class="form form_content flex_auto">
             
             <div class="grid">
 

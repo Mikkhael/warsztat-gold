@@ -24,6 +24,10 @@ const props = defineProps({
         type: Object,
         required: false
     },
+    allow_null_conditions: {
+        type: Boolean,
+        default: false,
+    },
     id_klienta: {
         type: Number,
         default: null,
@@ -54,7 +58,7 @@ const car_id       = car_dataset.create_value_raw   ("ID",            null,     
 const car_marka    = car_dataset.create_value_synced("marka",         null,            car_src, car_sync);
 const car_model    = car_dataset.create_value_synced("model",         null,            car_src, car_sync);
 const car_nrrej    = car_dataset.create_value_synced("nr rej",        null,            car_src, car_sync);
-const car_klient   = car_dataset.create_value_raw   ("ID klienta",    prop_id_klienta, car_src, car_sync);
+const car_klient   = car_dataset.create_value_synced("ID klienta",    prop_id_klienta, car_src, car_sync);
 const car_sinlink  = car_dataset.create_value_synced("nr silnika",    null,            car_src, car_sync);
 const car_nadwozie = car_dataset.create_value_synced("nr nadwozia",   null,            car_src, car_sync);
 
@@ -63,7 +67,7 @@ car_sync.add_primary('ID', car_id);
 
 const query = new QueryBuilder(car_dataset);
 query.set_from_table('samochody klientów');
-query.add_simple_condition('ID klienta', prop_id_klienta, true);
+query.add_simple_condition('ID klienta', prop_id_klienta, props.allow_null_conditions);
 
 
 console.log("BUILDER", query);
@@ -137,9 +141,9 @@ defineExpose({
 
 <template>
 
-    <div>
+    <div class="form_container" :class="car_dataset.form_container_classes">
 
-        <form ref="car_form" class="form" :class="{disabled: car_dataset.disabled.value}">
+        <form ref="car_form" class="form_content form">
             <div>
                 <label class="label">Marka      </label>   <FormInput :value="car_marka"    nonull :len="15"/>
                 <label class="label">Model      </label>   <FormInput :value="car_model"    nonull :len="15"/>

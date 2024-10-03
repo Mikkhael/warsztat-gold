@@ -2,6 +2,7 @@
 import { computed, unref, ref, reactive, shallowRef, watch, triggerRef, shallowReactive, toRef, readonly } from "vue";
 import { escape_backtick, escape_sql_value, iterate_query_result_values, iterate_query_result_values_single_row } from "../../utils";
 import ipc from "../../ipc";
+import { installUpdate } from "@tauri-apps/api/updater";
 
 //// HOW TO USE ////
 
@@ -238,6 +239,14 @@ class QueryBuilder {
                 ...this.conditions_optional.value.filter(x => !x.some(xx => DVUtil.as_value(xx) === null))
             ];
         });
+        this.is_complete = computed(() => {
+            const res = this.conditions_common.value.every(x => x.every(xx => DVUtil.as_value(xx) !== null));
+            console.log('CALC COMPLETE', this.from.value, res, this.conditions_common.value.length, this.conditions_common.value);
+            return res;
+        });
+        // console.log("IS COMPLETE AT START", this.from.value, this.is_complete.value);
+
+
         this.sql_where_conditions = computed(() => {
             return this.conditions_merged.value.map(x => '(' + DVUtil.sql_parts(x) + ')').join(' AND ');
         })
@@ -288,6 +297,7 @@ class QueryBuilder {
         } else {
             this.conditions_common.value.push(to_add);
             triggerRef(this.conditions_common);
+            // triggerRef(this.is_complete);
         }
     }
 
@@ -335,13 +345,13 @@ class QueryBuilder {
      * @param {DatasetSourceQuery} src 
      */
     set_source_query_index(src) {
-        src.set_body_query_and_finalize(this.get_src_query_index());
+        src.set_body_query_and_finalize(this.get_src_query_index(), this.is_complete);
     }
     /**
      * @param {DatasetSourceQuery} src 
-     */
-    set_source_query_offset(src) {
-        src.set_body_query_and_finalize(this.get_src_query_offset());
+    */
+   set_source_query_offset(src) {
+        src.set_body_query_and_finalize(this.get_src_query_offset(), this.is_complete);
     }
 }
 
@@ -426,6 +436,7 @@ class DatasetTableSync{
 ////////////////// Source Query ////////////////////////////////////////
 
 class SourceQuery{
+    is_complete() {return true;}
     async perform_query()             {return /**@type {import('../../ipc').IPCQueryResult} */ ([[], []]) }
     async perform_query_and_replace() {return await this.perform_query(); }
     async perform_query_and_refresh() {return await this.perform_query(); }
@@ -433,7 +444,6 @@ class SourceQuery{
 }
 
 class DatasetSourceQuery extends SourceQuery{
-
     constructor(){
         super();
         this.column_binds     = /**@type {Object.<string, DatasetValueReflike>} */ ({});
@@ -455,9 +465,16 @@ class DatasetSourceQuery extends SourceQuery{
         /**@type {import('vue').ShallowRef<string | import('vue').Ref<string>>} */
         this.query_body_sql = shallowRef('');
 
+        /**@type {import('vue').ShallowRef<boolean | import('vue').Ref<boolean>>} */
+        this.is_complete_indicator = shallowRef(true);
+
         this.query_sql = computed(() => {
             return 'SELECT ' + this.query_select_sql.value + ' ' + unref(this.query_body_sql.value) + ';';
         });
+    }
+
+    is_complete() {
+        return unref(this.is_complete_indicator.value);
     }
 
     /**
@@ -489,11 +506,16 @@ class DatasetSourceQuery extends SourceQuery{
     // }
 
     /**
-     * @param {import('vue').ComputedRef<string>} query_body_sql 
+     * @param {import('vue').ComputedRef<string>  } query_body_sql 
+     * @param {import('vue').ComputedRef<boolean>?} is_complete 
      */
-    set_body_query_and_finalize(query_body_sql) {
+    set_body_query_and_finalize(query_body_sql, is_complete = null) {
+        if(is_complete) {
+            this.is_complete_indicator.value = is_complete;
+        }
         this.query_body_sql.value = query_body_sql;
     }
+
 
 
     async perform_query(){
@@ -583,38 +605,75 @@ class SimpleSourceQuery extends SourceQuery{
 ////////////////// Dataset ////////////////////////////////////////
 
 class Dataset {
-    constructor(){
+    /**
+     * @param {Dataset?} parent_dataset 
+     */
+    constructor(parent_dataset = null){
         this.table_syncs = /**@type {DatasetTableSync[]} */ ([]);
         this.source_queries = /**@type {SourceQuery[]} */ ([]);
         this.values = shallowReactive(/**@type {Object.<string, DatasetValue>} */ ({}));
         
         this.synced_values =  shallowRef(/**@type {DatasetValueSynced[]} */ ([]));
         
+        /**@type {Object?} */
+        this.associated_dataset_scroller = null;
+        /**@type {import('vue').ComputedRef<boolean>} */
+        this.insert_mode = computed(() => {
+            // console.log('SETTING INSERT', this.associated_dataset_scroller, this.values);
+            return this.associated_dataset_scroller?.insert_mode.value || false;
+        });
+
         this.forms = /**@type {import('vue').Ref<HTMLFormElement>[]} */ ([]);
         this.index = ref(/**@type {SQLValue} */ (null));
-        this.insert_mode = ref(false);
         this.offset = computed(() => Number(this.index.value) - 1);
-        this.empty = computed(() => this.index.value === null && !this.insert_mode.value);
-        this.disabled = computed(() => this.empty.value && !this.insert_mode.value);
+
         // watch(this.empty, (new_empty) => {
-        //     if(new_empty) this.reinitialize_all();
-        // });
-        
+            //     if(new_empty) this.reinitialize_all();
+            // });
+            
         this.sub_datasets = shallowReactive(/**@type {Object.<string, Dataset>} */ ({}));
-        this.parent_dataset = /**@type {Dataset | null} */ (null);
+        this.parent_dataset = parent_dataset;
+        
+        // HAS TO BE TRIGGERED
+        this.is_src_complete = computed(() => {
+            const res = this.source_queries.map(x => x.is_complete()).every(x => x);
+            console.log('TRIGGER', res, this.source_queries, this.source_queries.length);
+            return res;
+        });
+        this.disabled = computed(() =>  (this.parent_dataset && (
+                                            this.parent_dataset?.empty.value ||
+                                            this.parent_dataset?.insert_mode.value
+                                        )) || 
+                                        !this.is_src_complete.value );
+        this.empty = computed(() => this.disabled.value ||
+                                    this.index.value === null && !this.insert_mode.value);
 
-
+        // Is inserting, or is anything non-empty changed
+        /**@type {import('vue').ComputedRef<boolean>} */
         this.is_changed_ref = computed(() => {
             const changed_list = this.synced_values.value.map(x => x.changed.value);
             const changed_list_deep = this.#foreach_dataset(x => x.is_changed_ref.value);
-            return !this.empty.value && ([...changed_list, ...changed_list_deep].indexOf(true) !== -1);
+            return  this.insert_mode.value || ( 
+                        !this.empty.value && 
+                        ([...changed_list, ...changed_list_deep].indexOf(true) !== -1)
+                    );
+        });
+
+        /**@type {import('vue').ComputedRef<boolean>} */
+        this.is_any_sub_insert_mode = computed(() => {
+            return this.#foreach_dataset(x => x.insert_mode.value || x.is_any_sub_insert_mode.value).some(x => x);
         });
 
         this.debug_all_changed_values = computed(() => {
             const local = this.synced_values.value.filter(x => x.changed.value);
             const deep  = this.#foreach_dataset(x => x.debug_all_changed_values.value);
             return [local, ...deep];
-        })
+        });
+
+        this.form_container_classes = readonly({
+            empty:    this.empty,
+            disabled: this.disabled
+        });
     }
 
     /**
@@ -637,6 +696,7 @@ class Dataset {
     create_source_query() {
         const src = new DatasetSourceQuery();
         this.source_queries.push(src);
+        this.is_src_complete.effect.run();
         return src;
     }
 
@@ -647,8 +707,7 @@ class Dataset {
     }
 
     create_sub_dataset(name){
-        const sub_dataset = new Dataset();
-        sub_dataset.parent_dataset = this;
+        const sub_dataset = new Dataset(this);
         this.sub_datasets[name] = sub_dataset;
         return sub_dataset;
     }
@@ -666,15 +725,19 @@ class Dataset {
     get_index_ref()  { return this.index; }
     get_index()      { return this.index.value; }
 
-    /**
-     * 
-     * @param {Boolean} new_mode 
-     */
-    set_insert_mode(new_mode)     {
-        this.insert_mode.value = new_mode;
+    set_insert_mode(new_mode = true, cascade_deep = true) {
+        if(cascade_deep) {
+            this.#foreach_dataset(d => d.set_insert_mode(false, cascade_deep));
+        }
+        this.associated_dataset_scroller?.set_insert_mode(new_mode);
     }
     get_insert_mode_ref() {return this.insert_mode;}
 
+    assosiate_dataset_scroller(dataset_scroller) {
+        this.associated_dataset_scroller = dataset_scroller;
+        // console.log('SETTING ASSOC', this.associated_dataset_scroller);
+        this.insert_mode.effect.run();
+    }
 
     
     /**
@@ -816,7 +879,7 @@ class Dataset {
     
     /**
      * @template T
-     * @param {(dataset: Dataset) => Promise<T>[]} callback
+     * @param {(dataset: Dataset) => (Promise<T>[] | Promise<T>)} callback
      * @returns {Promise<T[]>}
      */
     async helper_perform_all(callback, no_deep = false, allow_empty = false) {
@@ -824,18 +887,44 @@ class Dataset {
             return [];
         }
         /**@type {T[]} */
-        let res = await Promise.all(callback(this));
+        let res;
+        const callback_res = callback(this);
+        if(callback_res instanceof Promise){
+            res = [await callback_res];
+        } else {
+            res = await Promise.all(callback_res);
+        }
         for(let d of Object.values(this.sub_datasets)) {
             res.push( ... await d.helper_perform_all(callback, no_deep, allow_empty) );
         }
         return res;
     }
 
-    async perform_insert_all()  { return ipc.db_as_transaction(() => {
-        return Promise.all( this.table_syncs.map(x => x.perform_insert()) );
-    });}
+    async perform_insert_all()  { 
+        return ipc.db_as_transaction(() => {
+            return Promise.all( this.table_syncs.map(x => x.perform_insert()) );
+        });
+    }
+    async perform_update_all(no_deep = false, allow_empty = false) {
+        return ipc.db_as_transaction(() => {
+            return this.helper_perform_all(x => x.table_syncs.map(xx => xx.perform_update()), no_deep, allow_empty);
+        });
+    }
 
-    async perform_update_all           (no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.table_syncs   .map(xx => xx.perform_update()),            no_deep, allow_empty);}
+    async perform_automatic_save_or_insert_all(no_deep = false, allow_empty = false) {
+        return ipc.db_as_transaction(() => {
+            return this.helper_perform_all(x => {
+                let result;
+                if(x.insert_mode.value) {
+                    result = x.table_syncs.map(xx => xx.perform_insert());
+                } else {
+                    result = x.table_syncs.map(xx => xx.perform_update());
+                }
+                return Promise.all(result).then(/**@returns {[number[], boolean, Dataset]} */ xx => [xx, x.insert_mode.value, x]);
+            }, no_deep, allow_empty);
+        });
+    }
+
     async perform_query_all            (no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.source_queries.map(xx => xx.perform_query()),             no_deep, allow_empty);}
     async perform_query_and_replace_all(no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.source_queries.map(xx => xx.perform_query_and_replace()), no_deep, allow_empty);}
     async perform_query_and_refresh_all(no_deep = false, allow_empty = false) {return this.helper_perform_all(x => x.source_queries.map(xx => xx.perform_query_and_refresh()), no_deep, allow_empty);}

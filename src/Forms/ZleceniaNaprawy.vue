@@ -27,6 +27,10 @@ const props = defineProps({
         type: Object,
         required: false
     },
+    allow_null_conditions: {
+        type: Boolean,
+        default: false,
+    },
     id_klienta: {
         type: Number,
         default: null,
@@ -64,8 +68,8 @@ const src  = dataset.create_source_query();
 const sync = dataset.create_table_sync('zlecenia naprawy');
 
 const id         = dataset.create_value_raw   ("ID",                  null,             src);
-const id_klienta = dataset.create_value_raw   ("ID klienta",          prop_id_klienta,  src, sync);
-const id_car     = dataset.create_value_raw   ("ID samochodu",        prop_id_car,      src, sync);
+const id_klienta = dataset.create_value_synced("ID klienta",          prop_id_klienta,  src, sync);
+const id_car     = dataset.create_value_synced("ID samochodu",        prop_id_car,      src, sync);
 
 const data_otw   = dataset.create_value_synced("data otwarcia",            date_now(),     src, sync);
 const data_zamk  = dataset.create_value_synced("data zamknięcia",          null,           src, sync);
@@ -84,8 +88,8 @@ sync.add_primary('ID', id);
 
 const query = new QueryBuilder(dataset);
 query.set_from_table('zlecenia naprawy');
-query.add_simple_condition('ID klienta', prop_id_klienta, true);
-query.add_simple_condition('ID samochodu', prop_id_car, true);
+query.add_simple_condition('ID klienta',   prop_id_klienta, props.allow_null_conditions);
+query.add_simple_condition('ID samochodu', prop_id_car,     props.allow_null_conditions);
 
 query.set_source_query_offset(src);
 const scroller_query = query.get_scroller_query();
@@ -156,9 +160,9 @@ defineExpose({
 
 <template>
 
-    <div class="form_container">
+    <div class="form_container" :class="dataset.form_container_classes">
 
-        <form ref="form" class="form form_content" :class="{disabled: dataset.disabled.value}">
+        <form ref="form" class="form form_content">
             
             <div class="flex_auto vert">
                 <div>

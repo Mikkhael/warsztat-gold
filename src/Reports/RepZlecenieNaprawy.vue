@@ -43,18 +43,19 @@ const pom2_p     = props.dataset.get("% udziału p2",        );
 const zgloszenie = props.dataset.get("zgłoszone naprawy",   );
 const uwagi      = props.dataset.get("uwagi o naprawie",    );
 
-const kli_dataset = props.dataset.parent_dataset;
+const car_dataset = props.dataset.parent_dataset;
+
+const car_marka    = car_dataset.get("marka",  );
+const car_model    = car_dataset.get("model",  );
+const car_nrrej    = car_dataset.get("nr rej", );
+
+const kli_dataset = car_dataset.parent_dataset;
 
 const kli_nazwa  = kli_dataset.get("NAZWA",     );
 const kli_miasto = kli_dataset.get("MIASTO",    );
 const kli_ulica  = kli_dataset.get("ULICA",     );
 const kli_kod    = kli_dataset.get("KOD_POCZT", );
 
-const car_dataset = kli_dataset.sub_datasets['car'];
-
-const car_marka    = car_dataset.get("marka",  );
-const car_model    = car_dataset.get("model",  );
-const car_nrrej    = car_dataset.get("nr rej", );
 
 </script>
 

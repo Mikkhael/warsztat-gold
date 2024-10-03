@@ -104,9 +104,9 @@
             + insert
             + transactions for batch operations
             + sub datasets
-            - better manage nesting with inserting
+            + better manage nesting with inserting
             - delete
-            - detect and dont display empty results
+            + detect and dont display empty results
             + (IMPR) don't make sql requests, if results would be empty
         + Query Form Scroller
             + working scroller
@@ -115,8 +115,10 @@
             + toggle for simple
             + scroll support
             + better sizing when scrolling horizonatly / fixed style
-            - better indicators for empty/ood states
+            + better indicators for empty/ood states
             + (BUG) alert box not showing, when scrolling by step while on bound
+            - (BUG) scrolling Simple on bounds doesn't turn off Insert Mode in Sub
+            - (BUG) refreshing Simple clears Insert Mode in sub, but leaves index scroller empty
         - Kontrolki
             + custom context menu
                 - make "Zaznacz Wszystko" on read-only inputs work

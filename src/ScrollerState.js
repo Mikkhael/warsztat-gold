@@ -223,14 +223,14 @@ class ScrollerStateSimple extends ScrollerStateBase {
 		console.log("SCROLL SIMPLE", new_index, with_limit, force_update, bypass_before_change);
 		await this.update_count(force_update);
 		if(this.is_empty.value) return null;
-		const max_index = with_limit ? this.max_index.value : this.count.value;
-		if(new_index > max_index) new_index = max_index;
-		if(new_index < 1)         new_index = 1;
-		if(new_index === this.index.value) return this.index.value;
 		if(!bypass_before_change && this.before_change){
 			const should_change = await this.before_change();
 			if(!should_change) return undefined;
 		}
+		const max_index = with_limit ? this.max_index.value : this.count.value;
+		if(new_index > max_index) new_index = max_index;
+		if(new_index < 1)         new_index = 1;
+		if(new_index === this.index.value) return this.index.value;
 		return this.#set_index(new_index);
 	}
 	async goto(/**@type {Value} */ index, force_update = false, bypass_before_change = false, dir_next = true) {
