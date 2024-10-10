@@ -242,12 +242,12 @@ button {
 	flex-grow: 1;
 }
 
-.form_scroller.is_error {
-	background-color: #ff7171;
-	color: black;
-}
 .form_scroller.is_empty {
 	background-color: #cfbebe;
+	color: black;
+}
+.form_scroller.is_error {
+	background-color: #ff7171;
 	color: black;
 }
 

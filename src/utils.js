@@ -21,6 +21,10 @@ function typeofpl(value){
 	}
 }
 
+/**
+ * @param {number | bigint | string | null} value 
+ * @returns 
+ */
 function escape_sql_value(value){
 	if(typeof value === 'number' || typeof value === 'bigint'){
 		return value.toString();
@@ -42,6 +46,10 @@ function escape_backtick(/**@type {string} */ value) {
 		console.error("Invalid column name: ", value);
 	}
 	return "`" + value + "`";
+}
+function escape_backtick_smart(/**@type {string} */ value) {
+	if(value.indexOf('`') !== -1) return value;
+	return escape_backtick(value);
 }
 
 function escape_like(/**@type {string} */ value) {
@@ -190,6 +198,7 @@ export {
 	generate_UID,
 	escape_sql_value,
 	escape_backtick,
+	escape_backtick_smart,
 	escape_like,
 	arr_to_object,
 	query_row_to_object,

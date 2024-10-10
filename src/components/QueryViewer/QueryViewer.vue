@@ -6,7 +6,7 @@ import ipc from "../../ipc";
 import { escape_backtick, escape_like, escape_sql_value } from "../../utils";
 // import { invoke } from "@tauri-apps/api/tauri";
 // import QueryFormScrollerSimple from "../QueryFormScrollerSimple.vue";
-import QueryFormScroller from "../QueryFormScroller.vue";
+// import QueryFormScroller from "../QueryFormScroller.vue";
 import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 
 import useMainMsgManager from "../Msg/MsgManager";

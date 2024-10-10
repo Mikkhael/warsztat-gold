@@ -69,6 +69,7 @@
             - system error
         - main area
     - Query Viewer
+        - adapt for DataGraph interface
         + basic view
         + scroller
         + advanced sorting
@@ -80,6 +81,7 @@
         + fix scrolling back to 0, when changing search fields
     - Forms API
         + Example form (Klienci)
+            - adapt for DataGraph interface
             + display
             + search
             + search by car
@@ -90,36 +92,33 @@
         - Automatic Form Creation
             - common form and grid css
             - automatic dataset generation, from predefined specs, for simple forms
-        - Dataset and Forms
-            + standerd form value
-            + table update manager
-            + automated update logic
-            + automated fetch logic
-            + update only changed values
-            + add transaction for update
-            + better integrtation with scroller
-            + compact interface for src_query bindings
-            + aux queries
-            + automate form validation
-            + insert
-            + transactions for batch operations
-            + sub datasets
-            + better manage nesting with inserting
-            - delete
-            + detect and dont display empty results
-            + (IMPR) don't make sql requests, if results would be empty
-        + Query Form Scroller
-            + working scroller
-            + Simple Mode
-                + test inserts
-            + toggle for simple
-            + scroll support
-            + better sizing when scrolling horizonatly / fixed style
-            + better indicators for empty/ood states
-            + (BUG) alert box not showing, when scrolling by step while on bound
-            - (BUG) scrolling Simple on bounds doesn't turn off Insert Mode in Sub
-            - (BUG) refreshing Simple clears Insert Mode in sub, but leaves index scroller empty
+        + Dataset and Forms (OLD VERSION SCRAPPED)
+        + Query Form Scroller (OLD VERSION SCRAPPED)
+        - Dataset with DataGraph
+            + DataGraph
+            + QuerySource
+                - layerd test
+                - aux queries
+                - more dynamic query builder
+            + OffsetScroller
+                - better error/expired indication
+                - special buttons
+            - integration with form controls
+            - table syncs
+                - update
+                - insert
+                - transactions
+                - integration with DataGraph
+                - delete
+            - forms
+                - integration with form
+                - integration with src
+                - integration with sync
+                - form validation
+                - insert mode
+            - don't display empty/invalid forms
         - Kontrolki
+            - adapt for DataGraph interface
             + custom context menu
                 - make "Zaznacz Wszystko" on read-only inputs work
             - Labels
@@ -158,10 +157,6 @@
         - afterprint
 
     - create toolbars
-
-+ Query Builder
-    + for forms (simple)
-    - general queries
 
 
 + WinBox

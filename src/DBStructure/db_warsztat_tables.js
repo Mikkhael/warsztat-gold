@@ -1,5 +1,5 @@
 //@ts-check
-
+/*
 import {ColumnType, ColumnStructure, TableStructure} from "./api";
 
 const PRACOWNICY = new TableStructure('pracownicy', {
@@ -40,3 +40,4 @@ export {
     PRACOWNICY,
     // PLACE
 };
+*/

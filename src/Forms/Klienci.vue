@@ -1,14 +1,14 @@
 <script setup>
 //@ts-check
 
-import { Dataset, DVUtil, QueryBuilder } from '../components/Dataset/Dataset';
+// import { Dataset, DVUtil, QueryBuilder } from '../components/Dataset/Dataset';
 import {FormInput, FormEnum} from '../components/Controls';
 
 import useMainFWManager from '../components/FloatingWindows/FWManager';
 import useMainMsgManager from '../components/Msg/MsgManager';
 
 import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue';
-import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
+// import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
 
 import SamochodyKlientow from './SamochodyKlientow.vue';

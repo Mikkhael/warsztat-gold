@@ -1,13 +1,16 @@
 <script setup>
+//@ts-check
 import { listen } from "@tauri-apps/api/event";
 
 import SqlDebugConsole from "./components/SqlDebug/SqlDebugConsole.vue";
-import QueryFormDebug from "./components/SqlDebug/QueryFormDebug.vue";
-import QueryFormSimpleDebug from "./components/SqlDebug/QueryFormSimpleDebug.vue";
-import FormControlsDebug from "./components/SqlDebug/FormControlsDebug.vue";
+// import QueryFormDebug from "./components/SqlDebug/QueryFormDebug.vue";
+// import QueryFormSimpleDebug from "./components/SqlDebug/QueryFormSimpleDebug.vue";
+// import FormControlsDebug from "./components/SqlDebug/FormControlsDebug.vue";
 import FloatingWindowsTest from "./components/FloatingWindows/FloatingWindowsTest.vue";
 import AlertsDebug from "./components/SqlDebug/AlertsDebug.vue";
 import QueryViewerDebug from "./components/SqlDebug/QueryViewerDebug.vue";
+import DataGraphDebug from "./components/SqlDebug/DataGraphDebug.vue";
+import QuerySourceDebug from "./components/SqlDebug/QuerySourceDebug.vue";
 import MainWindow from "./components/MainWindow.vue";
 import { onMounted, readonly, ref } from "vue";
 
@@ -19,24 +22,28 @@ import CornerMsgContainer from "./components/Msg/CornerMsgContainer.vue";
 const main_components = [
   MainWindow,
   SqlDebugConsole,
-  QueryFormDebug,
-  QueryFormSimpleDebug,
-  FormControlsDebug,
+  // QueryFormDebug,
+  // QueryFormSimpleDebug,
+  // FormControlsDebug,
   FloatingWindowsTest,
   QueryViewerDebug,
   AlertsDebug,
+  DataGraphDebug,
+  QuerySourceDebug,
 ];
 const main_components_names = readonly([
   "MainWindow",
   "SqlDebugConsole",
-  "QueryFormDebug",
-  "QueryFormSimpleDebug",
-  "FormControlsDebug",
+  // "QueryFormDebug",
+  // "QueryFormSimpleDebug",
+  // "FormControlsDebug",
   "FloatingWindowsTest",
   "QueryViewerDebug",
-  "AlertsDebug"
+  "AlertsDebug",
+  "DataGraphDebug",
+  "QuerySourceDebug",
 ]);
-const current_main_component_index = ref(0);
+const current_main_component_index = ref(6);
 const current_main_component = ref();
 
 const msg_manager = useMainMsgManager();
@@ -47,6 +54,7 @@ listen("change_to_test_window", (e) => {
 })
 
 onMounted(() => {
+    //@ts-ignore
     window.APP_DEBUG = {
       current_main_component,
       IDX: current_main_component_index,
