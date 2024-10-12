@@ -12,7 +12,7 @@ import QueryViewerDebug from "./components/SqlDebug/QueryViewerDebug.vue";
 import DataGraphDebug from "./components/SqlDebug/DataGraphDebug.vue";
 import QuerySourceDebug from "./components/SqlDebug/QuerySourceDebug.vue";
 import MainWindow from "./components/MainWindow.vue";
-import { onMounted, readonly, ref } from "vue";
+import { onMounted, reactive, readonly, ref } from "vue";
 
 import WinBox from "./components/WinBox/winbox";
 
@@ -56,7 +56,8 @@ listen("change_to_test_window", (e) => {
 onMounted(() => {
     //@ts-ignore
     window.APP_DEBUG = {
-      current_main_component,
+      CMP: current_main_component.value,
+      // CMPR: reactive(current_main_component),
       IDX: current_main_component_index,
       WinBox,
   };

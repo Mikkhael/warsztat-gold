@@ -3,20 +3,21 @@
 
 
 import { computed, reactive, toRefs } from 'vue';
-import { convert_control_prop_to_reactive_props, proxies_types } from './utils';
+import { FormDataValue } from '../../Dataset';
+import { proxies_types } from './utils';
 
 
 /**
- * @typedef {import('../../Dataset/Dataset').DatasetValuelike} DatasetValuelike
+ * 
  * @typedef {"integer" | "number" | "decimal" | "date" | "datetime-local" | "text" } FormInputType
- * @typedef {{type: FormInputType, value: DatasetValuelike, readonly: boolean, nonull: boolean, len: number|undefined, hints: any[]}} PropsType 
+ * @typedef {{type: FormInputType, value: FormDataValue, readonly: boolean, nonull: boolean, len?: number, hints: any[]}} PropsType 
  */
 
 /**
  * @param {PropsType} props
  */
 function use_FormInput(props) {
-    const value = convert_control_prop_to_reactive_props(props);
+    const value = props.value;
     
     const attributes = reactive(/**@type {object} */({}));
     attributes.type = "text";
@@ -26,7 +27,7 @@ function use_FormInput(props) {
     }
 
     const custom_validity_message = computed(() => {
-        const local  = value.local;
+        const local  = value.get_local();
         const nonull = props.nonull;
         const rdonly = props.readonly;
         const is_decimal = props.type === 'decimal';
@@ -38,12 +39,14 @@ function use_FormInput(props) {
     
     const proxy_type = apply_correct_attributes_and_proxy_based_on_type(props, attributes);
     const local_proxy = computed({
-        get()  {return proxy_type.get(value.local);},
-        set(x) {value.local = proxy_type.set(x);}
+        get()  {return proxy_type.get(value.get_local());},
+        set(x) {value.local.value = proxy_type.set(x);}
     });
 
     const res = reactive({
-        ...toRefs(value),
+        local: value.local,
+        cached: value.get_cached_ref(),
+        changed: value.changed,
         attributes,
         local_proxy,
         custom_validity_message

@@ -1,16 +1,13 @@
 //@ts-check
 import { computed, reactive, toRefs, watch } from 'vue';
+import { FormDataValue } from '../../Dataset';
 import { typeofpl } from '../../../utils';
-import { convert_control_prop_to_reactive_props } from './utils';
-/**
- * @typedef {import('../../Dataset/Dataset').DatasetValuelike} DatasetValuelike
- */
 
 /**
- * @param {{value: DatasetValuelike, readonly: boolean, nonull: boolean, options: any[]}} props 
+ * @param {{value: FormDataValue, readonly: boolean, nonull: boolean, options: any[]}} props 
  */
 function use_FormEnum(props) {
-    const value = convert_control_prop_to_reactive_props(props);
+    const value = props.value;
     // console.log('VALUE CONTROL', value);
 
     // Lista wszystkich dozwolonych wartości [klucz: faktyczna wartość SQLValue, display: string]
@@ -29,13 +26,15 @@ function use_FormEnum(props) {
 
     // Uniemożliwienie wyświetlenia wartości innej niż dozwolona
     const local_proxy = computed({
-        get() {return options.value.has(value.local) ? value.local : value.local === null ? null : '___unknown'; },
-        set(new_value) {value.local = new_value;}
+        get() {return options.value.has(value.get_local()) ? value.get_local() : 
+                      value.get_local() === null           ? null :
+                                                            '___unknown'; },
+        set(new_value) {value.local.value = new_value;}
     });
     
     // Jesli pusta - wartość jest poprawna
     const custom_validity_message = computed(() => {
-        const local = value.local;
+        const local = value.get_local();
         const map   = options.value;
         const rdonly = props.readonly;
         const nonull = props.nonull;
@@ -46,7 +45,9 @@ function use_FormEnum(props) {
     });
 
     const res = reactive({
-        ...toRefs(value),
+        local: value.local,
+        cached: value.get_cached_ref(),
+        changed: value.changed,
         options,
         local_proxy,
         custom_validity_message

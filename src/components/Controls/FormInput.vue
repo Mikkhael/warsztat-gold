@@ -7,7 +7,8 @@ import { generate_UID } from '../../utils';
 
 const props = defineProps({
     type: {
-        /**@type {import('vue').PropType<import('./impl/FormInput').FormInputType} */
+        /**@type {import('vue').PropType<import('./impl/FormInput').FormInputType>} */
+        //@ts-ignore
         type: String,
         default: "text"
     },
@@ -20,7 +21,7 @@ const props = defineProps({
         default: false
     },
     value: {
-        /**@type {import('vue').PropType<import('../Dataset/Dataset').DatasetValuelike>} */
+        /**@type {import('vue').PropType<import('../Dataset').FormDataValue>} */
         type: Object,
         required: true
     },
@@ -44,14 +45,11 @@ const props = defineProps({
 const fallthrough_attrs = useAttrs();
 const impl = use_FormInput(props);
 
-
 function set_as_null() {
     impl.local = null;
 }
 function reset_changes(){
-    if(impl.changed) {
-        impl.local = impl.remote;
-    }
+    props.value.refresh();
 }
 
 const elem = ref();

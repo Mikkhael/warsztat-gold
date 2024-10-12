@@ -10,7 +10,7 @@ const props = defineProps({
         required: true
     },
     value: {
-        /**@type {import('vue').PropType<import('../Dataset/Dataset').DatasetValuelike>} */
+        /**@type {import('vue').PropType<import('../Dataset').FormDataValue>} */
         type: Object,
         required: true
     },
@@ -30,9 +30,7 @@ function set_as_null() {
     impl.local = null;
 }
 function reset_changes(){
-    if(impl.changed) {
-        impl.local = impl.remote;
-    }
+    props.value.refresh();
 }
 
 const elem = /**@type {import('vue').Ref<HTMLSelectElement>}*/ (ref());
@@ -47,9 +45,8 @@ watch(toRef(impl, 'custom_validity_message'), (new_value) => {
 <template>
 
     <select class="FormControl FormControlEnum" 
-        v-bind="impl.properties"
-        v-model="impl.local_proxy"
         ref="elem" 
+        v-model="impl.local_proxy"
         :class="{changed: impl.changed, null: impl.local === null}" 
         :disabled="props.readonly"
         :nullable="!props.nonull"
@@ -57,8 +54,8 @@ watch(toRef(impl, 'custom_validity_message'), (new_value) => {
         @reset_changes="reset_changes()"
     >
         <option value="___unknown" hidden>{{ impl.local }}</option>
-        <option v-if="!impl.options.has(null)"    :value="null" :class="{remote: impl.remote === null}" :hidden="props.nonull" class="FormControlEnumOption FormControlEnumNull" >~</option>
-        <option v-for="[v, name] in impl.options" :value="v"    :class="{remote: impl.remote === v}"                           class="FormControlEnumOption" >{{ name }}</option>
+        <option v-if="!impl.options.has(null)"    :value="null" :class="{remote: impl.cached === null}" :hidden="props.nonull" class="FormControlEnumOption FormControlEnumNull" >~</option>
+        <option v-for="[v, name] in impl.options" :value="v"    :class="{remote: impl.cached === v}"                           class="FormControlEnumOption" >{{ name }}</option>
     </select>
 
 </template>

@@ -263,6 +263,19 @@ class OffsetScrollerController {
     }
 }
 
+/**
+ * @extends {AdvDependableRef<SQLValue>}
+ */
+class QuerySourceCachedValue extends AdvDependableRef {
+    /**
+     * @param {QuerySource} src 
+     */
+    constructor(src) {
+        super(src);
+        this.src = src;
+    }
+}
+
 class QuerySource extends DataGraphNodeBase {
     constructor(auto_rowid_order = true) {
         super();
@@ -280,7 +293,7 @@ class QuerySource extends DataGraphNodeBase {
 
         /**@type {string[]} */
         this.result_names = [];
-        /**@type {Object.<string, AdvDependableRef<SQLValue>>} */
+        /**@type {Object.<string, QuerySourceCachedValue>} */
         this.result = {};
 
         this.is_empty = computed(() => this.count.value <= 0);
@@ -321,6 +334,17 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     /**
+     * @param {number} value 
+     * @param {boolean} wrapping 
+     */
+    async goto_and_update_unchanged(value, wrapping = false) {
+        if(!await this.assure_unchanged_or_confirm()) return false;
+        this.offset_scroller.goto(value, wrapping);
+        await this.update_complete();
+        return true;
+    }
+
+    /**
      * @param {TableNode} tableNode 
      */
     add_table_dep(tableNode) {
@@ -336,7 +360,7 @@ class QuerySource extends DataGraphNodeBase {
         this.expire();
         this.query.add_select(name, sql_definition);
         this.result_names.push(name);
-        this.result[name] = new AdvDependableRef(this);
+        this.result[name] = new QuerySourceCachedValue(this);
     }
 
     /**
@@ -363,7 +387,7 @@ class QuerySource extends DataGraphNodeBase {
      */
     add_where_eq(field, value, optional = false) {
         this.expire();
-        const ref = this.add_dep_auto_and_get_ref(value);
+        const ref = this.add_dependable_or_ref(value);
         this.query.add_where_eq(field, ref, optional);
     }
 }
@@ -372,4 +396,5 @@ class QuerySource extends DataGraphNodeBase {
 export {
     QuerySource,
     QueryBuilder,
+    QuerySourceCachedValue
 }

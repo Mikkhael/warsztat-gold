@@ -62,12 +62,10 @@ function show_error(err) {
 
 
 async function goto(/**@type {number} */ value, wrapping = false) {
-	props.src.offset_scroller.goto(value, wrapping);
-	await props.src.update_complete();
+	return props.src.goto_and_update_unchanged(value, wrapping);
 }
 async function scroll(/**@type {number} */ value) {
-	props.src.offset_scroller.goto(props.src.offset.value + value);
-	await props.src.update_complete();
+	return props.src.goto_and_update_unchanged(props.src.offset.value + value);
 }
 async function update_offset_from_input(/**@type {Event} */ event) {
 	/**@type {number} */

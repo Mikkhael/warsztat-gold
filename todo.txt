@@ -118,7 +118,7 @@
                 - insert mode
             - don't display empty/invalid forms
         - Kontrolki
-            - adapt for DataGraph interface
+            + adapt for DataGraph interface
             + custom context menu
                 - make "Zaznacz Wszystko" on read-only inputs work
             - Labels

@@ -46,6 +46,10 @@ class MySet extends Set {
         }
         return false;
     }
+
+    first() {
+        return this.values().next().value;
+    }
 }
 
 ////////////////// BASE GRAPH NODE /////////////////////////////////
@@ -73,7 +77,8 @@ class DataGraphNodeBase {
     ///////////// TO OVERWRITE ///////////
     check_changed_impl() {return false;}
     check_expired_impl() {return false;}
-    update_impl(){return Promise.resolve();}
+    update_impl() {}
+    refresh_impl(){}
     async confirm_update_on_changed() {
         return confirm('Posiadasz niezapisane zmiany, które zostaną utracone. Czy chcesz kontynuować?');
     }
@@ -91,6 +96,18 @@ class DataGraphNodeBase {
         this.dists.value.forEach(node => node.expire());
     }
 
+    refresh() {
+        this.changed_self.value = false;
+        this.refresh_impl();
+    }
+
+    refresh_all_changed() {
+        const nodes_to_refresh = get_all_changed_dists([this]);
+        for(let node of nodes_to_refresh) {
+            node.refresh();
+        }
+    }
+
     async update_self_only(set_dists_expired = true) {
         await this.update_impl();
         this.expired_self.value = false;
@@ -98,7 +115,6 @@ class DataGraphNodeBase {
             this.expired_self.value = true;
             throw new UnableToUpdateError(this);
         }
-        this.changed_self.value = false;
         if(set_dists_expired){
             this.set_dists_as_expired();
         }
@@ -125,20 +141,27 @@ class DataGraphNodeBase {
 
     async update_complete() {
         const nodes_to_update = get_complete_expired_subgraph([this]);
-        if(nodes_to_update.length === 0) return true;
-
-        if(nodes_to_update.some(x => x.changed.value)) {
-            const confirmed = await this.confirm_update_on_changed();
-            if(!confirmed) return false;
-        }
-
         await DataGraphNodeBase.#update_from_list_safe(nodes_to_update);
+    }
+
+    assure_unchanged() {
+        if(this.changed.value) return false;
+        const nodes_to_update = get_complete_expired_subgraph([this]);
+        if(nodes_to_update.some(x => x.changed.value)) return false;
         return true;
     }
 
-    async update_complete_force() {
-        const nodes_to_update = get_complete_expired_subgraph([this]);
-        await DataGraphNodeBase.#update_from_list_safe(nodes_to_update);
+    async assure_unchanged_or_confirm(){
+        return this.assure_unchanged() || this.confirm_update_on_changed();
+    }
+
+    async perform_if_unchanged_or_confirmed(callabck) {
+        const confirmed = await this.assure_unchanged_or_confirm();
+        if(confirmed) {
+            await callabck(this);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -154,13 +177,21 @@ class DataGraphNodeBase {
             triggerRef(node.dists);
         } 
     }
+    
+    /**
+     * @param {DataGraphDependable?} dependable 
+     */
+    add_dependable(dependable) {
+        if(dependable === null) return;
+        this.add_dep(dependable.get_node());
+    }
 
     /**
      * @template T
      * @param {Dependable<T>} dep 
      * @returns {MaybeRef<T>}
      */
-    add_dep_auto_and_get_ref(dep) {
+    add_dependable_or_ref(dep) {
         if(dep instanceof DataGraphDependable) {
             this.add_dep(dep.get_node());
             return dep.get_ref();
@@ -180,6 +211,13 @@ class DataGraphNodeBase {
         triggerRef(this.deps);
         triggerRef(this.dists);
     }
+
+    disconnect_with_dists() {
+        while(this.dists.value.size > 0) {
+            this.dists.value.first().disconnect_with_dists();
+        }
+        this.disconnect();
+    }
 }
 
 /**@template T */
@@ -195,7 +233,7 @@ class DataGraphNodeFromRef extends DataGraphNodeBase {
     
     check_changed_impl() {return unref(this.cached) !== unref(this.ref);}
     check_expired_impl() {return unref(this.cached) !== unref(this.ref);}
-    async update_impl()  {this.cached.value = unref(this.ref);}
+    update_impl()  {this.cached.value = unref(this.ref);}
 }
 
 /**@template T */
@@ -220,6 +258,7 @@ class AdvDependableRef extends DataGraphDependable {
     }
     get_ref()  {return this.ref;}
     get_node() {return this.node;}
+    get_value() {return this.ref.value;}
 }
 /**@template T */
 class NullDependableRef extends DataGraphDependable {
@@ -318,12 +357,12 @@ function get_all_expired_deps(node) {
 /**
  * @param {DataGraphNodeBase[]} nodes
  */
-function get_all_dists(nodes){
+function get_all_changed_dists(nodes){
     /**@type {DataGraphNodeBase[]} */
     const result = [];
     /**@type {DataGraphNodeBase[]} */
     const visited = [];
-    bfs_dists(nodes, node_predicate_always, result, visited, false);
+    bfs_dists(nodes, node_predicate_changed, result, visited, false);
     visited.forEach(x => x._visited = false);
     return result;
 }

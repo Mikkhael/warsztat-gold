@@ -64,7 +64,7 @@ const tele2  = dataset.create_value_synced("TELEFON2",                null,     
 const nip    = dataset.create_value_synced("NIP",                     null,           src, sync);
 const odbier = dataset.create_value_synced("odbierający fakturę",     null,           src, sync);
 const kto    = dataset.create_value_synced("KTO",                     "Gold",         src, sync);
-const kiedy  = dataset.create_value_synced("KIEDY",                   datetime_now(), src, sync);
+const kiedy  = dataset.create_value_synced("KIEDY",                   datetime_now(), src, sync); // TODO make accual current time, not start of app time
 const upust  = dataset.create_value_synced("UPUST",                   0,              src, sync);
 const list   = dataset.create_value_synced("list",                    null,           src, sync);
 

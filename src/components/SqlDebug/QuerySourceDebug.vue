@@ -4,14 +4,18 @@
 import {computed, ref,shallowRef} from 'vue';
 
 import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
-import {DataGraphNodeBase, QuerySource} from '../Dataset';
+import {DataGraphNodeBase, QuerySource, FormDataSet} from '../Dataset';
 import QuerySourceOffsetScroller from '../Scroller/QuerySourceOffsetScroller.vue';
+
+import FormInput from '../Controls/FormInput.vue';
+import FormEnum from '../Controls/FormEnum.vue';
+import { datetime_now } from '../../utils';
 
 
 class ChangeableNode extends DataGraphNodeBase {
     constructor() {
         super();
-        this.checked = ref(true);
+        this.checked = ref(false);
     }
 
     check_changed_impl() {return this.checked.value;}
@@ -42,6 +46,7 @@ const KLIENCI_SELECT_FIELDS = ref([
     ['ID'],
     ['Nazwa'],
     ['KTO'],
+    ['KIEDY'],
     ['ulicaCaps', 'upper(ULICA)']
 ]);
 const KLIENCI_SELECT_FIELDS_json = computed_json(KLIENCI_SELECT_FIELDS);
@@ -49,34 +54,52 @@ const KLIENCI_SELECT_FIELDS_json = computed_json(KLIENCI_SELECT_FIELDS);
 const KLIENCI_FROM = ref('`klienci`');
 
 
-function create_query_source1() {
+function create_form1() {
     const src = new QuerySource();
     src.add_table_dep(db.TABS.klienci);
     src.add_select_auto(KLIENCI_SELECT_FIELDS.value);
     src.add_from(KLIENCI_FROM.value);
     src.add_where_eq('KTO', kto_ref, true);
 
-    return src;
+    const data = new FormDataSet();
+    data.add('ID',  src.result.ID);
+    data.add('KTO', src.result.KTO, 'nikt');
+    data.add('NAZ', src.result.Nazwa, 'ktoś');
+    data.add('UL',  src.result.ulicaCaps);
+    data.add('kiedy', src.result.KIEDY, datetime_now());
+    data.add('RAW', null, 123);
+
+    return {src, data};
 }
 
 
-
-const src1 = shallowRef();
-const src1_res = computed(() => res_to_str(src1.value.result ));
+//@ts-ignore
+const src1  = shallowRef(/**@type {QuerySource} */ (undefined));
+//@ts-ignore
+const data1 = shallowRef(/**@type {FormDataSet} */ (undefined));
+const src1_res = computed(() => res_to_str(src1.value.result));
 
 
 const changed1 = new ChangeableNode();
 
 function reset_sources() {
-    src1.value?.disconect();
-    src1.value = create_query_source1();
+    src1.value?.disconnect_with_dists();
+
+    const form1 = create_form1();
+
+    src1.value  = form1.src;
+    data1.value = form1.data;
+
     changed1.add_dep(src1.value);
 }
 
 reset_sources();
 
-</script>
+defineExpose({
+    db
+});
 
+</script>
 
 <template>
 
@@ -91,18 +114,33 @@ reset_sources();
         <input type="button" value="RESET SOURCES"      @click="reset_sources"> <br>
         <input type="button" value="EXPIRE DB"          @click="db.DB.expire()"> <br>
         <input type="button" value="EXPIRE TAB_klienci" @click="db.TABS.klienci.expire()"> <br>
-        <input type="button" value="EXPIRE SRC1"        @click="src1.expire()"> <br>
-        <input type="button" value="UPDATE SRC1"        @click="src1.update_complete()"> <br>
 
         <div class="src_deb">
+            <input type="button" value="EXPIRE SRC"   @click="src1.expire()">
+            <input type="button" value="UPDATE SRC"   @click="src1.update_complete()">
+            <input type="button" value="RESET DATA"   @click="data1.reset()">
+            <input type="button" value="REFRESH DATA" @click="data1.refresh()">
             <p>SRC1</p>
-            <p>EXPIRED: {{ src1.expired.value }}</p>
-            <p>CHANGED: {{ src1.changed.value }} <input type="checkbox" v-model="changed1.checked.value"> </p>
+            <p>EXPIRED: {{ src1.expired.value }} ({{ src1.expired_self.value }}) {{ data1.expired.value }}</p>
+            <p>CHANGED: {{ src1.changed.value }} ({{ src1.changed_self.value }}) {{ data1.changed.value }}</p>
             <p>COUNT: {{ src1.count.value }}</p>
             <p><textarea v-model="src1_res"></textarea></p>
+
+            ID  <FormInput type="number"          :value="data1.values.ID"     readonly /> <br>
+            NAZ <FormInput type="text"            :value="data1.values.NAZ"             /> <br>
+            KTO <FormInput type="text"            :value="data1.values.KTO"             /> <br>     
+            KIE <FormInput type="date"            :value="data1.values.kiedy"           /> <br>   
+            KIE <FormInput type="datetime-local"  :value="data1.values.kiedy"           /> <br>   
+            KIE <FormInput type="datetime-local"  :value="data1.values.kiedy"  step="1" /> <br>   
+            UL  <FormInput type="text"            :value="data1.values.UL"     nonull   /> <br>
+
+            KTO <FormEnum  :value="data1.values.KTO" :options="['kot', 'gold', 'Gold']"/> <br>
+            KTO <FormEnum  :value="data1.values.KTO" :options="['kot', 'gold', 'Gold']" nonull/> <br>
+
             
             <QuerySourceOffsetScroller 
                 :src="src1"
+                :step="10"
             />
         </div>
 
