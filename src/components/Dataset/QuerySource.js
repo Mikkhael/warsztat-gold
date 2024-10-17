@@ -7,6 +7,7 @@ import { AdvDependableRef, DataGraphNodeBase, DataGraphNodeFromRef } from "./Dat
 import { configDir } from "@tauri-apps/api/path";
 import ipc from "../../ipc";
 import { TableNode } from "./Database";
+import { FormDataSet } from "./Form";
 
 
 /**
@@ -224,70 +225,47 @@ function wrap(val, past_max) {
     return clump(val, past_max); 
 }
 
-class OffsetScrollerController {
-    /**
-     * @param {QuerySource} src 
-     */
-    constructor(src) {
-        this.src = src;
-
-        /**@type {[boolean, number]?} */
-        this.request = null;
-    }
-
-    update_offset() {
-        if(this.request === null) return;
-        if(this.request[0]) {
-            this.src.offset.value =  wrap(this.request[1], this.src.count.value);
-        } else {
-            this.src.offset.value = clump(this.request[1], this.src.count.value);
-        }
-        this.request = null;
-    }
-
-    goto(value, wrapping = false) {
-        this.src?.expire(false);
-        this.request = [wrapping, value];
-    }
-    goto_wrap(value) {
-        this.src?.expire(false);
-        this.request = [true, value];
-    }
-    goto_first() {
-        this.src?.expire(false);
-        this.request = [false, 0];
-    }
-    goto_last() {
-        this.src?.expire(false);
-        this.request = [true, -1];
-    }
-}
-
 /**
  * @extends {AdvDependableRef<SQLValue>}
  */
 class QuerySourceCachedValue extends AdvDependableRef {
     /**
      * @param {QuerySource} src 
+     * @param {SQLValue}    default_value
      */
-    constructor(src) {
-        super(src);
+    constructor(src, default_value = null) {
+        super(src, default_value);
         this.src = src;
+        this.default_value = default_value;
+    }
+
+    reset() {
+        this.ref.value = this.default_value;
     }
 }
 
+class QuerySourceRequest_Offset {
+    constructor(value = 0, wrapping = false) {this.value = value, this.wrapping = wrapping};
+}
+class QuerySourceRequest_Insert {
+    constructor(value = false) {this.value = value};
+}
+
 class QuerySource extends DataGraphNodeBase {
-    constructor(auto_rowid_order = true) {
+    constructor(auto_rowid_order = true, no_dataset = false, with_full_result = false) {
         super();
         /**@type {TableNode[]} */
         this.dependant_tables = [];
         this.query = new QueryBuilder(auto_rowid_order);
 
+        /**@type {any} */
+        this.request = null;
+        this.insert_mode = ref(false);
         this.offset = ref(0);
-        this.offset_scroller = new OffsetScrollerController(this);
 
-        this.count = ref(-1);
-        this.count_expired = true;
+        this.count = ref(0);
+        this.count_expired = ref(true);
+
 
         this.query.set_offset_ref(this.offset);
 
@@ -296,22 +274,68 @@ class QuerySource extends DataGraphNodeBase {
         /**@type {Object.<string, QuerySourceCachedValue>} */
         this.result = {};
 
+        if(!no_dataset) {
+            this.dataset = new FormDataSet(this);
+        }
+
+        if(with_full_result) {
+            /**@type {Ref<SQLValue[][]>} */
+            this.full_result = ref([]); // TODO implement
+        }
+
         this.is_empty = computed(() => this.count.value <= 0);
     }
 
+    /// OVERWRITES //////////////////////
     expire(expire_count = true) {
-        if(expire_count) this.count_expired = true;
+        if(expire_count) this.count_expired.value = true;
         super.expire();
     }
-    check_changed_impl() {return false;}
-    check_expired_impl() {return false;}
+    check_changed_impl() {
+        return this.dataset?.changed.value || this.insert_mode.value;
+    }
+    check_should_disable_dists_impl() {
+        return this.is_empty.value || this.insert_mode.value;
+    }
     async update_impl(){
-        if(this.count_expired) {
+        if(this.count_expired.value) {
             await this.perform_count_query();
-            this.count_expired = false;
+            this.count_expired.value = false;
         }
-        this.offset_scroller.update_offset();
+        if(this.request !== null) {
+            if      (this.request instanceof QuerySourceRequest_Offset) {
+                this.perform_offset_goto(this.request.value, this.request.wrapping);
+                this.insert_mode.value = false;
+            }else if(this.request instanceof QuerySourceRequest_Insert) {
+                this.insert_mode.value = this.request.value;
+            }
+            this.request_clear();
+        }
+        if(this.insert_mode.value) {
+            this.perform_reset();
+            return;
+        }
         await this.perform_offset_query();
+    }
+    async save_impl(force = false) {
+        if(!this.dataset) return;
+        const res = await this.dataset.perform_save_notransaction(undefined, force);
+        if(res.insert) {
+            this.request_offset_goto(-1, true);
+        }
+    }
+    ///////////////////////////////////////
+
+    perform_reset() {
+        for(const key in this.result) {
+            this.result[key].reset();
+        }
+        this.dataset?.refresh();
+    }
+
+    perform_offset_goto(value = 0, wrapping = false) {
+        if(wrapping) this.offset.value = wrap (value, this.count.value);
+        else         this.offset.value = clump(value, this.count.value);
     }
 
     async perform_count_query() {
@@ -325,23 +349,41 @@ class QuerySource extends DataGraphNodeBase {
         const [rows] = await ipc.db_query(this.query.sql.value.offset);
         if(rows.length === 0) {
             this.count.value = 0;
+            this.perform_reset();
             return;
         }
         const first_row = rows[0];
         for(let i in first_row) {
             this.result[this.result_names[i]].ref.value = first_row[i];
         }
+        this.dataset?.refresh();
     }
 
+    #add_update_request_impl(request, expire_count = true) {
+        this.request = request;
+        this.expire(expire_count);
+    }
     /**
      * @param {number} value 
      * @param {boolean} wrapping 
      */
-    async goto_and_update_unchanged(value, wrapping = false) {
-        if(!await this.assure_unchanged_or_confirm()) return false;
-        this.offset_scroller.goto(value, wrapping);
-        await this.update_complete();
-        return true;
+    request_offset_goto(value, wrapping) {
+        this.#add_update_request_impl(new QuerySourceRequest_Offset(value, wrapping), false);
+    }
+    /**
+     * @param {boolean} value 
+     */
+    request_insert_mode(value) {
+        this.#add_update_request_impl(new QuerySourceRequest_Insert(value), false);
+    }
+    request_refresh() {
+        this.#add_update_request_impl(new QuerySourceRequest_Insert(false), true);
+    }
+    request_insert_toggle() {
+        this.#add_update_request_impl(new QuerySourceRequest_Insert(!this.insert_mode.value), false);
+    }
+    request_clear(){
+        this.request = null;
     }
 
     /**
@@ -353,23 +395,26 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     /**
-     * @param {string } name 
-     * @param {string?} sql_definition 
+     * @param {string}   name 
+     * @param {SQLValue} default_value
+     * @param {string?}  sql_definition 
      */
-    add_select(name, sql_definition = null) {
+    add_select(name, default_value = null, sql_definition = null) {
         this.expire();
         this.query.add_select(name, sql_definition);
         this.result_names.push(name);
-        this.result[name] = new QuerySourceCachedValue(this);
+        const cached = new QuerySourceCachedValue(this, default_value);
+        this.result[name] = cached;
+        this.dataset?.add(name, cached);
     }
 
     /**
      * 
-     * @param {string[][]} names 
+     * @param {[string, SQLValue | undefined, string | undefined][]} names 
      */
     add_select_auto(names) {
-        for(const [name, sql_def] of names) {
-            this.add_select(name, sql_def);
+        for(const [name, default_value, sql_def] of names) {
+            this.add_select(name, default_value, sql_def);
         }
     }
 

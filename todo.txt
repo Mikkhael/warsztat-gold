@@ -101,21 +101,23 @@
                 - aux queries
                 - more dynamic query builder
             + OffsetScroller
-                - better error/expired indication
-                - special buttons
-            - integration with form controls
-            - table syncs
-                - update
-                - insert
-                - transactions
-                - integration with DataGraph
+                - errors via MsgManager
+                + better error/expired indication
+                + special buttons
+            + integration with form controls
+            + table syncs
+                + update
+                + insert
+                + transactions
+                + integration with DataGraph
                 - delete
             - forms
                 - integration with form
                 - integration with src
                 - integration with sync
                 - form validation
-                - insert mode
+                + insert mode
+                    - insert mode with nesting (disable)
             - don't display empty/invalid forms
         - Kontrolki
             + adapt for DataGraph interface

@@ -213,8 +213,8 @@ button {
 .form_scroller .btn:hover {
 	background-color: #00ffd538;
 }
-.form_scroller.insert_mode .btn.insert,
-.form_scroller             .btn:active {
+/* .form_scroller.is_insert .btn.insert, */
+.form_scroller           .btn:active {
 	background-color: #0066ff3d;
 }
 
@@ -244,6 +244,15 @@ button {
 
 .form_scroller.is_empty {
 	background-color: #cfbebe;
+	color: black;
+}
+.form_scroller.is_insert {
+  background-color: #eee4ad;
+	color: black;
+}
+.form_scroller.is_expired {
+  transition: background-color 0.5s;
+	background-color: #f79393;
 	color: black;
 }
 .form_scroller.is_error {

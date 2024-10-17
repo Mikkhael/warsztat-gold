@@ -2,6 +2,7 @@
 //@ts-check
 
 import { ref, computed, shallowRef, unref, triggerRef, reactive, readonly, isRef } from 'vue';
+import ipc from '../../ipc';
 
 /**
  * @template T
@@ -54,31 +55,62 @@ class MySet extends Set {
 
 ////////////////// BASE GRAPH NODE /////////////////////////////////
 
+// expried   - trzeba zaciągnąć nową wartość ze źródła
+// changed   - jeśli teraz się zaciągnie nową wartość, to nadpisane zostaną zmiany
+// inserting - jeśli teraz się zaciągnie nową wartość, to wyłączy się tryb insert
+// disabled  - dane wejściowe nie istnieją, ponieważ np. są insertowane
+
 class DataGraphNodeBase {
 
     constructor() {
         this.deps  = shallowRef(/**@type {MySet<DataGraphNodeBase>} */ (new MySet()));
         this.dists = shallowRef(/**@type {MySet<DataGraphNodeBase>} */ (new MySet()));
-        this.expired_deps  = computed(() => this.deps.value.some(x => x.expired.value));
+
+        /// EXPIRED ///
+        this.expired_dists_deep = computed(() => this.dists.value.some(x => !x.disabled.value && (
+                                                                                x.expired.value || 
+                                                                                x.expired_dists_deep.value)));
+        this.expired_deps  = computed(() => this.deps .value.some(x => x.expired.value));
         this.expired_self  = ref(true);
         /**@type {ComputedRef<boolean>} */
         this.expired = computed(() => this.expired_self.value   ||
                                       this.check_expired_impl() || 
                                       this.expired_deps.value);
+        /// CHANGED ///
         this.changed_dists = computed(() => this.dists.value.some(x => x.changed.value));
-        this.changed_self  = ref(false);
         /**@type {ComputedRef<boolean>} */
-        this.changed = computed(() => this.changed_self.value   ||
-                                      this.check_changed_impl() || 
-                                      this.changed_dists.value);
+        this.changed = computed(() => !this.disabled.value && (
+                                        this.check_changed_impl() || 
+                                        this.changed_dists.value));
         
+        /// DISABLED ///
+        this.disabled_deps = computed(() => this.deps.value.some(x => x.disabled.value ||
+                                                                      x.should_disable_dists.value));
+        /**@type {ComputedRef<boolean>} */
+        this.disabled = computed(() => this.check_disabled_impl() || 
+                                       this.disabled_deps.value);
+        this.should_disable_dists = computed(() => this.check_should_disable_dists_impl());
+
+        /// INSERTING ///
+        // this.empty = ref(true);
+        // this.inserting_dists = computed(() => this.dists.value.some(x => x.inserting.value));
+        // this.insert_mode     = ref(false);
+        // /**@type {ComputedRef<boolean>} */
+        // this.inserting = computed(() => this.insert_mode.value ||
+        //                                 this.check_inserting_impl() || 
+        //                                 this.inserting_dists.value);
+
+        /// OTHER ///
         this._visited = false;
     }
     ///////////// TO OVERWRITE ///////////
-    check_changed_impl() {return false;}
-    check_expired_impl() {return false;}
+    check_expired_impl()   {return false;}
+    check_changed_impl()   {return false;}
+    // check_inserting_impl() {return false;}
+    check_disabled_impl()  {return false;}
+    check_should_disable_dists_impl()  {return false;}
     update_impl() {}
-    refresh_impl(){}
+    save_impl(force = false){}
     async confirm_update_on_changed() {
         return confirm('Posiadasz niezapisane zmiany, które zostaną utracone. Czy chcesz kontynuować?');
     }
@@ -88,27 +120,15 @@ class DataGraphNodeBase {
     expire(){
         this.expired_self.value = true;
     }
-    change(){
-        this.changed_self.value = true;
-    }
 
     set_dists_as_expired() {
         this.dists.value.forEach(node => node.expire());
     }
 
-    refresh() {
-        this.changed_self.value = false;
-        this.refresh_impl();
-    }
+    /// UPDATING
 
-    refresh_all_changed() {
-        const nodes_to_refresh = get_all_changed_dists([this]);
-        for(let node of nodes_to_refresh) {
-            node.refresh();
-        }
-    }
-
-    async update_self_only(set_dists_expired = true) {
+    async update_self_only_force(set_dists_expired = true) {
+        // this.insert_mode.value = false;
         await this.update_impl();
         this.expired_self.value = false;
         if(this.expired.value) {
@@ -120,33 +140,34 @@ class DataGraphNodeBase {
         }
     }
 
-    static async #update_from_list_safe(nodes_to_update, set_dists_expired = true) {
-        try{
-            for(const node of nodes_to_update) {
-                await node.update_self_only(set_dists_expired);
+    async update_deps_and_self(force = false) {
+        if(force) this.expire();
+        if(!this.expired.value || this.disabled.value) return;
+        if(this.expired_deps.value) {
+            for(const dep of this.deps.value.values()){
+                await dep.update_deps_and_self();
             }
-        } catch (err) {
-            // if(err instanceof UnableToUpdateError){
-                nodes_to_update.forEach(node => node.expire());
-            // }
-            throw err;
         }
-    } 
-
-    async update_deps_only() {
-        const nodes_to_update = get_all_expired_deps(this);
-        await DataGraphNodeBase.#update_from_list_safe(nodes_to_update);
-        this.set_dists_as_expired();
+        await this.update_self_only_force();
     }
 
-    async update_complete() {
-        const nodes_to_update = get_complete_expired_subgraph([this]);
-        await DataGraphNodeBase.#update_from_list_safe(nodes_to_update);
+    async update_complete(force = false) {
+        if(force) this.expire();
+        if(this.disabled.value) return;
+        await this.update_deps_and_self(); // if performed update, expires all dists
+        if(this.expired_dists_deep.value){
+            for(const dist of this.dists.value.values()) {
+                await dist.update_complete();
+            }
+        }
     }
+
 
     assure_unchanged() {
+        // if(this.changed.value || this.inserting.value) return false;
         if(this.changed.value) return false;
         const nodes_to_update = get_complete_expired_subgraph([this]);
+        // if(nodes_to_update.some(x => x.changed.value || x.inserting.value)) return false;
         if(nodes_to_update.some(x => x.changed.value)) return false;
         return true;
     }
@@ -155,27 +176,51 @@ class DataGraphNodeBase {
         return this.assure_unchanged() || this.confirm_update_on_changed();
     }
 
-    async perform_if_unchanged_or_confirmed(callabck) {
+
+    async try_perform_and_update_confirmed(callabck) {
         const confirmed = await this.assure_unchanged_or_confirm();
         if(confirmed) {
             await callabck(this);
+            await this.update_complete();
             return true;
         }
         return false;
     }
 
+    /// SAVING
+
+    async save_deep_notransaction(force = false) {
+        if(this.changed.value && !this.disabled.value) {
+            await this.save_impl(force);
+            for(const dist of this.dists.value.values()) {
+                await dist.save_deep_notransaction(force);
+            }
+        }
+    }
+
+    async save_deep_transaction(force = false) {
+        await ipc.db_as_transaction(() => this.save_deep_notransaction(force));
+    }
+
+    async save_deep_transaction_and_update(force = false) {
+        await this.save_deep_transaction(force);
+        await this.update_complete();
+    }
+
+
     /**
      * @param {DataGraphNodeBase?} node 
      */
     add_dep(node, no_ref_trigger = false) {
-        if(!node) return;
-        if(this.deps.value.has(node)) return;
+        if(!node) return false;
+        if(this.deps.value.has(node)) return false;
         node.dists.value.add(this);
         this.deps.value.add(node);
         if(!no_ref_trigger){
             triggerRef(this.deps);
             triggerRef(node.dists);
         } 
+        return true;
     }
     
     /**
@@ -290,11 +335,13 @@ class NullDependableRef extends DataGraphDependable {
  */
 
 /**@type {NodePredicate} */
-const node_predicate_expired = (dep) => dep.expired.value;
+const node_predicate_expired     = (dep) => dep.expired.value;
 /**@type {NodePredicate} */
-const node_predicate_changed = (dep) => dep.changed.value;
+const node_predicate_changed     = (dep) => dep.changed.value;
 /**@type {NodePredicate} */
-const node_predicate_always  = (dep) => true;
+const node_predicate_nondisabled = (dep) => !dep.disabled.value;
+/**@type {NodePredicate} */
+const node_predicate_always      = (dep) => true;
 
 /**
  * @param {DataGraphNodeBase} node
@@ -377,7 +424,7 @@ function get_complete_expired_subgraph(nodes){
     const result = [];
     /**@type {DataGraphNodeBase[]} */
     const visited = [];
-    bfs_dists(nodes, node_predicate_always, leaves, visited, true);
+    bfs_dists(nodes, node_predicate_nondisabled, leaves, visited, true);
     visited.forEach(x => x._visited = false);
     leaves.forEach(node => dfs_deps(node, node_predicate_expired, result, visited));
     visited.forEach(x => x._visited = false);
