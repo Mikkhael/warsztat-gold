@@ -11,15 +11,9 @@ import FormInput from '../Controls/FormInput.vue';
 import FormEnum from '../Controls/FormEnum.vue';
 import { datetime_now } from '../../utils';
 
+import QuerySourceDebug_form from './QuerySourceDebug_form.vue';
 
-class ChangeableNode extends DataGraphNodeBase {
-    constructor() {
-        super();
-        this.checked = ref(false);
-    }
 
-    check_changed_impl() {return this.checked.value;}
-}
 
 const db = useWarsztatDatabase();
 
@@ -52,7 +46,6 @@ const KLIENCI_SELECT_FIELDS = ref([
     ['ulicaCaps', null, 'upper(ULICA)']
 ]);
 const KLIENCI_SELECT_FIELDS_json = computed_json(KLIENCI_SELECT_FIELDS);
-
 const KLIENCI_FROM = ref('`klienci`');
 
 
@@ -80,33 +73,101 @@ function create_form1() {
 
     return src;
 }
+function create_form2(
+    /**@type {import('./../Dataset').Dependable} */ param1 = null,
+    /**@type {import('./../Dataset').Dependable} */ param2 = null,
+) {
+    const src = new QuerySource();
+    src.add_table_dep(db.TABS.samochody);
+    //@ts-ignore
+
+
+    src.add_select("ID",            null);
+    src.add_select("marka",         null);
+    src.add_select("model",         null);
+    src.add_select("nr_rej",        null, '`nr rej`');
+    src.add_select("nr_sil",        null, '`nr silnika`');
+    src.add_select("nr_nad",        'brak nadwozia', '`nr nadwozia`');
+    src.add_from('`samochody klientów`');
+
+    src.add_select("ID_klienta",   param1, '`ID klienta`');
+    if(param2 === null) {
+        src.add_where_eq("ID klienta", param1, true);
+    } else {
+        src.add_where_opt("`ID klienta` BETWEEN", param1, "AND", param2);
+    }
+
+
+    /**@type {FormDataSet} */
+    //@ts-ignore
+    const data = src.dataset;
+
+    // TODO automate
+    const sync = data.get_or_create_sync(db.TABS.samochody);
+    
+    sync?.assoc_value("ID",          data.values.ID,    true);
+    sync?.assoc_value("marka",       data.values.marka      );
+    sync?.assoc_value("model",       data.values.model      );
+    sync?.assoc_value("nr rej",      data.values.nr_rej     );
+    sync?.assoc_value("nr silnika",  data.values.nr_sil     );
+    sync?.assoc_value("nr nadwozia", data.values.nr_nad     );
+    sync?.assoc_value("ID klienta",  data.values.ID_klienta );
+
+    return src;
+}
 
 
 //@ts-ignore
 const src1  = shallowRef(/**@type {QuerySource} */ (undefined));
 //@ts-ignore
-const data1 = computed(() => src1.value.dataset ?? new FormDataSet());
+const src2_1  = shallowRef(/**@type {QuerySource} */ (undefined));
+//@ts-ignore
+const src2_2  = shallowRef(/**@type {QuerySource} */ (undefined));
+//@ts-ignore
+const src2_3  = shallowRef(/**@type {QuerySource} */ (undefined));
+//@ts-ignore
+// const data1 = computed(() => src1.value.dataset ?? new FormDataSet());
 const src1_res = computed(() => res_to_str(src1.value.result));
 
+function reset_sources(no_disconnect = false) {
+    if(!no_disconnect){
+        src1.value?.disconnect_with_dists();
+        src2_1.value?.disconnect_with_dists();
+        src2_2.value?.disconnect_with_dists();
+        src2_3.value?.disconnect_with_dists();
+    }
 
-const changed1 = new ChangeableNode();
-
-function reset_sources() {
-    src1.value?.disconnect_with_dists();
-
-    // const form1 = create_form1();
-    // src1.value  = form1.src;
-    // data1.value = form1.data;
     src1.value = create_form1();
+    src2_1.value = create_form2(src1.value.result.ID);
+    src2_2.value = create_form2(null);
+    src2_3.value = create_form2(src2_1.value.result.ID_klienta, src2_2.value.result.ID_klienta);
+}
+reset_sources();
 
-    changed1.add_dep(src1.value);
+
+
+
+const mem_leak_reps = ref(0);
+function test_mem_leaks(no_disconnect = false) {
+    for(let i = 0; i < +mem_leak_reps.value; i++) {
+        reset_sources(no_disconnect);
+    }
+}
+function disconnect_tabs() {
+    db.TABS.klienci.disconnect();
+    db.TABS.samochody.disconnect();
+}
+function disconnect_tabs2() {
+    db.TABS.klienci.disconnect_with_dists();
+    db.TABS.samochody.disconnect_with_dists();
 }
 
-reset_sources();
+
 
 defineExpose({
     db
 });
+
 
 </script>
 
@@ -114,49 +175,67 @@ defineExpose({
 
 	<div>
 
+        <input type="text" v-model="mem_leak_reps">
+        <button @click="test_mem_leaks(false)" >TEST MEM LEAKS safe</button>
+        <button @click="test_mem_leaks(true)" >TEST MEM LEAKS</button>
+        <button @click="disconnect_tabs" >DISC TABS</button>
+        <button @click="disconnect_tabs2" >DISC TABS 2</button>
+
         <p>SELECT: <input v-model="KLIENCI_SELECT_FIELDS_json"></p>
         <p>FROM:   <input v-model="KLIENCI_FROM"></p>
         <p>.</p>
         <p>KTO:   <input v-model="kto_ref_raw"></p>
 
 
-        <input type="button" value="RESET SOURCES"      @click="reset_sources"> <br>
+        <input type="button" value="RESET SOURCES"      @click="reset_sources()"> <br>
         <input type="button" value="EXPIRE DB"          @click="db.DB.expire()"> <br>
         <input type="button" value="EXPIRE TAB_klienci" @click="db.TABS.klienci.expire()"> <br>
 
-        <div class="src_deb">
-            <input type="button" value="EXPIRE SRC"   @click="src1.expire()">
-            <input type="button" value="UPDATE SRC"   @click="src1.update_complete()">
-            <input type="button" value="REFRESH DATA" @click="data1.refresh()">
-            <p>SRC1</p>
-            <p>EXPIRED: {{ src1.expired.value }} ({{ src1.expired_self.value }}) </p>
-            <p>CHANGED: {{ src1.changed.value }} {{ data1.changed.value }}</p>
-            <p>INSERT:  {{ src1.insert_mode.value }}</p>
-            <p>COUNT:   {{ src1.count.value }}</p>
-            <p><textarea v-model="src1_res"></textarea></p>
+        <div class="content">
+            <QuerySourceDebug_form name="Klienci" :src="src1" v-slot="{data}" class="abc">
+                <label>ID  <FormInput type="number"          :value="data.values.ID"        readonly />    </label> <br>
+                <label>NAZ <FormInput type="text"            :value="data.values.Nazwa"     nonull   />    </label> <br>
+                <label>MIA <FormInput type="text"            :value="data.values.MIASTO"    nonull   />    </label> <br>
+                <label>ULI <FormInput type="text"            :value="data.values.ULICA"     nonull   />    </label> <br>
+                <label>KOD <FormInput type="text"            :value="data.values.KOD_POCZT" nonull   />    </label> <br>
+                <label>KTO <FormInput type="text"            :value="data.values.KTO"                />    </label> <br>     
+                <label>KIE <FormInput type="date"            :value="data.values.KIEDY"              />    </label> <br>   
+                <label>KIE <FormInput type="datetime-local"  :value="data.values.KIEDY"              />    </label> <br>   
+                <label>KIE <FormInput type="datetime-local"  :value="data.values.KIEDY"     step="1" />    </label> <br>   
+                <label>UL  <FormInput type="text"            :value="data.values.ulicaCaps" nonull   />    </label> <br>
 
-            ID  <FormInput type="number"          :value="data1.values.ID"        readonly /> <br>
-            NAZ <FormInput type="text"            :value="data1.values.Nazwa"     nonull   /> <br>
-            MIA <FormInput type="text"            :value="data1.values.MIASTO"    nonull   /> <br>
-            ULI <FormInput type="text"            :value="data1.values.ULICA"     nonull   /> <br>
-            KOD <FormInput type="text"            :value="data1.values.KOD_POCZT" nonull   /> <br>
-            KTO <FormInput type="text"            :value="data1.values.KTO"                /> <br>     
-            KIE <FormInput type="date"            :value="data1.values.KIEDY"              /> <br>   
-            KIE <FormInput type="datetime-local"  :value="data1.values.KIEDY"              /> <br>   
-            KIE <FormInput type="datetime-local"  :value="data1.values.KIEDY"     step="1" /> <br>   
-            UL  <FormInput type="text"            :value="data1.values.ulicaCaps" nonull   /> <br>
-
-            KTO <FormEnum  :value="data1.values.KTO" :options="['kot', 'gold', 'Gold']"/> <br>
-            KTO <FormEnum  :value="data1.values.KTO" :options="['kot', 'gold', 'Gold']" nonull/> <br>
-
+                <label>KTO <FormEnum  :value="data.values.KTO" :options="['kot', 'gold', 'Gold']"/>        </label> <br>
+                <label>KTO <FormEnum  :value="data.values.KTO" :options="['kot', 'gold', 'Gold']" nonull/> </label> <br>
+            </QuerySourceDebug_form>
             
-            <QuerySourceOffsetScroller 
-                :src="src1"
-                :step="10"
-                insertable
-                saveable
-            />
-        </div>
+            <QuerySourceDebug_form name="Samochody" :src="src2_1" v-slot="{data}" class="abc">
+                <label>ID    </label> <FormInput type="number"          :value="data.values.ID"         readonly /> <br>
+                <label>ID_K  </label> <FormInput type="number"          :value="data.values.ID_klienta" readonly /> <br>
+                <label>MARK  </label> <FormInput type="text"            :value="data.values.marka"      />          <br>   
+                <label>MODE  </label> <FormInput type="text"            :value="data.values.model"      />          <br>   
+                <label>N REJ </label> <FormInput type="text"            :value="data.values.nr_rej"     />          <br>   
+                <label>N SIL </label> <FormInput type="text"            :value="data.values.nr_sil"     />          <br>   
+                <label>N NAD </label> <FormInput type="text"            :value="data.values.nr_nad"     />          <br>   
+            </QuerySourceDebug_form>
+            <QuerySourceDebug_form name="Samochody All" :src="src2_2" v-slot="{data}" class="abc">
+                <label>ID    </label> <FormInput type="number"          :value="data.values.ID"         readonly /> <br>
+                <label>ID_K  </label> <FormInput type="number"          :value="data.values.ID_klienta" />          <br>
+                <label>MARK  </label> <FormInput type="text"            :value="data.values.marka"      />          <br>   
+                <label>MODE  </label> <FormInput type="text"            :value="data.values.model"      />          <br>   
+                <label>N REJ </label> <FormInput type="text"            :value="data.values.nr_rej"     />          <br>   
+                <label>N SIL </label> <FormInput type="text"            :value="data.values.nr_sil"     />          <br>   
+                <label>N NAD </label> <FormInput type="text"            :value="data.values.nr_nad"     />          <br>   
+            </QuerySourceDebug_form>
+            <QuerySourceDebug_form name="Samochody Comb" :src="src2_3" v-slot="{data}" class="abc">
+                <label>ID    </label> <FormInput type="number"          :value="data.values.ID"         readonly /> <br>
+                <label>ID_K  </label> <FormInput type="number"          :value="data.values.ID_klienta" />          <br>
+                <label>MARK  </label> <FormInput type="text"            :value="data.values.marka"      />          <br>   
+                <label>MODE  </label> <FormInput type="text"            :value="data.values.model"      />          <br>   
+                <label>N REJ </label> <FormInput type="text"            :value="data.values.nr_rej"     />          <br>   
+                <label>N SIL </label> <FormInput type="text"            :value="data.values.nr_sil"     />          <br>   
+                <label>N NAD </label> <FormInput type="text"            :value="data.values.nr_nad"     />          <br>   
+            </QuerySourceDebug_form>
+        </div> 
 
     </div>
 
@@ -164,19 +243,15 @@ defineExpose({
 
 <style scoped>
 
-    input {
-        width: 90%;
-    }
-    input[type='button'] {
-        width: unset;
-    }
-
-    .src_deb {
-        border: 1px solid black;
+    .content {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
     }
 
-    textarea {
-        height: 5em;
+    .abc {
+        flex-basis: 30%;
+        flex-grow: 1;
     }
 
 </style>

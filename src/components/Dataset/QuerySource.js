@@ -74,23 +74,37 @@ class QueryBuilderSelectField {
                                   : escape_backtick_smart(name);
     }
 }
-class QueryBuilderWhereEq {
-    /**
-     * @param {string}   name 
-     * @param {MaybeRef<SQLValue>} value 
-     */
-    constructor(name, value, optional = true) {
-        this.name     = name;
-        this.value    = value;
-        this.optional = optional;
+// class QueryBuilderWhereEq {
+//     /**
+//      * @param {string}   name 
+//      * @param {MaybeRef<SQLValue>} value 
+//      */
+//     constructor(name, value, optional = true) {
+//         this.name     = name;
+//         this.value    = value;
+//         this.optional = optional;
         
-        this.sql = computed(() => this.get_sql());
-    }
+//         this.sql = computed(() => this.get_sql());
+//     }
 
-    get_sql(){
-        return escape_backtick_smart(this.name) + ' = ' + escape_sql_value(unref(this.value));
+//     get_sql(){
+//         return escape_backtick_smart(this.name) + ' = ' + escape_sql_value(unref(this.value));
+//     }
+// }
+
+class QueryParts {
+    /**
+     * @param  {...MaybeRef<SQLValue>} parts 
+     */
+    constructor(...parts) {
+        this.parts  = parts;
+        this.vparts = parts.filter(part => typeof part !== 'string');
+
+        this.is_any_null = computed(() => this.vparts.some(x => unref(x) === null));
+        this.sql = computed(() => this.parts.map(x => unref(x)).join(' '));
     }
 }
+
 
 class QueryBuilderOrder {
     /**
@@ -124,8 +138,10 @@ class QueryBuilder {
         /**@type {QueryBuilderSelectField[]} */
         this.select = [];
         this.from   = "";
-        /**@type {QueryBuilderWhereEq[]} */
-        this.where_eq = [];
+        /**@type {QueryParts[]} */
+        this.where_conj = [];
+        /**@type {QueryParts[]} */
+        this.where_conj_opt = [];
         /**@type {QueryBuilderOrder[]} */
         this.order = [];
         if(auto_rowid_order){
@@ -145,16 +161,13 @@ class QueryBuilder {
 
     build_sql() {
         const res = {};
-        /**@type {(...conditions: QueryBuilderWhereEq[]) => string} */
-        const convert_where_eq_to_sql = (...conditions) => {
-            return conditions.flat()
-                    .filter(x => !x.optional || unref(x.value) !== null)
-                    .map(x => '(' + unref(x.sql) + ')').join(' AND ');
-        }
-        
+
         const sql_select_base   = this.select.map(x => x.sql).join(', ');
         const sql_from  = this.from;
-        const sql_where_base  = convert_where_eq_to_sql(...this.where_eq);
+        // const sql_where_base  = convert_where_eq_to_sql(...this.where_eq);
+        const sql_where =   [   ...this.where_conj,
+                                ...this.where_conj_opt.filter(x => !x.is_any_null.value)]
+                            .map(x => '(' + x.sql.value + ')').join(' AND ');
         const sql_order = this.order.map(x => x.sql).join(', ');
 
         const offset = unref(this.offset);
@@ -163,16 +176,16 @@ class QueryBuilder {
         res.base = concat_query({
             select: sql_select_base, 
             from: sql_from,
-            where: sql_where_base,
+            where: sql_where,
             order: sql_order});
         res.count = concat_query({
             select: `count(*)`, 
             from: sql_from, 
-            where: sql_where_base});
+            where: sql_where});
         res.offset = concat_query({
             select: sql_select_base, 
             from: sql_from,
-            where: sql_where_base,
+            where: sql_where,
             order: sql_order,
             limit: '1',
             offset: sql_offset});
@@ -202,7 +215,29 @@ class QueryBuilder {
      * @param {MaybeRef<SQLValue>} value 
      */
     add_where_eq(field, value, optional = false) {
-        this.where_eq.push(new QueryBuilderWhereEq(field, value, optional));
+        const parts = new QueryParts(escape_backtick_smart(field) + ' =', value);
+        if(optional) {
+            this.where_conj_opt.push(parts);
+        } else {
+            this.where_conj.push(parts);
+        }
+        this.expire();
+    }
+
+    /**
+     * @param  {MaybeRef<SQLValue>[]} parts 
+     */
+    add_where(...parts) {
+        const _parts = new QueryParts(...parts);
+        this.where_conj.push(_parts);
+        this.expire();
+    }
+    /**
+     * @param  {MaybeRef<SQLValue>[]} parts 
+     */
+    add_where_opt(...parts) {
+        const _parts = new QueryParts(...parts);
+        this.where_conj_opt.push(_parts);
         this.expire();
     }
 
@@ -231,16 +266,16 @@ function wrap(val, past_max) {
 class QuerySourceCachedValue extends AdvDependableRef {
     /**
      * @param {QuerySource} src 
-     * @param {SQLValue}    default_value
+     * @param {MaybeRef<SQLValue>}    default_value
      */
     constructor(src, default_value = null) {
-        super(src, default_value);
+        super(src, unref(default_value));
         this.src = src;
         this.default_value = default_value;
     }
 
     reset() {
-        this.ref.value = this.default_value;
+        this.ref.value = unref(this.default_value);
     }
 }
 
@@ -270,9 +305,11 @@ class QuerySource extends DataGraphNodeBase {
         this.query.set_offset_ref(this.offset);
 
         /**@type {string[]} */
-        this.result_names = [];
+        this.result_query_names = [];
         /**@type {Object.<string, QuerySourceCachedValue>} */
         this.result = {};
+        // /**@type {Object.<string, QuerySourceCachedValue>} */
+        // this.passed = {};
 
         if(!no_dataset) {
             this.dataset = new FormDataSet(this);
@@ -308,8 +345,14 @@ class QuerySource extends DataGraphNodeBase {
                 this.insert_mode.value = false;
             }else if(this.request instanceof QuerySourceRequest_Insert) {
                 this.insert_mode.value = this.request.value;
+                if(this.request.value) {
+                    this.for_each_dist_deep(node => node instanceof QuerySource && 
+                                                    (node.insert_mode.value = false));
+                }
             }
             this.request_clear();
+        } else {
+            this.insert_mode.value = false;
         }
         if(this.insert_mode.value) {
             this.perform_reset();
@@ -330,6 +373,9 @@ class QuerySource extends DataGraphNodeBase {
         for(const key in this.result) {
             this.result[key].reset();
         }
+        // for(const key in this.passed) {
+        //     this.passed[key].reset();
+        // }
         this.dataset?.refresh();
     }
 
@@ -354,12 +400,15 @@ class QuerySource extends DataGraphNodeBase {
         }
         const first_row = rows[0];
         for(let i in first_row) {
-            this.result[this.result_names[i]].ref.value = first_row[i];
+            this.result[this.result_query_names[i]].ref.value = first_row[i];
         }
         this.dataset?.refresh();
     }
 
     #add_update_request_impl(request, expire_count = true) {
+        if(this.disabled.value) {
+            return;
+        }
         this.request = request;
         this.expire(expire_count);
     }
@@ -396,17 +445,31 @@ class QuerySource extends DataGraphNodeBase {
 
     /**
      * @param {string}   name 
-     * @param {SQLValue} default_value
+     * @param {Dependable<SQLValue>} default_value
      * @param {string?}  sql_definition 
      */
     add_select(name, default_value = null, sql_definition = null) {
         this.expire();
         this.query.add_select(name, sql_definition);
-        this.result_names.push(name);
-        const cached = new QuerySourceCachedValue(this, default_value);
+        this.result_query_names.push(name);
+        const ref = this.add_dependable_or_ref(default_value);
+        const cached = new QuerySourceCachedValue(this, ref);
         this.result[name] = cached;
         this.dataset?.add(name, cached);
     }
+
+    // /**
+    //  * @param {string}   name 
+    //  * @param {Dependable<SQLValue>} dep
+    //  */
+    // add_passed(name, dep = null, sql_definition = null) {
+    //     this.expire();
+    //     const value  = this.add_dependable_or_ref(dep);
+    //     const cached = new QuerySourceCachedValue(this, default_value);
+    //     this.result[name] = cached;
+    //     this.dataset?.add(name, cached);
+    // }
+    
 
     /**
      * 
@@ -435,11 +498,45 @@ class QuerySource extends DataGraphNodeBase {
         const ref = this.add_dependable_or_ref(value);
         this.query.add_where_eq(field, ref, optional);
     }
+
+    /**
+     * @param {boolean} optional
+     * @param {Dependable[]} parts 
+     */
+    #add_where_impl(optional, ...parts){
+        this.expire();
+        const _parts = parts.map(x => {
+            if(typeof x === 'string' || typeof x === 'number' || x === null) {
+                return x;
+            } else {
+                return this.add_dependable_or_ref(x);
+            }
+        });
+        if(optional) {
+            this.query.add_where_opt(..._parts);
+        } else {
+            this.query.add_where(..._parts);
+        }
+    }
+    
+    /**
+     * @param  {Dependable[]} parts 
+     */
+    add_where(...parts) {
+        this.#add_where_impl(false, ...parts);
+    }
+    /**
+     * @param  {Dependable[]} parts 
+     */
+    add_where_opt(...parts) {
+        this.#add_where_impl(true, ...parts);
+    }
 }
 
 
 export {
     QuerySource,
     QueryBuilder,
-    QuerySourceCachedValue
+    QuerySourceCachedValue,
+    QueryParts
 }

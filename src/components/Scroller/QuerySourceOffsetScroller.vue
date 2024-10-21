@@ -34,10 +34,10 @@ const props = defineProps({
 	// }
 });
 
-// TODO insert mode //////////////
-const insert_mode           = ref(false);
-//////////////////////////////////
 
+const emit = defineEmits({
+	error(err) {return true;}
+})
 
 // const displayed_placeholder = computed(() => '***' );
 const displayed_placeholder = "***";
@@ -50,8 +50,9 @@ const displayed_value = computed(() =>
 );
 
 
-function show_error(err) {
-	console.error(err)
+function on_error(err) {
+	console.error(err);
+	emit('error', err);
 }
 
 // TODO additional buttons
@@ -83,11 +84,8 @@ async function clicked_insert() {
 	return props.src.try_perform_and_update_confirmed(() => 
 		props.src.request_insert_toggle());
 }
-/**
- * @param {MouseEvent} event 
- */
-async function clicked_save(event) {
-	const force = event.shiftKey;
+async function clicked_save(shiftKey = false) {
+	const force = shiftKey;
 	return props.src.save_deep_transaction_and_update(force);
 }
 
@@ -102,20 +100,20 @@ async function clicked_save(event) {
 		is_empty:   props.src.is_empty.value, 
 		is_insert:  props.src.insert_mode.value
 	}">
-	<input type="button" class="btn prev bound" @click="goto(0)            .catch(show_error)">
-	<input type="button" class="btn prev step2" @click="scroll(-props.step).catch(show_error)" v-if="props.step > 1">
-	<input type="button" class="btn prev step"  @click="scroll(-1)         .catch(show_error)">
-	<input type="text"   class="curr"           :value="displayed_value" @change="e => update_offset_from_input(e).catch(show_error)" :placeholder="displayed_placeholder">
-	<input type="button" class="btn next step"  @click="scroll(+1).         catch(show_error)">
-	<input type="button" class="btn next step2" @click="scroll(+props.step).catch(show_error)" v-if="props.step > 1">
-	<input type="button" class="btn next bound" @click="goto(-1, true)     .catch(show_error)">
+	<input type="button" class="btn prev bound" @click="goto(0)            .catch(on_error)">
+	<input type="button" class="btn prev step2" @click="scroll(-props.step).catch(on_error)" v-if="props.step > 1">
+	<input type="button" class="btn prev step"  @click="scroll(-1)         .catch(on_error)">
+	<input type="text"   class="curr"           :value="displayed_value" @change="e => update_offset_from_input(e).catch(on_error)" :placeholder="displayed_placeholder">
+	<input type="button" class="btn next step"  @click="scroll(+1).         catch(on_error)">
+	<input type="button" class="btn next step2" @click="scroll(+props.step).catch(on_error)" v-if="props.step > 1">
+	<input type="button" class="btn next bound" @click="goto(-1, true)     .catch(on_error)">
 	<span class="txt bounds as_input"> ({{ props.src.count.value }}) </span>
-	<input type="button" class="btn refresh"    @click="clicked_refresh" v-if="!props.norefresh">
-	<input type="button" class="btn insert"     @click="clicked_insert"  v-if="props.insertable" 
+	<input type="button" class="btn refresh"    @click="clicked_refresh().catch(on_error)" v-if="!props.norefresh">
+	<input type="button" class="btn insert"     @click="clicked_insert().catch(on_error)"  v-if="props.insertable" 
 				:class="{indicate: props.src.insert_mode.value}">
 	<div class="spacer"></div>
 	<!-- <span  class="as_input"> | UTD: {{ state.is_bounds_utd }} | EMPTY: {{ state.is_empty }} | </span> -->
-	<input type="button" class="btn save"       @click="clicked_save" v-if="props.saveable" :class="{indicate: props.src.changed.value}">
+	<input type="button" class="btn save"       @click="e => clicked_save(e.shiftKey).catch(on_error)" v-if="props.saveable" :class="{indicate: props.src.changed.value}">
 </div>
 
 </template>

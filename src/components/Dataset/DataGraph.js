@@ -165,10 +165,16 @@ class DataGraphNodeBase {
 
     assure_unchanged() {
         // if(this.changed.value || this.inserting.value) return false;
-        if(this.changed.value) return false;
+        if(this.changed.value) {
+            // debugger;
+            return false;
+        }
         const nodes_to_update = get_complete_expired_subgraph([this]);
         // if(nodes_to_update.some(x => x.changed.value || x.inserting.value)) return false;
-        if(nodes_to_update.some(x => x.changed.value)) return false;
+        if(nodes_to_update.some(x => x.changed.value)) {
+            // debugger;
+            return false;
+        }
         return true;
     }
 
@@ -212,6 +218,9 @@ class DataGraphNodeBase {
      * @param {DataGraphNodeBase?} node 
      */
     add_dep(node, no_ref_trigger = false) {
+        if(node === this) {
+            throw new Error('Cannot depend on itself');
+        }
         if(!node) return false;
         if(this.deps.value.has(node)) return false;
         node.dists.value.add(this);
@@ -263,6 +272,16 @@ class DataGraphNodeBase {
         }
         this.disconnect();
     }
+
+    /**
+     * @param {(node: DataGraphNodeBase) => void} callback 
+     */
+    for_each_dist_deep(callback) {
+        const nodes = get_all_dists([this]);
+        for(let i = 1; i < nodes.length; i++) {
+            callback(nodes[i]);
+        }
+    }
 }
 
 /**@template T */
@@ -276,7 +295,7 @@ class DataGraphNodeFromRef extends DataGraphNodeBase {
         this.cached = shallowRef(unref(this.ref));
     }
     
-    check_changed_impl() {return unref(this.cached) !== unref(this.ref);}
+    // check_changed_impl() {return unref(this.cached) !== unref(this.ref);}
     check_expired_impl() {return unref(this.cached) !== unref(this.ref);}
     update_impl()  {this.cached.value = unref(this.ref);}
 }
@@ -410,6 +429,18 @@ function get_all_changed_dists(nodes){
     /**@type {DataGraphNodeBase[]} */
     const visited = [];
     bfs_dists(nodes, node_predicate_changed, result, visited, false);
+    visited.forEach(x => x._visited = false);
+    return result;
+}
+/**
+ * @param {DataGraphNodeBase[]} nodes
+ */
+function get_all_dists(nodes){
+    /**@type {DataGraphNodeBase[]} */
+    const result = [];
+    /**@type {DataGraphNodeBase[]} */
+    const visited = [];
+    bfs_dists(nodes, node_predicate_always, result, visited, false);
     visited.forEach(x => x._visited = false);
     return result;
 }

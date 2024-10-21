@@ -97,11 +97,11 @@
         - Dataset with DataGraph
             + DataGraph
             + QuerySource
-                - layerd test
+                + layerd test
                 - aux queries
                 - more dynamic query builder
             + OffsetScroller
-                - errors via MsgManager
+                + errors via MsgManager
                 + better error/expired indication
                 + special buttons
             + integration with form controls
@@ -123,7 +123,7 @@
             + adapt for DataGraph interface
             + custom context menu
                 - make "Zaznacz Wszystko" on read-only inputs work
-            - Labels
+            + Labels
             + Input
                 + Integer
                 + Number
