@@ -55,7 +55,8 @@ function create_form1() {
     //@ts-ignore
     src.add_select_auto(KLIENCI_SELECT_FIELDS.value);
     src.add_from(KLIENCI_FROM.value);
-    src.add_where_eq('KTO', kto_ref, true);
+    // src.add_where_eq('KTO', kto_ref, true);
+    src.query.add_where_eq('KTO', kto_ref, true);
 
     /**@type {FormDataSet} */
     //@ts-ignore

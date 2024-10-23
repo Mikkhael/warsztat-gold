@@ -1,5 +1,7 @@
 //@ts-check
 
+import { computed, isRef, ref, shallowRef, triggerRef } from 'vue';
+
 let last_UID = 0n;
 function generate_UID(){
 	const uid = `UID_${last_UID}`;
@@ -193,6 +195,52 @@ function as_promise(async_function) {
 	return async_function();
 }
 
+///// Reactivity ////
+
+// /**
+//  * @template T
+//  * @param {T} value
+//  * @param {((nwe_value: import('vue').UnwrapRef<T>, 
+//  *           old_value: import('vue').UnwrapRef<T>) => any) | undefined} on_change
+//  */
+// function watchedRef(value, on_change) {
+// 	if(on_change === undefined) {
+// 		return ref(value);
+// 	}
+// 	const _value = ref(value);
+// 	return computed({
+// 		get() { return _value.value; },
+// 		set(new_value) {
+// 			on_change(new_value, _value.value);
+// 			_value.value = new_value;
+// 		}
+// 	});
+// }
+
+/**
+ * @template T
+ * @typedef {import('vue').Ref<T> & {reas: (ref: import('vue').Ref<T>) => void}} ReasRef
+ */
+
+/**
+ * @template T
+ * @param {T} val
+ * @returns {ReasRef<import('vue').UnwrapRef<T>>}
+ */
+function reasRef(val) {
+    const _ref = shallowRef([ref(val)]);
+    const _computed = computed({
+		get()  {return _ref.value[0].value;	    },
+		set(n) {       _ref.value[0].value = n; }
+	});
+	/**@param { import('vue').Ref<import('vue').UnwrapRef<T>>} ref */
+	const reas = (ref) => {
+		_ref.value[0] = ref;
+		triggerRef(_ref);
+	}
+	return Object.assign(_computed, {reas});
+}
+
 
 export {
 	generate_UID,
@@ -217,5 +265,8 @@ export {
 	datetime_now,
 
 	str_to_date_local,
-	format_date_str_local
+	format_date_str_local,
+
+	reasRef,
+	// watchedRef
 }

@@ -99,7 +99,7 @@
             + QuerySource
                 + layerd test
                 - aux queries
-                - more dynamic query builder
+                + more dynamic query builder
             + OffsetScroller
                 + errors via MsgManager
                 + better error/expired indication

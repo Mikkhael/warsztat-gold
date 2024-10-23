@@ -8,6 +8,7 @@ import { configDir } from "@tauri-apps/api/path";
 import ipc from "../../ipc";
 import { TableNode } from "./Database";
 import { FormDataSet } from "./Form";
+import { QueryBuilder } from "./QueryBuilder";
 
 
 /**
@@ -61,194 +62,123 @@ onUnmounted(() => {
 */
 
 
-class QueryBuilderSelectField {
-    /**
-     * @param {string } name 
-     * @param {string?} sql_definition 
-     */
-    constructor(name, sql_definition = null) {
-        this.name = name;
-        this.sql_definition = sql_definition;
-        
-        this.sql = sql_definition ? (sql_definition + ' AS ' + escape_sql_value(name))
-                                  : escape_backtick_smart(name);
-    }
-}
-// class QueryBuilderWhereEq {
-//     /**
-//      * @param {string}   name 
-//      * @param {MaybeRef<SQLValue>} value 
-//      */
-//     constructor(name, value, optional = true) {
-//         this.name     = name;
-//         this.value    = value;
-//         this.optional = optional;
-        
-//         this.sql = computed(() => this.get_sql());
+// class QueryBuilder {
+//     constructor(auto_rowid_order = true) {
+//         /**@type {QueryBuilderSelectField[]} */
+//         this.select = [];
+//         this.from   = "";
+//         /**@type {QueryParts[]} */
+//         this.where_conj = [];
+//         /**@type {QueryParts[]} */
+//         this.where_conj_opt = [];
+//         /**@type {QueryBuilderOrder[]} */
+//         this.order = [];
+//         if(auto_rowid_order){
+//             this.order.push(new QueryBuilderOrder('rowid'));
+//         }
+
+//         /**@type {MaybeRef<number>} */
+//         this.offset = -1;
+
+//         this._expired = ref(false);
+//         this.sql = computed(() => {this._expired.value = false; return this.build_sql()});
 //     }
 
-//     get_sql(){
-//         return escape_backtick_smart(this.name) + ' = ' + escape_sql_value(unref(this.value));
+//     expire() {
+//         this._expired.value = true;
+//     }
+
+//     build_sql() {
+//         const res = {};
+
+//         const sql_select_base   = this.select.map(x => x.sql).join(', ');
+//         const sql_from  = this.from;
+//         // const sql_where_base  = convert_where_eq_to_sql(...this.where_eq);
+//         const sql_where =   [   ...this.where_conj,
+//                                 ...this.where_conj_opt.filter(x => !x.is_any_null.value)]
+//                             .map(x => '(' + x.sql.value + ')').join(' AND ');
+//         const sql_order = this.order.map(x => x.sql).join(', ');
+
+//         const offset = unref(this.offset);
+//         const sql_offset = offset >= 0 ? offset.toString() : "";
+
+//         res.base = concat_query({
+//             select: sql_select_base, 
+//             from: sql_from,
+//             where: sql_where,
+//             order: sql_order});
+//         res.count = concat_query({
+//             select: `count(*)`, 
+//             from: sql_from, 
+//             where: sql_where});
+//         res.offset = concat_query({
+//             select: sql_select_base, 
+//             from: sql_from,
+//             where: sql_where,
+//             order: sql_order,
+//             limit: '1',
+//             offset: sql_offset});
+        
+//         return res;
+//     }
+
+//     /**
+//      * @param {string } name 
+//      * @param {string?} sql_definition 
+//      */
+//     add_select(name, sql_definition = null) {
+//         this.select.push(new QueryBuilderSelectField(name, sql_definition));
+//         this.expire();
+//     }
+
+//     /**
+//      * @param {string} sql 
+//      */
+//     add_from(sql) {
+//         this.from += sql;
+//         this.expire();
+//     }
+
+//     /**
+//      * @param {string} field 
+//      * @param {MaybeRef<SQLValue>} value 
+//      */
+//     add_where_eq(field, value, optional = false) {
+//         const parts = new QueryParts(escape_backtick_smart(field) + ' =', value);
+//         if(optional) {
+//             this.where_conj_opt.push(parts);
+//         } else {
+//             this.where_conj.push(parts);
+//         }
+//         this.expire();
+//     }
+
+//     /**
+//      * @param  {MaybeRef<SQLValue>[]} parts 
+//      */
+//     add_where(...parts) {
+//         const _parts = new QueryParts(...parts);
+//         this.where_conj.push(_parts);
+//         this.expire();
+//     }
+//     /**
+//      * @param  {MaybeRef<SQLValue>[]} parts 
+//      */
+//     add_where_opt(...parts) {
+//         const _parts = new QueryParts(...parts);
+//         this.where_conj_opt.push(_parts);
+//         this.expire();
+//     }
+
+//     /**
+//      * @param {MaybeRef<number>} ref 
+//      */
+//     set_offset_ref(ref) {
+//         this.offset = ref;
+//         this.expire();
 //     }
 // }
 
-class QueryParts {
-    /**
-     * @param  {...MaybeRef<SQLValue>} parts 
-     */
-    constructor(...parts) {
-        this.parts  = parts;
-        this.vparts = parts.filter(part => typeof part !== 'string');
-
-        this.is_any_null = computed(() => this.vparts.some(x => unref(x) === null));
-        this.sql = computed(() => this.parts.map(x => unref(x)).join(' '));
-    }
-}
-
-
-class QueryBuilderOrder {
-    /**
-     * @param {string} name 
-     */
-    constructor(name, is_ascending = true) {
-        this.name = name;
-        this.is_ascending = is_ascending;
-
-        this.sql = this.name + ' ' + (this.is_ascending ? 'ASC' : `DESC`);
-    }
-}
-
-function concat_query_section(name, sql){
-    return (sql && sql.length > 0) ? ' ' + name + ' ' + sql : "";
-}
-/**
- * @param {Object.<string, string>} sections 
- */
-function concat_query(sections) {
-    return  concat_query_section('SELECT',   sections.select) +
-            concat_query_section('FROM',     sections.from) +
-            concat_query_section('WHERE',    sections.where) +
-            concat_query_section('ORDER BY', sections.order) +
-            concat_query_section('LIMIT',    sections.limit) +
-            concat_query_section('OFFSET',   sections.offset);
-}
-
-class QueryBuilder {
-    constructor(auto_rowid_order = true) {
-        /**@type {QueryBuilderSelectField[]} */
-        this.select = [];
-        this.from   = "";
-        /**@type {QueryParts[]} */
-        this.where_conj = [];
-        /**@type {QueryParts[]} */
-        this.where_conj_opt = [];
-        /**@type {QueryBuilderOrder[]} */
-        this.order = [];
-        if(auto_rowid_order){
-            this.order.push(new QueryBuilderOrder('rowid'));
-        }
-
-        /**@type {MaybeRef<number>} */
-        this.offset = -1;
-
-        this.expired = ref(false);
-        this.sql = computed(() => {this.expired.value = false; return this.build_sql()});
-    }
-
-    expire() {
-        this.expired.value = true;
-    }
-
-    build_sql() {
-        const res = {};
-
-        const sql_select_base   = this.select.map(x => x.sql).join(', ');
-        const sql_from  = this.from;
-        // const sql_where_base  = convert_where_eq_to_sql(...this.where_eq);
-        const sql_where =   [   ...this.where_conj,
-                                ...this.where_conj_opt.filter(x => !x.is_any_null.value)]
-                            .map(x => '(' + x.sql.value + ')').join(' AND ');
-        const sql_order = this.order.map(x => x.sql).join(', ');
-
-        const offset = unref(this.offset);
-        const sql_offset = offset >= 0 ? offset.toString() : "";
-
-        res.base = concat_query({
-            select: sql_select_base, 
-            from: sql_from,
-            where: sql_where,
-            order: sql_order});
-        res.count = concat_query({
-            select: `count(*)`, 
-            from: sql_from, 
-            where: sql_where});
-        res.offset = concat_query({
-            select: sql_select_base, 
-            from: sql_from,
-            where: sql_where,
-            order: sql_order,
-            limit: '1',
-            offset: sql_offset});
-        
-        return res;
-    }
-
-    /**
-     * @param {string } name 
-     * @param {string?} sql_definition 
-     */
-    add_select(name, sql_definition = null) {
-        this.select.push(new QueryBuilderSelectField(name, sql_definition));
-        this.expire();
-    }
-
-    /**
-     * @param {string} sql 
-     */
-    add_from(sql) {
-        this.from += sql;
-        this.expire();
-    }
-
-    /**
-     * @param {string} field 
-     * @param {MaybeRef<SQLValue>} value 
-     */
-    add_where_eq(field, value, optional = false) {
-        const parts = new QueryParts(escape_backtick_smart(field) + ' =', value);
-        if(optional) {
-            this.where_conj_opt.push(parts);
-        } else {
-            this.where_conj.push(parts);
-        }
-        this.expire();
-    }
-
-    /**
-     * @param  {MaybeRef<SQLValue>[]} parts 
-     */
-    add_where(...parts) {
-        const _parts = new QueryParts(...parts);
-        this.where_conj.push(_parts);
-        this.expire();
-    }
-    /**
-     * @param  {MaybeRef<SQLValue>[]} parts 
-     */
-    add_where_opt(...parts) {
-        const _parts = new QueryParts(...parts);
-        this.where_conj_opt.push(_parts);
-        this.expire();
-    }
-
-    /**
-     * @param {MaybeRef<number>} ref 
-     */
-    set_offset_ref(ref) {
-        this.offset = ref;
-        this.expire();
-    }
-}
 
 function clump(val, past_max) {
     if(val >= past_max) val = past_max - 1;
@@ -287,22 +217,20 @@ class QuerySourceRequest_Insert {
 }
 
 class QuerySource extends DataGraphNodeBase {
-    constructor(auto_rowid_order = true, no_dataset = false, with_full_result = false) {
+    constructor(implicit_order_rowid = true, no_dataset = false) {
         super();
         /**@type {TableNode[]} */
         this.dependant_tables = [];
-        this.query = new QueryBuilder(auto_rowid_order);
+        this.query = new QueryBuilder(implicit_order_rowid);
 
         /**@type {any} */
         this.request = null;
         this.insert_mode = ref(false);
-        this.offset = ref(0);
+        this.offset = this.query.offset;
 
         this.count = ref(0);
         this.count_expired = ref(true);
 
-
-        this.query.set_offset_ref(this.offset);
 
         /**@type {string[]} */
         this.result_query_names = [];
@@ -315,11 +243,6 @@ class QuerySource extends DataGraphNodeBase {
             this.dataset = new FormDataSet(this);
         }
 
-        if(with_full_result) {
-            /**@type {Ref<SQLValue[][]>} */
-            this.full_result = ref([]); // TODO implement
-        }
-
         this.is_empty = computed(() => this.count.value <= 0);
     }
 
@@ -327,6 +250,9 @@ class QuerySource extends DataGraphNodeBase {
     expire(expire_count = true) {
         if(expire_count) this.count_expired.value = true;
         super.expire();
+    }
+    check_expired_impl() {
+        return this.query.is_expired();
     }
     check_changed_impl() {
         return this.dataset?.changed.value || this.insert_mode.value;
@@ -356,9 +282,10 @@ class QuerySource extends DataGraphNodeBase {
         }
         if(this.insert_mode.value) {
             this.perform_reset();
-            return;
+        } else {
+            await this.perform_offset_query();
         }
-        await this.perform_offset_query();
+        this.query.acknowledge_expried();
     }
     async save_impl(force = false) {
         if(!this.dataset) return;
@@ -385,14 +312,14 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     async perform_count_query() {
-        const [rows] = await ipc.db_query(this.query.sql.value.count);
+        const [rows] = await ipc.db_query(this.query.full_sql_count.value);
         if(rows.length === 0) this.count.value = -1;
         else                  this.count.value = rows[0][0];
         this.offset.value = clump(this.offset.value, this.count.value);
     }
 
     async perform_offset_query() {
-        const [rows] = await ipc.db_query(this.query.sql.value.offset);
+        const [rows] = await ipc.db_query(this.query.full_sql_offset.value);
         if(rows.length === 0) {
             this.count.value = 0;
             this.perform_reset();
@@ -446,10 +373,9 @@ class QuerySource extends DataGraphNodeBase {
     /**
      * @param {string}   name 
      * @param {Dependable<SQLValue>} default_value
-     * @param {string?}  sql_definition 
+     * @param {string=}  sql_definition 
      */
-    add_select(name, default_value = null, sql_definition = null) {
-        this.expire();
+    add_select(name, default_value = null, sql_definition = undefined) {
         this.query.add_select(name, sql_definition);
         this.result_query_names.push(name);
         const ref = this.add_dependable_or_ref(default_value);
@@ -458,21 +384,7 @@ class QuerySource extends DataGraphNodeBase {
         this.dataset?.add(name, cached);
     }
 
-    // /**
-    //  * @param {string}   name 
-    //  * @param {Dependable<SQLValue>} dep
-    //  */
-    // add_passed(name, dep = null, sql_definition = null) {
-    //     this.expire();
-    //     const value  = this.add_dependable_or_ref(dep);
-    //     const cached = new QuerySourceCachedValue(this, default_value);
-    //     this.result[name] = cached;
-    //     this.dataset?.add(name, cached);
-    // }
-    
-
     /**
-     * 
      * @param {[string, SQLValue | undefined, string | undefined][]} names 
      */
     add_select_auto(names) {
@@ -485,8 +397,7 @@ class QuerySource extends DataGraphNodeBase {
      * @param {string} sql 
      */
     add_from(sql) {
-        this.expire();
-        this.query.add_from(sql);
+        this.query.from.value += sql;
     }
 
     /**
@@ -512,11 +423,7 @@ class QuerySource extends DataGraphNodeBase {
                 return this.add_dependable_or_ref(x);
             }
         });
-        if(optional) {
-            this.query.add_where_opt(..._parts);
-        } else {
-            this.query.add_where(..._parts);
-        }
+        this.query.add_where(_parts, optional);
     }
     
     /**
@@ -538,5 +445,4 @@ export {
     QuerySource,
     QueryBuilder,
     QuerySourceCachedValue,
-    QueryParts
 }
