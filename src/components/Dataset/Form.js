@@ -3,7 +3,7 @@
 import ipc from '../../ipc';
 import { TableNode } from './Database';
 import {AdvDependableRef, DataGraphNodeBase} from './DataGraph';
-import {QuerySource, QuerySourceCachedValue} from './QuerySource';
+import {QuerySource} from './QuerySource';
 import {TableSync} from './Sync';
 import {computed, ref, shallowReactive, unref} from 'vue';
 
@@ -18,15 +18,156 @@ import {computed, ref, shallowReactive, unref} from 'vue';
 
 
 /**
- * @typedef {QuerySourceCachedValue | AdvDependableRef<SQLValue>} FormDataValueSrc
+ * @typedef {FormQuerySourceCachedValue | AdvDependableRef<SQLValue>} FormDataValueSrc
  */
+
+/**
+ * @template [T=SQLValue]
+ * @typedef {T | import('vue').Ref<T>} MaybeRef
+ */
+
+/**
+ * @template [T=SQLValue]
+ * @typedef {import('./DataGraph').Dependable<T>} Dependable
+ */
+
+
+class QuerySourceRequest_Insert {
+    constructor(value = false) {this.value = value};
+}
+
+class FormQuerySource extends QuerySource {
+    constructor(implicit_order_rowid = true) {
+        super(implicit_order_rowid);
+        
+        /**@type {string[]} */
+        this.result_query_names = [];
+        /**@type {Object.<string, FormQuerySourceCachedValue>} */
+        this.result = {};
+
+        this.insert_mode = ref(false);
+
+        this.dataset = new FormDataSet(this);
+    }
+
+    /// OVERWRITES //////////////////////
+    check_changed_impl() {
+        return this.dataset.changed.value || this.insert_mode.value;
+    }
+    check_should_disable_dists_impl() {
+        return this.is_empty.value || this.insert_mode.value;
+    }
+    
+    update__request_impl() {
+        if(this.request instanceof QuerySourceRequest_Insert) {
+            this.insert_mode.value = this.request.value;
+            if(this.insert_mode.value) {
+                this.for_each_dist_deep(node => node instanceof FormQuerySource && 
+                                                (node.insert_mode.value = false));
+            }
+            this.request_clear();
+        } else {
+            this.insert_mode.value = false;
+        }
+        super.update__request_impl();
+    }
+    async update__main_impl() {
+        if(this.insert_mode.value) {
+            this.perform_reset();
+            return;
+        }
+        await super.update__main_impl();
+    }
+
+    async save_impl(force = false) {
+        debugger;
+        const res = await this.dataset.perform_save_notransaction(undefined, force);
+        if(res.insert) {
+            this.request_offset_goto(-1, true);
+        }
+    }
+
+    perform_reset() {
+        for(const key in this.result) {
+            this.result[key].reset();
+        }
+        this.dataset.refresh();
+    }
+
+    async perform_offset_query() {
+        const full_result = await super.perform_offset_query();
+        if(full_result === null) {
+            this.perform_reset();
+            return null;
+        }
+        const first_row = full_result[0][0];
+        for(let i in first_row) {
+            this.result[this.result_query_names[i]].ref.value = first_row[i];
+        }
+        this.dataset.refresh();
+        return full_result;
+    }
+    
+    /**
+     * @param {string}   name 
+     * @param {string=}  sql_definition 
+     */
+    add_select(name, sql_definition = undefined) {
+        this.add_select_data(name, null, sql_definition);
+    }
+
+    /**
+     * @param {string}   name 
+     * @param {Dependable<SQLValue>} default_value
+     * @param {string=}  sql_definition 
+     */
+    add_select_data(name, default_value = null, sql_definition = undefined) {
+        this.query.add_select(name, sql_definition);
+        this.result_query_names.push(name);
+        const ref = this.add_dependable_or_ref(default_value);
+        const cached = new FormQuerySourceCachedValue(this, ref);
+        this.result[name] = cached;
+        this.dataset?.add(name, cached);
+    }
+    
+    /**
+     * @param {boolean} value 
+     */
+    request_insert_mode(value) {
+        this._add_update_request_impl(new QuerySourceRequest_Insert(value), false);
+    }
+    request_insert_toggle() {
+        this._add_update_request_impl(new QuerySourceRequest_Insert(!this.insert_mode.value), false);
+    }
+}
+
+
+/**
+ * @extends {AdvDependableRef<SQLValue>}
+ */
+class FormQuerySourceCachedValue extends AdvDependableRef {
+    /**
+     * @param {QuerySource} src 
+     * @param {MaybeRef<SQLValue>}    default_value
+     */
+    constructor(src, default_value = null) {
+        super(src, unref(default_value));
+        this.src = src;
+        this.default_value = default_value;
+    }
+
+    reset() {
+        this.ref.value = unref(this.default_value);
+    }
+}
+
 
 
 // TODO add type (and also other attributes, potentialy)
 class FormDataValue {
     /**
      * @param {FormDataSet} dataset
-     * @param {QuerySourceCachedValue} src
+     * @param {FormQuerySourceCachedValue} src
      */
     constructor(dataset, src) {
         this.dataset = dataset;
@@ -63,7 +204,7 @@ class FormDataValue {
 class FormDataSet {
 
     /**
-     * @param {QuerySource?} query_src 
+     * @param {FormQuerySource?} query_src 
      */
     constructor(query_src) {
         this.query_src = query_src;
@@ -123,10 +264,10 @@ class FormDataSet {
         if(this.values[name]) {
             throw new Error('VALUE ALREADY EXISTS: ' + name);
         }
-        if(src instanceof QuerySourceCachedValue && src.src !== this.query_src) {
+        if(src instanceof FormQuerySourceCachedValue && src.src !== this.query_src) {
             throw new Error('WRONG QUERY SOURCE FOR SET: ' + name);
         }
-        else if(!(src instanceof QuerySourceCachedValue)){
+        else if(!(src instanceof FormQuerySourceCachedValue)){
             throw new Error('NON-QUERY-CACHE NOT IMPLEMENTED YET IN DATASET');
         }
         const value = new FormDataValue(this, src);
@@ -150,6 +291,9 @@ class FormDataSet {
 // data changed -> dane wpisane są inne niż w cache'u
 
 export {
+    QuerySourceRequest_Insert,
+    FormQuerySource,
+    FormQuerySourceCachedValue,
     FormDataSet,
     FormDataValue
 }

@@ -4,7 +4,7 @@
 import {computed, ref,shallowRef} from 'vue';
 
 import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
-import {DataGraphNodeBase, QuerySource, FormDataSet} from '../Dataset';
+import {DataGraphNodeBase, FormQuerySource, FormDataSet} from '../Dataset';
 import QuerySourceOffsetScroller from '../Scroller/QuerySourceOffsetScroller.vue';
 
 import FormInput from '../Controls/FormInput.vue';
@@ -50,16 +50,17 @@ const KLIENCI_FROM = ref('`klienci`');
 
 
 function create_form1() {
-    const src = new QuerySource();
+    const src = new FormQuerySource();
     src.add_table_dep(db.TABS.klienci);
-    //@ts-ignore
-    src.add_select_auto(KLIENCI_SELECT_FIELDS.value);
+    for(const field of KLIENCI_SELECT_FIELDS.value) {
+        src.add_select_data(field[0] ?? "", field[1], field[2] ?? undefined);
+    }
+
     src.add_from(KLIENCI_FROM.value);
     // src.add_where_eq('KTO', kto_ref, true);
     src.query.add_where_eq('KTO', kto_ref, true);
 
     /**@type {FormDataSet} */
-    //@ts-ignore
     const data = src.dataset;
 
     // TODO automate
@@ -78,20 +79,18 @@ function create_form2(
     /**@type {import('./../Dataset').Dependable} */ param1 = null,
     /**@type {import('./../Dataset').Dependable} */ param2 = null,
 ) {
-    const src = new QuerySource();
+    const src = new FormQuerySource();
     src.add_table_dep(db.TABS.samochody);
-    //@ts-ignore
 
-
-    src.add_select("ID",            null);
-    src.add_select("marka",         null);
-    src.add_select("model",         null);
-    src.add_select("nr_rej",        null, '`nr rej`');
-    src.add_select("nr_sil",        null, '`nr silnika`');
-    src.add_select("nr_nad",        'brak nadwozia', '`nr nadwozia`');
+    src.add_select_data("ID",            null);
+    src.add_select_data("marka",         null);
+    src.add_select_data("model",         null);
+    src.add_select_data("nr_rej",        null, '`nr rej`');
+    src.add_select_data("nr_sil",        null, '`nr silnika`');
+    src.add_select_data("nr_nad",        'brak nadwozia', '`nr nadwozia`');
     src.add_from('`samochody klientów`');
 
-    src.add_select("ID_klienta",   param1, '`ID klienta`');
+    src.add_select_data("ID_klienta",  param1, '`ID klienta`');
     if(param2 === null) {
         src.add_where_eq("ID klienta", param1, true);
     } else {
@@ -100,7 +99,6 @@ function create_form2(
 
 
     /**@type {FormDataSet} */
-    //@ts-ignore
     const data = src.dataset;
 
     // TODO automate
@@ -119,13 +117,13 @@ function create_form2(
 
 
 //@ts-ignore
-const src1  = shallowRef(/**@type {QuerySource} */ (undefined));
+const src1  = shallowRef(/**@type {FormQuerySource} */ (undefined));
 //@ts-ignore
-const src2_1  = shallowRef(/**@type {QuerySource} */ (undefined));
+const src2_1  = shallowRef(/**@type {FormQuerySource} */ (undefined));
 //@ts-ignore
-const src2_2  = shallowRef(/**@type {QuerySource} */ (undefined));
+const src2_2  = shallowRef(/**@type {FormQuerySource} */ (undefined));
 //@ts-ignore
-const src2_3  = shallowRef(/**@type {QuerySource} */ (undefined));
+const src2_3  = shallowRef(/**@type {FormQuerySource} */ (undefined));
 //@ts-ignore
 // const data1 = computed(() => src1.value.dataset ?? new FormDataSet());
 const src1_res = computed(() => res_to_str(src1.value.result));

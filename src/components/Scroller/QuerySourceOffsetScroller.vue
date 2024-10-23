@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 import { watch, ref, readonly, toRef, toRefs, computed, onMounted, onUnmounted } from "vue";
-import { QuerySource } from "../Dataset";
+import { FormQuerySource, QuerySource } from "../Dataset";
 
 const props = defineProps({
 
@@ -39,11 +39,14 @@ const emit = defineEmits({
 	error(err) {return true;}
 })
 
+const src_form = computed(() => props.src instanceof FormQuerySource ? props.src : null);
+
+
+
 // const displayed_placeholder = computed(() => '***' );
 const displayed_placeholder = "***";
 const displayed_value = computed(() =>
-	props.src.is_empty.value || 
-	props.src.insert_mode.value || 
+	props.src.should_disable_dists.value || 
 	props.src.count.value < 0 ? 
 		"" :
 		props.src.offset.value + 1
@@ -54,11 +57,6 @@ function on_error(err) {
 	console.error(err);
 	emit('error', err);
 }
-
-// TODO additional buttons
-// function clicked_refresh( /**@type {MouseEvent} */ event){ emit('refresh_request'); }
-// function clicked_insert ( /**@type {MouseEvent} */ event){ emit('insert_request'); }
-// function clicked_save   ( /**@type {MouseEvent} */ event){ emit('save_request', event.shiftKey); }
 
 async function update_offset_from_input(/**@type {Event} */ event) {
 	/**@type {number} */
@@ -82,7 +80,7 @@ async function clicked_refresh() {
 }
 async function clicked_insert() {
 	return props.src.try_perform_and_update_confirmed(() => 
-		props.src.request_insert_toggle());
+		src_form.value?.request_insert_toggle());
 }
 async function clicked_save(shiftKey = false) {
 	const force = shiftKey;
@@ -98,7 +96,7 @@ async function clicked_save(shiftKey = false) {
 	:class="{
 		is_expired: props.src.expired.value, 
 		is_empty:   props.src.is_empty.value, 
-		is_insert:  props.src.insert_mode.value
+		is_insert:  src_form?.insert_mode.value
 	}">
 	<input type="button" class="btn prev bound" @click="goto(0)            .catch(on_error)">
 	<input type="button" class="btn prev step2" @click="scroll(-props.step).catch(on_error)" v-if="props.step > 1">
@@ -110,7 +108,7 @@ async function clicked_save(shiftKey = false) {
 	<span class="txt bounds as_input"> ({{ props.src.count.value }}) </span>
 	<input type="button" class="btn refresh"    @click="clicked_refresh().catch(on_error)" v-if="!props.norefresh">
 	<input type="button" class="btn insert"     @click="clicked_insert().catch(on_error)"  v-if="props.insertable" 
-				:class="{indicate: props.src.insert_mode.value}">
+				:class="{indicate: src_form?.insert_mode.value}">
 	<div class="spacer"></div>
 	<!-- <span  class="as_input"> | UTD: {{ state.is_bounds_utd }} | EMPTY: {{ state.is_empty }} | </span> -->
 	<input type="button" class="btn save"       @click="e => clicked_save(e.shiftKey).catch(on_error)" v-if="props.saveable" :class="{indicate: props.src.changed.value}">

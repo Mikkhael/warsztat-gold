@@ -57,8 +57,8 @@ async function db_open() {
     });
     if(!path) return path;
     return await invoke("open_database", {path}).then(() => {
+        if(path instanceof Array) throw new Error("MULTIPLE PATHS CHOSEN FOR OPEN DATABASE");
         state.db_is_open = true;
-        //@ts-ignore
         state.db_path = path;
         window.dispatchEvent(new Event('db_opened'));
         return path;
@@ -87,11 +87,11 @@ async function db_export_csv() {
         directory: true,
         recursive: true
     });
+    if(path instanceof Array) throw new Error("MULTIPLE PATHS CHOSEN FOR EXPORT CSV");
     if(!path) return path;
     let name = await file_name(state.db_path);
     console.log("name", name);
     name = name + '_' + (new Date()).toString().replace(/:/g, '_');
-    //@ts-ignore
     let exportPath = await join_path(path, name);
     console.log("export csv path", exportPath);
     return await invoke("export_csv", {exportPath}).then(() => exportPath);
