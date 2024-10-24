@@ -43,11 +43,7 @@ const props = defineProps({
     selectable: {
         type: Boolean,
         default: false
-    },
-    src_to_change: {
-        type: QuerySource,
-        required: false
-    },
+    }
 });
 
 console.log("QUERY VIEWER", props);
@@ -246,10 +242,6 @@ async function handle_select(row_i) {
     if(!props.selectable) return;
     const cols = src.full_result.value?.[1] ?? [];
     const row  = result_rows.value[row_i];
-    if(props.src_to_change) {
-        const confirmed = await props.src_to_change.assure_unchanged_or_confirm();
-        if(!confirmed) return;
-    }
     emit("select", cols, row, src.offset.value + row_i);
 }
 

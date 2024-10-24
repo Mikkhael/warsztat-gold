@@ -17,6 +17,7 @@ import { FWManager } from '../FloatingWindows/FWManager';
 import FWCollection from '../FloatingWindows/FWCollection.vue';
 import useMainMsgManager, { MsgManager } from '../Msg/MsgManager';
 
+import {standard_QV_select} from '../../Forms/FormCommon';
 
 
 const db = useWarsztatDatabase();
@@ -68,6 +69,19 @@ const QV_KLIENCI_MAIN = {
         [['KTO'],   'KTO'],
     ],
     where_conj: [[ '`KTO`=', [kto_ref] ]]
+}
+/**@type {QueryViewerQueryParams} */
+const QV_KLIENCI_BYCAR = {
+    from: "`samochody klientów` JOIN `klienci` ON `klienci`.`ID` = `samochody klientów`.`ID klienta`",
+    select: [
+        [['ID klienta']],
+        [['`samochody klientów`.`ID`']],
+        [['KTO']],
+
+        [['nr rej'], 'Nr Rejestracyjny'],
+        [['Nazwa'], 'Nazwa Klienta'],
+        [['KTO'], 'KTO'],
+    ]
 }
 
 //////////////// CRATING SOURCES ////////////////////
@@ -169,6 +183,11 @@ reset_sources();
 
 
 
+const QV_KLIENCI_MAIN_handler  = standard_QV_select([[src1.value, 0]], handle_error);
+const QV_KLIENCI_BYCAR_handler = standard_QV_select([[src1.value, 0], [src2_1.value, 1]], handle_error, row => {
+    kto_ref_raw.value = row[2];
+});
+
 
 const mem_leak_reps = ref(0);
 function test_mem_leaks(no_disconnect = false) {
@@ -188,7 +207,7 @@ function disconnect_tabs2() {
 
 const msgManager = useMainMsgManager();
 function handle_error(err) {
-    msgManager.post('error', err);
+    msgManager.postError(err);
 }
 
 defineExpose({
@@ -221,7 +240,19 @@ defineExpose({
         <div class="content">
             <QuerySourceDebug_form name="Klienci" :src="src1" v-slot="{data}" class="abc">
 
-                <QueryViewerOpenBtn :query="QV_KLIENCI_MAIN"  @error="handle_error" :src="src1"   :fwManager="fwManager"/>
+                <!-- <QueryViewerOpenBtn :query="QV_KLIENCI_MAIN"  @error="handle_error" :fwManager="fwManager" @select="(cols, row, offset, close) => {
+                    src1.try_perform_and_update_confirmed(() => {
+                        src1.request_offset_rownum(row[0]);
+                    }).then(succ => {
+                        if(succ) close();
+                    }).catch(err => {
+                        handle_error(err);
+                    })
+                }"/> -->
+                <QueryViewerOpenBtn :query="QV_KLIENCI_MAIN"  @error="handle_error" :fwManager="fwManager"
+                    @select="QV_KLIENCI_MAIN_handler"/>
+                <QueryViewerOpenBtn :query="QV_KLIENCI_BYCAR"  @error="handle_error" :fwManager="fwManager"
+                    @select="QV_KLIENCI_BYCAR_handler"/>
                 <br>
 
                 <label>ID  <FormInput type="number"          :value="data.values.ID"        readonly />    </label> <br>

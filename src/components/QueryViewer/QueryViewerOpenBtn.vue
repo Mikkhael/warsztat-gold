@@ -33,7 +33,7 @@ const props = defineProps({
         type: Object,
         required: true
     },
-
+    
     noselect: {
         type: Boolean,
         default: false
@@ -42,17 +42,19 @@ const props = defineProps({
         type: Object,
         required: false    
     },
-    src: {
-        type: QuerySource,
-        required: false
-    },
-    rownumber_col_index: {
-        type: Number,
-        default: 0
-    }
 });
 
-const emit = defineEmits(["select", "error"]);
+// const emit = defineEmits(["select", "error"]);
+const emit = defineEmits({
+    /**
+     * @param {string[]} columns 
+     * @param {any[]} row 
+     * @param {number} offset 
+     * @param {() => void} close 
+     */
+    select: (columns, row, offset, close) => true,
+    error:  (any) => true
+})
 
 const fwManager = props.fwManager ?? useMainFWManager();
 
@@ -62,6 +64,10 @@ function on_error(err) {
 }
 
 // TODO identify window by more than just the title, to avoid colisions
+function close_self () {
+    fwManager.close_window("Znajdź");
+}
+
 function on_click_find() {
     fwManager.open_or_reopen_window("Znajdź", QueryViewer, {
         /**@type {import('./QueryViewer.vue').QueryViwerQueryParams} */
@@ -71,8 +77,7 @@ function on_click_find() {
             where_conj:     props.query.where_conj ?? [],
             where_conj_opt: props.query.where_conj_opt ?? []
         },
-        selectable: !props.noselect,
-        src_to_change: props.src
+        selectable: !props.noselect
     }, {
         /**
          * @param {string[]} columns
@@ -80,16 +85,7 @@ function on_click_find() {
          * @param {number} offset
          */
         select: async (columns, row, offset) => {
-            try{
-                fwManager.close_window("Znajdź");
-                if(props.src) {
-                    props.src.request_offset_rownum(Number(row[props.rownumber_col_index]));
-                    await props.src.update_complete();
-                }
-                emit('select', columns, row, offset);
-            } catch (err) {
-                on_error(err);
-            }
+            emit('select', columns, row, offset, close_self);
         }
     });
 }

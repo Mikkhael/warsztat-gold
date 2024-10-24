@@ -85,7 +85,7 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     async update__count_impl() {
-        if(this.count_expired.value) {
+        if(this.count_expired.value || this.query._expired_count.value) {
             await this.perform_count_query();
             this.count_expired.value = false;
         }
@@ -119,6 +119,7 @@ class QuerySource extends DataGraphNodeBase {
     async perform_offset_rownum(/**@type {number}*/ value, colname = 'rowid') {
         const [rows] = await ipc.db_query(this.query.get_rownumber_select_sql(value, colname));
         const rownum = rows[0]?.[0];
+        console.log('ROWNUM', rownum, rows, value, colname);
         if(typeof rownum === 'number' && rownum > 0 ) {
             this.perform_offset_goto(rownum - 1, false);
         } else {

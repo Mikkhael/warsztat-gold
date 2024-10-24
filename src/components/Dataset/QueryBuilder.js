@@ -143,11 +143,15 @@ class QueryBuilder {
             this.order.value = [['rowid']];
         }
 
-        this._sections = computed(() => {
+        this._sections1 = computed(() => {
             return {
                 select: this._sql_select_fields.value, 
                 from:   this._sql_from.value,
                 where:  this._sql_where.value,
+            };
+        });
+        this._sections2 = computed(() => {
+            return {
                 order:  this._sql_order.value,
                 limit:  this._sql_limit.value,
                 offset: this._sql_offset.value,
@@ -163,42 +167,45 @@ class QueryBuilder {
             offset: "",
         });
 
+        this._expired_count = computed(() => {
+            return this._last_sections.value.select !== this._sections1.value.select  ||
+                   this._last_sections.value.from   !== this._sections1.value.from    ||
+                   this._last_sections.value.where  !== this._sections1.value.where;
+        });
         this._expired = computed(() => {
-            return this._last_sections.value.select !== this._sections.value.select  ||
-                   this._last_sections.value.from   !== this._sections.value.from    ||
-                   this._last_sections.value.where  !== this._sections.value.where   ||
-                   this._last_sections.value.order  !== this._sections.value.order   ||
-                   this._last_sections.value.limit  !== this._sections.value.limit   ||
-                   this._last_sections.value.offset !== this._sections.value.offset;
+            return this._expired_count.value  ||
+                   this._last_sections.value.order  !== this._sections2.value.order   ||
+                   this._last_sections.value.limit  !== this._sections2.value.limit   ||
+                   this._last_sections.value.offset !== this._sections2.value.offset;
         });
 
         this.full_sql_base = computed(() => concat_query({
-            select: this._sections.value.select, 
-            from:   this._sections.value.from, 
-            where:  this._sections.value.where, 
-            order:  this._sections.value.order, 
-            limit:  this._sections.value.limit, 
+            select: this._sections1.value.select, 
+            from:   this._sections1.value.from, 
+            where:  this._sections1.value.where, 
+            order:  this._sections2.value.order, 
+            limit:  this._sections2.value.limit, 
         }));
 
         this.full_sql_for_rownumber = computed(() => concat_query({
-            from:   this._sections.value.from, 
-            where:  this._sections.value.where, 
-            order:  this._sections.value.order,
+            from:   this._sections1.value.from, 
+            where:  this._sections1.value.where, 
+            order:  this._sections2.value.order,
         }));
                 
         this.full_sql_count = computed(() => concat_query({
             select: 'count(*)' + this._sql_select_fields_part_custom_only_app.value,
-            from:   this._sections.value.from, 
-            where:  this._sections.value.where, 
+            from:   this._sections1.value.from, 
+            where:  this._sections1.value.where, 
         }));
         
         this.full_sql_offset = computed(() => concat_query({
-            select: this._sections.value.select, 
-            from:   this._sections.value.from, 
-            where:  this._sections.value.where, 
-            order:  this._sections.value.order, 
-            limit:  this._sections.value.limit, 
-            offset: this._sections.value.offset, 
+            select: this._sections1.value.select, 
+            from:   this._sections1.value.from, 
+            where:  this._sections1.value.where, 
+            order:  this._sections2.value.order, 
+            limit:  this._sections2.value.limit, 
+            offset: this._sections2.value.offset, 
         }));
     }
 
@@ -247,10 +254,13 @@ class QueryBuilder {
     is_expired() {
         return this._expired.value;
     }
+    is_expired_count() {
+        return this._expired_count.value;
+    }
 
     acknowledge_expried() {
         // console.log('ACK', this.is_expired(), this._sections.value, this._last_sections.value);
-        this._last_sections.value = this._sections.value;
+        this._last_sections.value = {...this._sections1.value, ...this._sections2.value};
     }
 }
 
