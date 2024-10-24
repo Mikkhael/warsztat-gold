@@ -15,6 +15,7 @@ import { datetime_now } from '../../utils';
 import QuerySourceDebug_form from './QuerySourceDebug_form.vue';
 import { FWManager } from '../FloatingWindows/FWManager';
 import FWCollection from '../FloatingWindows/FWCollection.vue';
+import useMainMsgManager, { MsgManager } from '../Msg/MsgManager';
 
 
 
@@ -185,6 +186,10 @@ function disconnect_tabs2() {
 }
 
 
+const msgManager = useMainMsgManager();
+function handle_error(err) {
+    msgManager.post('error', err);
+}
 
 defineExpose({
     db
@@ -216,7 +221,7 @@ defineExpose({
         <div class="content">
             <QuerySourceDebug_form name="Klienci" :src="src1" v-slot="{data}" class="abc">
 
-                <QueryViewerOpenBtn :query="QV_KLIENCI_MAIN" :src="src1" :fwManager="fwManager"/>
+                <QueryViewerOpenBtn :query="QV_KLIENCI_MAIN"  @error="handle_error" :src="src1"   :fwManager="fwManager"/>
                 <br>
 
                 <label>ID  <FormInput type="number"          :value="data.values.ID"        readonly />    </label> <br>

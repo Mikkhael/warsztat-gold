@@ -1,5 +1,5 @@
 //@ts-check
-import { reactive, markRaw } from 'vue';
+import { reactive, markRaw, shallowReactive } from 'vue';
 import WinBox from '../WinBox/winbox';
 
 /**
@@ -14,8 +14,8 @@ class FWWindow {
      * @param {Object.<string, Function>} listeners
      */
     constructor(component, box, props, listeners) {
-        this.component = markRaw(component);
-        this.box = markRaw(box);
+        this.component = component;
+        this.box = box;
         this.props = props;
         this.listeners = listeners;
     }
@@ -41,7 +41,7 @@ class FWWindow {
 class FWManager {
     constructor() {
         this.cointainer = /**@type {Element=}*/ (undefined);
-        this.opened_windows = reactive(/**@type {Map.<string, FWWindow>} */ (new Map()));
+        this.opened_windows = shallowReactive(/**@type {Map.<string, FWWindow>} */ (new Map()));
         this.viewport = {
             left:   /**@type {string=} */(undefined),
             right:  /**@type {string=} */(undefined),

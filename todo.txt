@@ -70,7 +70,7 @@
         - main area
     + Query Viewer
         + adapt for DataGraph interface
-            - fix searches in unexisting QueryParts
+            + fix searches in unexisting QueryParts
         + basic view
         + scroller
         + advanced sorting

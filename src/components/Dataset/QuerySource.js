@@ -41,8 +41,11 @@ function wrap(val, past_max) {
     return clump(val, past_max); 
 }
 
-class QuerySourceRequest_Offset {
+class QuerySourceRequest_Offset_Goto {
     constructor(value = 0, wrapping = false) {this.value = value, this.wrapping = wrapping};
+}
+class QuerySourceRequest_Offset_Rownum {
+    constructor(value = 0, colname = 'rowid') {this.value = value, this.colname = colname};
 }
 class QuerySourceRequest_Refresh {
     constructor() {};
@@ -87,9 +90,12 @@ class QuerySource extends DataGraphNodeBase {
             this.count_expired.value = false;
         }
     }
-    update__request_impl() {
-        if(this.request instanceof QuerySourceRequest_Offset) {
+    async update__request_impl() {
+        if(this.request instanceof QuerySourceRequest_Offset_Goto) {
             this.perform_offset_goto(this.request.value, this.request.wrapping);
+        }
+        if(this.request instanceof QuerySourceRequest_Offset_Rownum) {
+            await this.perform_offset_rownum(this.request.value, this.request.colname);
         }
         // QuerySourceRequest_Refresh is NOOP
         this.request_clear();
@@ -99,7 +105,7 @@ class QuerySource extends DataGraphNodeBase {
     }
     async update_impl(){
         await this.update__count_impl();
-        this.update__request_impl();
+        await this.update__request_impl();
         await this.update__main_impl();
         this.query.acknowledge_expried();
     }
@@ -108,6 +114,16 @@ class QuerySource extends DataGraphNodeBase {
     perform_offset_goto(value = 0, wrapping = false) {
         if(wrapping) this.offset.value = wrap (value, this.count.value);
         else         this.offset.value = clump(value, this.count.value);
+    }
+
+    async perform_offset_rownum(/**@type {number}*/ value, colname = 'rowid') {
+        const [rows] = await ipc.db_query(this.query.get_rownumber_select_sql(value, colname));
+        const rownum = rows[0]?.[0];
+        if(typeof rownum === 'number' && rownum > 0 ) {
+            this.perform_offset_goto(rownum - 1, false);
+        } else {
+            throw new Error("Nie znaleziono wiersza odpowiadającemu indeksowi: " + value);
+        }
     }
 
     async perform_count_query() {
@@ -140,7 +156,13 @@ class QuerySource extends DataGraphNodeBase {
      * @param {boolean} wrapping 
      */
     request_offset_goto(value, wrapping) {
-        this._add_update_request_impl(new QuerySourceRequest_Offset(value, wrapping), false);
+        this._add_update_request_impl(new QuerySourceRequest_Offset_Goto(value, wrapping), false);
+    }
+    /**
+     * @param {number} value  
+     */
+    request_offset_rownum(value, colname = 'rowid') {
+        this._add_update_request_impl(new QuerySourceRequest_Offset_Rownum(value, colname), false);
     }
     request_refresh() {
         this._add_update_request_impl(new QuerySourceRequest_Refresh(), true);

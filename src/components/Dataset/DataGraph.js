@@ -166,20 +166,18 @@ class DataGraphNodeBase {
     assure_unchanged() {
         // if(this.changed.value || this.inserting.value) return false;
         if(this.changed.value) {
-            // debugger;
             return false;
         }
         const nodes_to_update = get_complete_expired_subgraph([this]);
         // if(nodes_to_update.some(x => x.changed.value || x.inserting.value)) return false;
         if(nodes_to_update.some(x => x.changed.value)) {
-            // debugger;
             return false;
         }
         return true;
     }
 
     async assure_unchanged_or_confirm(){
-        return this.assure_unchanged() || this.confirm_update_on_changed();
+        return this.assure_unchanged() || await this.confirm_update_on_changed();
     }
 
 

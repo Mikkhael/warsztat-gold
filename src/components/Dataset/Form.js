@@ -58,7 +58,7 @@ class FormQuerySource extends QuerySource {
         return this.is_empty.value || this.insert_mode.value;
     }
     
-    update__request_impl() {
+    async update__request_impl() {
         if(this.request instanceof QuerySourceRequest_Insert) {
             this.insert_mode.value = this.request.value;
             if(this.insert_mode.value) {
@@ -69,7 +69,7 @@ class FormQuerySource extends QuerySource {
         } else {
             this.insert_mode.value = false;
         }
-        super.update__request_impl();
+        await super.update__request_impl();
     }
     async update__main_impl() {
         if(this.insert_mode.value) {

@@ -44,6 +44,10 @@ const props = defineProps({
         type: Boolean,
         default: false
     },
+    src_to_change: {
+        type: QuerySource,
+        required: false
+    },
 });
 
 console.log("QUERY VIEWER", props);
@@ -86,7 +90,8 @@ function start_safe_update() {
     flagged_for_refresh = false;
     awaiting_refresh = true;
     const new_offset = to_scroll_acc === null ? 0 : src.offset.value + to_scroll_acc; // TODO request scrolls, not goto's
-    const temp_to_scroll_acc = to_scroll_acc;
+    if(to_scroll_acc === null) src.expire(true);
+    // const temp_to_scroll_acc = to_scroll_acc;
     to_scroll_acc = null;
     // console.log('QVIEWER BEGIN', temp_to_scroll_acc, new_offset);
     // setTimeout(() => {
@@ -236,11 +241,15 @@ function handle_row_unhover(row_i) {
 /**
  * @param {number} row_i
  */
-function handle_select(row_i) {
+async function handle_select(row_i) {
     console.log("SELECTING...",  src.offset.value, row_i, props.selectable);
     if(!props.selectable) return;
     const cols = src.full_result.value?.[1] ?? [];
     const row  = result_rows.value[row_i];
+    if(props.src_to_change) {
+        const confirmed = await props.src_to_change.assure_unchanged_or_confirm();
+        if(!confirmed) return;
+    }
     emit("select", cols, row, src.offset.value + row_i);
 }
 

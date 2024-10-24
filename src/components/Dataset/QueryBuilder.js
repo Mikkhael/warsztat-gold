@@ -97,18 +97,29 @@ class QueryBuilder {
     constructor(implicit_order_roiwd = false) {
 
         this.select_fields = reasRef(/**@type {QuerySelectField[]} */ ([]));
-        this.select_fields_sql = computed(() => 
+        this._sql_select_fields = computed(() => 
             this.select_fields.value
             .map(select_field_definition_to_sql)
             .join(', ')
         );
+        this._sql_select_fields_part_custom_only = computed(() => 
+            this.select_fields.value
+            .filter(x => x.length === 2)
+            .map(select_field_definition_to_sql)
+            .join(', ')
+        );
+        this._sql_select_fields_part_custom_only_app = computed(() => 
+            this._sql_select_fields_part_custom_only.value ?
+            ', ' + this._sql_select_fields_part_custom_only.value :
+            ''
+        );
 
         this.from = reasRef("");
-        this.from_sql = this.from;
+        this._sql_from = this.from;
 
         this.where_conj     = reasRef(/**@type {QueryParts[]} */ ([]));
         this.where_conj_opt = reasRef(/**@type {QueryParts[]} */ ([]));
-        this.where_sql = computed(() => {
+        this._sql_where = computed(() => {
             const all_parts = [
                 ...this.where_conj.value,
                 ...this.where_conj_opt.value.filter(query_parts_is_not_null)
@@ -120,27 +131,26 @@ class QueryBuilder {
         });
 
         this.order = reasRef(/**@type {QueryOrdering[]} */ ([]));
-        this.order_sql  = computed(() => this.order.value.map(query_ordering_to_string).join(','));
+        this._sql_order  = computed(() => this.order.value.map(query_ordering_to_string).join(','));
 
         this.limit = reasRef(1);
-        this.offset_sql = computed(() => this.offset.value.toString());
+        this._sql_offset = computed(() => this.offset.value.toString());
 
         this.offset = reasRef(-1);
-        this.limit_sql  = computed(() => this.limit.value.toString());
+        this._sql_limit  = computed(() => this.limit.value.toString());
 
         if(implicit_order_roiwd) {
             this.order.value = [['rowid']];
         }
 
         this._sections = computed(() => {
-            // debugger;
             return {
-                select: this.select_fields_sql.value, 
-                from:   this.from_sql.value,
-                where:  this.where_sql.value,
-                order:  this.order_sql.value,
-                limit:  this.limit_sql.value,
-                offset: this.offset_sql.value,
+                select: this._sql_select_fields.value, 
+                from:   this._sql_from.value,
+                where:  this._sql_where.value,
+                order:  this._sql_order.value,
+                limit:  this._sql_limit.value,
+                offset: this._sql_offset.value,
             };
         });
 
@@ -169,9 +179,15 @@ class QueryBuilder {
             order:  this._sections.value.order, 
             limit:  this._sections.value.limit, 
         }));
+
+        this.full_sql_for_rownumber = computed(() => concat_query({
+            from:   this._sections.value.from, 
+            where:  this._sections.value.where, 
+            order:  this._sections.value.order,
+        }));
                 
         this.full_sql_count = computed(() => concat_query({
-            select: 'count(*)',
+            select: 'count(*)' + this._sql_select_fields_part_custom_only_app.value,
             from:   this._sections.value.from, 
             where:  this._sections.value.where, 
         }));
@@ -184,6 +200,17 @@ class QueryBuilder {
             limit:  this._sections.value.limit, 
             offset: this._sections.value.offset, 
         }));
+    }
+
+    /**
+     * @param {SQLValue} value 
+     */
+    get_rownumber_select_sql(value, colname = 'rowid') {
+        const _name    = escape_backtick_smart(colname);
+        const _value   = escape_sql_value(value);
+        const sql_prefix  = 'SELECT n FROM (SELECT row_number() OVER () AS n, ' + _name + ' AS i ';
+        const sql_sufix   = ') WHERE i=' + _value + ' LIMIT 1';
+        return sql_prefix + this.full_sql_for_rownumber.value + sql_sufix;
     }
 
     /**

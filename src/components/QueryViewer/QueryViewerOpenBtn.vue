@@ -5,6 +5,7 @@ import { unref } from 'vue';
 import useMainFWManager from '../FloatingWindows/FWManager';
 import QueryViewer from './QueryViewer.vue';
 import { query_ordering_to_string, QuerySource } from '../Dataset';
+import useMainMsgManager from '../Msg/MsgManager';
 
 
 /**
@@ -44,13 +45,21 @@ const props = defineProps({
     src: {
         type: QuerySource,
         required: false
+    },
+    rownumber_col_index: {
+        type: Number,
+        default: 0
     }
 });
 
-const emit = defineEmits(["select"]);
+const emit = defineEmits(["select", "error"]);
 
 const fwManager = props.fwManager ?? useMainFWManager();
 
+function on_error(err) {
+	console.error(err);
+	emit('error', err);
+}
 
 // TODO identify window by more than just the title, to avoid colisions
 function on_click_find() {
@@ -63,14 +72,24 @@ function on_click_find() {
             where_conj_opt: props.query.where_conj_opt ?? []
         },
         selectable: !props.noselect,
+        src_to_change: props.src
     }, {
+        /**
+         * @param {string[]} columns
+         * @param {(string | number | null)[]} row
+         * @param {number} offset
+         */
         select: async (columns, row, offset) => {
-            fwManager.close_window("Znajdź");
-            if(props.src) {
-                props.src.request_offset_goto(offset, false);
-                await props.src.update_complete();
+            try{
+                fwManager.close_window("Znajdź");
+                if(props.src) {
+                    props.src.request_offset_rownum(Number(row[props.rownumber_col_index]));
+                    await props.src.update_complete();
+                }
+                emit('select', columns, row, offset);
+            } catch (err) {
+                on_error(err);
             }
-            emit('select', columns, row, offset);
         }
     });
 }
