@@ -1,22 +1,22 @@
 <script setup>
 //@ts-check
 
-// import { Dataset, DVUtil, QueryBuilder } from '../components/Dataset/Dataset';
 import {FormInput, FormEnum} from '../components/Controls';
 
-import useMainFWManager from '../components/FloatingWindows/FWManager';
 import useMainMsgManager from '../components/Msg/MsgManager';
 
 import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue';
-// import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
 
 import SamochodyKlientow from './SamochodyKlientow.vue';
 import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 
-import {onMounted, ref, watch, computed, readonly, nextTick} from 'vue';
-import { init_form_parent_window } from './FormCommon';
+import {onMounted, onUnmounted, ref, nextTick} from 'vue';
+import { init_form_parent_window, standart_form_value_routine, standard_QV_select } from './FormCommon';
 import { datetime_now } from '../utils';
+import { FormQuerySource } from '../components/Dataset';
+import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
+import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 
 
 const props = defineProps({
@@ -24,12 +24,7 @@ const props = defineProps({
         /**@type {import('vue').PropType<import('../components/FloatingWindows/FWManager').FWWindow>} */
         type: Object,
         required: false
-    },
-    dataset: {
-        /**@type {import('vue').PropType<import('../components/Dataset/Dataset').Dataset>} */
-        type: Object,
-        required: false
-    },
+    }
 });
 
 const msgManager = useMainMsgManager();
@@ -41,103 +36,112 @@ const msgManager = useMainMsgManager();
 const form     = ref();
 const scroller = ref();
 
-const samochody_form = ref();
-const zlecenia_form  = ref();
+const form_car  = ref();
+const form_zlec = ref();
 
-const dataset     = new Dataset();
-const index       = dataset.get_index_ref();
-const insert_mode = dataset.get_insert_mode_ref();
+const db = useWarsztatDatabase();
 
-const car_dataset  =     dataset.create_sub_dataset("car");
-const zlec_dataset = car_dataset.create_sub_dataset("zlec");
+const src  = new FormQuerySource();
+const sync = src.dataset.get_or_create_sync(db.TABS.klienci);
 
-const src  = dataset.create_source_query();
-const sync = dataset.create_table_sync('klienci');
+const src_car = new FormQuerySource();
 
-const id     = dataset.create_value_raw   ("ID",                      null,           src);
-const nazwa  = dataset.create_value_synced("NAZWA",                   null,           src, sync);
-const miasto = dataset.create_value_synced("MIASTO",                  null,           src, sync);
-const ulica  = dataset.create_value_synced("ULICA",                   null,           src, sync);
-const kod    = dataset.create_value_synced("KOD_POCZT",               null,           src, sync);
-const tele1  = dataset.create_value_synced("TELEFON1",                null,           src, sync);
-const tele2  = dataset.create_value_synced("TELEFON2",                null,           src, sync);
-const nip    = dataset.create_value_synced("NIP",                     null,           src, sync);
-const odbier = dataset.create_value_synced("odbierający fakturę",     null,           src, sync);
-const kto    = dataset.create_value_synced("KTO",                     "Gold",         src, sync);
-const kiedy  = dataset.create_value_synced("KIEDY",                   datetime_now(), src, sync); // TODO make accual current time, not start of app time
-const upust  = dataset.create_value_synced("UPUST",                   0,              src, sync);
-const list   = dataset.create_value_synced("list",                    null,           src, sync);
+// TODO automate
+src.add_table_dep(db.TABS.klienci);
+src.add_from('`klienci`');
 
-const id_ref = id.as_ref_local();
-const id_samochodu = car_dataset.get('ID');
-
-// watch(id_samochodu, x => {
-//     console.log('ID SAM', x);
-// })
-
-console.log(datetime_now());
+// TODO
+// const car_dataset  =     dataset.create_sub_dataset("car");
+// const zlec_dataset = car_dataset.create_sub_dataset("zlec");
 
 
-sync.add_primary('ID', id);
-
-const query = new QueryBuilder(dataset, 'ID');
-query.set_from_table('klienci');
-
-query.set_source_query_index(src);
-const scroller_query = query.get_scroller_query();
-const viewwer_query  = query.get_viewer_query();
 
 
-// src.set_body_query_and_finalize(['FROM `klienci` WHERE `ID` = ', index]);
-// src.set_body_query_and_finalize(DVUtil.sql_parts_ref(['FROM `klienci` WHERE `ID` = ', index]));
-// const scroller_query_from = '`klienci`';
+const id     = standart_form_value_routine(src, "ID",                  {primary: true});
+const nazwa  = standart_form_value_routine(src, "NAZWA",               {sync});
+const miasto = standart_form_value_routine(src, "MIASTO",              {sync});
+const ulica  = standart_form_value_routine(src, "ULICA",               {sync});
+const kod    = standart_form_value_routine(src, "KOD_POCZT",           {sync});
+const tele1  = standart_form_value_routine(src, "TELEFON1",            {sync});
+const tele2  = standart_form_value_routine(src, "TELEFON2",            {sync});
+const nip    = standart_form_value_routine(src, "NIP",                 {sync});
+const odbier = standart_form_value_routine(src, "odbierający fakturę", {sync});
+const kto    = standart_form_value_routine(src, "KTO",                 {sync, default: "Gold"});
+const kiedy  = standart_form_value_routine(src, "KIEDY",               {sync, default: datetime_now()}); // TODO make accual current time, not start of app time
+const upust  = standart_form_value_routine(src, "UPUST",               {sync, default: 0});
+const list   = standart_form_value_routine(src, "list",                {sync});
+
+
+// TODO
+// const viewwer_query  = query.get_viewer_query(); 
 
 
 // FIND
 
-const find_options = readonly({
-    query_select_fields: [
-        ["`ID`",],
-        ["`NAZWA`",               "Nazwa"               ],
-        ["`odbierający fakturę`", "Odbierający Fakturę" ],
-        ["`MIASTO`",              "Miasto"              ],
-        ["`ULICA`",               "Ulica"               ],
-        ["`KOD_POCZT`",           "Kod"                 ],
-        ["`NIP`",                 "NIP"                 ],
-        ["`TELEFON1`",            "Telefon"             ],
-        ["`TELEFON2`",            "Telefon2"            ],
-        ["`KTO`",                 "wpisał"              ],
-        ["`KIEDY`",               "dnia"                ],
-    ],
-    ...viewwer_query
-});
+/**@typedef {import('../components/QueryViewer/QueryViewerOpenBtn.vue').QueryViwerQueryParams} QueryViewerQueryParams*/
 
-const find_by_car_options = {
-    query_select_fields: [
-        ["`ID klienta`"],
-        ["`ID`"],
-        // ["`ID`", 'ID samochodu'],
-        // ["row_number() OVER (PARTITION BY `ID klienta`)", 'offset'],
-        ["`nr rej`",      "Nr Rej."],
-        ["`marka`",       "Marka"],
-        ["`model`",       "Model"],
-        ["`nr silnika`",  "Nr Silnika"],
-        ["`nr nadwozia`", "Nr Nadwozia"],
-    ],
-    query_from: "`samochody klientów`",
+/**@type {QueryViewerQueryParams} */
+const find_query = {
+    from: "`klienci`",
+    select: [
+        [["`ID`",                  ]],
+        [["`NAZWA`",               ], "Nazwa"               ],
+        [["`odbierający fakturę`", ], "Odbierający Fakturę" ],
+        [["`MIASTO`",              ], "Miasto"              ],
+        [["`ULICA`",               ], "Ulica"               ],
+        [["`KOD_POCZT`",           ], "Kod"                 ],
+        [["`NIP`",                 ], "NIP"                 ],
+        [["`TELEFON1`",            ], "Telefon"             ],
+        [["`TELEFON2`",            ], "Telefon2"            ],
+        [["`KTO`",                 ], "wpisał"              ],
+        [["`KIEDY`",               ], "dnia"                ],
+    ]
 };
-const find_by_zlec_options = {
-    query_select_fields: [
-        ["`ID klienta`"],
-        ["`ID samochodu`"],
-        ["`ID`",                'ID zlecenia'],
-        ["`data otwarcia`",     'Otwarcie'],
-        ["`data zamknięcia`",   'Zamknięcie'],
-        ["`zgłoszone naprawy`", 'Zgłoszenie'],
-        ["`uwagi o naprawie`",  'Uwagi'],
-    ],
-    query_from: "`zlecenia naprawy`",
+const find_query_handler = standard_QV_select([[src, 0]], handle_err);
+
+/**@type {QueryViewerQueryParams} */
+const find_query_car = {
+    from: "`samochody klientów` as s JOIN `klienci` as k ON k.`ID` = s.`ID klienta`",
+    select: [
+        [['k.`ID`']],
+        [['s.`ID`']],
+
+        [['nr rej'],      'Nr Rej.'],
+        [['NAZWA'],       'Klient'],
+        [['marka'],       'Marka'],
+        [['model'],       'Model'],
+        [['nr silnika'],  'Nr Silnika'],
+        [['nr nadwozia'], 'Nr Nadwozia'],
+    ]
 };
+const find_query_car_handler = standard_QV_select([[src, 0], [src_car, 1]], handle_err);
+
+// const find_by_car_options = {
+//     query_select_fields: [
+//         ["`ID klienta`"],
+//         ["`ID`"],
+//         // ["`ID`", 'ID samochodu'],
+//         // ["row_number() OVER (PARTITION BY `ID klienta`)", 'offset'],
+//         ["`nr rej`",      "Nr Rej."],
+//         ["`marka`",       "Marka"],
+//         ["`model`",       "Model"],
+//         ["`nr silnika`",  "Nr Silnika"],
+//         ["`nr nadwozia`", "Nr Nadwozia"],
+//     ],
+//     query_from: "`samochody klientów`",
+// };
+// const find_by_zlec_options = {
+//     query_select_fields: [
+//         ["`ID klienta`"],
+//         ["`ID samochodu`"],
+//         ["`ID`",                'ID zlecenia'],
+//         ["`data otwarcia`",     'Otwarcie'],
+//         ["`data zamknięcia`",   'Zamknięcie'],
+//         ["`zgłoszone naprawy`", 'Zgłoszenie'],
+//         ["`uwagi o naprawie`",  'Uwagi'],
+//     ],
+//     query_from: "`zlecenia naprawy`",
+// };
 
 const show_zlecenia = ref(true); // TODO change to false in final version
 function click_zlecenia(){
@@ -147,28 +151,44 @@ function click_zlecenia(){
     });
 }
 
-async function handle_select_by_car(columns, rows, offset) {
-    // await samochody_form.value.scroller.goto(rows[1]);
-    await samochody_form.value.goto_by_id(rows[1]);
-}
+// async function handle_select_by_car(columns, rows, offset) {
+//     // await samochody_form.value.scroller.goto(rows[1]);
+//     await samochody_form.value.goto_by_id(rows[1]);
+// }
 
-async function handle_select_by_zlec(columns, rows, offset) {
-    await samochody_form.value.goto_by_id(rows[1]);
-    await zlecenia_form.value.goto_by_id(rows[2]);
-}
+// async function handle_select_by_zlec(columns, rows, offset) {
+//     await samochody_form.value.goto_by_id(rows[1]);
+//     await zlecenia_form.value.goto_by_id(rows[2]);
+// }
 
+
+// TODO automate
+
+const db_opened_listener = () => {
+	src.request_refresh();
+    src.update_complete();
+}
 
 onMounted(() => {
-    init_form_parent_window([dataset], props);
+    init_form_parent_window([src.dataset], props);
+    window.addEventListener   ('db_opened', db_opened_listener);
+    src.update_complete();
 });
+onUnmounted(() => {
+    // TODO add auto disconnect for instanciated QuerySources
+    src.disconnect();
+    window.removeEventListener('db_opened', db_opened_listener); 
+})
 
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
+const test_ref = ref(88);
+
 defineExpose({
-    dataset
+    src
 });
 
 </script>
@@ -176,7 +196,7 @@ defineExpose({
 
 <template>
 
-    <div class="form_container" :class="dataset.form_container_classes">
+    <div class="form_container" :class="src.form_style.value">
 
         <form ref="form" class="form form_content flex_auto">
             
@@ -185,24 +205,27 @@ defineExpose({
                 <fieldset class="subform_cars_field">
                     <legend>Samochody Klienta</legend>
                     <SamochodyKlientow 
-                        ref="samochody_form"
-                        :dataset="car_dataset"
-                        :id_klienta="id_ref"
+                        :use_src="src_car"
+                        :id_klienta="src.result['ID']"
                     />
+                    <!-- <input type="text" v-model="test_ref">
+                    <SamochodyKlientow 
+                        :id_klienta="test_ref"
+                    /> -->
                 </fieldset>
                 
                 <div class="row flex_auto">
                     <div>
-                        <QueryViewerOpenBtn v-bind="find_options" :scroller="scroller" />
-                        Znajdź Klienta
+                        <QueryViewerOpenBtn :query="find_query" @select="find_query_handler" text="Znajdź Klienta" />
                     </div>
                     <div>
-                        <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" @select="handle_select_by_car"/>
-                        Znajdź Samochód
+                        <QueryViewerOpenBtn :query="find_query_car" @select="find_query_car_handler" text="Znajdź Samochód" />
+                        <!-- <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" @select="handle_select_by_car"/>
+                        Znajdź Samochód -->
                     </div>
                     <div>
-                        <QueryViewerOpenBtn v-bind="find_by_zlec_options" :scroller="scroller" @select="handle_select_by_zlec"/>
-                        Znajdź Zlecenie
+                        <!-- <QueryViewerOpenBtn v-bind="find_by_zlec_options" :scroller="scroller" @select="handle_select_by_zlec"/>
+                        Znajdź Zlecenie -->
                     </div>
                     <button @click.prevent="click_zlecenia">ZLECENIA</button>
                 </div>
@@ -227,23 +250,23 @@ defineExpose({
 
             <fieldset class="zlecenia" :style="{display: show_zlecenia ? 'unset' : 'none'}">
                 <legend>Zlecenia Naprawy</legend>
-                <ZleceniaNaprawy 
+                <!-- <ZleceniaNaprawy 
                     ref="zlecenia_form"
                     :dataset="zlec_dataset"
                     :id_klienta="id_ref"
                     :id_samochodu="id_samochodu"
-                />
+                /> -->
                 
             </fieldset>
 
         </form>
 
-        <QueryFormScrollerDataset
-        v-bind="scroller_query"
-        :datasets="[dataset]"
-        @error="handle_err"
-        insertable
-        ref="scroller"/> 
+        <QuerySourceOffsetScroller
+            :src="src"
+            @error="handle_err"
+            insertable
+            saveable
+        />
         
     </div>
 

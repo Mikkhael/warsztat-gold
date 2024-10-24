@@ -34,6 +34,10 @@ const props = defineProps({
         required: true
     },
     
+    text: {
+        type: String,
+        default: ""
+    },
     noselect: {
         type: Boolean,
         default: false
@@ -94,16 +98,34 @@ function on_click_find() {
 
 <template>
 
-<img class="button" src="./../../assets/icons/search.svg" @click="on_click_find"/>
+<div class="button container" @click="on_click_find">
+    <img src="./../../assets/icons/search.svg"/>
+    <div class="text">
+        {{ props.text }}
+    </div>
+</div>
 
 </template>
 
 <style scoped>
 
+    .container {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
     img{
         box-sizing: border-box;
         height: 3ch;
         padding: 2px;
+    }
+
+    .text {
+        flex-grow: 1;
+        justify-self: flex-end;
+        text-wrap: nowrap;
+        text-align: center;
     }
 
 

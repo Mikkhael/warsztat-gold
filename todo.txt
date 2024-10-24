@@ -82,7 +82,7 @@
         + fix scrolling back to 0, when changing search fields
     - Forms API
         + Example form (Klienci)
-            - adapt for DataGraph interface
+            + adapt for DataGraph interface
             + display
             + search
             + search by car
@@ -119,8 +119,8 @@
                 - integration with sync
                 - form validation
                 + insert mode
-                    - insert mode with nesting (disable)
-            - don't display empty/invalid forms
+                    + insert mode with nesting (disable)
+            + don't display empty/invalid forms
         - Kontrolki
             + adapt for DataGraph interface
             + custom context menu

@@ -43,7 +43,7 @@ const main_components_names = readonly([
   "DataGraphDebug",
   "QuerySourceDebug",
 ]);
-const current_main_component_index = ref(6);
+const current_main_component_index = ref(0);
 const current_main_component = ref();
 
 const msg_manager = useMainMsgManager();

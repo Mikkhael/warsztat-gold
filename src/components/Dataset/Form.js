@@ -48,6 +48,11 @@ class FormQuerySource extends QuerySource {
         this.insert_mode = ref(false);
 
         this.dataset = new FormDataSet(this);
+
+        this.form_style = computed(() => {return {
+            empty:    (this.is_empty.value && !this.insert_mode.value) || this.disabled.value,
+            disabled: this.disabled.value
+        }});
     }
 
     /// OVERWRITES //////////////////////
