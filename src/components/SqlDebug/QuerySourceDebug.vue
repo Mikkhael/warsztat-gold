@@ -4,18 +4,23 @@
 import {computed, ref,shallowRef} from 'vue';
 
 import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
-import {DataGraphNodeBase, FormQuerySource, FormDataSet} from '../Dataset';
-import QuerySourceOffsetScroller from '../Scroller/QuerySourceOffsetScroller.vue';
+import {FormQuerySource, FormDataSet} from '../Dataset';
+
+import QueryViewerOpenBtn from '../QueryViewer/QueryViewerOpenBtn.vue';
 
 import FormInput from '../Controls/FormInput.vue';
 import FormEnum from '../Controls/FormEnum.vue';
 import { datetime_now } from '../../utils';
 
 import QuerySourceDebug_form from './QuerySourceDebug_form.vue';
+import { FWManager } from '../FloatingWindows/FWManager';
+import FWCollection from '../FloatingWindows/FWCollection.vue';
 
 
 
 const db = useWarsztatDatabase();
+const fwManager = new FWManager();
+
 
 function computed_json(ref) {
     return computed({
@@ -32,7 +37,7 @@ function res_to_str(obj) {
     return res.join('\n');
 }
 
-const kto_ref_raw = ref('');
+const kto_ref_raw = ref('Gold');
 const kto_ref = computed(() => kto_ref_raw.value === "" ? null : kto_ref_raw.value);
 
 const KLIENCI_SELECT_FIELDS = ref([
@@ -47,6 +52,24 @@ const KLIENCI_SELECT_FIELDS = ref([
 ]);
 const KLIENCI_SELECT_FIELDS_json = computed_json(KLIENCI_SELECT_FIELDS);
 const KLIENCI_FROM = ref('`klienci`');
+
+//////////////// QUERY VIEWERS ////////////////////
+
+/**@typedef {import('../QueryViewer/QueryViewerOpenBtn.vue').QueryViwerQueryParams} QueryViewerQueryParams*/
+
+/**@type {QueryViewerQueryParams} */
+const QV_KLIENCI_MAIN = {
+    from: "`klienci`",
+    select: [
+        [['ID']],
+        [['Nazwa'], 'Nazwa Klienta'],
+        [['addr', '(`MIASTO` || " ul." || `ULICA`)'], 'Adres'],
+        [['KTO'],   'KTO'],
+    ],
+    where_conj: [['`KTO` =', kto_ref]]
+}
+
+//////////////// CRATING SOURCES ////////////////////
 
 
 function create_form1() {
@@ -192,6 +215,10 @@ defineExpose({
 
         <div class="content">
             <QuerySourceDebug_form name="Klienci" :src="src1" v-slot="{data}" class="abc">
+
+                <QueryViewerOpenBtn :query="QV_KLIENCI_MAIN" :src="src1" :fwManager="fwManager"/>
+                <br>
+
                 <label>ID  <FormInput type="number"          :value="data.values.ID"        readonly />    </label> <br>
                 <label>NAZ <FormInput type="text"            :value="data.values.Nazwa"     nonull   />    </label> <br>
                 <label>MIA <FormInput type="text"            :value="data.values.MIASTO"    nonull   />    </label> <br>
@@ -235,6 +262,8 @@ defineExpose({
                 <label>N NAD </label> <FormInput type="text"            :value="data.values.nr_nad"     />          <br>   
             </QuerySourceDebug_form>
         </div> 
+
+        <FWCollection :manager="fwManager" />
 
     </div>
 

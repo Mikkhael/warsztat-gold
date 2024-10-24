@@ -2,15 +2,14 @@
 //@ts-check
 
 import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
-import {QuerySource, FormDataSet} from '../Dataset';
+import {QuerySource, FormDataSet, FormQuerySource} from '../Dataset';
 import useMainMsgManager from '../Msg/MsgManager';
 import QuerySourceOffsetScroller from '../Scroller/QuerySourceOffsetScroller.vue';
 
 
 const props = defineProps({
     src: {
-        /**@type {import('vue').PropType<QuerySource>} */
-        type: Object,
+        type: FormQuerySource,
         required: true
     },
     name: {
@@ -65,7 +64,7 @@ function handle_error(err) {
             <!-- <p><textarea v-model="src1_res"></textarea></p> -->
 
             <form :class="{disabled: src.disabled.value, empty: src.is_empty.value}">
-                <slot :data="props.src.dataset || new FormDataSet(null)" ></slot>
+                <slot :data="props.src.dataset" ></slot>
 
                 <QuerySourceOffsetScroller 
                     :src="src"

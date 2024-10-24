@@ -52,7 +52,7 @@ class QuerySourceRequest_Refresh {
 }
 
 class QuerySource extends DataGraphNodeBase {
-    constructor(implicit_order_rowid = true, no_dataset = false) {
+    constructor(implicit_order_rowid = true) {
         super();
         /**@type {TableNode[]} */
         this.dependant_tables = [];

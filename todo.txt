@@ -68,8 +68,9 @@
             - sql update constraint
             - system error
         - main area
-    - Query Viewer
-        - adapt for DataGraph interface
+    + Query Viewer
+        + adapt for DataGraph interface
+            - fix searches in unexisting QueryParts
         + basic view
         + scroller
         + advanced sorting
@@ -100,6 +101,8 @@
                 + layerd test
                 - aux queries
                 + more dynamic query builder
+                - change QueryParts to printf
+                    - unexisting colnames handling
             + OffsetScroller
                 + errors via MsgManager
                 + better error/expired indication

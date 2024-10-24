@@ -4,37 +4,46 @@
 import { unref } from 'vue';
 import useMainFWManager from '../FloatingWindows/FWManager';
 import QueryViewer from './QueryViewer.vue';
+import { query_ordering_to_string, QuerySource } from '../Dataset';
+
+
+/**
+ * @typedef {import('../Dataset/QueryBuilder').QuerySelectField} QuerySelectField
+ * @typedef {import('../Dataset/QueryBuilder').QueryParts} QueryParts
+ * @typedef {import('../Dataset/QueryBuilder').QueryOrdering} QueryOrdering
+ */
+
+ /**
+  * @typedef { [QuerySelectField] | [QuerySelectField, string] } QuerySelectFieldWithDisplay
+  */
+
+ /**
+  * @typedef {{
+  *     select:          QuerySelectFieldWithDisplay[],
+  *     from:            string,
+  *     where_conj?:     QueryParts[],
+  *     where_conj_opt?: QueryParts[],
+  * }} QueryViwerQueryParams
+  */
 
 const props = defineProps({
-    query_select_fields: {
-        /**@type {import('vue').PropType<string | [string, string | undefined][]>} */
-        type: Array,
+    query: {
+        /**@type {import('vue').PropType<QueryViwerQueryParams>} */
+        type: Object,
         required: true
     },
-    query_from: {
-        type: String,
-        required: true
-    },
-    query_where: {
-        type: String,
-        default: ""
-    },
+
     noselect: {
         type: Boolean,
         default: false
     },
-
     fwManager: {
         type: Object,
         required: false    
     },
-    scroller: {
-        type: Object,
+    src: {
+        type: QuerySource,
         required: false
-    },
-    simple: {
-        type: Boolean,
-        default: false
     }
 });
 
@@ -43,22 +52,23 @@ const emit = defineEmits(["select"]);
 const fwManager = props.fwManager ?? useMainFWManager();
 
 
+// TODO identify window by more than just the title, to avoid colisions
 function on_click_find() {
     fwManager.open_or_reopen_window("Znajdź", QueryViewer, {
-        query_select_fields: props.query_select_fields,
-        query_from: props.query_from,
-        query_where: props.query_where,
+        /**@type {import('./QueryViewer.vue').QueryViwerQueryParams} */
+        query: {
+            select: props.query.select,
+            from:   props.query.from,
+            where_conj:     props.query.where_conj ?? [],
+            where_conj_opt: props.query.where_conj_opt ?? []
+        },
         selectable: !props.noselect,
     }, {
         select: async (columns, row, offset) => {
             fwManager.close_window("Znajdź");
-            // console.log('SCROLLER', props.scroller);
-            if(props.scroller) {
-                if(props.simple){
-                    await props.scroller.goto_complete(offset);
-                } else {
-                    await props.scroller.goto_complete(row[0]);
-                }
+            if(props.src) {
+                props.src.request_offset_goto(offset, false);
+                await props.src.update_complete();
             }
             emit('select', columns, row, offset);
         }

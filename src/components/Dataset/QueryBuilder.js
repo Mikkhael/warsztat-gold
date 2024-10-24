@@ -32,17 +32,21 @@ import { FormDataSet } from "./Form";
  */
 
 
-/**@typedef {[string] | [string, string]} QueryBuilderSelectField */
-/**@param {QueryBuilderSelectField} select_field */
+/**@typedef {[string] | [string, string]} QuerySelectField */
+/**@param {QuerySelectField} select_field */
 function select_field_definition_to_sql(select_field) {
     if(select_field.length === 1) {
         return escape_backtick_smart(select_field[0]);
+    } else if (select_field[0] === '') {
+        return select_field[1];
     } else {
         return select_field[1] + ' AS ' + escape_sql_value(select_field[0]);
     }
 }
 
-/**@typedef {MaybeRef<SQLValue>[]} QueryParts */
+// TODO change query parts to printf-like
+
+/**@typedef {(string | MaybeRef<SQLValue>)[]} QueryParts */
 /**@param {QueryParts} parts  */
 function query_parts_to_string(parts) {
     return parts.map(part => 
@@ -69,7 +73,7 @@ function query_ordering_to_string(ordering) {
 class QueryBuilder {
     constructor(implicit_order_roiwd = false) {
 
-        this.select_fields = reasRef(/**@type {QueryBuilderSelectField[]} */ ([]));
+        this.select_fields = reasRef(/**@type {QuerySelectField[]} */ ([]));
         this.select_fields_sql = computed(() => 
             this.select_fields.value
             .map(select_field_definition_to_sql)
@@ -180,7 +184,7 @@ class QueryBuilder {
     }
     
     /**
-     * @param {MaybeRef<SQLValue>[]} parts
+     * @param {QueryParts} parts
      */
     add_where(parts, optional = false) {
         if(optional) {
@@ -195,7 +199,7 @@ class QueryBuilder {
     }
 
     acknowledge_expried() {
-        console.log('ACK', this.is_expired(), this._sections.value, this._last_sections.value);
+        // console.log('ACK', this.is_expired(), this._sections.value, this._last_sections.value);
         this._last_sections.value = this._sections.value;
     }
 }

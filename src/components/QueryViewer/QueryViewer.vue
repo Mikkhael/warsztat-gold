@@ -3,30 +3,42 @@
 
 import { reactive, computed, ref, watch, toRef, onMounted, onUnmounted, toRefs, nextTick } from "vue";
 import ipc from "../../ipc";
-import { escape_backtick, escape_like, escape_sql_value } from "../../utils";
-// import { invoke } from "@tauri-apps/api/tauri";
-// import QueryFormScrollerSimple from "../QueryFormScrollerSimple.vue";
-// import QueryFormScroller from "../QueryFormScroller.vue";
+import { escape_backtick, escape_backtick_smart, escape_like, escape_sql_value } from "../../utils";
 import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 
 import useMainMsgManager from "../Msg/MsgManager";
+import { QuerySource } from "../Dataset";
+import QuerySourceOffsetScroller from "../Scroller/QuerySourceOffsetScroller.vue";
 const msgManager = useMainMsgManager();
 function handle_err(err){
 	msgManager.postError(err);
 }
+
+/**
+ * @typedef {import('../Dataset/QueryBuilder').QuerySelectField} QuerySelectField
+ * @typedef {import('../Dataset/QueryBuilder').QueryParts} QueryParts
+ * @typedef {import('../Dataset/QueryBuilder').QueryOrdering} QueryOrdering
+ */
+
+ /**
+  * @typedef { [QuerySelectField] | [QuerySelectField, string] } QuerySelectFieldWithDisplay
+  */
+
+ /**
+  * @typedef {{
+  *     select:         QuerySelectFieldWithDisplay[],
+  *     from:           string,
+  *     where_conj:     QueryParts[],
+  *     where_conj_opt: QueryParts[],
+  * }} QueryViwerQueryParams
+  */
+
+
 const props = defineProps({
-    query_select_fields: {
-        /**@type {import('vue').PropType<string | [string, string | undefined][]>} */
-        type: Array,
+    query: {
+        /**@type {import('vue').PropType<QueryViwerQueryParams>} */
+        type: Object,
         required: true
-    },
-    query_from: {
-        type: String,
-        required: true
-    },
-    query_where: {
-        type: String,
-        default: ""
     },
     selectable: {
         type: Boolean,
@@ -36,147 +48,123 @@ const props = defineProps({
 
 console.log("QUERY VIEWER", props);
 
-const props_ref = toRefs(props);
+const src = new QuerySource(false);
 
-const scroller_ref   = ref();
 const row_ref        = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const container_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
-const scroller_limit = ref(1);
-
-
-/////////////////// MAIN LOGIC ///////////////////////////////
+const scroller_limit = ref(0);
+src.query.limit.reas(scroller_limit);
 
 const emit = defineEmits(['select']);
 
-const offset         = ref(0);
-const searches       = ref(/**@type {string[]}*/ ([]));
-const orderings      = ref(/**@type {number[]}*/ ([]));
-const orderings_list = reactive(new Map());
+/////////////////// AUTO REFRESHING ///////////////////////////////
+
+// TODO make core part of QuerySource
+// TODO debounde, instead of executing right at the begining
+
+let flagged_for_refresh = false;
+/**@type {number?} */
+let to_scroll_acc = null; 
+let awaiting_refresh = false;
+/**
+ * @param {number?} to_scroll
+ */
+function flag_for_refresh(to_scroll = null) {
+    // console.log('QVIEWER FLAG', to_scroll, to_scroll_acc);
+    if(to_scroll === null) {
+        to_scroll_acc = null;
+    } else {
+        to_scroll_acc = (to_scroll_acc ?? 0) + to_scroll;
+    }
+    if(flagged_for_refresh) return;
+    flagged_for_refresh = true;
+    if(awaiting_refresh) return;
+    // console.log('QVIEWER INIT', to_scroll_acc);
+    start_safe_update();
+}
+function start_safe_update() {
+    flagged_for_refresh = false;
+    awaiting_refresh = true;
+    const new_offset = to_scroll_acc === null ? 0 : src.offset.value + to_scroll_acc; // TODO request scrolls, not goto's
+    const temp_to_scroll_acc = to_scroll_acc;
+    to_scroll_acc = null;
+    // console.log('QVIEWER BEGIN', temp_to_scroll_acc, new_offset);
+    // setTimeout(() => {
+    src.request_offset_goto(new_offset, false);
+    src.update_complete().then(() => {
+        // console.log('QVIEWER END', temp_to_scroll_acc, new_offset);
+        if(flagged_for_refresh) {
+            start_safe_update();
+        } else {
+            // console.log("QVIEWER COMPLETED", temp_to_scroll_acc, new_offset);
+            awaiting_refresh = false;
+        }
+    }).catch(handle_err);
+    // }, 0);
+}
+
+const result_rows = computed(() => src.full_result.value?.[0] ?? []);
+const unwatch_first_fetch = watch(result_rows, () => {
+    console.log('QVIERWER FIRST FETCH');
+    nextTick(() => {
+        init_columns_sizes();
+    })
+    unwatch_first_fetch();
+});
+
+/////////////////// SELECT FIELDS ///////////////////////////////
+
+const columns_display = props.query.select.map(x => x[1] ?? '');
+const columns_names   = props.query.select.map(x => x[0][0]);
+const columns_escaped = props.query.select.map(x => escape_backtick_smart(x[0][0]));
+const columns_hide    = props.query.select.map(x => x.length === 1);
+const custom_select   = props.query.select.map(x => x[0]);
+src.query.select_fields.value  = custom_select;
+src.query.from.value           = props.query.from;
+
+
+/////////////////// ORDERING ///////////////////////////////
+
+const orderings_btns = reactive(/**@type {number[]}*/ ({}));
+const orderings_list = reactive( /**@type {Map<number, number>} */ (new Map()));
+const custom_order   = computed( () => {
+    return Array.from(orderings_list.entries())
+        .map(/**@returns {QueryOrdering} */ ([col_i, value]) => [columns_names[col_i], value > 0]);
+});
+/**
+ * @param {number} column_index 
+ * @param {number} ordering_value 
+ */
 function set_orderings_list(column_index, ordering_value) {
+    console.log('ORDER', column_index, ordering_value);
     if(orderings_list.has(column_index) || ordering_value === 0) {
         orderings_list.delete(column_index);
     }
     if(ordering_value !== 0) {
         orderings_list.set(column_index, ordering_value);
     }
+    src.query.order.value = custom_order.value;
+    flag_for_refresh();
 }
 
+/////////////////// WHERE ///////////////////////////////
 
-/////////////////// SQL ///////////////////////////////
-
-const query_result   = ref( /**@type {import('../../ipc').IPCQueryResult?} */ (null));
-const query_columns_display      = ref(/**@type {string[]} */ ([]));
-const query_columns_true         = ref(/**@type {string[]} */ ([]));
-const query_columns_true_escaped = ref(/**@type {string[]} */ ([]));
-const query_columns_hide         = ref(/**@type {boolean[]} */ ([]));
-
-const query_rows = computed(() => query_result.value === null ? [] : query_result.value[0]);
-
-if(typeof props.query_select_fields === 'string') {
-    watch(query_result, (new_result) => {
-        if(new_result === null) {
-            query_columns_display.value      = [];
-            query_columns_true.value         = [];
-            query_columns_true_escaped.value = [];
-            query_columns_hide.value         = [];
-        } else {
-            console.log("new_result", new_result);
-            query_columns_display.value      = new_result[1];
-            query_columns_true.value         = new_result[1];
-            query_columns_true_escaped.value = new_result[1].map(escape_backtick);
-            query_columns_hide.value         = [];
-        }
-    });
-} else {
-    watch(toRef(props, "query_select_fields"), (new_fileds) => {
-        query_columns_display.value      = new_fileds.map( x => x[1] ?? '' );
-        query_columns_true.value         = new_fileds.map( x => x[0] );
-        query_columns_true_escaped.value = new_fileds.map( x => x[0] );
-        query_columns_hide.value         = new_fileds.map( x => x[1] === undefined );
-    }, {immediate: true});
-}
-
-/////////////////// WHERE and ORDER ///////////////////////////////
-
-const searches_sql = computed(() => {
-    return searches.value
-        .map   ( (x, i)  => [x,i])
-        .filter(([x, i]) => x != "")
-        .map   (([x, i]) => `(${ query_columns_true_escaped.value[i] } LIKE "%${escape_like(x)}%" ESCAPE '\\')`)
-        .join  (' AND ');
+const searches_inps = reactive(/**@type {string[]}*/ ({}));
+const custom_where_conj = computed(/**@returns {QueryParts[]} */ () => {
+    // console.log('SEARCH NEW VAL1', searches_inps);
+    return Object.entries(searches_inps)
+        .filter(([i, x]) => x !== undefined && x !== '')
+        .map(([i, x]) => [`${columns_escaped[i]} LIKE "%${escape_like(x)}%" ESCAPE '\\'`]);
 });
+const where_conj_combined = computed(() => [...props.query.where_conj, ...custom_where_conj.value]);
+src.query.where_conj.value     = where_conj_combined.value;
+src.query.where_conj_opt.value = props.query.where_conj_opt;
 
-const orderings_sql = computed(() => {
-    return Array.from(orderings_list.entries())
-        // .reverse()
-        .map(([col_i, ordering]) => query_columns_true_escaped.value[col_i] + (ordering > 0 ? " ASC" : " DESC"))
-        .join(', ');
+watch(where_conj_combined, (new_value) => {
+    // console.log('SEARCH NEW VAL', new_value);
+    src.query.where_conj.value = new_value;
+    flag_for_refresh();
 });
-
-const where_sql_true = computed(() => {
-    return [props.query_where, searches_sql.value].filter(x => x != "").map(x => `(${x})`).join(' AND ');
-})
-
-/////////////////// SELECT ///////////////////////////////
-
-const query_sql_select = computed(() => {
-    const fields = props.query_select_fields;
-    if(typeof fields === "string") {
-        return fields;
-    }
-    const res = fields.map( ([true_name, display_name]) => 
-        display_name !== undefined ?  
-            true_name + ' as ' + escape_sql_value(display_name) :
-            true_name
-    );
-    return res.join(', ');
-});
-
-/////////////////// FULL SQL ///////////////////////////////
-
-const query_sql_full = computed(() => {
-    const apply_if_defined = (prefix, value) => value == "" ? "" : `${prefix} ${value}`;
-    const result = [
-        apply_if_defined('SELECT',   query_sql_select.value),
-        apply_if_defined('FROM',     props.query_from),
-        apply_if_defined('WHERE',    where_sql_true.value),
-        apply_if_defined('ORDER BY', orderings_sql.value),
-        apply_if_defined('LIMIT',    scroller_limit.value),
-        apply_if_defined('OFFSET',   offset.value - 1),
-    ].join(' ');
-    // console.log('RESULT', result);
-    return result;
-});
-
-/////////////////// REFRESHING ///////////////////////////////
-
-let was_init_columns_sizes = false;
-let disable_table_search = ref(true);
-async function refresh() {
-    const result = await ipc.db_query(query_sql_full.value);
-    query_result.value = result;
-    if(!was_init_columns_sizes) {
-        was_init_columns_sizes = true;
-        nextTick().then(() => {
-            disable_table_search.value = false;
-            init_columns_sizes();
-        });
-    }
-    return result;
-}
-async function reset() {
-    searches.value  = [];
-    orderings.value = [];
-    orderings_list.clear();
-}
-
-watch(query_sql_full, () => { refresh().catch(handle_err); });
-watch(orderings_sql,  () => { scroller_ref.value.goto(0, true, true); });
-watch( [
-    props_ref.query_select_fields,
-    props_ref.query_from,
-    props_ref.query_where,
-], reset);
 
 
 /////////////////// RESIZING AND STYLING ///////////////////////////////
@@ -185,13 +173,19 @@ function recalculate_limit() {
     const container_height = container_ref.value?.clientHeight;
     const scroller_height  = row_ref      .value?.getBoundingClientRect().height;
     if(!container_height || !scroller_height) {
-        scroller_limit.value = 1;
+        if(scroller_limit.value !== 1) {
+            scroller_limit.value = 1;
+            flag_for_refresh(0);
+        }
         return;
     }
     const rows_to_fit = Math.floor(container_height / scroller_height);
     const result = Math.max(rows_to_fit - 2, 1);
     console.log("RESIZE", result);
-    scroller_limit.value = result;
+    if(scroller_limit.value !== result) {
+        scroller_limit.value = result;
+        flag_for_refresh(0);
+    }
 };
 
 const resizeObserver = new ResizeObserver(recalculate_limit); 
@@ -212,9 +206,12 @@ function handle_mouse_up() {
     console.log('UP');
     current_resize_col_i = -1;
 }
-function handle_mouse_down_on_resizer(/**@type {MouseEvent} */ event, col_i){
-    console.log('DOWN', col_i, event.target.parentNode.getBoundingClientRect().width);
-    column_sizes.value[col_i] = event.target.parentNode.getBoundingClientRect().width;
+function handle_mouse_down_on_resizer(/**@type {MouseEvent} */ event, /**@type {number} */ col_i){
+    /**@type {HTMLElement} */
+    //@ts-ignore
+    const parent = event.target.parentNode;
+    console.log('DOWN', col_i,  parent.getBoundingClientRect().width);
+    column_sizes.value[col_i] = parent.getBoundingClientRect().width;
     current_resize_col_i = col_i;
 }
 function init_columns_sizes() {
@@ -239,11 +236,11 @@ function handle_row_unhover(row_i) {
  * @param {number} row_i
  */
 function handle_select(row_i) {
-    console.log("SELECTING...",  offset.value, row_i, props.selectable);
+    console.log("SELECTING...",  src.offset.value, row_i, props.selectable);
     if(!props.selectable) return;
-    const cols = query_columns_true.value;
-    const row  = query_rows.value[row_i];
-    emit("select", cols, row, offset.value + row_i);
+    const cols = src.full_result.value?.[1] ?? [];
+    const row  = result_rows.value[row_i];
+    emit("select", cols, row, src.offset.value + row_i);
 }
 
 /**
@@ -251,14 +248,18 @@ function handle_select(row_i) {
  */
 function handle_scroll(event) {
     if(event.shiftKey) return;
+    event.preventDefault();
+    event.stopPropagation();
     const scroll_dist = (event.deltaY / 100) * (event.ctrlKey ? scroller_limit.value : 1);
-    scroller_ref.value.scroll_by(scroll_dist);
+    flag_for_refresh(scroll_dist);
+    // scroller_ref.value.scroll_by(scroll_dist);
 }
 
 onMounted(() => {
     resizeObserver.observe(container_ref.value);
     window.addEventListener('mouseup', handle_mouse_up);
     window.addEventListener('mousemove', handle_mouse_move);
+    recalculate_limit();
 });
 onUnmounted(() => {
     resizeObserver.disconnect();
@@ -271,46 +272,41 @@ onUnmounted(() => {
 <template>
 
     <div class="form_container">
-        <QueryFormScroller simple
-        ref="scroller_ref"
+        <QuerySourceOffsetScroller simple
+        :src="src"
+        :step="scroller_limit"
         @error="handle_err"
-        :limit="scroller_limit"
-        :query_from="props.query_from" 
-        :query_where="where_sql_true" 
-        reset_on_query_change
-        nosave 
-        norefresh
-        @changed_index="x => offset = x"/>
+        nosave/>
 
-        <div class="form_content" ref="container_ref" @wheel.passive="handle_scroll">
-            <div class="table_container" :class="{disable_table_search}">
+        <div class="form_content" ref="container_ref" @wheel.capture="handle_scroll">
+            <div class="table_container">
 
                 <div class="table_column iterators">
                     <div class="header" ref="row_ref"> </div>
                     <div class="header">#</div>
-                    <div class="data" v-for="(row, row_i) in query_rows" @click="handle_select(row_i)"
+                    <div class="data" v-for="(row, row_i) in result_rows" @click="handle_select(row_i)"
                             :class="{hovered: current_hovered_row_i === row_i}">
-                        {{ offset + row_i }}:
+                        {{ src.offset.value + row_i + 1 }}:
                     </div>
                 </div>
 
-                <div class="table_column results" v-for="(col_name, col_i) in query_columns_display" ref="col_refs"
+                <div class="table_column results" v-for="(col_name, col_i) in columns_display" ref="col_refs"
                     :class="{
-                        hidden: query_columns_hide[col_i],
-                        type_number: typeof(query_rows[0]?.[col_i]) == 'number',
-                        type_text:   typeof(query_rows[0]?.[col_i]) == 'string',
+                        hidden: columns_hide[col_i],
+                        type_number: typeof(result_rows[0]?.[col_i]) == 'number',
+                        type_text:   typeof(result_rows[0]?.[col_i]) == 'string',
                     }"
                     :style="{width: column_sizes[col_i] === undefined ? undefined : column_sizes[col_i] + 'px' }"
                 >
                     <div class="header col_search_cell">
-                        <input type="text" class="col_search" v-model="searches[col_i]" required>
+                        <input type="text" class="col_search" v-model="searches_inps[col_i]" required>
                         <div class="resizer" @mousedown="e => handle_mouse_down_on_resizer(e, col_i)"></div>
                     </div>
                     <div class="header col_name_cell">
-                        <QueryOrderingBtn class="ordering_btns" v-model:value="orderings[col_i]" @update:value="event => set_orderings_list(col_i, event)"/>
+                        <QueryOrderingBtn class="ordering_btns" v-model:value="orderings_btns[col_i]" @update:value="event => set_orderings_list(col_i, event)"/>
                         <div class="col_name">{{ col_name }}</div>
                     </div>
-                    <div class="data data_cell" v-for="(row, row_i) in query_rows" 
+                    <div class="data data_cell" v-for="(row, row_i) in result_rows" 
                             :class="{hovered: current_hovered_row_i === row_i}"
                             @click="handle_select(row_i)"
                             @mouseenter="handle_row_hover  (row_i)"
@@ -388,7 +384,7 @@ onUnmounted(() => {
         top:    0px;
         bottom: 0px;
         right:  0px;
-        width:  4px;
+        width:  6px;
         cursor: col-resize;
         background-color: black;
     }
