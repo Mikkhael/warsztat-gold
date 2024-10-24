@@ -233,28 +233,15 @@ class DataGraphNodeBase {
     }
     
     /**
-     * @param {DataGraphDependable?} dependable 
+     * @template T
+     * @param {MaybeDependable<T>} dependable 
      */
     add_dependable(dependable) {
-        if(dependable === null) return;
-        this.add_dep(dependable.get_node());
-    }
-
-    /**
-     * @template T
-     * @param {Dependable<T>} dep 
-     * @returns {MaybeRef<T>}
-     */
-    add_dependable_or_ref(dep) {
-        if(dep instanceof DataGraphDependable) {
-            this.add_dep(dep.get_node());
-            return dep.get_ref();
-        } else if (isRef(dep)) {
-            const new_dep = new DataGraphNodeFromRef(dep);
-            this.add_dep(new_dep);
-            return new_dep.cached;
+        if(dependable instanceof DataGraphDependable) {
+            this.add_dep(dependable.get_node());
+            return dependable.get_ref();
         }
-        return dep;
+        return dependable;
     }
 
     disconnect() {
@@ -340,7 +327,7 @@ class NullDependableRef extends DataGraphDependable {
 
 /**
  * @template T
- * @typedef { MaybeRef<T> | DataGraphDependable<T> } Dependable
+ * @typedef { MaybeRef<T> | DataGraphDependable<T> } MaybeDependable
  * */
 
 /**
@@ -465,6 +452,7 @@ function get_complete_expired_subgraph(nodes){
 export {
     DataGraphNodeBase,
     DataGraphNodeFromRef,
+    DataGraphDependable,
 
     AdvDependableRef,
     NullDependableRef

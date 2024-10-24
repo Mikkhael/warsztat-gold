@@ -154,7 +154,8 @@ const custom_where_conj = computed(/**@returns {QueryParts[]} */ () => {
     // console.log('SEARCH NEW VAL1', searches_inps);
     return Object.entries(searches_inps)
         .filter(([i, x]) => x !== undefined && x !== '')
-        .map(([i, x]) => [`${columns_escaped[i]} LIKE "%${escape_like(x)}%" ESCAPE '\\'`]);
+        .map(([i, x]) => [columns_escaped[i], [x, 'l']]);
+        // .map(([i, x]) => [`${columns_escaped[i]} LIKE "%${escape_like(x)}%" ESCAPE '\\'`]);
 });
 const where_conj_combined = computed(() => [...props.query.where_conj, ...custom_where_conj.value]);
 src.query.where_conj.value     = where_conj_combined.value;

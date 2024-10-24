@@ -66,7 +66,7 @@ const QV_KLIENCI_MAIN = {
         [['addr', '(`MIASTO` || " ul." || `ULICA`)'], 'Adres'],
         [['KTO'],   'KTO'],
     ],
-    where_conj: [['`KTO` =', kto_ref]]
+    where_conj: [[ '`KTO`=', [kto_ref] ]]
 }
 
 //////////////// CRATING SOURCES ////////////////////
@@ -99,8 +99,8 @@ function create_form1() {
     return src;
 }
 function create_form2(
-    /**@type {import('./../Dataset').Dependable} */ param1 = null,
-    /**@type {import('./../Dataset').Dependable} */ param2 = null,
+    /**@type {import('./../Dataset').MaybeDependable} */ param1 = null,
+    /**@type {import('./../Dataset').MaybeDependable} */ param2 = null,
 ) {
     const src = new FormQuerySource();
     src.add_table_dep(db.TABS.samochody);
@@ -117,7 +117,7 @@ function create_form2(
     if(param2 === null) {
         src.add_where_eq("ID klienta", param1, true);
     } else {
-        src.add_where_opt("`ID klienta` BETWEEN", param1, "AND", param2);
+        src.add_where_opt("`ID klienta` BETWEEN ", [param1], " AND ", [param2]);
     }
 
 

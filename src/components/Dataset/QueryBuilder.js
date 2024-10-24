@@ -1,13 +1,8 @@
 
 
 //@ts-check
-import { computed, unref, ref, isRef, registerRuntimeCompiler, shallowRef, triggerRef } from "vue";
-import { escape_backtick_smart, escape_sql_value, iterate_query_result_values, iterate_query_result_values_single_row, reasRef } from "../../utils";
-import { AdvDependableRef, DataGraphNodeBase, DataGraphNodeFromRef } from "./DataGraph";
-import { configDir } from "@tauri-apps/api/path";
-import ipc from "../../ipc";
-import { TableNode } from "./Database";
-import { FormDataSet } from "./Form";
+import { computed, unref, shallowRef } from "vue";
+import { escape_backtick_smart, escape_like_full, escape_sql_value, reasRef } from "../../utils";
 
 
 /**
@@ -26,11 +21,6 @@ import { FormDataSet } from "./Form";
 /**
  * @typedef {number | string | null} SQLValue 
  */
-/**
- * @template [T=SQLValue]
- * @typedef {import('./DataGraph').Dependable<T>} Dependable
- */
-
 
 /**@typedef {[string] | [string, string]} QuerySelectField */
 /**@param {QuerySelectField} select_field */
@@ -46,16 +36,49 @@ function select_field_definition_to_sql(select_field) {
 
 // TODO change query parts to printf-like
 
-/**@typedef {(string | MaybeRef<SQLValue>)[]} QueryParts */
+/**
+ * @template [T=never]
+ * @typedef {(string | [MaybeRef<SQLValue> | T] | [string, 'l'] | [string, 'b'])[]} QueryParts 
+ * */
+
+/**
+ * @template [T=SQLValue]
+ * @param {QueryParts<T>} parts 
+ * @returns {QueryParts<T>}
+ * */
+function qparts(...parts) {
+    return parts;
+}
+/**
+ * @template T
+ * @param {QueryParts<T>} parts 
+ * @param {(param: MaybeRef<SQLValue> | T) => MaybeRef<SQLValue>} callback 
+ * @returns {QueryParts}
+ */
+function map_query_parts_params(parts, callback) {
+    return parts.map(part => {
+        if(!(part instanceof Array)) return part;
+        if(part.length === 1) {
+            return [callback(part[0])];
+        }
+        return part;
+    });
+}
 /**@param {QueryParts} parts  */
 function query_parts_to_string(parts) {
-    return parts.map(part => 
-        typeof part === 'string' ? part : escape_sql_value(unref(part))
-    ).join(' ');
+    return parts.map(part => {
+        if(typeof part === 'string') return part;
+        if(part instanceof Array) {
+            if(part.length === 1) return escape_sql_value(unref(part[0]));
+            if(part[1] === 'l')   return escape_like_full(part[0]);
+            if(part[1] === 'b')   return escape_backtick_smart(part[0]);
+        }
+        throw new Error('INVALID QUERY PART');
+    }).join(' ');
 }
 /**@param {QueryParts} parts */
 function query_parts_is_not_null(parts) {
-    return !parts.some(part => unref(part) === null);
+    return !parts.some(part => part instanceof Array && unref(part[0]) === null);
 }
 
 
@@ -179,7 +202,7 @@ class QueryBuilder {
      * @param {MaybeRef<SQLValue>} value
      */
     add_where_eq(name, value, optional = false) {
-        const parts = [escape_backtick_smart(name) + '=', value];
+        const parts = qparts([name,'b'],'=',[value]);
         this.add_where(parts, optional);
     }
     
@@ -221,9 +244,11 @@ function concat_query(sections) {
 
 export {
     QueryBuilder,
+    map_query_parts_params,
+    qparts,
     query_ordering_to_string,
     query_parts_is_not_null,
     query_parts_to_string,
     concat_query,
-    concat_query_section
+    concat_query_section,
 }

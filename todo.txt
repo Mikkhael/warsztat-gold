@@ -101,8 +101,7 @@
                 + layerd test
                 - aux queries
                 + more dynamic query builder
-                - change QueryParts to printf
-                    - unexisting colnames handling
+                + change QueryParts to ~printf~ better differenciate literal strings and arguments
             + OffsetScroller
                 + errors via MsgManager
                 + better error/expired indication

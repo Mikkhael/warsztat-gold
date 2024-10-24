@@ -28,7 +28,7 @@ import {computed, ref, shallowReactive, unref} from 'vue';
 
 /**
  * @template [T=SQLValue]
- * @typedef {import('./DataGraph').Dependable<T>} Dependable
+ * @typedef {import('./DataGraph').MaybeDependable<T>} MaybeDependable
  */
 
 
@@ -80,7 +80,6 @@ class FormQuerySource extends QuerySource {
     }
 
     async save_impl(force = false) {
-        debugger;
         const res = await this.dataset.perform_save_notransaction(undefined, force);
         if(res.insert) {
             this.request_offset_goto(-1, true);
@@ -118,13 +117,13 @@ class FormQuerySource extends QuerySource {
 
     /**
      * @param {string}   name 
-     * @param {Dependable<SQLValue>} default_value
+     * @param {MaybeDependable} default_value
      * @param {string=}  sql_definition 
      */
     add_select_data(name, default_value = null, sql_definition = undefined) {
         this.query.add_select(name, sql_definition);
         this.result_query_names.push(name);
-        const ref = this.add_dependable_or_ref(default_value);
+        const ref = this.add_dependable(default_value);
         const cached = new FormQuerySourceCachedValue(this, ref);
         this.result[name] = cached;
         this.dataset?.add(name, cached);

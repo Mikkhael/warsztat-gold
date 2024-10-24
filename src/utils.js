@@ -59,6 +59,9 @@ function escape_like(/**@type {string} */ value) {
 	const res2 = res1.replace(/\"/g, '""');
 	return res2;
 }
+function escape_like_full(/**@type {string} */ value) {
+	return`LIKE "%${escape_like(value)}%" ESCAPE '\\'`;
+}
 
 /**
  * @template T
@@ -248,6 +251,7 @@ export {
 	escape_backtick,
 	escape_backtick_smart,
 	escape_like,
+	escape_like_full,
 	arr_to_object,
 	query_row_to_object,
 	query_result_to_object,

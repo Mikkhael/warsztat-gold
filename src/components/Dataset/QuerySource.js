@@ -1,14 +1,11 @@
 
 
 //@ts-check
-import { computed, unref, ref, isRef, registerRuntimeCompiler, shallowReadonly, shallowRef } from "vue";
-import { escape_backtick_smart, escape_sql_value, iterate_query_result_values, iterate_query_result_values_single_row } from "../../utils";
-import { AdvDependableRef, DataGraphNodeBase, DataGraphNodeFromRef } from "./DataGraph";
-import { configDir } from "@tauri-apps/api/path";
+import { computed, ref, shallowRef } from "vue";
+import { DataGraphDependable, DataGraphNodeBase } from "./DataGraph";
 import ipc from "../../ipc";
 import { TableNode } from "./Database";
-import { FormDataSet } from "./Form";
-import { QueryBuilder } from "./QueryBuilder";
+import { map_query_parts_params, QueryBuilder } from "./QueryBuilder";
 
 
 /**
@@ -29,7 +26,7 @@ import { QueryBuilder } from "./QueryBuilder";
  */
 /**
  * @template [T=SQLValue]
- * @typedef {import('./DataGraph').Dependable<T>} Dependable
+ * @typedef {import('./DataGraph').MaybeDependable<T>} MaybeDependable
  */
 
 
@@ -177,38 +174,34 @@ class QuerySource extends DataGraphNodeBase {
 
     /**
      * @param {string} field 
-     * @param {Dependable} value 
+     * @param {MaybeDependable} value 
      */
     add_where_eq(field, value, optional = false) {
         this.expire();
-        const ref = this.add_dependable_or_ref(value);
+        const ref = this.add_dependable(value);
         this.query.add_where_eq(field, ref, optional);
     }
 
+    /**@typedef {import("./QueryBuilder").QueryParts<DataGraphDependable<SQLValue>>} QueryPartsDependable */
+
     /**
      * @param {boolean} optional
-     * @param {Dependable[]} parts 
+     * @param {QueryPartsDependable} parts 
      */
     #add_where_impl(optional, ...parts){
         this.expire();
-        const _parts = parts.map(x => {
-            if(typeof x === 'string' || typeof x === 'number' || x === null) {
-                return x;
-            } else {
-                return this.add_dependable_or_ref(x);
-            }
-        });
+        const _parts = map_query_parts_params(parts, (param => this.add_dependable(param)));
         this.query.add_where(_parts, optional);
     }
     
     /**
-     * @param  {Dependable[]} parts 
+     * @param  {QueryPartsDependable} parts 
      */
     add_where(...parts) {
         this.#add_where_impl(false, ...parts);
     }
     /**
-     * @param  {Dependable[]} parts 
+     * @param  {QueryPartsDependable} parts 
      */
     add_where_opt(...parts) {
         this.#add_where_impl(true, ...parts);
