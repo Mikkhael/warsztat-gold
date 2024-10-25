@@ -62,7 +62,7 @@ src.add_from('`klienci`');
 
 
 
-const id     = standart_form_value_routine(src, "ID",                  {primary: true});
+const id     = standart_form_value_routine(src, "ID",                  {sync, primary: true});
 const nazwa  = standart_form_value_routine(src, "NAZWA",               {sync});
 const miasto = standart_form_value_routine(src, "MIASTO",              {sync});
 const ulica  = standart_form_value_routine(src, "ULICA",               {sync});
@@ -178,7 +178,7 @@ defineExpose({
 
     <div class="form_container" :class="src.form_style.value">
 
-        <form ref="form" class="form form_content flex_auto">
+        <form class="form form_content flex_auto" :ref="e => src.assoc_form(e)">
             
             <div class="grid">
 
@@ -207,7 +207,7 @@ defineExpose({
                     <!-- <button @click.prevent="click_zlecenia">ZLECENIA</button> -->
                 </div>
 
-                <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull :len="60" class="main_input_field"/>
+                <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull :len="60" class="main_input_field" pattern="[^ś]*"/>
                 <label>Odbierający Fakturę</label>  <FormInput :value="odbier"         :len="50" class="main_input_field"/>
                 <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  nonull :len="30" class="main_input_field"/>
                 <label>Kod i Miejscowość  </label>  

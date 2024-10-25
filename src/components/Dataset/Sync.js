@@ -89,6 +89,10 @@ class TableSync {
 
         const set   = entries_to_sql(to_update).join(",");
         const where = entries_to_sql(primaries).join(" AND ");
+
+        if(where === '') {
+            throw new Error("NOT PRIMARY KEY SET FOR SYNC " + this.table.name);
+        }
         
         const query = `UPDATE ${escape_backtick_smart(this.table.name)} SET ${set} WHERE ${where};`;
         return query;

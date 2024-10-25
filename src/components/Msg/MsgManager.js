@@ -31,6 +31,18 @@ class MsgManager {
             }, timeout);
         }
     }
+    /**
+     * @param {string} type 
+     * @param {string} content 
+     * @param {number} timeout
+     */
+    post_or_repost(type, content, timeout = 0, onclick = () => {}) {
+        const existing_msg = this.msgs.find(x => x.content === content);
+        if(existing_msg){
+            this.close(existing_msg.id);
+        }
+        this.post(type, content, timeout, onclick);
+    }
     
     /**
      * @param {string | Error} err 

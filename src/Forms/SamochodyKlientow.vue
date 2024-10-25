@@ -47,7 +47,7 @@ const param_id_klienta = param_from_prop(props, 'id_klienta');
 src.add_table_dep(db.TABS.samochody);
 src.add_from('`samochody klientów`');
 
-const car_id       = standart_form_value_routine(src, "ID",           {primary: true}                   );
+const car_id       = standart_form_value_routine(src, "ID",           {sync, primary: true}             );
 const car_marka    = standart_form_value_routine(src, "marka",        {sync}                            );
 const car_model    = standart_form_value_routine(src, "model",        {sync}                            );
 const car_nrrej    = standart_form_value_routine(src, "nr rej",       {sync}                            );
@@ -89,9 +89,9 @@ defineExpose({
 
     <div class="form_container" :class="src.form_style.value">
 
-        <form ref="car_form" class="form_content form">
+        <form class="form_content form" :ref="e => src.assoc_form(e)">
             <div>
-                <label class="label">Marka      </label>   <FormInput :value="car_marka"    nonull :len="15"/>
+                <label class="label">Marka      </label>   <FormInput :value="car_marka"    nonull :len="15" pattern="[^ś]*"/>
                 <label class="label">Model      </label>   <FormInput :value="car_model"    nonull :len="15"/>
                 <label class="label">Nr Rej.    </label>   <FormInput :value="car_nrrej"    nonull :len="15"/>
                 <label class="label">Nr Silnika </label>   <FormInput :value="car_sinlink"  nonull :len="20"/>

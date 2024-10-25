@@ -260,13 +260,15 @@ class DataGraphNodeBase {
     }
 
     /**
-     * @param {(node: DataGraphNodeBase) => void} callback 
+     * @param {(node: DataGraphNodeBase) => boolean | void} callback 
      */
-    for_each_dist_deep(callback) {
+    for_each_dist_deep(callback, with_self = false) {
         const nodes = get_all_dists([this]);
-        for(let i = 1; i < nodes.length; i++) {
-            callback(nodes[i]);
+        for(let i = with_self ? 0 : 1; i < nodes.length; i++) {
+            if(callback(nodes[i]))
+                return true;
         }
+        return false;
     }
 }
 

@@ -118,7 +118,7 @@ defineExpose({
 
     <div class="form_container" :class="src.form_style.value">
 
-        <form ref="form" class="form form_content">
+        <form class="form form_content" :ref="e => src.assoc_form(e)">
             
             <div class="flex_auto vert">
                 <div>

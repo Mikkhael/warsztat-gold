@@ -53,7 +53,27 @@ class FormQuerySource extends QuerySource {
             empty:    (this.is_empty.value && !this.insert_mode.value) || this.disabled.value,
             disabled: this.disabled.value
         }});
+
+        this.associated_form_element = ref(/**@type {HTMLFormElement?} */ (null));
     }
+
+    assoc_form(elem) {
+        this.associated_form_element.value = elem;
+    }
+
+    report_validity_deep() {
+        return !this.for_each_dist_deep(node => {
+            if(node instanceof FormQuerySource && !node.report_validity_self()) {
+                return true;
+            }
+        }, true);
+    }
+    report_validity_self(){
+        if(this.associated_form_element.value === null) return true;
+        const res = this.associated_form_element.value.reportValidity();
+        return res;
+    }
+
 
     register_result(name, default_value) {
         if(this.result[name]) {
@@ -85,8 +105,8 @@ class FormQuerySource extends QuerySource {
         if(this.request instanceof QuerySourceRequest_Insert) {
             this.insert_mode.value = this.request.value;
             if(this.insert_mode.value) {
-                this.for_each_dist_deep(node => node instanceof FormQuerySource && 
-                                                (node.insert_mode.value = false));
+                this.for_each_dist_deep(node => {node instanceof FormQuerySource && 
+                                                (node.insert_mode.value = false)});
             }
             this.request_clear();
         } else {
@@ -162,6 +182,8 @@ class FormQuerySource extends QuerySource {
     request_insert_toggle() {
         this._add_update_request_impl(new QuerySourceRequest_Insert(!this.insert_mode.value), false);
     }
+
+
 }
 
 

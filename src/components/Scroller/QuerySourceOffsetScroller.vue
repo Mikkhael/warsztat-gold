@@ -2,6 +2,7 @@
 //@ts-check
 import { watch, ref, readonly, toRef, toRefs, computed, onMounted, onUnmounted } from "vue";
 import { FormQuerySource, QuerySource } from "../Dataset";
+import useMainMsgManager, { MsgManager } from "../Msg/MsgManager";
 
 const props = defineProps({
 
@@ -34,6 +35,8 @@ const props = defineProps({
 	// }
 });
 
+
+const msgManager = useMainMsgManager();
 
 const emit = defineEmits({
 	error(err) {return true;}
@@ -84,7 +87,13 @@ async function clicked_insert() {
 }
 async function clicked_save(shiftKey = false) {
 	const force = shiftKey;
-	return props.src.save_deep_transaction_and_update(force);
+	const valid = force || src_form.value?.report_validity_deep();
+	if(!valid) {
+		msgManager.post_or_repost('info', "Niektóre pola zawierają nieprawidłową wartość. Wykonaj zapis, przytrzymując SHIFT, aby spróbować zapisać mimo to.")
+		return false;
+	};
+	await props.src.save_deep_transaction_and_update(force);
+	return true;
 }
 
 

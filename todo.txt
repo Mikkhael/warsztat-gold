@@ -119,10 +119,7 @@
                 + integration with DataGraph
                 - delete
             - forms
-                - integration with form
-                - integration with src
-                - integration with sync
-                - form validation
+                + form validation
                 + insert mode
                     + insert mode with nesting (disable)
             + don't display empty/invalid forms
