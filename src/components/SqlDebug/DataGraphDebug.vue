@@ -36,11 +36,18 @@ class TestNode extends DataGraphNodeBase {
         return super.expire();
     }
 
-    check_changed_impl() {console.log("CHECK CHANGED ", this.name); return this.changed_self.value;}
+    check_changed_impl() {console.log("CHECK CHANGED ", this.name); return this.changed_self.value || this.insert_mode.value;}
     check_expired_impl() {console.log("CHECK EXPIRED ", this.name); return false;}
     check_should_disable_dists_impl() {return this.insert_mode.value;}
     update_impl() {
         console.log('UPDATING ', this.name); 
+        this.insert_mode.value = false;
+        this.was_updated.value = ++updated_cnt;
+    }
+    save_impl() {
+        console.log('SAVING ', this.name); 
+        this.changed_self.value = false;
+        this.insert_mode.value = false;
         this.was_updated.value = ++updated_cnt;
     }
 }
@@ -97,7 +104,8 @@ function clicked(node, ctrl, shift, alt) {
     console.log('CLICKED', node);
     if(node) {
         if(shift && ctrl) {
-            node.update_deps_and_self(alt);
+            // node.update_deps_and_self(alt);
+            node.save_deep_notransaction(alt);
         }else if(shift) {
             node.update_complete(alt);
         }else if(ctrl) {

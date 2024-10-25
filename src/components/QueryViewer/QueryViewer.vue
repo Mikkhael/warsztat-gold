@@ -195,6 +195,7 @@ const resizeObserver = new ResizeObserver(recalculate_limit);
 let   current_resize_col_i = -1;
 const col_refs     = ref(/**@type {HTMLElement[]} */ ([]));
 const column_sizes = ref(/**@type {number[]} */ ([]));
+const disable_table_search = ref(true);
 
 function handle_mouse_move(/**@type {MouseEvent} */ event) {
     const delta = event.movementX;
@@ -220,6 +221,7 @@ function init_columns_sizes() {
     for(let col_i in col_refs.value) {
         column_sizes.value[col_i] = col_refs.value[col_i].getBoundingClientRect().width;
     }
+    disable_table_search.value = false;
 }
 
 const current_hovered_row_i = ref(-1);
@@ -281,7 +283,7 @@ onUnmounted(() => {
         nosave/>
 
         <div class="form_content" ref="container_ref" @wheel.capture="handle_scroll">
-            <div class="table_container">
+            <div class="table_container" :class="{disable_table_search}">
 
                 <div class="table_column iterators">
                     <div class="header" ref="row_ref"> </div>

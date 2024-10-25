@@ -178,15 +178,22 @@ function time_now()    { return time    (new Date()); };
 function datetime_now(){ return datetime(new Date()); };
 
 
+// TODO naprawić daty !!!
+// "2024-09-25"          ->  "Wed Sep 25 2024 02:00:00 GMT+0200" (+02, 2h)
+// "1998-10-21 00:00:00" ->  "Wed Oct 21 1998 00:00:00 GMT+0200" (+02, 0h)
+// "1999-01-20 00:00:00" ->  "Wed Jan 20 1999 00:00:00 GMT+0100" (+01, 0h)
 const date_offset_ms = new Date().getTimezoneOffset() * 1000 * 60;
 function str_to_date_local(/**@type {string} */ date_str) {
-	return new Date(Date.parse(date_str) + date_offset_ms);
+	// return new Date(Date.parse(date_str) + date_offset_ms);
+	return new Date(Date.parse(date_str));
 }
 
 // a.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'})
 function format_date_str_local(/**@type {string} */ date_str) {
 	const date = str_to_date_local(date_str);
-	return date.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'});
+	const res = date.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'});
+	console.log('PARSING DATE', date_str, date, res);
+	return res
 }
 
 

@@ -7,13 +7,18 @@ import {FormInput, FormEnum} from '../components/Controls';
 import useMainMsgManager from '../components/Msg/MsgManager';
 import useMainFWManager from '../components/FloatingWindows/FWManager';
 
+import { FormQuerySource } from '../components/Dataset';
+import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
+
 // import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import {onMounted, ref, toRef, readonly, watch} from 'vue';
-import { init_form_parent_window } from './FormCommon';
+import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT, init_form_parent_window, standart_form_value_routine } from './FormCommon';
 import { date_now } from '../utils';
+import { FormParamProp, param_from_prop } from '../components/Dataset';
+import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 
 
 const props = defineProps({
@@ -22,137 +27,88 @@ const props = defineProps({
         type: Object,
         required: false
     },
-    dataset: {
-        /**@type {import('vue').PropType<import('../components/Dataset/Dataset').Dataset>} */
+    use_src: {
+        /**@type {import('vue').PropType<FormQuerySource>} */
         type: Object,
         required: false
     },
-    allow_null_conditions: {
-        type: Boolean,
-        default: false,
-    },
-    id_klienta: {
-        type: Number,
-        default: null,
-        required: false   
-    },
-    id_samochodu: {
-        type: Number,
-        default: null,
-        required: false   
-    }
+    id_klienta:   FormParamProp,
+    id_samochodu: FormParamProp,
 });
+const emit = defineEmits(['open_print_window_zlec']);
+
+console.log("START_PROPS",typeof props.id_klienta, typeof props.id_samochodu,  props.id_klienta, props.id_samochodu, props);
+
 
 const msgManager = useMainMsgManager();
 const fwManager  = useMainFWManager();
 
+const db = useWarsztatDatabase();
+
 // #	ID	ID klienta	ID samochodu	data otwarcia	        data zamknięcia	        zysk z części	zysk z robocizny	mechanik prowadzący	% udziału	pomocnik 1	  % udziału p1	pomocnik 2	% udziału p2	zgłoszone naprawy	                                    uwagi o naprawie
 // 0:	1	92	        17	            1998-09-02 00:00:00	    1947-01-12 00:00:00	    0.00	        0.00	            Dąbrowski Stanisław	0	        ~NULL~	      0	            ~NULL~	    0	            PINELES Naprawa blacharska przedniej cząści samochodu	1 2 3
 
-const prop_id_klienta = toRef(props, 'id_klienta');
-const prop_id_car     = toRef(props, 'id_samochodu');
-
-
-const form     = ref();
-const scroller = ref();
+const param_id_klienta = param_from_prop(props, 'id_klienta');
+const param_id_car     = param_from_prop(props, 'id_samochodu');
 
 const repZlecenieNaprawy_ref = ref();
 
-const dataset     = props.dataset ?? new Dataset();
-// const index       = dataset.get_index_ref();
-const offset      = dataset.get_offset_ref();
-const insert_mode = dataset.get_insert_mode_ref();
-dataset.assosiate_form(form);
+const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
+const sync = src.dataset.get_or_create_sync(db.TABS.zleceniaNaprawy);
 
-const src  = dataset.create_source_query();
-const sync = dataset.create_table_sync('zlecenia naprawy');
+src.add_table_dep(db.TABS.zleceniaNaprawy);
+src.add_from('`zlecenia naprawy`');
 
-const id         = dataset.create_value_raw   ("ID",                  null,             src);
-const id_klienta = dataset.create_value_synced("ID klienta",          prop_id_klienta,  src, sync);
-const id_car     = dataset.create_value_synced("ID samochodu",        prop_id_car,      src, sync);
-
-const data_otw   = dataset.create_value_synced("data otwarcia",            date_now(),     src, sync);
-const data_zamk  = dataset.create_value_synced("data zamknięcia",          null,           src, sync);
-const zysk_cz    = dataset.create_value_synced("zysk z części",            0,              src, sync);
-const zysk_rob   = dataset.create_value_synced("zysk z robocizny",         0,              src, sync);
-const prow       = dataset.create_value_synced("mechanik prowadzący",      null,           src, sync);
-const prow_p     = dataset.create_value_synced("% udziału",                0,              src, sync);
-const pom1       = dataset.create_value_synced("pomocnik 1",               null,           src, sync);
-const pom1_p     = dataset.create_value_synced("% udziału p1",             0,              src, sync);
-const pom2       = dataset.create_value_synced("pomocnik 2",               null,           src, sync);
-const pom2_p     = dataset.create_value_synced("% udziału p2",             0,              src, sync);
-const zgloszenie = dataset.create_value_synced("zgłoszone naprawy",        null,           src, sync);
-const uwagi      = dataset.create_value_synced("uwagi o naprawie",         null,           src, sync);
-
-sync.add_primary('ID', id);
-
-const query = new QueryBuilder(dataset);
-query.set_from_table('zlecenia naprawy');
-query.add_simple_condition('ID klienta',   prop_id_klienta, props.allow_null_conditions);
-query.add_simple_condition('ID samochodu', prop_id_car,     props.allow_null_conditions);
-
-query.set_source_query_offset(src);
-const scroller_query = query.get_scroller_query();
-
-async function goto_by_id(id) {
-    const offset = await query.perform_rownumber_select(id);
-    if(offset !== undefined){
-        return scroller.value.goto_complete(offset);
-    }
-}
+// watch(props, (new_props) => {
+//     console.log("NEW PROPS", new_props, param_id_klienta, param_id_car);
+// })
 
 
-// src.set_body_query_and_finalize(DVUtil.sql_parts_ref([
-//     'FROM `zlecenia naprawy` WHERE ', 
-//           ' `ID klienta` = ',   prop_id_klienta,
-//     ' AND `ID samochodu` = ', prop_id_car,
-//     ` LIMIT 1 OFFSET `, offset
-// ]));
-// src.set_body_query_and_finalize([
-//     'FROM `zlecenia naprawy` WHERE ', 
-//           ' `ID klienta` = ',   prop_id_klienta,
-//     ' AND `ID samochodu` = ', prop_id_car,
-//     ` LIMIT 1 OFFSET `, offset
-// ]);
-// const scroller_query_from  = '`zlecenia naprawy`';
-// const scroller_query_where = DVUtil.sql_parts_ref([
-//           ' `ID klienta` = ', prop_id_klienta,
-//     ' AND `ID samochodu` = ', prop_id_car,
-// ]);
+const id         = standart_form_value_routine(src, "ID",                   {sync, primary: true} );
+const id_klienta = standart_form_value_routine(src, "ID klienta",           {sync, param: param_id_klienta} );
+const id_car     = standart_form_value_routine(src, "ID samochodu",         {sync, param: param_id_car}     );
 
-// watch(props, (new_props, old_props) => {
-//     console.log('ZLECENIA PORPS', new_props, old_props);
-// });
+const data_otw   = standart_form_value_routine(src, "data otwarcia",        {sync, default: date_now()} );
+const data_zamk  = standart_form_value_routine(src, "data zamknięcia",      {sync}                      );
+const zgloszenie = standart_form_value_routine(src, "zgłoszone naprawy",    {sync}                      );
+const uwagi      = standart_form_value_routine(src, "uwagi o naprawie",     {sync}                      );
 
-
-onMounted(() => {
-    init_form_parent_window([dataset], props);
-});
+const prow       = standart_form_value_routine(src, "mechanik prowadzący",  {sync}                      );
+const pom1       = standart_form_value_routine(src, "pomocnik 1",           {sync}                      );
+const pom2       = standart_form_value_routine(src, "pomocnik 2",           {sync}                      );
+const prow_p     = standart_form_value_routine(src, "% udziału",            {sync, default: 0}          );
+const pom1_p     = standart_form_value_routine(src, "% udziału p1",         {sync, default: 0}          );
+const pom2_p     = standart_form_value_routine(src, "% udziału p2",         {sync, default: 0}          );
+const zysk_rob   = standart_form_value_routine(src, "zysk z robocizny",     {sync, default: 0}          );
+const zysk_cz    = standart_form_value_routine(src, "zysk z części",        {sync, default: 0}          );
 
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
+// TODO automate printing
 function open_print_window() {
+
+    emit('open_print_window_zlec');
+
     // fwManager.open_or_reopen_window('Zlecenie Naprawy - Drukuj', ZlecenieNaprawy,{
     //     dataset
     // });
 
-    /**@type {HTMLElement} */
-    const page = repZlecenieNaprawy_ref.value;
-    console.log('PAGE', page);
-    const win  = window.open('about:blank', 'printwindow');
-    win.document.head.innerHTML = document.head.innerHTML;
-    win.document.body.innerHTML = page.innerHTML;
+    // /**@type {HTMLElement} */
+    // const page = repZlecenieNaprawy_ref.value;
+    // console.log('PAGE', page);
+    // const win  = window.open('about:blank', 'printwindow');
+    // win.document.head.innerHTML = document.head.innerHTML;
+    // win.document.body.innerHTML = page.innerHTML;
 
-    win.print();
+    // win.print();
 }
 
 
 defineExpose({
-    dataset,
-    goto_by_id
+    src
 });
 
 </script>
@@ -160,7 +116,7 @@ defineExpose({
 
 <template>
 
-    <div class="form_container" :class="dataset.form_container_classes">
+    <div class="form_container" :class="src.form_style.value">
 
         <form ref="form" class="form form_content">
             
@@ -200,21 +156,21 @@ defineExpose({
 
         </form>
 
-        <QueryFormScrollerDataset simple
-        v-bind="scroller_query"
-        :datasets="[dataset]"
-        @error="handle_err"
-        insertable
-        ref="scroller"/> 
+        <QuerySourceOffsetScroller
+            :src="src"
+            insertable
+            saveable
+            @error="handle_err"
+        />
         
     </div>
 
 
-    <div class="print_render" ref="repZlecenieNaprawy_ref">
+    <!-- <div class="print_render" ref="repZlecenieNaprawy_ref">
         <RepZlecenieNaprawy 
-            :dataset="dataset"
+            :dataset="src"
         />
-    </div>
+    </div> -->
 
 </template>
 

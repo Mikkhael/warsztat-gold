@@ -2,7 +2,7 @@
 
 import ipc from '../../ipc';
 import { TableNode } from './Database';
-import {AdvDependableRef, DataGraphNodeBase} from './DataGraph';
+import {AdvDependableReasRef, AdvDependableRef, DataGraphNodeBase} from './DataGraph';
 import {QuerySource} from './QuerySource';
 import {TableSync} from './Sync';
 import {computed, ref, shallowReactive, unref} from 'vue';
@@ -43,7 +43,7 @@ class FormQuerySource extends QuerySource {
         /**@type {string[]} */
         this.result_query_names = [];
         /**@type {Object.<string, FormQuerySourceCachedValue>} */
-        this.result = {};
+        this.result = shallowReactive({});
 
         this.insert_mode = ref(false);
 
@@ -53,6 +53,24 @@ class FormQuerySource extends QuerySource {
             empty:    (this.is_empty.value && !this.insert_mode.value) || this.disabled.value,
             disabled: this.disabled.value
         }});
+    }
+
+    register_result(name, default_value) {
+        if(this.result[name]) {
+            this.result[name].reregister(default_value);
+        }else{
+            this.result[name] = new FormQuerySourceCachedValue(this, default_value);
+        }
+        return this.result[name];
+    }
+
+    get(name, initial_value = null) {
+        if(this.result[name]) return this.result[name];
+        return this.register_result(name, initial_value);
+    }
+    get_ref(name, initial_value = null) {
+        const cached = this.get(name, initial_value);
+        return cached.get_ref();
     }
 
     /// OVERWRITES //////////////////////
@@ -128,10 +146,11 @@ class FormQuerySource extends QuerySource {
     add_select_data(name, default_value = null, sql_definition = undefined) {
         this.query.add_select(name, sql_definition);
         this.result_query_names.push(name);
-        const ref = this.add_dependable(default_value);
-        const cached = new FormQuerySourceCachedValue(this, ref);
-        this.result[name] = cached;
-        this.dataset?.add(name, cached);
+        const ref    = this.add_dependable(default_value);
+        const cached = this.register_result(name, ref);
+        // const cached = new FormQuerySourceCachedValue(this, ref);
+        // this.result[name] = cached;
+        this.dataset.add(name, cached);
     }
     
     /**
@@ -147,9 +166,9 @@ class FormQuerySource extends QuerySource {
 
 
 /**
- * @extends {AdvDependableRef<SQLValue>}
+ * @extends {AdvDependableReasRef<SQLValue>}
  */
-class FormQuerySourceCachedValue extends AdvDependableRef {
+class FormQuerySourceCachedValue extends AdvDependableReasRef {
     /**
      * @param {QuerySource} src 
      * @param {MaybeRef<SQLValue>}    default_value
@@ -158,6 +177,14 @@ class FormQuerySourceCachedValue extends AdvDependableRef {
         super(src, unref(default_value));
         this.src = src;
         this.default_value = default_value;
+    }
+
+    /**
+     * @param {MaybeRef<SQLValue>} new_default_value
+     */
+    reregister(new_default_value) {
+        this.reassign(unref(new_default_value));
+        this.default_value = new_default_value;
     }
 
     reset() {

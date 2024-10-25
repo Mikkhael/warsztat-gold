@@ -17,44 +17,52 @@ const props = defineProps({
         type: Object,
         required: false
     },
-    dataset: {
-        /**@type {import('vue').PropType<import('../components/Dataset/Dataset').Dataset>} */
+    src_klient: {
+        /**@type {import('vue').PropType<import('../components/Dataset').FormQuerySource>} */
         type: Object,
         required: true
-    }
+    },
+    src_car: {
+        /**@type {import('vue').PropType<import('../components/Dataset').FormQuerySource>} */
+        type: Object,
+        required: true
+    },
+    src_zlec: {
+        /**@type {import('vue').PropType<import('../components/Dataset').FormQuerySource>} */
+        type: Object,
+        required: true
+    },
 });
 
 const msgManager = useMainMsgManager();
 
-const id         = props.dataset.get("ID",                  );
-const id_klienta = props.dataset.get("ID klienta",          );
-const id_car     = props.dataset.get("ID samochodu",        );
+const id         = props.src_zlec.get_ref("ID",                  );
+const id_klienta = props.src_zlec.get_ref("ID klienta",          );
+const id_car     = props.src_zlec.get_ref("ID samochodu",        );
 
-const data_otw   = props.dataset.get("data otwarcia",       );
-const data_zamk  = props.dataset.get("data zamknięcia",     );
-const zysk_cz    = props.dataset.get("zysk z części",       );
-const zysk_rob   = props.dataset.get("zysk z robocizny",    );
-const prow       = props.dataset.get("mechanik prowadzący", );
-const prow_p     = props.dataset.get("% udziału",           );
-const pom1       = props.dataset.get("pomocnik 1",          );
-const pom1_p     = props.dataset.get("% udziału p1",        );
-const pom2       = props.dataset.get("pomocnik 2",          );
-const pom2_p     = props.dataset.get("% udziału p2",        );
-const zgloszenie = props.dataset.get("zgłoszone naprawy",   );
-const uwagi      = props.dataset.get("uwagi o naprawie",    );
+const data_otw   = props.src_zlec.get_ref("data otwarcia",       );
+const data_zamk  = props.src_zlec.get_ref("data zamknięcia",     );
+const zysk_cz    = props.src_zlec.get_ref("zysk z części",       );
+const zysk_rob   = props.src_zlec.get_ref("zysk z robocizny",    );
+const prow       = props.src_zlec.get_ref("mechanik prowadzący", );
+const prow_p     = props.src_zlec.get_ref("% udziału",           );
+const pom1       = props.src_zlec.get_ref("pomocnik 1",          );
+const pom1_p     = props.src_zlec.get_ref("% udziału p1",        );
+const pom2       = props.src_zlec.get_ref("pomocnik 2",          );
+const pom2_p     = props.src_zlec.get_ref("% udziału p2",        );
+const zgloszenie = props.src_zlec.get_ref("zgłoszone naprawy",   );
+const uwagi      = props.src_zlec.get_ref("uwagi o naprawie",    );
 
-const car_dataset = props.dataset.parent_dataset;
 
-const car_marka    = car_dataset.get("marka",  );
-const car_model    = car_dataset.get("model",  );
-const car_nrrej    = car_dataset.get("nr rej", );
+const car_marka    = props.src_car.get_ref("marka",  );
+const car_model    = props.src_car.get_ref("model",  );
+const car_nrrej    = props.src_car.get_ref("nr rej", );
 
-const kli_dataset = car_dataset.parent_dataset;
 
-const kli_nazwa  = kli_dataset.get("NAZWA",     );
-const kli_miasto = kli_dataset.get("MIASTO",    );
-const kli_ulica  = kli_dataset.get("ULICA",     );
-const kli_kod    = kli_dataset.get("KOD_POCZT", );
+const kli_nazwa  = props.src_klient.get_ref("NAZWA",     );
+const kli_miasto = props.src_klient.get_ref("MIASTO",    );
+const kli_ulica  = props.src_klient.get_ref("ULICA",     );
+const kli_kod    = props.src_klient.get_ref("KOD_POCZT", );
 
 
 </script>
@@ -79,7 +87,7 @@ const kli_kod    = kli_dataset.get("KOD_POCZT", );
 
         <div class="header_right">
             <div class="data">
-                Gliwice dn. : {{ format_date_str_local(data_otw) }}
+                Gliwice dn. : {{ format_date_str_local(data_otw?.toString() || '') }}
             </div>
             <div class="nr_zlec">
                 <span>

@@ -4,7 +4,7 @@ do czego jest list w klientach ??
 pomocnicy i mechanik w "zlecenia naprawy" jest niewykorzystywany (albo inaczej niż jest opisane, np. Jako mail albo telefon, albo zaimek)
 
 
-
+24920	Surgucka Iwona ma UPUST jako jedyna równy "1" (759	INTERMAL-COMPLEX SC ma "NULL")
 
 
 

@@ -106,10 +106,15 @@
                 + errors via MsgManager
                 + better error/expired indication
                 + special buttons
+                - more flexible search
+                    - begining and end
+                    - colateing
+                    - loose match
             + integration with form controls
             + table syncs
                 + update
                 + insert
+                    - (BUG) When pressing SAVE from "Klienci", "Zlecenia" inserts twice!
                 + transactions
                 + integration with DataGraph
                 - delete

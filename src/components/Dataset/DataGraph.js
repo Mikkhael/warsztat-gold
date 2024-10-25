@@ -3,6 +3,7 @@
 
 import { ref, computed, shallowRef, unref, triggerRef, reactive, readonly, isRef } from 'vue';
 import ipc from '../../ipc';
+import { reasRef } from '../../utils';
 
 /**
  * @template T
@@ -310,6 +311,25 @@ class AdvDependableRef extends DataGraphDependable {
     get_value() {return this.ref.value;}
 }
 /**@template T */
+class AdvDependableReasRef extends DataGraphDependable {
+    /**
+     * @param {DataGraphNodeBase} node 
+     * @param {T?} initial_value
+     */
+    constructor(node, initial_value = null){
+        super();
+        this.ref = reasRef(initial_value);
+        this.node = node;
+    }
+
+    reassign(/**@type {T}*/ new_ref) {
+        this.ref.reas(ref(new_ref));
+    }
+    get_ref()  {return this.ref;}
+    get_node() {return this.node;}
+    get_value() {return this.ref.value;}
+}
+/**@template T */
 class NullDependableRef extends DataGraphDependable {
     /**
      * @param {Ref<T>} ref
@@ -453,5 +473,6 @@ export {
     DataGraphDependable,
 
     AdvDependableRef,
+    AdvDependableReasRef,
     NullDependableRef
 }

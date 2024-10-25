@@ -9,8 +9,8 @@ import useMainMsgManager from '../components/Msg/MsgManager';
 import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue';
 // import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
-import {onUnmounted, onMounted, } from 'vue';
-import { init_form_parent_window, standart_form_value_routine } from './FormCommon';
+import {onUnmounted, onMounted} from 'vue';
+import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT, init_form_parent_window, standart_form_value_routine } from './FormCommon';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
 import { FormQuerySource } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
@@ -38,13 +38,11 @@ const db = useWarsztatDatabase();
 
 // ID	kalkulacja	marka	model	nr rej	ID klienta	nr silnika	nr nadwozia
 
-const param_id_klienta = param_from_prop(props, 'id_klienta');
-console.log('param_id_klienta', param_id_klienta);
 
-
-
-const src  = props.use_src ?? new FormQuerySource();
+const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
 const sync = src.dataset.get_or_create_sync(db.TABS.samochody);
+
+const param_id_klienta = param_from_prop(props, 'id_klienta');
 
 src.add_table_dep(db.TABS.samochody);
 src.add_from('`samochody klientów`');
@@ -59,21 +57,6 @@ const car_nadwozie = standart_form_value_routine(src, "nr nadwozia",  {sync}    
 
 // TODO automate
 
-const db_opened_listener = () => {
-	src.request_refresh();
-    src.update_complete();
-}
-
-onMounted(() => {
-    init_form_parent_window([src.dataset], props);
-    window.addEventListener   ('db_opened', db_opened_listener);
-    src.update_complete();
-});
-onUnmounted(() => {
-    // TODO add auto disconnect for instanciated QuerySources
-    src.disconnect();
-    window.removeEventListener('db_opened', db_opened_listener); 
-})
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
@@ -113,6 +96,7 @@ defineExpose({
                 <label class="label">Nr Rej.    </label>   <FormInput :value="car_nrrej"    nonull :len="15"/>
                 <label class="label">Nr Silnika </label>   <FormInput :value="car_sinlink"  nonull :len="20"/>
                 <label class="label">Nr Nadwozia</label>   <FormInput :value="car_nadwozie" nonull :len="25"/>
+                <label class="label">ID         </label>   <FormInput :value="car_id"       readonly/>
             </div>
             <!-- <QueryViewerOpenBtn v-bind="find_options" :scroller="car_scroller" simple/> -->
         </form>

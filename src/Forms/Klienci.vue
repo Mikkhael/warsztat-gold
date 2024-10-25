@@ -11,12 +11,15 @@ import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue
 import SamochodyKlientow from './SamochodyKlientow.vue';
 import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 
+import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
+
 import {onMounted, onUnmounted, ref, nextTick} from 'vue';
-import { init_form_parent_window, standart_form_value_routine, standard_QV_select } from './FormCommon';
+import { init_form_parent_window, standart_form_value_routine, standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { datetime_now } from '../utils';
 import { FormQuerySource } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
+import useMainFWManager from '../components/FloatingWindows/FWManager';
 
 
 const props = defineProps({
@@ -28,6 +31,7 @@ const props = defineProps({
 });
 
 const msgManager = useMainMsgManager();
+const fwManager  = useMainFWManager();
 
 
 // #	ID	NAZWA MIASTO ULICA KOD_POCZT TELEFON1  TELEFON2	NIP KTO	KIEDY UPUST	odbierający fakturę	list
@@ -41,10 +45,11 @@ const form_zlec = ref();
 
 const db = useWarsztatDatabase();
 
-const src  = new FormQuerySource();
+const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
 const sync = src.dataset.get_or_create_sync(db.TABS.klienci);
 
-const src_car = new FormQuerySource();
+const src_car      = new FormQuerySource();
+const src_zlecenia = new FormQuerySource();
 
 // TODO automate
 src.add_table_dep(db.TABS.klienci);
@@ -84,15 +89,13 @@ const list   = standart_form_value_routine(src, "list",                {sync});
 const find_query = {
     from: "`klienci`",
     select: [
-        [["`ID`",                  ]],
+        [["`ID`",                  ], "ID"],
         [["`NAZWA`",               ], "Nazwa"               ],
-        [["`odbierający fakturę`", ], "Odbierający Fakturę" ],
-        [["`MIASTO`",              ], "Miasto"              ],
-        [["`ULICA`",               ], "Ulica"               ],
-        [["`KOD_POCZT`",           ], "Kod"                 ],
+        [["adres", '(ULICA || ", " || MIASTO || " " || KOD_POCZT)'], "Adres"],
         [["`NIP`",                 ], "NIP"                 ],
         [["`TELEFON1`",            ], "Telefon"             ],
-        [["`TELEFON2`",            ], "Telefon2"            ],
+        [["`TELEFON2`",            ], "Telefon 2"           ],
+        [["`odbierający fakturę`", ], "Odbierający Fakturę" ],
         [["`KTO`",                 ], "wpisał"              ],
         [["`KIEDY`",               ], "dnia"                ],
     ]
@@ -104,7 +107,7 @@ const find_query_car = {
     from: "`samochody klientów` as s JOIN `klienci` as k ON k.`ID` = s.`ID klienta`",
     select: [
         [['k.`ID`']],
-        [['s.`ID`']],
+        [['s.`ID`'], 'ID'],
 
         [['nr rej'],      'Nr Rej.'],
         [['NAZWA'],       'Klient'],
@@ -116,32 +119,22 @@ const find_query_car = {
 };
 const find_query_car_handler = standard_QV_select([[src, 0], [src_car, 1]], handle_err);
 
-// const find_by_car_options = {
-//     query_select_fields: [
-//         ["`ID klienta`"],
-//         ["`ID`"],
-//         // ["`ID`", 'ID samochodu'],
-//         // ["row_number() OVER (PARTITION BY `ID klienta`)", 'offset'],
-//         ["`nr rej`",      "Nr Rej."],
-//         ["`marka`",       "Marka"],
-//         ["`model`",       "Model"],
-//         ["`nr silnika`",  "Nr Silnika"],
-//         ["`nr nadwozia`", "Nr Nadwozia"],
-//     ],
-//     query_from: "`samochody klientów`",
-// };
-// const find_by_zlec_options = {
-//     query_select_fields: [
-//         ["`ID klienta`"],
-//         ["`ID samochodu`"],
-//         ["`ID`",                'ID zlecenia'],
-//         ["`data otwarcia`",     'Otwarcie'],
-//         ["`data zamknięcia`",   'Zamknięcie'],
-//         ["`zgłoszone naprawy`", 'Zgłoszenie'],
-//         ["`uwagi o naprawie`",  'Uwagi'],
-//     ],
-//     query_from: "`zlecenia naprawy`",
-// };
+/**@type {QueryViewerQueryParams} */
+const find_query_zlec = {
+    from: "`zlecenia naprawy` as z JOIN `klienci` as k ON k.`ID` = z.`ID klienta` JOIN `samochody klientów` as s ON s.`ID` = z.`ID samochodu`",
+    select: [
+        [['k.`ID`']],
+        [['s.`ID`']],
+        [['z.`ID`'],            'Nr Zlecenia'],
+        [["data otwarcia"],     'Otwarcie'],
+        [["data zamknięcia"],   'Zamknięcie'],
+        [['NAZWA'],             'Klient'],
+        [['nr rej'],            'Nr Rej.'],
+        [["zgłoszone naprawy"], 'Zgłoszenie'],
+        [["uwagi o naprawie"],  'Uwagi'],
+    ]
+};
+const find_query_zlec_handler = standard_QV_select([[src, 0], [src_car, 1], [src_zlecenia, 2]], handle_err);
 
 const show_zlecenia = ref(true); // TODO change to false in final version
 function click_zlecenia(){
@@ -151,34 +144,21 @@ function click_zlecenia(){
     });
 }
 
-// async function handle_select_by_car(columns, rows, offset) {
-//     // await samochody_form.value.scroller.goto(rows[1]);
-//     await samochody_form.value.goto_by_id(rows[1]);
-// }
+const repZlecenieNaprawy_ref = ref();
+function on_open_print_window_zlec() {
 
-// async function handle_select_by_zlec(columns, rows, offset) {
-//     await samochody_form.value.goto_by_id(rows[1]);
-//     await zlecenia_form.value.goto_by_id(rows[2]);
-// }
+    /**@type {HTMLElement} */
+    const page = repZlecenieNaprawy_ref.value;
+    console.log('PAGE', page);
+    const win  = window.open('about:blank', 'printwindow');
+    if(!win) {
+        throw new Error("Nie można otworzyć okna drukowania");
+    }
+    win.document.head.innerHTML = document.head.innerHTML;
+    win.document.body.innerHTML = page.innerHTML;
 
-
-// TODO automate
-
-const db_opened_listener = () => {
-	src.request_refresh();
-    src.update_complete();
+    win.print();
 }
-
-onMounted(() => {
-    init_form_parent_window([src.dataset], props);
-    window.addEventListener   ('db_opened', db_opened_listener);
-    src.update_complete();
-});
-onUnmounted(() => {
-    // TODO add auto disconnect for instanciated QuerySources
-    src.disconnect();
-    window.removeEventListener('db_opened', db_opened_listener); 
-})
 
 
 function handle_err(/**@type {Error} */ err) {
@@ -206,7 +186,7 @@ defineExpose({
                     <legend>Samochody Klienta</legend>
                     <SamochodyKlientow 
                         :use_src="src_car"
-                        :id_klienta="src.result['ID']"
+                        :id_klienta="src.get('ID')"
                     />
                     <!-- <input type="text" v-model="test_ref">
                     <SamochodyKlientow 
@@ -220,14 +200,11 @@ defineExpose({
                     </div>
                     <div>
                         <QueryViewerOpenBtn :query="find_query_car" @select="find_query_car_handler" text="Znajdź Samochód" />
-                        <!-- <QueryViewerOpenBtn v-bind="find_by_car_options" :scroller="scroller" @select="handle_select_by_car"/>
-                        Znajdź Samochód -->
                     </div>
                     <div>
-                        <!-- <QueryViewerOpenBtn v-bind="find_by_zlec_options" :scroller="scroller" @select="handle_select_by_zlec"/>
-                        Znajdź Zlecenie -->
+                        <QueryViewerOpenBtn :query="find_query_zlec" @select="find_query_zlec_handler" text="Znajdź Zlecenie" />
                     </div>
-                    <button @click.prevent="click_zlecenia">ZLECENIA</button>
+                    <!-- <button @click.prevent="click_zlecenia">ZLECENIA</button> -->
                 </div>
 
                 <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull :len="60" class="main_input_field"/>
@@ -243,19 +220,22 @@ defineExpose({
                 <label>Drugi Telefon      </label>  <FormInput :value="tele2 " :len="17"         />
                 <div c="2"></div>
                 <label>wpisał             </label>  <FormInput :value="kto   " :len="8"                />
-                <label>dnia               </label>  <FormInput :value="kiedy "         type="date"    />
-                <label>stały upust        </label>  <FormInput :value="upust "         type="integer" />
+                <label>dnia               </label>  <FormInput :value="kiedy "          type="date"    />
+                <label>stały upust        </label>  <FormInput :value="upust "          type="integer" />
+                <label>ID                 </label>  <FormInput :value="id    " readonly type="integer" />
 
             </div>
 
             <fieldset class="zlecenia" :style="{display: show_zlecenia ? 'unset' : 'none'}">
                 <legend>Zlecenia Naprawy</legend>
-                <!-- <ZleceniaNaprawy 
+                <ZleceniaNaprawy 
                     ref="zlecenia_form"
-                    :dataset="zlec_dataset"
-                    :id_klienta="id_ref"
-                    :id_samochodu="id_samochodu"
-                /> -->
+                    :use_src="src_zlecenia"
+                    :id_klienta="src.get('ID')"
+                    :id_samochodu="src_car.get('ID')"
+
+                    @open_print_window_zlec="on_open_print_window_zlec"
+                />
                 
             </fieldset>
 
@@ -268,15 +248,26 @@ defineExpose({
             saveable
         />
         
+        <div class="print_render" ref="repZlecenieNaprawy_ref">
+            <RepZlecenieNaprawy 
+                :src_klient="src"
+                :src_car="src_car"
+                :src_zlec="src_zlecenia"
+            />
+        </div>
     </div>
 
 </template>
 
 <style scoped>
 
+    .print_render {
+        display: none;
+    }
+
     .grid {
         padding: 1px 10px;
-        grid: repeat(12, 1fr) / auto [fields-start] auto [cars-start] 1fr [fields-end cars-end];
+        grid: repeat(13, 1fr) / auto [fields-start] auto [cars-start] 1fr [fields-end cars-end];
         gap: 1px 2px;
         align-items: center;
         text-wrap: nowrap;
