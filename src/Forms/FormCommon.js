@@ -35,7 +35,7 @@ function init_form_parent_window(srcs, props) {
         }
         return false;
     });
-    props.parent_window?.box.resize_to_content(true);
+    props.parent_window?.box.resize_to_content(true).recenter();
 }
 
 const default_on_error = err => {throw err};
@@ -83,7 +83,6 @@ function standard_QV_select(steps, handle_error, addictional_callback) {
     
     /**@type {(cols: string[], row: any[], offset: number, close: () => void) => Promise<boolean>} */
     const res_handler = (cols, row, offset, close) => {
-        // TODO check for disabled bottom form
         return first_src.try_perform_and_update_confirmed(() => {
             addictional_callback?.(row, offset, cols);
             for(const [src, idx, colname] of steps) {

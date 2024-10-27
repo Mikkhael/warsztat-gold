@@ -34,8 +34,6 @@ function select_field_definition_to_sql(select_field) {
     }
 }
 
-// TODO change query parts to printf-like
-
 /**
  * @template [T=never]
  * @typedef {(string | [MaybeRef<SQLValue> | T] | [string, 'l'] | [string, 'b'])[]} QueryParts 

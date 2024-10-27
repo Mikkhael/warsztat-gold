@@ -109,14 +109,15 @@ class TableSync {
     }
 
     async perform_save(insert = unref(this.dataset?.insert_mode), force = false) {
-        this.table.expire();
         if(insert) {
             const insert_query = this.generate_insert_query();
+            this.table.expire();
             return await ipc.db_insert(insert_query);
         } else {
             const update_query = this.generate_update_query(force);
             if(update_query === "")
                 return 0;
+            this.table.expire();
             return await ipc.db_execute(update_query);
         }
     }

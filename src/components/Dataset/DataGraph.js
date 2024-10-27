@@ -195,11 +195,9 @@ class DataGraphNodeBase {
     /// SAVING
 
     async save_deep_notransaction(force = false) {
-        if(this.changed.value && !this.disabled.value) {
-            await this.save_impl(force);
-            for(const dist of this.dists.value.values()) {
-                await dist.save_deep_notransaction(force);
-            }
+        const changed_dists = get_all_changed_dists([this]);
+        for(const dist of changed_dists) {
+            await dist.save_impl(force);
         }
     }
 

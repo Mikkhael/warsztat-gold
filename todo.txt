@@ -114,7 +114,7 @@
             + table syncs
                 + update
                 + insert
-                    - (BUG) When pressing SAVE from "Klienci", "Zlecenia" inserts twice!
+                    + (BUG) When pressing SAVE from "Klienci", "Zlecenia" inserts twice!
                 + transactions
                 + integration with DataGraph
                 - delete

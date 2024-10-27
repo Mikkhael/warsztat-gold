@@ -172,7 +172,6 @@ class FormQuerySource extends QuerySource {
         // this.result[name] = cached;
         this.dataset.add(name, cached);
     }
-    
     /**
      * @param {boolean} value 
      */
@@ -274,9 +273,6 @@ class FormDataSet {
 
     check_changed() { return Object.values(this.values).some(v => v.changed.value); }
     refresh() { Object.values(this.values).forEach(v => v.refresh()); }
-
-    // TODO report validity
-
 
     /**
      * @param {TableNode} table 

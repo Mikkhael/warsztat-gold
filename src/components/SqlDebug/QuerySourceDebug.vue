@@ -94,14 +94,13 @@ function create_form1() {
         src.add_select_data(field[0] ?? "", field[1], field[2] ?? undefined);
     }
 
-    src.add_from(KLIENCI_FROM.value);
+    src.query.from.value = KLIENCI_FROM.value;
     // src.add_where_eq('KTO', kto_ref, true);
     src.query.add_where_eq('KTO', kto_ref, true);
 
     /**@type {FormDataSet} */
     const data = src.dataset;
 
-    // TODO automate
     const sync = data.get_or_create_sync(db.TABS.klienci);
     sync?.assoc_value('ID',        data.values.ID, true);
     sync?.assoc_value('NAZWA',     data.values.Nazwa);
@@ -126,7 +125,7 @@ function create_form2(
     src.add_select_data("nr_rej",        null, '`nr rej`');
     src.add_select_data("nr_sil",        null, '`nr silnika`');
     src.add_select_data("nr_nad",        'brak nadwozia', '`nr nadwozia`');
-    src.add_from('`samochody klientów`');
+    src.query.from.value = '`samochody klientów`';
 
     src.add_select_data("ID_klienta",  param1, '`ID klienta`');
     if(param2 === null) {
@@ -139,7 +138,6 @@ function create_form2(
     /**@type {FormDataSet} */
     const data = src.dataset;
 
-    // TODO automate
     const sync = data.get_or_create_sync(db.TABS.samochody);
     
     sync?.assoc_value("ID",          data.values.ID,    true);

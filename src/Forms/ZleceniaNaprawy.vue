@@ -51,13 +51,9 @@ const db = useWarsztatDatabase();
 const param_id_klienta = param_from_prop(props, 'id_klienta');
 const param_id_car     = param_from_prop(props, 'id_samochodu');
 
-const repZlecenieNaprawy_ref = ref();
-
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
+src.set_from_with_deps(db.TABS.zleceniaNaprawy);
 const sync = src.dataset.get_or_create_sync(db.TABS.zleceniaNaprawy);
-
-src.add_table_dep(db.TABS.zleceniaNaprawy);
-src.add_from('`zlecenia naprawy`');
 
 // watch(props, (new_props) => {
 //     console.log("NEW PROPS", new_props, param_id_klienta, param_id_car);
@@ -87,23 +83,8 @@ function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
-// TODO automate printing
 function open_print_window() {
-
     emit('open_print_window_zlec');
-
-    // fwManager.open_or_reopen_window('Zlecenie Naprawy - Drukuj', ZlecenieNaprawy,{
-    //     dataset
-    // });
-
-    // /**@type {HTMLElement} */
-    // const page = repZlecenieNaprawy_ref.value;
-    // console.log('PAGE', page);
-    // const win  = window.open('about:blank', 'printwindow');
-    // win.document.head.innerHTML = document.head.innerHTML;
-    // win.document.body.innerHTML = page.innerHTML;
-
-    // win.print();
 }
 
 

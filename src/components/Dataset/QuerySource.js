@@ -6,6 +6,7 @@ import { DataGraphDependable, DataGraphNodeBase } from "./DataGraph";
 import ipc from "../../ipc";
 import { TableNode } from "./Database";
 import { map_query_parts_params, QueryBuilder } from "./QueryBuilder";
+import { escape_backtick_smart } from "../../utils";
 
 
 /**
@@ -176,6 +177,7 @@ class QuerySource extends DataGraphNodeBase {
      * @param {TableNode} tableNode 
      */
     add_table_dep(tableNode) {
+        if(this.dependant_tables.indexOf(tableNode) !== -1) return;
         this.dependant_tables.push(tableNode);
         this.add_dep(tableNode);
     }
@@ -189,10 +191,18 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     /**
-     * @param {string} sql 
+     * @param {(string | TableNode)[]} parts
      */
-    add_from(sql) {
-        this.query.from.value += sql;
+    set_from_with_deps(...parts) {
+        const string_parts = parts.map(part => {
+            if(part instanceof TableNode) {
+                this.add_table_dep(part);
+                return escape_backtick_smart( part.name );
+            }
+            return part;
+        });
+        const from = string_parts.join('');
+        this.query.from.value = from;
     }
 
     /**

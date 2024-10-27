@@ -1299,6 +1299,11 @@ function is_scroller_visible(body) {
     return false;
 }
 
+WinBox.prototype.recenter = function() {
+    // setTimeout(() => this.move("center", "center"), 100);
+    return this.move("center", "center");
+}
+
 WinBox.prototype.resize_to_content = function(snap = false){
     // const content = this.body.children[0];
     // if(!content) return this;

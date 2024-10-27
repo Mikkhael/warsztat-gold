@@ -40,12 +40,10 @@ const db = useWarsztatDatabase();
 
 
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
+src.set_from_with_deps(db.TABS.samochody);
 const sync = src.dataset.get_or_create_sync(db.TABS.samochody);
 
 const param_id_klienta = param_from_prop(props, 'id_klienta');
-
-src.add_table_dep(db.TABS.samochody);
-src.add_from('`samochody klientów`');
 
 const car_id       = standart_form_value_routine(src, "ID",           {sync, primary: true}             );
 const car_marka    = standart_form_value_routine(src, "marka",        {sync}                            );
@@ -54,9 +52,6 @@ const car_nrrej    = standart_form_value_routine(src, "nr rej",       {sync}    
 const car_klient   = standart_form_value_routine(src, "ID klienta",   {sync, param: param_id_klienta}   );
 const car_sinlink  = standart_form_value_routine(src, "nr silnika",   {sync}                            );
 const car_nadwozie = standart_form_value_routine(src, "nr nadwozia",  {sync}                            );
-
-// TODO automate
-
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);

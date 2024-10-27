@@ -46,18 +46,11 @@ const form_zlec = ref();
 const db = useWarsztatDatabase();
 
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
+src.set_from_with_deps(db.TABS.klienci);
 const sync = src.dataset.get_or_create_sync(db.TABS.klienci);
 
 const src_car      = new FormQuerySource();
 const src_zlecenia = new FormQuerySource();
-
-// TODO automate
-src.add_table_dep(db.TABS.klienci);
-src.add_from('`klienci`');
-
-// TODO
-// const car_dataset  =     dataset.create_sub_dataset("car");
-// const zlec_dataset = car_dataset.create_sub_dataset("zlec");
 
 
 
@@ -75,10 +68,6 @@ const kto    = standart_form_value_routine(src, "KTO",                 {sync, de
 const kiedy  = standart_form_value_routine(src, "KIEDY",               {sync, default: datetime_now()}); // TODO make accual current time, not start of app time
 const upust  = standart_form_value_routine(src, "UPUST",               {sync, default: 0});
 const list   = standart_form_value_routine(src, "list",                {sync});
-
-
-// TODO
-// const viewwer_query  = query.get_viewer_query(); 
 
 
 // FIND
