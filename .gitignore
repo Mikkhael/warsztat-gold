@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 
+mdb/*.db3
 mdb/test.db3
 mdb/test.db3.old
 mdb/decimal.dll

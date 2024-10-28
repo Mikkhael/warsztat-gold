@@ -40,8 +40,8 @@ const db = useWarsztatDatabase();
 
 
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
-src.set_from_with_deps(db.TABS.samochody);
-const sync = src.dataset.get_or_create_sync(db.TABS.samochody);
+src.set_from_with_deps(db.TABS.samochody_klientów);
+const sync = src.dataset.get_or_create_sync(db.TABS.samochody_klientów);
 
 const param_id_klienta = param_from_prop(props, 'id_klienta');
 

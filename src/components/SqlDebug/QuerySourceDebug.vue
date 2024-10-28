@@ -117,7 +117,7 @@ function create_form2(
     /**@type {import('./../Dataset').MaybeDependable} */ param2 = null,
 ) {
     const src = new FormQuerySource();
-    src.add_table_dep(db.TABS.samochody);
+    src.add_table_dep(db.TABS.samochody_klientów);
 
     src.add_select_data("ID",            null);
     src.add_select_data("marka",         null);
@@ -138,7 +138,7 @@ function create_form2(
     /**@type {FormDataSet} */
     const data = src.dataset;
 
-    const sync = data.get_or_create_sync(db.TABS.samochody);
+    const sync = data.get_or_create_sync(db.TABS.samochody_klientów);
     
     sync?.assoc_value("ID",          data.values.ID,    true);
     sync?.assoc_value("marka",       data.values.marka      );
@@ -195,11 +195,11 @@ function test_mem_leaks(no_disconnect = false) {
 }
 function disconnect_tabs() {
     db.TABS.klienci.disconnect();
-    db.TABS.samochody.disconnect();
+    db.TABS.samochody_klientów.disconnect();
 }
 function disconnect_tabs2() {
     db.TABS.klienci.disconnect_with_dists();
-    db.TABS.samochody.disconnect_with_dists();
+    db.TABS.samochody_klientów.disconnect_with_dists();
 }
 
 

@@ -52,8 +52,8 @@ const param_id_klienta = param_from_prop(props, 'id_klienta');
 const param_id_car     = param_from_prop(props, 'id_samochodu');
 
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
-src.set_from_with_deps(db.TABS.zleceniaNaprawy);
-const sync = src.dataset.get_or_create_sync(db.TABS.zleceniaNaprawy);
+src.set_from_with_deps(db.TABS.zlecenia_naprawy);
+const sync = src.dataset.get_or_create_sync(db.TABS.zlecenia_naprawy);
 
 // watch(props, (new_props) => {
 //     console.log("NEW PROPS", new_props, param_id_klienta, param_id_car);
