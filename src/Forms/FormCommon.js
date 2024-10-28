@@ -4,7 +4,7 @@ import { onMounted, onUnmounted } from 'vue';
 import { FormQuerySource } from '../components/Dataset/Form';
 import { QuerySource } from '../components/Dataset/QuerySource';
 import { TableSync } from '../components/Dataset/Sync';
-import { TableNode } from '../components/Dataset';
+import { Column, TableNode } from '../components/Dataset';
 
 /**
  * @typedef {import('../components/Dataset').SQLValue} SQLValue
@@ -131,13 +131,18 @@ function standard_form_value_routine(src, name, params = {}) {
     return value;
 }
 
-
 /**
- * @param {TableNode} tab 
- * @param {any} params 
+ * @param {FormQuerySource} src 
+ * @param {Column} col 
+ * @param {StandardFormValueRoutineParams} params
  */
-function standard_form_init_from_table_routine(tab, params = {}) {
-    
+function standard_form_auto_synced_column_value(src, col, params = {}) {
+    const sync = src.dataset.get_or_create_sync(col.tab);
+    /**@type {StandardFormValueRoutineParams} */
+    const auto_params = {sync};
+    if(col.is_primary()) auto_params.primary = true;
+    Object.assign(auto_params, params);
+    return standard_form_value_routine(src, col.name, auto_params);
 }
 
 
@@ -146,5 +151,6 @@ export {
     init_form_parent_window,
     standard_QV_select,
     standard_form_value_routine,
+    standard_form_auto_synced_column_value,
     CREATE_FORM_QUERY_SOURCE_IN_COMPONENT
 }
