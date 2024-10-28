@@ -15,7 +15,7 @@ import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetS
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import {onMounted, ref, toRef, readonly, watch} from 'vue';
-import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT, init_form_parent_window, standart_form_value_routine } from './FormCommon';
+import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT, init_form_parent_window, standard_form_value_routine } from './FormCommon';
 import { date_now } from '../utils';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
@@ -60,23 +60,23 @@ const sync = src.dataset.get_or_create_sync(db.TABS.zlecenia_naprawy);
 // })
 
 
-const id         = standart_form_value_routine(src, "ID",                   {sync, primary: true} );
-const id_klienta = standart_form_value_routine(src, "ID klienta",           {sync, param: param_id_klienta} );
-const id_car     = standart_form_value_routine(src, "ID samochodu",         {sync, param: param_id_car}     );
+const id         = standard_form_value_routine(src, "ID",                   {sync, primary: true} );
+const id_klienta = standard_form_value_routine(src, "ID klienta",           {sync, param: param_id_klienta} );
+const id_car     = standard_form_value_routine(src, "ID samochodu",         {sync, param: param_id_car}     );
 
-const data_otw   = standart_form_value_routine(src, "data otwarcia",        {sync, default: date_now()} );
-const data_zamk  = standart_form_value_routine(src, "data zamknięcia",      {sync}                      );
-const zgloszenie = standart_form_value_routine(src, "zgłoszone naprawy",    {sync}                      );
-const uwagi      = standart_form_value_routine(src, "uwagi o naprawie",     {sync}                      );
+const data_otw   = standard_form_value_routine(src, "data otwarcia",        {sync, default: date_now()} );
+const data_zamk  = standard_form_value_routine(src, "data zamknięcia",      {sync}                      );
+const zgloszenie = standard_form_value_routine(src, "zgłoszone naprawy",    {sync}                      );
+const uwagi      = standard_form_value_routine(src, "uwagi o naprawie",     {sync}                      );
 
-const prow       = standart_form_value_routine(src, "mechanik prowadzący",  {sync}                      );
-const pom1       = standart_form_value_routine(src, "pomocnik 1",           {sync}                      );
-const pom2       = standart_form_value_routine(src, "pomocnik 2",           {sync}                      );
-const prow_p     = standart_form_value_routine(src, "% udziału",            {sync, default: 0}          );
-const pom1_p     = standart_form_value_routine(src, "% udziału p1",         {sync, default: 0}          );
-const pom2_p     = standart_form_value_routine(src, "% udziału p2",         {sync, default: 0}          );
-const zysk_rob   = standart_form_value_routine(src, "zysk z robocizny",     {sync, default: 0}          );
-const zysk_cz    = standart_form_value_routine(src, "zysk z części",        {sync, default: 0}          );
+const prow       = standard_form_value_routine(src, "mechanik prowadzący",  {sync}                      );
+const pom1       = standard_form_value_routine(src, "pomocnik 1",           {sync}                      );
+const pom2       = standard_form_value_routine(src, "pomocnik 2",           {sync}                      );
+const prow_p     = standard_form_value_routine(src, "% udziału",            {sync, default: 0}          );
+const pom1_p     = standard_form_value_routine(src, "% udziału p1",         {sync, default: 0}          );
+const pom2_p     = standard_form_value_routine(src, "% udziału p2",         {sync, default: 0}          );
+const zysk_rob   = standard_form_value_routine(src, "zysk z robocizny",     {sync, default: 0}          );
+const zysk_cz    = standard_form_value_routine(src, "zysk z części",        {sync, default: 0}          );
 
 
 function handle_err(/**@type {Error} */ err) {

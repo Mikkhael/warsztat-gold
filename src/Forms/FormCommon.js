@@ -4,6 +4,7 @@ import { onMounted, onUnmounted } from 'vue';
 import { FormQuerySource } from '../components/Dataset/Form';
 import { QuerySource } from '../components/Dataset/QuerySource';
 import { TableSync } from '../components/Dataset/Sync';
+import { TableNode } from '../components/Dataset';
 
 /**
  * @typedef {import('../components/Dataset').SQLValue} SQLValue
@@ -118,7 +119,7 @@ function standard_QV_select(steps, handle_error, addictional_callback) {
  * @param {string} name 
  * @param {StandardFormValueRoutineParams} params
  */
-function standart_form_value_routine(src, name, params = {}) {
+function standard_form_value_routine(src, name, params = {}) {
     src.add_select_data(name, params.default ?? params.param ?? null, params.sql);
     const value = src.dataset.get(name);
     if(params.param !== undefined) {
@@ -131,10 +132,19 @@ function standart_form_value_routine(src, name, params = {}) {
 }
 
 
+/**
+ * @param {TableNode} tab 
+ * @param {any} params 
+ */
+function standard_form_init_from_table_routine(tab, params = {}) {
+    
+}
+
+
 
 export {
     init_form_parent_window,
     standard_QV_select,
-    standart_form_value_routine,
+    standard_form_value_routine,
     CREATE_FORM_QUERY_SOURCE_IN_COMPONENT
 }

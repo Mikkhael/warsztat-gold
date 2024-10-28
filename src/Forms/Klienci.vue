@@ -14,7 +14,7 @@ import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import {onMounted, onUnmounted, ref, nextTick} from 'vue';
-import { init_form_parent_window, standart_form_value_routine, standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
+import { init_form_parent_window, standard_form_value_routine, standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { datetime_now } from '../utils';
 import { FormQuerySource } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
@@ -55,19 +55,19 @@ const src_zlecenia = new FormQuerySource();
 
 
 
-const id     = standart_form_value_routine(src, "ID",                  {sync, primary: true});
-const nazwa  = standart_form_value_routine(src, "NAZWA",               {sync});
-const miasto = standart_form_value_routine(src, "MIASTO",              {sync});
-const ulica  = standart_form_value_routine(src, "ULICA",               {sync});
-const kod    = standart_form_value_routine(src, "KOD_POCZT",           {sync});
-const tele1  = standart_form_value_routine(src, "TELEFON1",            {sync});
-const tele2  = standart_form_value_routine(src, "TELEFON2",            {sync});
-const nip    = standart_form_value_routine(src, "NIP",                 {sync});
-const odbier = standart_form_value_routine(src, "odbierający fakturę", {sync});
-const kto    = standart_form_value_routine(src, "KTO",                 {sync, default: "Gold"});
-const kiedy  = standart_form_value_routine(src, "KIEDY",               {sync, default: datetime_now()}); // TODO make accual current time, not start of app time
-const upust  = standart_form_value_routine(src, "UPUST",               {sync, default: 0});
-const list   = standart_form_value_routine(src, "list",                {sync});
+const id     = standard_form_value_routine(src, "ID",                  {sync, primary: true});
+const nazwa  = standard_form_value_routine(src, "NAZWA",               {sync});
+const miasto = standard_form_value_routine(src, "MIASTO",              {sync});
+const ulica  = standard_form_value_routine(src, "ULICA",               {sync});
+const kod    = standard_form_value_routine(src, "KOD_POCZT",           {sync});
+const tele1  = standard_form_value_routine(src, "TELEFON1",            {sync});
+const tele2  = standard_form_value_routine(src, "TELEFON2",            {sync});
+const nip    = standard_form_value_routine(src, "NIP",                 {sync});
+const odbier = standard_form_value_routine(src, "odbierający fakturę", {sync});
+const kto    = standard_form_value_routine(src, "KTO",                 {sync, default: "Gold"});
+const kiedy  = standard_form_value_routine(src, "KIEDY",               {sync, default: datetime_now()}); // TODO make accual current time, not start of app time
+const upust  = standard_form_value_routine(src, "UPUST",               {sync, default: 0});
+const list   = standard_form_value_routine(src, "list",                {sync});
 
 
 // FIND

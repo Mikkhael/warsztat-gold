@@ -10,7 +10,7 @@ import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue
 // import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
 import {onUnmounted, onMounted} from 'vue';
-import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT, init_form_parent_window, standart_form_value_routine } from './FormCommon';
+import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT, init_form_parent_window, standard_form_value_routine } from './FormCommon';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
 import { FormQuerySource } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
@@ -45,13 +45,13 @@ const sync = src.dataset.get_or_create_sync(db.TABS.samochody_klientów);
 
 const param_id_klienta = param_from_prop(props, 'id_klienta');
 
-const car_id       = standart_form_value_routine(src, "ID",           {sync, primary: true}             );
-const car_marka    = standart_form_value_routine(src, "marka",        {sync}                            );
-const car_model    = standart_form_value_routine(src, "model",        {sync}                            );
-const car_nrrej    = standart_form_value_routine(src, "nr rej",       {sync}                            );
-const car_klient   = standart_form_value_routine(src, "ID klienta",   {sync, param: param_id_klienta}   );
-const car_sinlink  = standart_form_value_routine(src, "nr silnika",   {sync}                            );
-const car_nadwozie = standart_form_value_routine(src, "nr nadwozia",  {sync}                            );
+const car_id       = standard_form_value_routine(src, "ID",           {sync, primary: true}             );
+const car_marka    = standard_form_value_routine(src, "marka",        {sync}                            );
+const car_model    = standard_form_value_routine(src, "model",        {sync}                            );
+const car_nrrej    = standard_form_value_routine(src, "nr rej",       {sync}                            );
+const car_klient   = standard_form_value_routine(src, "ID klienta",   {sync, param: param_id_klienta}   );
+const car_sinlink  = standard_form_value_routine(src, "nr silnika",   {sync}                            );
+const car_nadwozie = standard_form_value_routine(src, "nr nadwozia",  {sync}                            );
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
