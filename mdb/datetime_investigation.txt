@@ -1,0 +1,60 @@
+export: DATETIME                                                                            Time 0| Time other| Null  | Other
+`dane do zaświadczenie o sprawności inst`   `Ważność legalizacji zbiornika do`              14,     0,          28,     0
+`płace`                                     `miesiąc płacenia`                              221,    0,          0,      0
+`pracownicy`                                `data urodzenia`                    NOT NULL    8,      0,          0,      0
+`zamówienia części archiwum`                `data realizacji`                               19,     0,          339,    0
+`zlecenia instalacji gazowej`               `data zamknięcia`                               12,     0,          2,      0
+`zlecenia naprawy`                          `data zamknięcia`                               17527,  0,          30,     0
+
+export: TIMESTAMP
+`dokumenty sprzedaży`                       `data wystawienia`                              0,      0,          0,      0
+`dokumenty sprzedaży chwilówk`              `data wystawienia`                              0,      0,          0,      0
+`inwentaryzacja`                            `data zapisu`                       NOT NULL    126,    0,          0,      0
+`inwentaryzacja nr 3`                       `data zapisu`                       NOT NULL    1048,   0,          0,      0
+`klienci`                                   `KIEDY`                                         2627,   0,          0,      0
+`obroty magazynowe`                         `data przyjęcia`                    NOT NULL    28777,  0,          0,      0
+`przyjęcia PZ`                              `data przyjęcia`                    NOT NULL    0,      0,          0,      0
+`sprzedaż`                                  `data przyjęcia`                    NOT NULL    0,      0,          0,      0
+`zamówienia części`                         `data zamówienia`                               0,      7,          0,      0
+`zamówienia części archiwum`                `data zamówienia`                               1,      357,        0,      0
+`zlecenia instalacji gazowej`               `data otwarcia`                                 14,     0,          0,      0
+`zlecenia naprawy`                          `data otwarcia`                                 17557,  0,          0,      0
+
+
+Time 0     - YYYY-MM-DD 00:00:00
+Time other - YYYY-MM-DD HH:MM:SS
+
+Wwszystkie TIMESTAMP mają DEFAULT CURRENT_TIMESTAMP, żaden DATETIME nie ma DEFAULT!
+
+Jedyne pola, z Time other:
+    W `zamówienia części` , wszytkie (7) mają wartość "2011-01-14 18:11:21"
+    W `zamówienia częsci archiwum` mają już wszystkie jakieś inne wartości
+
+
+W sqlite:
+    datetime("2333-02-12")                  -> 2333-02-12 00:00:00
+    datetime("2333-02-12 12")               -> null
+    datetime("2333-02-12 12:34:54")         -> 2333-02-12 12:34:54
+    datetime("2333-02-12 12:34:54.123")     -> 2333-02-12 12:34:54
+    datetime("2333-02-12T12:34:54")         -> 2333-02-12 12:34:54
+    datetime("2333-02-12t12:34:54")         -> null
+    datetime("12:34:54")                    -> 2000-01-01 12:34:54
+
+Podsumowując - można wszystkie daty trzymać w formacie (YYYY-MM-DD) lub (YYYY-MM-DD HH:MM:SS).
+               eksport do csv wszystko zamieni na (YYYY-MM-DD HH:MM:SS)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
