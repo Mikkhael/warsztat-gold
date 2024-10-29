@@ -15,7 +15,7 @@ import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import {onMounted, onUnmounted, ref, nextTick} from 'vue';
 import { init_form_parent_window, standard_form_value_routine, standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
-import { datetime_now } from '../utils';
+import { use_datetime_now } from '../utils';
 import { FormQuerySource } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
@@ -65,7 +65,7 @@ const tele2  = standard_form_value_routine(src, "TELEFON2",            {sync});
 const nip    = standard_form_value_routine(src, "NIP",                 {sync});
 const odbier = standard_form_value_routine(src, "odbierający fakturę", {sync});
 const kto    = standard_form_value_routine(src, "KTO",                 {sync, default: "Gold"});
-const kiedy  = standard_form_value_routine(src, "KIEDY",               {sync, default: datetime_now()}); // TODO make accual current time, not start of app time
+const kiedy  = standard_form_value_routine(src, "KIEDY",               {sync, default: use_datetime_now()});
 const upust  = standard_form_value_routine(src, "UPUST",               {sync, default: 0});
 const list   = standard_form_value_routine(src, "list",                {sync});
 

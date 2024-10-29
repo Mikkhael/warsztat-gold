@@ -3,6 +3,7 @@
 import fs from 'fs';
 
 const EXPORTED_FROM_MDB_FOLDER  = './exported_from_mdb/';
+// const EXPORTED_FROM_MDB_FOLDER  = './exported_from_sqlite/tak/';
 
 /**@type {[boolean, string, string, number, number, number, number][]} */
 const datas_cols = [
@@ -39,13 +40,58 @@ function get_col_from_file(I, filename, column) {
 
     file = file.slice(firest_enter + 1);
     file = file.replace(/\"\"/g, '');
+    // file = file.replace(/(?<=^(?:[^"]*"[^"]*")*[^"]*"[^"]*)\r?\n/g,'XX'); // Replace every \n inside quotes
+    // let lines = file.match(/(?<=^(?:[^"]*"[^"]*")*[^"]*)\n/g); // Splite at every \n outside quotes
+
+    let invalid_ns = [];
+    let in_quotes = false;
+    for(let i = 0; i < file.length; i++){
+        const char = file[i];
+        if(char === '"') {
+            in_quotes = !in_quotes;
+            continue;
+        }
+        if((char === '\n' || char === ';') && in_quotes) {
+            invalid_ns.push(i);
+        }
+    }
+    let true_file = "";
+    let curr_off = 0;
+    for(let i = 0; i < invalid_ns.length; i++) {
+        const to_invalid = invalid_ns[i];
+        true_file += file.slice(curr_off, to_invalid);
+        curr_off = to_invalid + 1;
+    }
+    true_file += file.slice(curr_off);
+    const lines = true_file.split('\n');
+    // console.log(filename, invalid_ns);
+    // return;
+
     // console.log('BEFORE', [file.slice(0, 100)]);
-    file = file.replace(/\"[\s\S]+?\"/g, 'STRING');
+    // file = file.replace(/\"[\s\S]+?\"/g, 'STRING');
     // console.log('AFTER', [file.slice(0, 100)]);
     // return;
 
-    const lines = file.split('\n');
-    
+    // let lines = file.split('\n');
+    // let in_quotes = false;
+    // for(let i = 0; i < lines.length; i++) {
+    //     const line = lines[+i];
+    //     const n_quotes = count_quotes(line);
+    //     if(n_quotes % 2 === 1) in_quotes = !in_quotes;
+    //     let removed = 0;
+    //     let true_line = line;
+    //     while(in_quotes) {
+    //         if(+i === lines.length - 1) {
+    //             throw new Error("Uneven quotes");
+    //         }
+    //         lines[i] += ' ' + lines[i+1];
+    //     }
+    // }
+    // lines = lines.filter(x => x !== null && x !== '');
+
+    // console.log(lines);
+    // console.log(lines.length);
+
     const header_regex = new RegExp('"' + normalize(column) + '"');
 
     const headers = header_line.split(';');
@@ -71,19 +117,26 @@ function get_formats_of_cols(I, lines, off) {
         const split_line = line.split(';');
         const val = split_line[off];
         if(val === undefined) {
-            console.log("UUUU", '"' + line + '"', I, off);
+            if(line.length === 0) {
+                continue;
+            }
+            // console.log("UNDEFINED", '"' + line + '"', I, off);
+            console.log("UNDEFINED", datas_cols[I][1], off, i, line.length);
+            console.log(line);
+            throw 123;
             continue;
         }
-        if        (val.match(/^\d\d\d\d-\d\d-\d\d 00:00:00\s?$/g)) {
+        if        (val.match(/^"?\d\d\d\d-\d\d-\d\d 00:00:00"?\s?$/g)) {
             datas_cols[I][3] += 1;
-        } else if (val.match(/^\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\s?$/g)) {
+        } else if (val.match(/^"?\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d"?\s?$/g)) {
             datas_cols[I][4] += 1;
         }
         else if(val.length === 0) {
             datas_cols[I][5] += 1;
         } else {
             datas_cols[I][6] += 1;
-            console.log('!!! OTHER - ', "'" + val + "'");
+            console.log('!!! OTHER - ', "'" + val + "'", datas_cols[I][1], off, i);
+            console.log(line);
         }
         // console.log(val);
     }

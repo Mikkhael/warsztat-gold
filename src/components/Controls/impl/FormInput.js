@@ -9,7 +9,7 @@ import { proxies_types } from './utils';
 
 /**
  * 
- * @typedef {"integer" | "number" | "decimal" | "date" | "datetime-local" | "text" } FormInputType
+ * @typedef {"integer" | "number" | "decimal" | "date" | "datetime" | "datetime-local" | "text" } FormInputType
  * @typedef {{type: FormInputType, value: FormDataValue, readonly: boolean, nonull: boolean, len?: number, hints: any[]}} PropsType 
  */
 
@@ -83,6 +83,10 @@ function apply_correct_attributes_and_proxy_based_on_type(props, attributes){
             attributes.type = "datetime-local";
             return proxies_types.empty_as_null;
         }
+        case 'datetime':{
+            attributes.type = "datetime";
+            return proxies_types.empty_as_null;
+        }
         case "text": {
             return proxies_types.pass;
         }
@@ -96,7 +100,7 @@ function check_decimal(/**@type {string} */ value) {
     const match = value.match(/^[\+\-]?(\d+)(?:\.(\d+))?$/);
     // console.log(match);
     if(match === null) {
-        return 'Wartośc musi mieć postać liczby, z ewentualnym seperatorem dziesiętnym (".")';
+        return 'Wartośc musi mieć postać liczby, z ewentualnym seperatorem dziesiętnym';
     }
     const whole = match[1];
     const decim = match[2] || '0';

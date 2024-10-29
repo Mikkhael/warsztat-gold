@@ -135,7 +135,7 @@
                 + Decimal
                 + Text
                 + Datetime
-                    - allow format YY-MM-DD (płace -> data)
+                    + allow format YY-MM-DD (płace -> data)
                 + Input constrains
                     + min/max
                     + length

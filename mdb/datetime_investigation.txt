@@ -44,8 +44,50 @@ Podsumowując - można wszystkie daty trzymać w formacie (YYYY-MM-DD) lub (YYYY
                eksport do csv wszystko zamieni na (YYYY-MM-DD HH:MM:SS)
 
 
+Ulepszona ekstrakcja:
+
+14,         0,        28,        0
+221,        0,        0,         0
+8,          0,        0,         0
+19,         0,        339,       0
+12,         0,        2,         0
+17527,      0,        30,        0
+0,          0,        0,         0
+0,          0,        0,         0
+126,        0,        0,         0
+1048,       0,        0,         0
+2627,       0,        0,         0
+28777,      0,        0,         0
+0,          0,        0,         0
+0,          0,        0,         0
+0,          7,        0,         0
+1,          357,      0,         0
+14,         0,        0,         0
+17557,      0,        0,         0
+
+Z exportu z SQLITE:
+
+14,         0,        28,        0
+227,        4,        0,         0
+19,         0,        0,         0
+19,         0,        339,       0
+12,         0,        2,         0
+17527,      0,        60,        0
+0,          0,        0,         0
+0,          0,        0,         0
+126,        0,        0,         0
+1048,       0,        0,         0
+2627,       12,       0,         0
+28777,      0,        0,         0
+0,          0,        0,         0
+0,          0,        0,         0
+0,          7,        0,         0
+1,          357,      0,         0
+14,         0,        0,         0
+17587,      0,        0,         0
 
 
+Struktura jest dobra. Jedyne co, to dodane jest kilka klientów i zleceń, przez co liczby są trochę inne
 
 
 

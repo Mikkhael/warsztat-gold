@@ -37,7 +37,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['open_print_window_zlec']);
 
-console.log("START_PROPS",typeof props.id_klienta, typeof props.id_samochodu,  props.id_klienta, props.id_samochodu, props);
+// console.log("START_PROPS",typeof props.id_klienta, typeof props.id_samochodu,  props.id_klienta, props.id_samochodu, props);
 
 
 const msgManager = useMainMsgManager();

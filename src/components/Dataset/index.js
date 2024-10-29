@@ -24,12 +24,12 @@ export function param_from_prop(props, paramName) {
     if(props[paramName] instanceof DataGraphDependable) {
         /**@type {DataGraphDependable<SQLValue>} */
         const res = props[paramName];
-        console.log("PARAM", paramName, res, props);
+        // console.log("PARAM", paramName, res, props);
         return res;
     } else {
         /**@type {import('vue').Ref<SQLValue>} */
         const res = toRef(props, paramName);
-        console.log("PARAM", paramName, res, props);
+        // console.log("PARAM", paramName, res, props);
         return res;
     }
 }

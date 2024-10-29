@@ -10,7 +10,7 @@ import QueryViewerOpenBtn from '../QueryViewer/QueryViewerOpenBtn.vue';
 
 import FormInput from '../Controls/FormInput.vue';
 import FormEnum from '../Controls/FormEnum.vue';
-import { datetime_now } from '../../utils';
+import { use_datetime_now, datetime_now } from '../../utils';
 
 import QuerySourceDebug_form from './QuerySourceDebug_form.vue';
 import { FWManager } from '../FloatingWindows/FWManager';
@@ -49,7 +49,7 @@ const KLIENCI_SELECT_FIELDS = ref([
     ['ULICA'],
     ['KOD_POCZT'],
     ['KTO', 'ktoś'],
-    ['KIEDY', datetime_now()], // TODO get real now date, responsive
+    ['KIEDY', datetime_now()],
     ['ulicaCaps', null, 'upper(ULICA)']
 ]);
 const KLIENCI_SELECT_FIELDS_json = computed_json(KLIENCI_SELECT_FIELDS);
@@ -93,6 +93,7 @@ function create_form1() {
     for(const field of KLIENCI_SELECT_FIELDS.value) {
         src.add_select_data(field[0] ?? "", field[1], field[2] ?? undefined);
     }
+    src.register_result('KIEDY', use_datetime_now());
 
     src.query.from.value = KLIENCI_FROM.value;
     // src.add_where_eq('KTO', kto_ref, true);

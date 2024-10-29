@@ -162,7 +162,7 @@ function pad(str, width = 2, space = '0') {
 
 /**@param {Date} d */
 function date(d) {
-	return pad(d.getFullYear(), 4) + '-' + pad(d.getMonth()) + '-' + pad(d.getDate());
+	return pad(d.getFullYear(), 4) + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
 }
 /**@param {Date} d */
 function time(d){
@@ -177,22 +177,59 @@ function date_now()    { return date    (new Date()); };
 function time_now()    { return time    (new Date()); };
 function datetime_now(){ return datetime(new Date()); };
 
+let current_datetime_now = datetime_now();
+let current_datetime_now_outdated = ref(false);
+const datetime_now_reactive = computed(() => {
+	if(current_datetime_now_outdated.value) {
+		current_datetime_now = datetime_now();
+		current_datetime_now_outdated.value = false;
+		console.log('FETCHING DATE');
+	}
+	console.log('RECOMPUTING DATE');
+	return current_datetime_now;
+});
+function poke_datetime_now_reactive(){
+	current_datetime_now_outdated.value = true;
+}
+setInterval(poke_datetime_now_reactive, 500);
 
-// TODO naprawić daty !!!
-// "2024-09-25"          ->  "Wed Sep 25 2024 02:00:00 GMT+0200" (+02, 2h)
-// "1998-10-21 00:00:00" ->  "Wed Oct 21 1998 00:00:00 GMT+0200" (+02, 0h)
-// "1999-01-20 00:00:00" ->  "Wed Jan 20 1999 00:00:00 GMT+0100" (+01, 0h)
-const date_offset_ms = new Date().getTimezoneOffset() * 1000 * 60;
-function str_to_date_local(/**@type {string} */ date_str) {
-	// return new Date(Date.parse(date_str) + date_offset_ms);
+function use_datetime_now(){
+	return datetime_now_reactive;
+}
+
+
+
+
+
+// console.log('DATE DEBUG 1- ', new Date());
+// console.log('DATE DEBUG 1- ', date_now());
+// console.log('DATE DEBUG 1- ', time_now());
+// console.log('DATE DEBUG 1- ', datetime_now());
+// console.log('DATE DEBUG "2023-01-05         "- ', str_to_date_local('2023-01-05')         ); //Jan 05 2023 01:00:00 GMT+0100
+// console.log('DATE DEBUG "2023-01-05 00:00:00"- ', str_to_date_local('2023-01-05 00:00:00')); //Jan 05 2023 00:00:00 GMT+0100
+// console.log('DATE DEBUG "2023-01-05 01:00:00"- ', str_to_date_local('2023-01-05 01:00:00')); //Jan 05 2023 01:00:00 GMT+0100
+// console.log('DATE DEBUG "2023-01-05 23:30:00"- ', str_to_date_local('2023-01-05 23:30:00')); //Jan 05 2023 23:30:00 GMT+0100
+// console.log('DATE DEBUG "2024-10-25 23:30:00"- ', str_to_date_local('2024-10-25 23:30:00')); //Oct 25 2024 23:30:00 GMT+0200
+// console.log('DATE DEBUG "2024-10-25         "- ', str_to_date_local('2024-10-25')         ); //Oct 25 2024 02:00:00 GMT+0200
+// console.log('DATE DEBUG "2024-10-25 00:00:00"- ', str_to_date_local('2024-10-25 00:00:00')); //Oct 25 2024 00:00:00 GMT+0200
+// function str_to_date_local(/**@type {string} */ date_str) {
+// 	// return new Date(Date.parse(date_str));
+// 	return new Date(date_str);
+// }
+
+function str_to_date(/**@type {string} */ date_str) {
+	if(date_str.match(/^\d\d\d\d-\d\d-\d\d$/)) date_str += ' 00:00:00';
+	if(!date_str.match(/^\d\d\d\d-\d\d-\d\d[ T]\d\d:\d\d(?::\d\d)?$/)){
+		console.error('Invalid date_str format: ' + date_str);
+	}
 	return new Date(Date.parse(date_str));
 }
 
 // a.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'})
 function format_date_str_local(/**@type {string} */ date_str) {
-	const date = str_to_date_local(date_str);
+	const date = str_to_date(date_str);
 	const res = date.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'});
-	console.log('PARSING DATE', date_str, date, res);
+	// console.log('PARSING DATE', date_str, date, res);
 	return res
 }
 
@@ -252,6 +289,8 @@ function reasRef(val) {
 }
 
 
+
+
 export {
 	generate_UID,
 	escape_sql_value,
@@ -275,7 +314,10 @@ export {
 	time_now,
 	datetime_now,
 
-	str_to_date_local,
+	use_datetime_now,
+	poke_datetime_now_reactive,
+
+	str_to_date,
 	format_date_str_local,
 
 	reasRef,
