@@ -100,71 +100,9 @@ function standard_QV_select(steps, handle_error, addictional_callback) {
     return res_handler;
 }
 
-// ==== COMMON FORM VALUES ROUTINES (CFVR) ====
-
-/**
- * @typedef {{
- *  param?:    MaybeDependable,
- *  default?:  MaybeDependable,
- *  primary?:  boolean,
- *  sql?:      string,
- *  sync?:     TableSync
- *  sync_col?: string 
- * }} StandardFormValueRoutineParams
- * */
-
-/**
- * Assumes same NAME for SRC COLUMN and VALUE // TODO change it
- * @param {FormQuerySource} src 
- * @param {string} name 
- * @param {StandardFormValueRoutineParams} params
- */
-function standard_form_value_routine(src, name, params = {}) {
-    src.add_select_data(name, params.default ?? params.param ?? null, params.sql);
-    const value = src.dataset.get(name);
-    if(params.param !== undefined) {
-        src.add_where_eq(name, params.param, true);
-    }
-    if(params.sync) {
-        params.sync.assoc_value(params.sync_col ?? name, value, params.primary)
-    }
-    // if(src.dependant_tables.length === 1 && src.dependant_tables[0].name === 'samochody klientów'){
-    //     console.log("CREATED FORM VALUE", name, params, value);
-    // }
-    return value;
-}
-
-/**
- * @param {FormQuerySource} src 
- * @param {Column} col 
- * @param {StandardFormValueRoutineParams} params
- */
-function standard_form_auto_synced_column_value(src, col, params = {}) {
-    const sync = src.dataset.get_or_create_sync(col.tab);
-    const auto_params = Object.assign({}, {sync, sync_col: col.name}, params);
-    return standard_form_auto_column_value(src, col, auto_params);
-}
-
-/**
- * @param {FormQuerySource} src 
- * @param {Column} col 
- * @param {StandardFormValueRoutineParams} params
- */
-function standard_form_auto_column_value(src, col, params = {}) {
-    /**@type {StandardFormValueRoutineParams} */
-    const auto_params = {};
-    if(col.is_primary()) auto_params.primary = true;
-    Object.assign(auto_params, params);
-    return standard_form_value_routine(src, col.get_full_sql(), auto_params);
-}
-
-
 
 export {
     init_form_parent_window,
     standard_QV_select,
-    standard_form_value_routine,
-    standard_form_auto_column_value,
-    standard_form_auto_synced_column_value,
     CREATE_FORM_QUERY_SOURCE_IN_COMPONENT
 }

@@ -32,6 +32,18 @@ import {computed, ref, shallowReactive, unref} from 'vue';
  */
 
 
+/**
+ * @typedef {{
+*  param?:    MaybeDependable,
+*  default?:  MaybeDependable,
+*  primary?:  boolean,
+*  sql?:      string,
+*  sync?:     TableSync
+*  sync_col?: string 
+* }} StandardFormValueRoutineParams
+* */
+
+
 class QuerySourceRequest_Insert {
     constructor(value = false) {this.value = value};
 }
@@ -192,6 +204,44 @@ class FormQuerySource extends QuerySource {
         // this.result[name] = cached;
         this.dataset.add(name, cached);
     }
+
+    /**
+     * @param {string} name 
+     * @param {StandardFormValueRoutineParams} params
+     */
+    auto_form_value_adv(name, params = {}) {
+        this.add_select_data(name, params.default ?? params.param ?? null, params.sql);
+        const value = this.dataset.get(name);
+        if(params.param !== undefined) {
+            this.add_where_eq(name, params.param, true);
+        }
+        if(params.sync) {
+            params.sync.assoc_value(params.sync_col ?? name, value, params.primary)
+        }
+        return value;
+    }
+    
+    /**
+     * @param {Column} col 
+     * @param {StandardFormValueRoutineParams} params
+     */
+    auto_form_value(col, params = {}) {
+        /**@type {StandardFormValueRoutineParams} */
+        const auto_params = {primary: col.is_primary()};
+        Object.assign(auto_params, params);
+        return this.auto_form_value_adv(col.get_full_sql(), auto_params);
+    }
+    /**
+     * @param {Column} col 
+     * @param {StandardFormValueRoutineParams} params
+     */
+    auto_form_value_synced(col, params = {}) {
+        const sync = this.dataset.get_or_create_sync(col.tab);
+        /**@type {StandardFormValueRoutineParams} */
+        const auto_params = Object.assign({}, {sync, sync_col: col.name}, params);
+        return this.auto_form_value(col, auto_params);
+    }
+
     /**
      * @param {boolean} value 
      */

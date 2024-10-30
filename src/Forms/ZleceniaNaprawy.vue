@@ -16,7 +16,7 @@ import ReportPreparer from '../Reports/ReportPreparer.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import {onMounted, ref, toRef, readonly, watch} from 'vue';
-import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT, init_form_parent_window, standard_form_value_routine } from './FormCommon';
+import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { date_now } from '../utils';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
@@ -44,38 +44,38 @@ const msgManager = useMainMsgManager();
 const fwManager  = useMainFWManager();
 
 const db = useWarsztatDatabase();
+const TAB  = db.TABS.zlecenia_naprawy;
+const COLS = TAB.cols;
 
 // #	ID	ID klienta	ID samochodu	data otwarcia	        data zamknięcia	        zysk z części	zysk z robocizny	mechanik prowadzący	% udziału	pomocnik 1	  % udziału p1	pomocnik 2	% udziału p2	zgłoszone naprawy	                                    uwagi o naprawie
 // 0:	1	92	        17	            1998-09-02 00:00:00	    1947-01-12 00:00:00	    0.00	        0.00	            Dąbrowski Stanisław	0	        ~NULL~	      0	            ~NULL~	    0	            PINELES Naprawa blacharska przedniej cząści samochodu	1 2 3
 
+
+const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
+src.set_from_with_deps(TAB);
+
 const param_id_klienta = param_from_prop(props, 'id_klienta');
 const param_id_car     = param_from_prop(props, 'id_samochodu');
 
-const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
-src.set_from_with_deps(db.TABS.zlecenia_naprawy);
-const sync = src.dataset.get_or_create_sync(db.TABS.zlecenia_naprawy);
+const id         = src.auto_form_value_synced(COLS.ID,                                             );
+const id_klienta = src.auto_form_value_synced(COLS.ID_klienta,           {param: param_id_klienta} );
+const id_car     = src.auto_form_value_synced(COLS.ID_samochodu,         {param: param_id_car}     );
 
-// watch(props, (new_props) => {
-//     console.log("NEW PROPS", new_props, param_id_klienta, param_id_car);
-// })
+const data_otw   = src.auto_form_value_synced(COLS.data_otwarcia,        {default: date_now()} );
+const data_zamk  = src.auto_form_value_synced(COLS.data_zamknięcia,                            );
+const zgloszenie = src.auto_form_value_synced(COLS.zgłoszone_naprawy,                          );
+const uwagi      = src.auto_form_value_synced(COLS.uwagi_o_naprawie,                           );
 
-const id         = standard_form_value_routine(src, "ID",                   {sync, primary: true} );
-const id_klienta = standard_form_value_routine(src, "ID klienta",           {sync, param: param_id_klienta} );
-const id_car     = standard_form_value_routine(src, "ID samochodu",         {sync, param: param_id_car}     );
+const prow       = src.auto_form_value_synced(COLS.mechanik_prowadzący,                        );
+const pom1       = src.auto_form_value_synced(COLS.pomocnik_1,                                 );
+const pom2       = src.auto_form_value_synced(COLS.pomocnik_2,                                 );
+const prow_p     = src.auto_form_value_synced(COLS['%_udziału'],         {default: 0}          );
+const pom1_p     = src.auto_form_value_synced(COLS['%_udziału_p1'],      {default: 0}          );
+const pom2_p     = src.auto_form_value_synced(COLS['%_udziału_p2'],      {default: 0}          );
+const zysk_rob   = src.auto_form_value_synced(COLS.zysk_z_robocizny,     {default: 0}          );
+const zysk_cz    = src.auto_form_value_synced(COLS.zysk_z_części,        {default: 0}          );
 
-const data_otw   = standard_form_value_routine(src, "data otwarcia",        {sync, default: date_now()} );
-const data_zamk  = standard_form_value_routine(src, "data zamknięcia",      {sync}                      );
-const zgloszenie = standard_form_value_routine(src, "zgłoszone naprawy",    {sync}                      );
-const uwagi      = standard_form_value_routine(src, "uwagi o naprawie",     {sync}                      );
-
-const prow       = standard_form_value_routine(src, "mechanik prowadzący",  {sync}                      );
-const pom1       = standard_form_value_routine(src, "pomocnik 1",           {sync}                      );
-const pom2       = standard_form_value_routine(src, "pomocnik 2",           {sync}                      );
-const prow_p     = standard_form_value_routine(src, "% udziału",            {sync, default: 0}          );
-const pom1_p     = standard_form_value_routine(src, "% udziału p1",         {sync, default: 0}          );
-const pom2_p     = standard_form_value_routine(src, "% udziału p2",         {sync, default: 0}          );
-const zysk_rob   = standard_form_value_routine(src, "zysk z robocizny",     {sync, default: 0}          );
-const zysk_cz    = standard_form_value_routine(src, "zysk z części",        {sync, default: 0}          );
+const param_id_zlec = src.get(COLS.ID);
 
 
 function handle_err(/**@type {Error} */ err) {
@@ -149,7 +149,7 @@ defineExpose({
         <ReportPreparer
             ref="RepZlecenieNaprawy_ref"
             :rep="RepZlecenieNaprawy"
-            :id_zlecenia="src.get('ID')"
+            :id_zlecenia="param_id_zlec"
         />
         
     </div>

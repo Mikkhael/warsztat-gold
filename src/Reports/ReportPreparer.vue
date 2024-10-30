@@ -22,7 +22,7 @@ const rep_renderer_ref = ref(null);
     if(rep_ref.value === null) {
         throw new Error('Report component not assigned');
     }
-    await rep_ref.value.src.update_complete();
+    await rep_ref.value.src.update_complete(true);
     open(with_print);
 }
 

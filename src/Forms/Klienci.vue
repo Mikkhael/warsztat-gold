@@ -14,7 +14,7 @@ import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import {onMounted, onUnmounted, ref, nextTick} from 'vue';
-import { init_form_parent_window, standard_form_value_routine, standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
+import { standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { use_datetime_now } from '../utils';
 import { FormQuerySource } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
@@ -44,29 +44,33 @@ const form_car  = ref();
 const form_zlec = ref();
 
 const db = useWarsztatDatabase();
+const TAB  = db.TABS.klienci;
+const COLS = TAB.cols;
 
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
-src.set_from_with_deps(db.TABS.klienci);
-const sync = src.dataset.get_or_create_sync(db.TABS.klienci);
+src.set_from_with_deps(TAB);
 
 const src_car      = new FormQuerySource();
 const src_zlecenia = new FormQuerySource();
 
 
-const id     = standard_form_value_routine(src, "ID",                  {sync, primary: true});
-const nazwa  = standard_form_value_routine(src, "NAZWA",               {sync});
-const miasto = standard_form_value_routine(src, "MIASTO",              {sync});
-const ulica  = standard_form_value_routine(src, "ULICA",               {sync});
-const kod    = standard_form_value_routine(src, "KOD_POCZT",           {sync});
-const tele1  = standard_form_value_routine(src, "TELEFON1",            {sync});
-const tele2  = standard_form_value_routine(src, "TELEFON2",            {sync});
-const nip    = standard_form_value_routine(src, "NIP",                 {sync});
-const odbier = standard_form_value_routine(src, "odbierający fakturę", {sync});
-const kto    = standard_form_value_routine(src, "KTO",                 {sync, default: "Gold"});
-const kiedy  = standard_form_value_routine(src, "KIEDY",               {sync, default: use_datetime_now()});
-const upust  = standard_form_value_routine(src, "UPUST",               {sync, default: 0});
-const list   = standard_form_value_routine(src, "list",                {sync});
+const id     = src.auto_form_value_synced(COLS.ID                   );
+const nazwa  = src.auto_form_value_synced(COLS.NAZWA                );
+const miasto = src.auto_form_value_synced(COLS.MIASTO               );
+const ulica  = src.auto_form_value_synced(COLS.ULICA                );
+const kod    = src.auto_form_value_synced(COLS.KOD_POCZT            );
+const tele1  = src.auto_form_value_synced(COLS.TELEFON1             );
+const tele2  = src.auto_form_value_synced(COLS.TELEFON2             );
+const nip    = src.auto_form_value_synced(COLS.NIP                  );
+const odbier = src.auto_form_value_synced(COLS.odbierający_fakturę  );
+const kto    = src.auto_form_value_synced(COLS.KTO,                 {default: "Gold"});
+const kiedy  = src.auto_form_value_synced(COLS.KIEDY,               {default: use_datetime_now()});
+const upust  = src.auto_form_value_synced(COLS.UPUST,               {default: 0});
+const list   = src.auto_form_value_synced(COLS.list                 );
 
+
+const param_id_klienta   = src.get(COLS.ID);
+const param_id_samochodu = src_car.get(db.TABS.samochody_klientów.cols.ID);
 
 // FIND
 
@@ -156,7 +160,7 @@ defineExpose({
                     <legend>Samochody Klienta</legend>
                     <SamochodyKlientow 
                         :use_src="src_car"
-                        :id_klienta="src.get('ID')"
+                        :id_klienta="param_id_klienta"
                     />
                     <!-- <input type="text" v-model="test_ref">
                     <SamochodyKlientow 
@@ -201,8 +205,8 @@ defineExpose({
                 <ZleceniaNaprawy 
                     ref="zlecenia_form"
                     :use_src="src_zlecenia"
-                    :id_klienta="src.get('ID')"
-                    :id_samochodu="src_car.get(db.TABS.samochody_klientów.cols.ID)"
+                    :id_klienta="param_id_klienta"
+                    :id_samochodu="param_id_samochodu"
                 />
                 
             </fieldset>

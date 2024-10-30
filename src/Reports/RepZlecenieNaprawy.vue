@@ -7,13 +7,10 @@ import useMainMsgManager from '../components/Msg/MsgManager';
 
 
 
-import {onMounted, ref, toRef, watch} from 'vue';
 import { format_date_str_local } from '../utils';
-import { FormParamProp, FormQuerySource, param_from_prop } from '../components/Dataset';
-import { standard_form_auto_column_value } from '../Forms/FormCommon';
+import { FormParamProp, param_from_prop } from '../components/Dataset';
+import { RepQuerySource } from './RepCommon';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
-import { standard_form_auto_synced_column_value } from '../Forms/FormCommon';
-
 
 const props = defineProps({
     parent_window: {
@@ -35,27 +32,25 @@ const COLS_S = TAB_S.cols;
 const id_zlecenia_param = param_from_prop(props, 'id_zlecenia');
 
 
-const src = new FormQuerySource(false);
-src.disable_deps();
-src.disable_offset();
+const src = new RepQuerySource();
 
 src.set_from_with_deps(TAB_Z);
 src.add_join(COLS_Z.ID_klienta,     COLS_K.ID);
 src.add_join(COLS_Z.ID_samochodu,   COLS_S.ID);
 
-const id         = standard_form_auto_column_value(src, COLS_Z.ID, {param: id_zlecenia_param}).get_cached_ref();
-const data_otw   = standard_form_auto_column_value(src, COLS_Z.data_otwarcia).get_cached_ref();
-const zgloszenie = standard_form_auto_column_value(src, COLS_Z.zgłoszone_naprawy).get_cached_ref();
-const uwagi      = standard_form_auto_column_value(src, COLS_Z.uwagi_o_naprawie).get_cached_ref();
+const id         = src.auto_rep_value(COLS_Z.ID, {param: id_zlecenia_param});
+const data_otw   = src.auto_rep_value(COLS_Z.data_otwarcia);
+const zgloszenie = src.auto_rep_value(COLS_Z.zgłoszone_naprawy);
+const uwagi      = src.auto_rep_value(COLS_Z.uwagi_o_naprawie);
 
-const car_marka  = standard_form_auto_column_value(src, COLS_S.marka).get_cached_ref();
-const car_model  = standard_form_auto_column_value(src, COLS_S.model).get_cached_ref();
-const car_nrrej  = standard_form_auto_column_value(src, COLS_S.nr_rej).get_cached_ref();
+const car_marka  = src.auto_rep_value(COLS_S.marka);
+const car_model  = src.auto_rep_value(COLS_S.model);
+const car_nrrej  = src.auto_rep_value(COLS_S.nr_rej);
 
-const kli_nazwa  = standard_form_auto_column_value(src, COLS_K.NAZWA).get_cached_ref();
-const kli_miasto = standard_form_auto_column_value(src, COLS_K.MIASTO).get_cached_ref();
-const kli_ulica  = standard_form_auto_column_value(src, COLS_K.ULICA).get_cached_ref();
-const kli_kod    = standard_form_auto_column_value(src, COLS_K.KOD_POCZT).get_cached_ref();
+const kli_nazwa  = src.auto_rep_value(COLS_K.NAZWA);
+const kli_miasto = src.auto_rep_value(COLS_K.MIASTO);
+const kli_ulica  = src.auto_rep_value(COLS_K.ULICA);
+const kli_kod    = src.auto_rep_value(COLS_K.KOD_POCZT);
 
 
 // const id_klienta = props.src_zlec.get_ref("ID klienta",          );
@@ -95,6 +90,16 @@ defineExpose({
     <div class="over_page">
     <div class="page" ref="page" contenteditable="true">
 
+        <div class="header">
+            <div class="bold">AUTO-GOLD</div>
+            <div class="bold">Piotr Gold</div>
+            <div class="poke">ul. Bł Czesława 11</div>
+            <div class="poke">44-100 Gliwice</div>
+            <div class="poke">kom. 501-210-604</div>
+            <div class="poke">email piotr.gold@wp.pl</div>
+            <div class="poke bold">Credit Agrikole nr 11 1111 1111 2222 3333 4444 0000 0000</div>
+        </div>
+        
         <div class="header_right">
             <div class="data">
                 Gliwice dn. : {{ format_date_str_local(data_otw?.toString() ?? '') }}
@@ -107,16 +112,6 @@ defineExpose({
                     {{ id }}
                 </span>
             </div>
-        </div>
-
-        <div class="header">
-            <div class="bold poke">AUTO-GOLD</div>
-            <div class="bold poke">Piotr Gold</div>
-            <div>ul. Bł Czesława 11</div>
-            <div>44-100 Gliwice</div>
-            <div>kom. 501-210-604</div>
-            <div>email piotr.gold@wp.pl</div>
-            <div class="bold">Credit Agrikole nr 11 1111 1111 2222 3333 4444 0000 0000</div>
         </div>
 
         <div class="big_fields">
@@ -173,10 +168,11 @@ defineExpose({
         margin-left: 4mm;
     }
 
-    .header .poke {
+    .header > .poke{
         position: relative;
-        left: -1mm;
+        left: 1mm;
     }
+
 
     .header {
         margin-bottom: 3mm;
