@@ -85,13 +85,13 @@ function flag_for_refresh(to_scroll = null) {
 function start_safe_update() {
     flagged_for_refresh = false;
     awaiting_refresh = true;
-    const new_offset = to_scroll_acc === null ? 0 : src.offset.value + to_scroll_acc; // TODO request scrolls, not goto's
-    if(to_scroll_acc === null) src.expire(true);
-    // const temp_to_scroll_acc = to_scroll_acc;
+    if(to_scroll_acc === null) {
+        src.request_offset_goto(0, false);
+        src.expire(true);
+    } else {
+        src.request_offset_scroll(to_scroll_acc);
+    }
     to_scroll_acc = null;
-    // console.log('QVIEWER BEGIN', temp_to_scroll_acc, new_offset);
-    // setTimeout(() => {
-    src.request_offset_goto(new_offset, false);
     src.update_complete().then(() => {
         // console.log('QVIEWER END', temp_to_scroll_acc, new_offset);
         if(flagged_for_refresh) {

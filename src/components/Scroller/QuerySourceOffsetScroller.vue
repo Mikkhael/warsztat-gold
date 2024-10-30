@@ -74,7 +74,7 @@ async function goto(/**@type {number} */ value, wrapping = false) {
 }
 async function scroll(/**@type {number} */ value) {
 	return props.src.try_perform_and_update_confirmed(() => 
-		props.src.request_offset_goto(props.src.offset.value + value, false));
+		props.src.request_offset_scroll(value));
 }
 
 async function clicked_refresh() {

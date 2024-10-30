@@ -42,8 +42,11 @@ function wrap(val, past_max) {
     return clump(val, past_max); 
 }
 
-class QuerySourceRequest_Offset_Goto {
+class QuerySourceRequest_Offset_Goto{
     constructor(value = 0, wrapping = false) {this.value = value, this.wrapping = wrapping};
+}
+class QuerySourceRequest_Offset_Scroll {
+    constructor(value = 0) {this.value = value};
 }
 class QuerySourceRequest_Offset_Rownum {
     constructor(value = 0, colname = 'rowid') {this.value = value, this.colname = colname};
@@ -95,6 +98,9 @@ class QuerySource extends DataGraphNodeBase {
     async update__request_impl() {
         if(this.request instanceof QuerySourceRequest_Offset_Goto) {
             this.perform_offset_goto(this.request.value, this.request.wrapping);
+        }
+        if(this.request instanceof QuerySourceRequest_Offset_Scroll) {
+            this.perform_offset_goto(this.request.value + (this.offset.value ?? 0), false);
         }
         if(this.request instanceof QuerySourceRequest_Offset_Rownum) {
             await this.perform_offset_rownum(this.request.value, this.request.colname);
@@ -170,6 +176,16 @@ class QuerySource extends DataGraphNodeBase {
      */
     request_offset_goto(value, wrapping) {
         this._add_update_request_impl(new QuerySourceRequest_Offset_Goto(value, wrapping), false);
+    }
+    /**
+     * @param {number} value 
+     */
+    request_offset_scroll(value) {
+        if(this.request instanceof QuerySourceRequest_Offset_Scroll) {
+            this.request.value += value;
+            return;
+        }
+        this._add_update_request_impl(new QuerySourceRequest_Offset_Scroll(value), false);
     }
     /**
      * @param {number} value  
