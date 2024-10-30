@@ -1,5 +1,6 @@
 //@ts-check
 
+import { escape_backtick_smart } from "../../utils";
 import { DataGraphNodeBase } from "./DataGraph";
 
 /**
@@ -90,6 +91,10 @@ class TableNode extends DataGraphNodeBase{
         this.cols[to_snake_case(coL_def.name)] = col;
         return col;
     }
+    
+    get_full_sql() {
+        return escape_backtick_smart(this.name);
+    }
 }
 
 class Column {
@@ -122,6 +127,10 @@ class Column {
     is_primary() { return this.hasattr('p')};
     is_unique()  { return this.hasattr('q')};
     is_nonull()  { return this.hasattr('n')};
+
+    get_full_sql() {
+        return escape_backtick_smart(this.tab.name) + '.' + escape_backtick_smart(this.name);
+    }
 }
 
 export {

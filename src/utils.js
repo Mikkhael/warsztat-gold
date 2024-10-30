@@ -227,10 +227,11 @@ function str_to_date(/**@type {string} */ date_str) {
 
 // a.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'})
 function format_date_str_local(/**@type {string} */ date_str) {
+	if(date_str === '') return '';
 	const date = str_to_date(date_str);
 	const res = date.toLocaleDateString('pl-PL', {year: 'numeric', month: 'long', day: 'numeric'});
 	// console.log('PARSING DATE', date_str, date, res);
-	return res
+	return res;
 }
 
 

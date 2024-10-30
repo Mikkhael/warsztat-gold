@@ -9,6 +9,10 @@ import useMainMsgManager from '../components/Msg/MsgManager';
 
 import {onMounted, ref, toRef, watch} from 'vue';
 import { format_date_str_local } from '../utils';
+import { FormParamProp, FormQuerySource, param_from_prop } from '../components/Dataset';
+import { standard_form_auto_column_value } from '../Forms/FormCommon';
+import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
+import { standard_form_auto_synced_column_value } from '../Forms/FormCommon';
 
 
 const props = defineProps({
@@ -17,53 +21,59 @@ const props = defineProps({
         type: Object,
         required: false
     },
-    src_klient: {
-        /**@type {import('vue').PropType<import('../components/Dataset').FormQuerySource>} */
-        type: Object,
-        required: true
-    },
-    src_car: {
-        /**@type {import('vue').PropType<import('../components/Dataset').FormQuerySource>} */
-        type: Object,
-        required: true
-    },
-    src_zlec: {
-        /**@type {import('vue').PropType<import('../components/Dataset').FormQuerySource>} */
-        type: Object,
-        required: true
-    },
+    id_zlecenia: FormParamProp
 });
 
-const msgManager = useMainMsgManager();
+const db = useWarsztatDatabase();
+const TAB_Z = db.TABS.zlecenia_naprawy;
+const TAB_K = db.TABS.klienci;
+const TAB_S = db.TABS.samochody_klientów;
+const COLS_Z = TAB_Z.cols;
+const COLS_K = TAB_K.cols;
+const COLS_S = TAB_S.cols;
 
-const id         = props.src_zlec.get_ref("ID",                  );
-const id_klienta = props.src_zlec.get_ref("ID klienta",          );
-const id_car     = props.src_zlec.get_ref("ID samochodu",        );
-
-const data_otw   = props.src_zlec.get_ref("data otwarcia",       );
-const data_zamk  = props.src_zlec.get_ref("data zamknięcia",     );
-const zysk_cz    = props.src_zlec.get_ref("zysk z części",       );
-const zysk_rob   = props.src_zlec.get_ref("zysk z robocizny",    );
-const prow       = props.src_zlec.get_ref("mechanik prowadzący", );
-const prow_p     = props.src_zlec.get_ref("% udziału",           );
-const pom1       = props.src_zlec.get_ref("pomocnik 1",          );
-const pom1_p     = props.src_zlec.get_ref("% udziału p1",        );
-const pom2       = props.src_zlec.get_ref("pomocnik 2",          );
-const pom2_p     = props.src_zlec.get_ref("% udziału p2",        );
-const zgloszenie = props.src_zlec.get_ref("zgłoszone naprawy",   );
-const uwagi      = props.src_zlec.get_ref("uwagi o naprawie",    );
+const id_zlecenia_param = param_from_prop(props, 'id_zlecenia');
 
 
-const car_marka    = props.src_car.get_ref("marka",  );
-const car_model    = props.src_car.get_ref("model",  );
-const car_nrrej    = props.src_car.get_ref("nr rej", );
+const src = new FormQuerySource(false);
+src.disable_deps();
+src.disable_offset();
+
+src.set_from_with_deps(TAB_Z);
+src.add_join(COLS_Z.ID_klienta,     COLS_K.ID);
+src.add_join(COLS_Z.ID_samochodu,   COLS_S.ID);
+
+const id         = standard_form_auto_column_value(src, COLS_Z.ID, {param: id_zlecenia_param}).get_cached_ref();
+const data_otw   = standard_form_auto_column_value(src, COLS_Z.data_otwarcia).get_cached_ref();
+const zgloszenie = standard_form_auto_column_value(src, COLS_Z.zgłoszone_naprawy).get_cached_ref();
+const uwagi      = standard_form_auto_column_value(src, COLS_Z.uwagi_o_naprawie).get_cached_ref();
+
+const car_marka  = standard_form_auto_column_value(src, COLS_S.marka).get_cached_ref();
+const car_model  = standard_form_auto_column_value(src, COLS_S.model).get_cached_ref();
+const car_nrrej  = standard_form_auto_column_value(src, COLS_S.nr_rej).get_cached_ref();
+
+const kli_nazwa  = standard_form_auto_column_value(src, COLS_K.NAZWA).get_cached_ref();
+const kli_miasto = standard_form_auto_column_value(src, COLS_K.MIASTO).get_cached_ref();
+const kli_ulica  = standard_form_auto_column_value(src, COLS_K.ULICA).get_cached_ref();
+const kli_kod    = standard_form_auto_column_value(src, COLS_K.KOD_POCZT).get_cached_ref();
 
 
-const kli_nazwa  = props.src_klient.get_ref("NAZWA",     );
-const kli_miasto = props.src_klient.get_ref("MIASTO",    );
-const kli_ulica  = props.src_klient.get_ref("ULICA",     );
-const kli_kod    = props.src_klient.get_ref("KOD_POCZT", );
+// const id_klienta = props.src_zlec.get_ref("ID klienta",          );
+// const id_car     = props.src_zlec.get_ref("ID samochodu",        );
 
+// const data_zamk  = props.src_zlec.get_ref("data zamknięcia",     );
+// const zysk_cz    = props.src_zlec.get_ref("zysk z części",       );
+// const zysk_rob   = props.src_zlec.get_ref("zysk z robocizny",    );
+// const prow       = props.src_zlec.get_ref("mechanik prowadzący", );
+// const prow_p     = props.src_zlec.get_ref("% udziału",           );
+// const pom1       = props.src_zlec.get_ref("pomocnik 1",          );
+// const pom1_p     = props.src_zlec.get_ref("% udziału p1",        );
+// const pom2       = props.src_zlec.get_ref("pomocnik 2",          );
+// const pom2_p     = props.src_zlec.get_ref("% udziału p2",        );
+
+defineExpose({
+    src
+});
 
 </script>
 
@@ -87,7 +97,7 @@ const kli_kod    = props.src_klient.get_ref("KOD_POCZT", );
 
         <div class="header_right">
             <div class="data">
-                Gliwice dn. : {{ format_date_str_local(data_otw?.toString() || '') }}
+                Gliwice dn. : {{ format_date_str_local(data_otw?.toString() ?? '') }}
             </div>
             <div class="nr_zlec">
                 <span>

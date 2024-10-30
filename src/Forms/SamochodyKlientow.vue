@@ -54,6 +54,14 @@ const car_nrrej    = standard_form_auto_synced_column_value(src, COLS.nr_rej);
 const car_sinlink  = standard_form_auto_synced_column_value(src, COLS.nr_silnika);
 const car_nadwozie = standard_form_auto_synced_column_value(src, COLS.nr_nadwozia);
 
+// const car_id       = standard_form_value_routine(src, "ID",           {sync, primary: true}             );
+// const car_klient   = standard_form_value_routine(src, "ID klienta",   {sync, param: param_id_klienta}   );
+// const car_marka    = standard_form_value_routine(src, "marka",        {sync}                            );
+// const car_model    = standard_form_value_routine(src, "model",        {sync}                            );
+// const car_nrrej    = standard_form_value_routine(src, "nr rej",       {sync}                            );
+// const car_sinlink  = standard_form_value_routine(src, "nr silnika",   {sync}                            );
+// const car_nadwozie = standard_form_value_routine(src, "nr nadwozia",  {sync}                            );
+
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }

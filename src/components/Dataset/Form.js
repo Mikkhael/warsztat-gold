@@ -1,7 +1,7 @@
 //@ts-check
 
 import ipc from '../../ipc';
-import { TableNode } from './Database';
+import { Column, TableNode } from './Database';
 import {AdvDependableReasRef, AdvDependableRef, DataGraphNodeBase} from './DataGraph';
 import {QuerySource} from './QuerySource';
 import {TableSync} from './Sync';
@@ -75,6 +75,12 @@ class FormQuerySource extends QuerySource {
     }
 
 
+    /**
+     * 
+     * @param {string} name 
+     * @param {MaybeRef<SQLValue>} default_value 
+     * @returns 
+     */
     register_result(name, default_value) {
         if(this.result[name]) {
             this.result[name].reregister(default_value);
@@ -84,12 +90,26 @@ class FormQuerySource extends QuerySource {
         return this.result[name];
     }
 
-    get(name, initial_value = null) {
+    /**
+     * @param {string | Column} result_name 
+     * @param {MaybeRef<SQLValue>} initial_value 
+     */
+    get(result_name, initial_value = null) {
+        let name = '';
+        if(result_name instanceof Column) {
+            name = result_name.get_full_sql();
+        } else {
+            name = result_name;
+        }
         if(this.result[name]) return this.result[name];
         return this.register_result(name, initial_value);
     }
-    get_ref(name, initial_value = null) {
-        const cached = this.get(name, initial_value);
+    /**
+     * @param {string | Column} result_name 
+     * @param {MaybeRef<SQLValue>} initial_value 
+     */
+    get_ref(result_name, initial_value = null) {
+        const cached = this.get(result_name, initial_value);
         return cached.get_ref();
     }
 

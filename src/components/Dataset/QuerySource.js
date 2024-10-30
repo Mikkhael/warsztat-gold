@@ -4,7 +4,7 @@
 import { computed, ref, shallowRef } from "vue";
 import { DataGraphDependable, DataGraphNodeBase } from "./DataGraph";
 import ipc from "../../ipc";
-import { TableNode } from "./Database";
+import { Column, TableNode } from "./Database";
 import { map_query_parts_params, QueryBuilder } from "./QueryBuilder";
 import { escape_backtick_smart } from "../../utils";
 
@@ -62,6 +62,7 @@ class QuerySource extends DataGraphNodeBase {
         /**@type {any} */
         this.request = null;
         this.offset = this.query.offset;
+        this.offset_disabled = false;
 
         this.count = ref(0);
         this.count_expired = ref(true);
@@ -112,6 +113,11 @@ class QuerySource extends DataGraphNodeBase {
     }
     ///////////////////////////////////////
 
+    disable_offset() {
+        this.offset.value = 0;
+        this.offset_disabled = true;
+    }
+
     perform_offset_goto(value = 0, wrapping = false) {
         if(wrapping) this.offset.value = wrap (value, this.count.value);
         else         this.offset.value = clump(value, this.count.value);
@@ -129,6 +135,7 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     async perform_count_query() {
+        if(this.offset_disabled) return;
         const [rows] = await ipc.db_query(this.query.full_sql_count.value);
         if(rows.length === 0) this.count.value = -1;
         else                  this.count.value = rows[0][0];
@@ -136,7 +143,11 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     async perform_offset_query() {
-        const result = await ipc.db_query(this.query.full_sql_offset.value);
+        const result = await ipc.db_query(
+            this.offset_disabled ?
+                this.query.full_sql_base.value :
+                this.query.full_sql_offset.value
+        );
         if(result[0].length === 0) {
             this.count.value = 0;
             this.full_result.value = null;
@@ -191,18 +202,32 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     /**
-     * @param {(string | TableNode)[]} parts
+     * @param {(string | TableNode | Column )[]} parts
      */
     set_from_with_deps(...parts) {
         const string_parts = parts.map(part => {
             if(part instanceof TableNode) {
                 this.add_table_dep(part);
-                return escape_backtick_smart( part.name );
+                return part.get_full_sql();
+            } else if(part instanceof Column) {
+                this.add_table_dep(part.tab);
+                return part.get_full_sql();
             }
             return part;
         });
         const from = string_parts.join('');
         this.query.from.value = from;
+    }
+
+    /**
+     * @param {Column} col_main 
+     * @param {Column} col_joined 
+     */
+    add_join(col_main, col_joined) {
+        this.add_table_dep(col_main.tab);
+        this.add_table_dep(col_joined.tab);
+        const sql = ` JOIN ${col_joined.tab.get_full_sql()} ON ${col_joined.get_full_sql()}=${col_main.get_full_sql()}`;
+        this.query.from.value += sql;
     }
 
     /**

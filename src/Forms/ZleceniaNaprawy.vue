@@ -12,6 +12,7 @@ import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetS
 
 // import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
 
+import ReportPreparer from '../Reports/ReportPreparer.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import {onMounted, ref, toRef, readonly, watch} from 'vue';
@@ -35,7 +36,6 @@ const props = defineProps({
     id_klienta:   FormParamProp,
     id_samochodu: FormParamProp,
 });
-const emit = defineEmits(['open_print_window_zlec']);
 
 // console.log("START_PROPS",typeof props.id_klienta, typeof props.id_samochodu,  props.id_klienta, props.id_samochodu, props);
 
@@ -58,7 +58,6 @@ const sync = src.dataset.get_or_create_sync(db.TABS.zlecenia_naprawy);
 // watch(props, (new_props) => {
 //     console.log("NEW PROPS", new_props, param_id_klienta, param_id_car);
 // })
-
 
 const id         = standard_form_value_routine(src, "ID",                   {sync, primary: true} );
 const id_klienta = standard_form_value_routine(src, "ID klienta",           {sync, param: param_id_klienta} );
@@ -83,10 +82,12 @@ function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
-function open_print_window() {
-    emit('open_print_window_zlec');
-}
 
+
+const RepZlecenieNaprawy_ref = ref(/**@type {ReportPreparer?} */ (null));
+function open_print_window() {
+    RepZlecenieNaprawy_ref.value?.update_and_open(true).catch(handle_err);
+}
 
 defineExpose({
     src
@@ -143,15 +144,15 @@ defineExpose({
             saveable
             @error="handle_err"
         />
+
+        
+        <ReportPreparer
+            ref="RepZlecenieNaprawy_ref"
+            :rep="RepZlecenieNaprawy"
+            :id_zlecenia="src.get('ID')"
+        />
         
     </div>
-
-
-    <!-- <div class="print_render" ref="repZlecenieNaprawy_ref">
-        <RepZlecenieNaprawy 
-            :dataset="src"
-        />
-    </div> -->
 
 </template>
 
@@ -160,10 +161,6 @@ defineExpose({
     /* .form_container {
         width: 100%;
     } */
-
-    .print_render {
-        display: none;
-    }
 
     img{
         height: 7ch;

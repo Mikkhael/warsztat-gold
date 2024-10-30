@@ -53,8 +53,6 @@ const src_car      = new FormQuerySource();
 const src_zlecenia = new FormQuerySource();
 
 
-
-
 const id     = standard_form_value_routine(src, "ID",                  {sync, primary: true});
 const nazwa  = standard_form_value_routine(src, "NAZWA",               {sync});
 const miasto = standard_form_value_routine(src, "MIASTO",              {sync});
@@ -133,23 +131,6 @@ function click_zlecenia(){
     });
 }
 
-const repZlecenieNaprawy_ref = ref();
-function on_open_print_window_zlec() {
-
-    /**@type {HTMLElement} */
-    const page = repZlecenieNaprawy_ref.value;
-    console.log('PAGE', page);
-    const win  = window.open('about:blank', 'printwindow');
-    if(!win) {
-        throw new Error("Nie można otworzyć okna drukowania");
-    }
-    win.document.head.innerHTML = document.head.innerHTML;
-    win.document.body.innerHTML = page.innerHTML;
-
-    win.print();
-}
-
-
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
@@ -221,9 +202,7 @@ defineExpose({
                     ref="zlecenia_form"
                     :use_src="src_zlecenia"
                     :id_klienta="src.get('ID')"
-                    :id_samochodu="src_car.get('ID')"
-
-                    @open_print_window_zlec="on_open_print_window_zlec"
+                    :id_samochodu="src_car.get(db.TABS.samochody_klientów.cols.ID)"
                 />
                 
             </fieldset>
@@ -237,13 +216,6 @@ defineExpose({
             saveable
         />
         
-        <div class="print_render" ref="repZlecenieNaprawy_ref">
-            <RepZlecenieNaprawy 
-                :src_klient="src"
-                :src_car="src_car"
-                :src_zlec="src_zlecenia"
-            />
-        </div>
     </div>
 
 </template>

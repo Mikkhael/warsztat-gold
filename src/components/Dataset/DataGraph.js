@@ -64,6 +64,8 @@ class MySet extends Set {
 class DataGraphNodeBase {
 
     constructor() {
+        this.deps_disabled = false;
+
         this.deps  = shallowRef(/**@type {MySet<DataGraphNodeBase>} */ (new MySet()));
         this.dists = shallowRef(/**@type {MySet<DataGraphNodeBase>} */ (new MySet()));
 
@@ -218,6 +220,9 @@ class DataGraphNodeBase {
         if(node === this) {
             throw new Error('Cannot depend on itself');
         }
+        if(this.deps_disabled) {
+            return false;
+        }
         if(!node) return false;
         if(this.deps.value.has(node)) return false;
         node.dists.value.add(this);
@@ -241,13 +246,25 @@ class DataGraphNodeBase {
         return dependable;
     }
 
-    disconnect() {
+    disable_deps() {
+        this.disconnect_deps();
+        this.deps_disabled = true;
+    }
+
+    disconnect_deps() {
         this.deps .value.forEach(x => {x.dists.value.delete(this); triggerRef(x.dists);});
-        this.dists.value.forEach(x => {x.deps .value.delete(this); triggerRef(x.deps );});
         this.deps .value.clear();
-        this.dists.value.clear();
         triggerRef(this.deps);
+    }
+    disconnect_dists() {
+        this.dists.value.forEach(x => {x.deps .value.delete(this); triggerRef(x.deps );});
+        this.dists.value.clear();
         triggerRef(this.dists);
+    }
+
+    disconnect() {
+        this.disconnect_deps();
+        this.disconnect_dists();
     }
 
     disconnect_with_dists() {

@@ -128,6 +128,9 @@ function standard_form_value_routine(src, name, params = {}) {
     if(params.sync) {
         params.sync.assoc_value(params.sync_col ?? name, value, params.primary)
     }
+    // if(src.dependant_tables.length === 1 && src.dependant_tables[0].name === 'samochody klientów'){
+    //     console.log("CREATED FORM VALUE", name, params, value);
+    // }
     return value;
 }
 
@@ -138,11 +141,21 @@ function standard_form_value_routine(src, name, params = {}) {
  */
 function standard_form_auto_synced_column_value(src, col, params = {}) {
     const sync = src.dataset.get_or_create_sync(col.tab);
+    const auto_params = Object.assign({}, {sync, sync_col: col.name}, params);
+    return standard_form_auto_column_value(src, col, auto_params);
+}
+
+/**
+ * @param {FormQuerySource} src 
+ * @param {Column} col 
+ * @param {StandardFormValueRoutineParams} params
+ */
+function standard_form_auto_column_value(src, col, params = {}) {
     /**@type {StandardFormValueRoutineParams} */
-    const auto_params = {sync};
+    const auto_params = {};
     if(col.is_primary()) auto_params.primary = true;
     Object.assign(auto_params, params);
-    return standard_form_value_routine(src, col.name, auto_params);
+    return standard_form_value_routine(src, col.get_full_sql(), auto_params);
 }
 
 
@@ -151,6 +164,7 @@ export {
     init_form_parent_window,
     standard_QV_select,
     standard_form_value_routine,
+    standard_form_auto_column_value,
     standard_form_auto_synced_column_value,
     CREATE_FORM_QUERY_SOURCE_IN_COMPONENT
 }
