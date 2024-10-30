@@ -10,34 +10,88 @@ import { proxies_types } from './utils';
 /**
  * 
  * @typedef {"integer" | "number" | "decimal" | "date" | "datetime" | "datetime-local" | "text" } FormInputType
- * @typedef {{type: FormInputType, value: FormDataValue, readonly: boolean, nonull: boolean, len?: number, hints: any[]}} PropsType 
+ * @typedef {{type?: FormInputType, auto?: boolean, value: FormDataValue, readonly: boolean, nonull: boolean, len?: number, hints: any[]}} PropsType 
  */
+
+/**
+ * @param {PropsType} props 
+ */
+function auto_params_from_props(props) {
+    /**
+     * @type {{
+     *  type?:   FormInputType,
+     *  len?:    number,
+     *  min?:    number,
+     *  max?:    number,
+     *  nonull?: boolean
+     * }}
+     */
+    const params = {};
+
+    const col = props.value.associated_col;
+
+    if(props.auto && col) {
+        switch(col.type) {
+            case 'INTEGER':   params.type = 'integer'; break;
+            case 'TINYINT':   {
+                params.type = 'integer';
+                if(col.targ === '3') params.max = 255;
+                if(col.targ === '1') params.max = 1;
+            } break;
+            case 'DECIMAL':   params.type = 'decimal'; break;
+            case 'DOUBLE':    params.type = 'number';  break;
+            case 'FLOAT':     params.type = 'number';  break;
+            case 'TIMESTAMP': params.type = 'date';    break;
+            case 'DATETIME':  params.type = 'date';    break;
+            case 'LONGTEXT':  params.type = 'text';    break;
+            case 'VARCHAR':   {
+                params.type = 'text';
+                if(col.targ) params.len = +col.targ; 
+            } break;
+        }
+        if(col.is_nonull()) {
+            params.nonull = true;
+        }
+        if(col.is_unsigned()) {
+            params.min = 0;
+        } 
+    }
+
+    if(props.type)   params.type   = props.type;
+    if(props.len)    params.len    = props.len;
+    if(props.nonull) params.nonull = props.nonull;
+
+    return params;
+}
 
 /**
  * @param {PropsType} props
  */
 function use_FormInput(props) {
     const value = props.value;
-    
+
+    const auto_params = auto_params_from_props(props);
+
     const attributes = reactive(/**@type {object} */({}));
-    attributes.type = "text";
-    attributes.disabled = props.readonly;
-    if(props.len !== undefined){
-        attributes.maxlength = props.len;
-    }
+    attributes.disabled   = props.readonly;
+    if(auto_params.nonull !== true)      attributes.nullable  = true;
+    if(auto_params.nonull !== undefined) attributes.required  = auto_params.nonull;
+    if(auto_params.len    !== undefined) attributes.maxlength = auto_params.len;
+    if(auto_params.min    !== undefined) attributes.min = auto_params.min;
+    if(auto_params.max    !== undefined) attributes.max = auto_params.max;
 
     const custom_validity_message = computed(() => {
-        const local  = value.get_local();
-        const nonull = props.nonull;
-        const rdonly = props.readonly;
-        const is_decimal = props.type === 'decimal';
+        const local      = value.get_local();
+        const rdonly     = props.readonly;
+        const nonull     = auto_params.nonull;
+        const is_decimal = auto_params.type === 'decimal';
         if(rdonly) {return '';}
         if(local === null) {return nonull ? 'Wartość nie może być pusta' : '';}
         if(is_decimal) {return check_decimal(local.toString());}
         return '';
     });
     
-    const proxy_type = apply_correct_attributes_and_proxy_based_on_type(props, attributes);
+    const proxy_type = apply_correct_attributes_and_proxy_based_on_type(auto_params.type ?? 'text', attributes);
     const local_proxy = computed({
         get()  {return proxy_type.get(value.get_local());},
         set(x) {value.local.value = proxy_type.set(x);}
@@ -57,11 +111,11 @@ function use_FormInput(props) {
 
 /**
  * 
- * @param {PropsType} props 
+ * @param {FormInputType} type 
  * @param {object} attributes 
  */
-function apply_correct_attributes_and_proxy_based_on_type(props, attributes){
-    switch(props.type){
+function apply_correct_attributes_and_proxy_based_on_type(type, attributes){
+    switch(type){
         case 'number': {
             attributes.type = "number";
             attributes.step = 0.01;
@@ -73,6 +127,7 @@ function apply_correct_attributes_and_proxy_based_on_type(props, attributes){
             return proxies_types.empty_as_null;
         }
         case 'decimal': {
+            attributes.type = "text";
             return proxies_types.empty_as_null;
         }
         case 'date': {
@@ -88,6 +143,12 @@ function apply_correct_attributes_and_proxy_based_on_type(props, attributes){
             return proxies_types.empty_as_null;
         }
         case "text": {
+            attributes.type = "text";
+            return proxies_types.pass;
+        }
+        default: {
+            console.error('Unrecognized input type: ', type);
+            attributes.type = "text";
             return proxies_types.pass;
         }
     }

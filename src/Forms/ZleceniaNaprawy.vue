@@ -105,23 +105,23 @@ defineExpose({
             <div class="flex_auto vert">
                 <div>
                     <label>nr zlecenia</label>
-                    <FormInput :value="id" readonly style="width: 10ch" />
+                    <FormInput :value="id"        auto readonly style="width: 10ch" />
                 </div>
                 <div>
                     <label>data otwarcia</label>
-                    <FormInput :value="data_otw"  type="date" />
+                    <FormInput :value="data_otw"  auto />
                 </div>
                 <div>
                     <label>data zamknięcia</label>
-                    <FormInput :value="data_zamk" type="date" readonly />
+                    <FormInput :value="data_zamk" auto readonly />
                 </div>
             </div>
 
             <div class="subheader flex_auto">
                 <div class="udzialy grid">
-                    <div>Adres e-mail</div> <FormInput :value="prow"/> <FormInput type="integer" :value="prow_p" nospin min="0" max="100"/> <span>%</span>
-                    <div>pomocnik 1</div>   <FormInput :value="pom1"/> <FormInput type="integer" :value="pom1_p" nospin min="0" max="100"/> <span>%</span>
-                    <div>pomocnik 2</div>   <FormInput :value="pom2"/> <FormInput type="integer" :value="pom2_p" nospin min="0" max="100"/> <span>%</span>
+                    <div>Adres e-mail</div> <FormInput :value="prow" auto/> <FormInput auto :value="prow_p" nospin min="0" max="100"/> <span>%</span>
+                    <div>pomocnik 1</div>   <FormInput :value="pom1" auto/> <FormInput auto :value="pom1_p" nospin min="0" max="100"/> <span>%</span>
+                    <div>pomocnik 2</div>   <FormInput :value="pom2" auto/> <FormInput auto :value="pom2_p" nospin min="0" max="100"/> <span>%</span>
                 </div>
                 <div class="buttons">
                     <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
@@ -131,10 +131,10 @@ defineExpose({
             </div>
 
             <label>Zgłoszenie do naprawy</label>
-            <FormInput :value="zgloszenie" class="grow" textarea/>
+            <FormInput :value="zgloszenie" auto class="grow" textarea/>
             
             <label>Uwagi</label>
-            <FormInput :value="uwagi" class="grow" textarea/>
+            <FormInput :value="uwagi" auto class="grow" textarea/>
 
         </form>
 

@@ -94,12 +94,12 @@ defineExpose({
 
         <form class="form_content form" :ref="e => src.assoc_form(e)">
             <div>
-                <label class="label">Marka      </label>   <FormInput :value="car_marka"    nonull :len="15" pattern="[^ś]*"/>
-                <label class="label">Model      </label>   <FormInput :value="car_model"    nonull :len="15"/>
-                <label class="label">Nr Rej.    </label>   <FormInput :value="car_nrrej"    nonull :len="15"/>
-                <label class="label">Nr Silnika </label>   <FormInput :value="car_sinlink"  nonull :len="20"/>
-                <label class="label">Nr Nadwozia</label>   <FormInput :value="car_nadwozie" nonull :len="25"/>
-                <label class="label">ID         </label>   <FormInput :value="car_id"       readonly/>
+                <label class="label">Marka      </label>   <FormInput :value="car_marka"    auto pattern="[^ś]*"/>
+                <label class="label">Model      </label>   <FormInput :value="car_model"    auto/>
+                <label class="label">Nr Rej.    </label>   <FormInput :value="car_nrrej"    auto/>
+                <label class="label">Nr Silnika </label>   <FormInput :value="car_sinlink"  auto/>
+                <label class="label">Nr Nadwozia</label>   <FormInput :value="car_nadwozie" auto/>
+                <label class="label">ID         </label>   <FormInput :value="car_id"       auto readonly/>
             </div>
             <!-- <QueryViewerOpenBtn v-bind="find_options" :scroller="car_scroller" simple/> -->
         </form>

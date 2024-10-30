@@ -10,7 +10,11 @@ const props = defineProps({
         /**@type {import('vue').PropType<import('./impl/FormInput').FormInputType>} */
         //@ts-ignore
         type: String,
-        default: "text"
+        required: false
+    },
+    auto: {
+        type: Boolean,
+        default: false
     },
     textarea: {
         type: Boolean,
@@ -53,7 +57,8 @@ function reset_changes(){
 }
 
 const elem = ref();
-watch(toRef(impl, "custom_validity_message"), (new_value) => {
+watch(toRef(impl, "custom_validity_message"), (new_value, old_value) => {
+    // console.log("CUSTOM VAL", old_value, new_value);
     elem.value.setCustomValidity(new_value);
 });
 
@@ -70,11 +75,10 @@ const HINTS_UID = ref(uid + '_hint');
                  v-model="impl.local_proxy" 
                  class="FormControl FormControlInput" 
                  :class="{changed: impl.changed, null: impl.local === null, nospin: props.nospin}"
-                 v-bind="{...impl.attributes, ...fallthrough_attrs}"
-                 :list="use_datalist ? HINTS_UID : undefined"
                  :placeholder="impl.local === null ? '~' : ''"
-                 :id="use_datalist ? INPUT_UID : undefined"
-                 :nullable="!props.nonull"
+                 :list="use_datalist ? HINTS_UID : undefined"
+                 :id="  use_datalist ? INPUT_UID : undefined"
+                 v-bind="{...impl.attributes, ...fallthrough_attrs}"
                  @set_as_null="set_as_null()"
                  @reset_changes="reset_changes()"
         />
@@ -82,11 +86,10 @@ const HINTS_UID = ref(uid + '_hint');
                  v-model="impl.local_proxy" 
                  class="FormControl FormControlInput" 
                  :class="{changed: impl.changed, null: impl.local === null, nospin: props.nospin}"
-                 v-bind="{...impl.attributes, ...fallthrough_attrs}"
-                 :list="use_datalist ? HINTS_UID : ''"
                  :placeholder="impl.local === null ? '~' : ''"
-                 :id="INPUT_UID"
-                 :nullable="!props.nonull"
+                 :list="use_datalist ? HINTS_UID : ''"
+                 :id="  use_datalist ? INPUT_UID : undefined"
+                 v-bind="{...impl.attributes, ...fallthrough_attrs}"
                  @set_as_null="set_as_null()"
                  @reset_changes="reset_changes()"
         ></textarea>

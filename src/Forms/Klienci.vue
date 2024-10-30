@@ -127,13 +127,13 @@ const find_query_zlec = {
 };
 const find_query_zlec_handler = standard_QV_select([[src, 0], [src_car, 1], [src_zlecenia, 2]], handle_err);
 
-const show_zlecenia = ref(true); // TODO change to false in final version
-function click_zlecenia(){
-    show_zlecenia.value = !show_zlecenia.value;
-    nextTick().then(() => {
-        props.parent_window?.box.resize_to_content(true);
-    });
-}
+const show_zlecenia = ref(true);
+// function click_zlecenia(){
+//     show_zlecenia.value = !show_zlecenia.value;
+//     nextTick().then(() => {
+//         props.parent_window?.box.resize_to_content(true);
+//     });
+// }
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
@@ -181,22 +181,22 @@ defineExpose({
                     <!-- <button @click.prevent="click_zlecenia">ZLECENIA</button> -->
                 </div>
 
-                <label>Nazwa              </label>  <FormInput :value="nazwa "  nonull :len="60" class="main_input_field" pattern="[^ś]*"/>
-                <label>Odbierający Fakturę</label>  <FormInput :value="odbier"         :len="50" class="main_input_field"/>
-                <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  nonull :len="30" class="main_input_field"/>
+                <label>Nazwa              </label>  <FormInput :value="nazwa "  auto class="main_input_field" pattern="[^ś]*"/>
+                <label>Odbierający Fakturę</label>  <FormInput :value="odbier"  auto class="main_input_field"/>
+                <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  auto class="main_input_field"/>
                 <label>Kod i Miejscowość  </label>  
                 <div class="flex_auto main_input_field" > 
-                    <FormInput :value="kod   "  nonull :len="10" style="width: 7ch" class="nogrow"/> 
-                    <FormInput :value="miasto"  nonull :len="20" /> 
+                    <FormInput :value="kod   " auto style="width: 7ch" class="nogrow"/> 
+                    <FormInput :value="miasto" auto /> 
                 </div>
-                <label>NIP                </label>  <FormInput :value="nip   " :len="13"         />
-                <label>Telefon            </label>  <FormInput :value="tele1 " :len="17"         />
-                <label>Drugi Telefon      </label>  <FormInput :value="tele2 " :len="17"         />
+                <label>NIP                </label>  <FormInput :value="nip   " auto />
+                <label>Telefon            </label>  <FormInput :value="tele1 " auto />
+                <label>Drugi Telefon      </label>  <FormInput :value="tele2 " auto />
                 <div c="2"></div>
-                <label>wpisał             </label>  <FormInput :value="kto   " :len="8"                />
-                <label>dnia               </label>  <FormInput :value="kiedy "          type="date"    />
-                <label>stały upust        </label>  <FormInput :value="upust "          type="integer" />
-                <label>ID                 </label>  <FormInput :value="id    " readonly type="integer" />
+                <label>wpisał             </label>  <FormInput :value="kto   " auto />
+                <label>dnia               </label>  <FormInput :value="kiedy " auto />
+                <label>stały upust        </label>  <FormInput :value="upust " auto />
+                <label>ID                 </label>  <FormInput :value="id    " auto readonly />
 
             </div>
 

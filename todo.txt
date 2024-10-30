@@ -92,7 +92,7 @@
             + restrictions
         - Automatic Form Creation
             - common form and grid css
-            - automatic dataset generation, from predefined specs, for simple forms
+            + automatic dataset generation, from predefined specs, for simple forms
         + Dataset and Forms (OLD VERSION SCRAPPED)
         + Query Form Scroller (OLD VERSION SCRAPPED)
         - Dataset with DataGraph
@@ -141,7 +141,7 @@
                 + Input constrains
                     + min/max
                     + length
-                    - presets for different-sized fields from access
+                    + presets for different-sized fields from access
                 + tooltips for constraint violation
                 + readonly
                 - optional comma as separator

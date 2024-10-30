@@ -229,7 +229,9 @@ class FormQuerySource extends QuerySource {
         /**@type {StandardFormValueRoutineParams} */
         const auto_params = {primary: col.is_primary()};
         Object.assign(auto_params, params);
-        return this.auto_form_value_adv(col.get_full_sql(), auto_params);
+        const value = this.auto_form_value_adv(col.get_full_sql(), auto_params);
+        value.assoc_col(col);
+        return value;
     }
     /**
      * @param {Column} col 
@@ -283,9 +285,6 @@ class FormQuerySourceCachedValue extends AdvDependableReasRef {
     }
 }
 
-
-
-// TODO add type (and also other attributes, potentialy)
 class FormDataValue {
     /**
      * @param {FormDataSet} dataset
@@ -296,7 +295,17 @@ class FormDataValue {
         this.src = src;
         this.local = ref(this.src.get_value());
 
+        /**@type {Column?} */
+        this.associated_col = null;
+
         this.changed = computed(() => this.is_changed());
+    }
+
+    /**
+     * @param {Column} col
+     */
+    assoc_col(col) {
+        this.associated_col = col;
     }
 
     refresh() {

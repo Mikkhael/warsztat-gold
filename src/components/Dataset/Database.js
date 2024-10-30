@@ -124,9 +124,10 @@ class Column {
     // (this.indexed  'i' --
     // (this.unique   'q'
 
-    is_primary() { return this.hasattr('p')};
-    is_unique()  { return this.hasattr('q')};
-    is_nonull()  { return this.hasattr('n')};
+    is_primary()  { return this.hasattr('p')};
+    is_unique()   { return this.hasattr('q')};
+    is_nonull()   { return this.hasattr('n')};
+    is_unsigned() { return this.hasattr('u')};
 
     get_full_sql() {
         return escape_backtick_smart(this.tab.name) + '.' + escape_backtick_smart(this.name);
