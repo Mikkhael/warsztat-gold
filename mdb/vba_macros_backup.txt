@@ -1,0 +1,275 @@
+Option Compare Database
+Option Explicit
+
+Function ImportCSVData(ByVal folderPath As String, ByVal filename As String, ByVal tablename As String, Optional ByVal specname As String = "") As Boolean
+    On Error GoTo ErrHandler
+    
+    ' Set the path to your CSV file and specify import details
+    Dim csvFilePath As String
+    csvFilePath = folderPath & filename & ".txt"
+    
+    DoCmd.RunSQL "DELETE FROM [" & tablename & "]"
+    If IsEmpty(specname) Then
+        DoCmd.TransferText acImportDelim, , tablename, csvFilePath, True
+    Else
+        DoCmd.TransferText acImportDelim, specname, tablename, csvFilePath, True
+    End If
+
+    ' Return True if import is successful
+    ImportCSVData = True
+    Exit Function
+
+ErrHandler:
+    ' Handle errors, e.g., display a message box and return False
+    MsgBox "Error: [" & tablename & "] " & Err.Description
+    ImportCSVData = False
+End Function
+
+Function ExportCSVData(ByVal folderPath As String, ByVal filename As String, ByVal tablename As String) As Boolean
+    On Error GoTo ErrHandler
+    
+    ' Set the path to your CSV file and specify import details
+    Dim csvFilePath As String
+    csvFilePath = folderPath & filename & ".txt"
+    
+    DoCmd.TransferText acExportDelim, , tablename, csvFilePath, True
+
+    ' Return True if import is successful
+    ExportCSVData = True
+    Exit Function
+
+ErrHandler:
+    ' Handle errors, e.g., display a message box and return False
+    MsgBox "Error: [" & tablename & "] " & Err.Description
+    ExportCSVData = False
+End Function
+
+Function GetCurrentPath() As String
+    Dim db As Database
+    Dim currentPath As String
+
+    ' Set a reference to the current database
+    Set db = CurrentDb
+    
+    ' Get the current path of the database
+    currentPath = db.Name
+    
+    ' Extract the path without the database file name
+    currentPath = Left(currentPath, Len(currentPath) - Len(Dir(currentPath)))
+    
+    ' Display the current path (you can also use it in your code)
+    ' MsgBox "Current Path: " & currentPath
+    
+    ' Release the database object
+    Set db = Nothing
+    
+    GetCurrentPath = currentPath
+End Function
+
+Sub ImportCSVDataAllFromHere(ByVal foldername As String, ByVal tablename As String, Optional ByVal specname As String = "")
+
+    Dim fullpath As String
+    fullpath = GetCurrentPath()
+    fullpath = fullpath & foldername & "\"
+    ' MsgBox fullpath
+    ImportCSVData fullpath, tablename, tablename, specname
+End Sub
+
+Sub ExportCSVDataAllFromHere(ByVal foldername As String, ByVal tablename As String)
+
+    Dim fullpath As String
+    fullpath = GetCurrentPath()
+    fullpath = fullpath & foldername & "\"
+    CreateFolderIfNotExists fullpath
+    ' MsgBox fullpath
+    ExportCSVData fullpath, tablename, tablename
+End Sub
+
+Sub CreateFolderIfNotExists(ByVal path As String)
+    If Len(Dir(path, vbDirectory)) = 0 Then
+        MkDir path
+    End If
+End Sub
+Sub CreateSpecs(ByVal force As Boolean)
+    
+    DoCmd.RunSQL "DELETE FROM [MSysIMEXColumns] WHERE [SpecID] IN (" & _
+    "SELECT [SpecID] FROM [MSysIMEXSpecs] WHERE " & _
+    "[SpecName] = ""Pracownicy Specyfikacja importu"" OR " & _
+    "[SpecName] = ""Zlecenia instalacji gazowej Specyfikacja importu"" OR " & _
+    "[SpecName] = ""Zlecenia naprawy Specyfikacja importu"" )"
+    
+    If force Then
+        DoCmd.RunSQL "DELETE FROM [MSysIMEXSpecs]"
+    Else
+        DoCmd.SetWarnings False
+    End If
+    
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXSpecs] " & _
+        "(DateDelim,DateFourDigitYear,DateLeadingZeros,DateOrder,DecimalPoint,FieldSeparator,FileType,SpecName,SpecType,StartRow,TextDelim,TimeDelim) " & _
+        "VALUES (""-"",0,0,5,"","","";"",1,""Pracownicy Specyfikacja importu"",1,1,"""""""","":"");"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXSpecs] " & _
+        "(DateDelim,DateFourDigitYear,DateLeadingZeros,DateOrder,DecimalPoint,FieldSeparator,FileType,SpecName,SpecType,StartRow,TextDelim,TimeDelim) " & _
+        "VALUES (""-"",0,0,5,"","","";"",1,""Zlecenia instalacji gazowej Specyfikacja importu"",1,1,"""""""","":"");"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXSpecs] " & _
+        "(DateDelim,DateFourDigitYear,DateLeadingZeros,DateOrder,DecimalPoint,FieldSeparator,FileType,SpecName,SpecType,StartRow,TextDelim,TimeDelim) " & _
+        "VALUES (""-"",0,0,5,"","","";"",1,""Zlecenia naprawy Specyfikacja importu"",1,1,"""""""","":"");"
+    DoCmd.SetWarnings True
+    
+    Dim sp52
+    Dim sp53
+    Dim sp54
+    Dim result1 As DAO.Recordset
+    Dim result2 As DAO.Recordset
+    Dim result3 As DAO.Recordset
+    Set result1 = CurrentDb.OpenRecordset("SELECT [SpecID] FROM [MSysIMEXSpecs] WHERE [SpecName] = ""Pracownicy Specyfikacja importu"";", dbOpenDynaset)
+    Set sp52 = result1!SpecID
+    Set result2 = CurrentDb.OpenRecordset("SELECT [SpecID] FROM [MSysIMEXSpecs] WHERE [SpecName] = ""Zlecenia instalacji gazowej Specyfikacja importu"";", dbOpenDynaset)
+    Set sp53 = result2!SpecID
+    Set result3 = CurrentDb.OpenRecordset("SELECT [SpecID] FROM [MSysIMEXSpecs] WHERE [SpecName] = ""Zlecenia naprawy Specyfikacja importu"";", dbOpenDynaset)
+    Set sp54 = result3!SpecID
+    
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,4,""ID pracownika"",0,0," & sp52 & ",1,14);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""nazwisko"",0,0," & sp52 & ",15,13);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""imię"",0,0," & sp52 & ",28,10);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""inię II"",0,0," & sp52 & ",38,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""nazwisko rodowe"",0,0," & sp52 & ",49,16);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""imię ojca"",0,0," & sp52 & ",65,10);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""imię matki"",0,0," & sp52 & ",75,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""nazwisko rodowe matki"",0,0," & sp52 & ",86,22);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,8,""data urodzenia"",0,0," & sp52 & ",108,20);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""miejsce urodzenia"",0,0," & sp52 & ",128,20);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""obywatelstwo"",0,0," & sp52 & ",148,13);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""nr PESEL"",0,0," & sp52 & ",161,12);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""nr NIP"",0,0," & sp52 & ",173,14);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""ul i nr domu"",0,0," & sp52 & ",187,19);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""kod"",0,0," & sp52 & ",206,14);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""miejscowość"",0,0," & sp52 & ",220,12);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""tel domowy"",0,0," & sp52 & ",232,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""wykształcenie"",0,0," & sp52 & ",243,16);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,12,""wykształcenie uzupełniające"",0,0," & sp52 & ",259,32000);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,12,""dodatkowe uprawnienia"",0,0," & sp52 & ",308,32000);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""stanowisko"",0,0," & sp52 & ",367,18);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,4,""ID"",0,0," & sp53 & ",1,3);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,4,""ID klienta"",0,0," & sp53 & ",4,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,4,""ID samochodu"",0,0," & sp53 & ",15,13);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,8,""data otwarcia"",0,0," & sp53 & ",28,14);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,8,""data zamknięcia"",0,0," & sp53 & ",42,16);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,5,""zysk z części"",0,0," & sp53 & ",58,14);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,5,""zysk z robocizny"",0,0," & sp53 & ",72,17);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""mechanik prowadzący"",0,0," & sp53 & ",89,20);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,2,""% udziału"",0,0," & sp53 & ",109,10);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""pomocnik 1"",0,0," & sp53 & ",119,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,2,""% udziału p1"",0,0," & sp53 & ",130,13);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""pomocnik 2"",0,0," & sp53 & ",143,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,2,""% udziału p2"",0,0," & sp53 & ",154,13);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,12,""zgłoszone naprawy"",0,0," & sp53 & ",167,32000);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,4,""uwagi o naprawie"",0,0," & sp53 & ",185,17);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,4,""ID"",0,0," & sp54 & ",1,3);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,4,""ID klienta"",0,0," & sp54 & ",4,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,4,""ID samochodu"",0,0," & sp54 & ",15,13);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,8,""data otwarcia"",0,0," & sp54 & ",28,20);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,8,""data zamknięcia"",0,0," & sp54 & ",48,20);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,5,""zysk z części"",0,0," & sp54 & ",68,14);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,5,""zysk z robocizny"",0,0," & sp54 & ",82,17);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""mechanik prowadzący"",0,0," & sp54 & ",99,20);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,2,""% udziału"",0,0," & sp54 & ",119,10);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""pomocnik 1"",0,0," & sp54 & ",129,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,2,""% udziału p1"",0,0," & sp54 & ",140,13);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,10,""pomocnik 2"",0,0," & sp54 & ",153,11);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,2,""% udziału p2"",0,0," & sp54 & ",164,13);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,12,""zgłoszone naprawy"",0,0," & sp54 & ",177,32000);"
+    DoCmd.RunSQL "INSERT INTO [MSysIMEXColumns] VALUES (0,12,""uwagi o naprawie"",0,0," & sp54 & ",392,32000);"
+    
+End Sub
+
+Private Sub Polecenie0_Click()
+    
+    Dim filename As String
+    filename = Me!Tekst6.Value
+    ' ImportCSVData "zam_cz_test_exp"
+    ImportCSVData "C:\Documents and Settings\Michal\Pulpit\", filename, "test import 2"
+    GetCurrentPath
+    
+End Sub
+
+Private Sub Polecenie11_Click()
+    Dim foldername As String
+    foldername = Me!Tekst6.Value
+    
+    CreateSpecs False
+    
+    ImportCSVDataAllFromHere foldername, "CENNIK  GM"
+    ImportCSVDataAllFromHere foldername, "czynność"
+    ImportCSVDataAllFromHere foldername, "dane do zaświadczenie o sprawności inst"
+    ImportCSVDataAllFromHere foldername, "dokumenty sprzedaży"
+    ImportCSVDataAllFromHere foldername, "dokumenty sprzedaży chwilówk"
+    ImportCSVDataAllFromHere foldername, "dostawcy"
+    ImportCSVDataAllFromHere foldername, "faktura szczegóły chwilówka"
+    ImportCSVDataAllFromHere foldername, "inwentaryzacja"
+    ImportCSVDataAllFromHere foldername, "inwentaryzacja nr 3"
+    ImportCSVDataAllFromHere foldername, "jamar"
+    ImportCSVDataAllFromHere foldername, "klienci"
+    ImportCSVDataAllFromHere foldername, "liczby słownie"
+    ImportCSVDataAllFromHere foldername, "modele sam"
+    ImportCSVDataAllFromHere foldername, "nazwy części"
+    ImportCSVDataAllFromHere foldername, "obroty magazynowe"
+    ImportCSVDataAllFromHere foldername, "płace"
+    ImportCSVDataAllFromHere foldername, "pracownicy", "Pracownicy Specyfikacja importu"
+    ImportCSVDataAllFromHere foldername, "przyjęcia PZ"
+    ImportCSVDataAllFromHere foldername, "rodzaje dokumentów"
+    ImportCSVDataAllFromHere foldername, "samochody klientów"
+    ImportCSVDataAllFromHere foldername, "sposób zapłaty"
+    ImportCSVDataAllFromHere foldername, "sprzedaż"
+    ImportCSVDataAllFromHere foldername, "zamówienia części"
+    ImportCSVDataAllFromHere foldername, "zamówienia części archiwum"
+    ImportCSVDataAllFromHere foldername, "zlecenia czynności"
+    ImportCSVDataAllFromHere foldername, "zlecenia gaz"
+    ImportCSVDataAllFromHere foldername, "zlecenia instalacji gazowej", "Zlecenia instalacji gazowej Specyfikacja importu"
+    ImportCSVDataAllFromHere foldername, "zlecenia naprawy", "Zlecenia naprawy Specyfikacja importu"
+
+End Sub
+
+Private Sub Polecenie16_Click()
+    Dim foldername As String
+    foldername = Me!Tekst14.Value
+    
+    ExportCSVDataAllFromHere foldername, "test import 2"
+End Sub
+
+Private Sub Polecenie17_Click()
+    Dim foldername As String
+    foldername = Me!Tekst14.Value
+    
+    ExportCSVDataAllFromHere foldername, "CENNIK  GM"
+    ExportCSVDataAllFromHere foldername, "czynność"
+    ExportCSVDataAllFromHere foldername, "dane do zaświadczenie o sprawności inst"
+    ExportCSVDataAllFromHere foldername, "dokumenty sprzedaży"
+    ExportCSVDataAllFromHere foldername, "dokumenty sprzedaży chwilówk"
+    ExportCSVDataAllFromHere foldername, "dostawcy"
+    ExportCSVDataAllFromHere foldername, "faktura szczegóły chwilówka"
+    ExportCSVDataAllFromHere foldername, "inwentaryzacja"
+    ExportCSVDataAllFromHere foldername, "inwentaryzacja nr 3"
+    ExportCSVDataAllFromHere foldername, "jamar"
+    ExportCSVDataAllFromHere foldername, "klienci"
+    ExportCSVDataAllFromHere foldername, "liczby słownie"
+    ExportCSVDataAllFromHere foldername, "modele sam"
+    ExportCSVDataAllFromHere foldername, "nazwy części"
+    ExportCSVDataAllFromHere foldername, "obroty magazynowe"
+    ExportCSVDataAllFromHere foldername, "płace"
+    ExportCSVDataAllFromHere foldername, "pracownicy"
+    ExportCSVDataAllFromHere foldername, "przyjęcia PZ"
+    ExportCSVDataAllFromHere foldername, "rodzaje dokumentów"
+    ExportCSVDataAllFromHere foldername, "samochody klientów"
+    ExportCSVDataAllFromHere foldername, "sposób zapłaty"
+    ExportCSVDataAllFromHere foldername, "sprzedaż"
+    ExportCSVDataAllFromHere foldername, "zamówienia części"
+    ExportCSVDataAllFromHere foldername, "zamówienia części archiwum"
+    ExportCSVDataAllFromHere foldername, "zlecenia czynności"
+    ExportCSVDataAllFromHere foldername, "zlecenia gaz"
+    ExportCSVDataAllFromHere foldername, "zlecenia instalacji gazowej"
+    ExportCSVDataAllFromHere foldername, "zlecenia naprawy"
+End Sub
+
+Private Sub Polecenie19_Click()
+    CreateSpecs True
+End Sub

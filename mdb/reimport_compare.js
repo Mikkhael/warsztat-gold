@@ -1,5 +1,8 @@
-const fs = require('fs');
-const readline = require('readline');
+// const fs = require('fs');
+// const readline = require('readline');
+
+import fs from 'fs';
+import readline from 'readline';
 
 const main_tables = [
     "CENNIK  GM",
@@ -35,10 +38,11 @@ const main_tables = [
 function stringToHash(string) {
              
     let hash = 0;
+    let char = '';
      
     if (string.length == 0) return hash;
      
-    for (i = 0; i < string.length; i++) {
+    for (let i = 0; i < string.length; i++) {
         char = string.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
         hash = hash & hash;
@@ -65,9 +69,9 @@ async function load_hashes(path, mod) {
     return res;
 }
 
-async function test_csv(table_name) {
-    const path_1 = `../EXPORT_TEST_1/${table_name}.txt`;
-    const path_2 = `${table_name}.txt`;
+async function test_csv(table_name, path1, path2) {
+    const path_1 = `${path1}/${table_name}.txt`;
+    const path_2 = `${path2}/${table_name}.txt`;
 
     let h1 = await load_hashes(path_1, true);
     let h2 = await load_hashes(path_2);
@@ -96,9 +100,12 @@ async function test_csv(table_name) {
     // console.log(`ok.`, table_name);
 }
 
+const PATH_1 = process.argv[2] ?? `../EXPORT_TEST_1`;
+const PATH_2 = process.argv[3] ?? `.`;
+
 async function main(){
     for(let table_name of main_tables) {
-        await test_csv(table_name);
+        await test_csv(table_name, PATH_1, PATH_2);
     }
 }
 
