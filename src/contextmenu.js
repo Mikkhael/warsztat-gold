@@ -11,7 +11,8 @@ function is_target_an_input_field(target) {
             target.type === 'text'   ||
             target.type === 'number' ||
             target.type === 'date' ||
-            target.type === 'datetime-local'
+            target.type === 'datetime-local' ||
+            target.type === 'checkbox'
         ) ||
         target.tagName === 'TEXTAREA' ||
         target.tagName === 'SELECT' ||

@@ -2,7 +2,7 @@
 //@ts-check
 import { ref } from 'vue';
 import { useMainSettings, Settings } from './Settings';
-import { FormInput } from '../Controls';
+import { FormInput, FormCheckbox } from '../Controls';
 
 /**
  * @typedef {import('./Settings').SettingsCategoryNames} SettingsCategoryNames
@@ -58,13 +58,14 @@ const variants = [
 
             <div class="variant_name"> {{ variant.display }} </div>
             <div class="variant_enable">
-                <span>Włącz</span>
-                <br>
-                <FormInput type="boolean" min="0" max="1" style="width:2ch" nospin nonull :value="variant.enable" /> 
+                <!-- <span>Włącz</span> -->
+                <!-- <br> -->
+                <!-- <FormInput type="boolean" min="0" max="1" style="width:2ch" nospin nonull :value="variant.enable" />  -->
+                <FormCheckbox :value="variant.enable" />
             </div>
             <div class="variant_max">
                 <span>Maksymalna liczba kopii (0 = bez limitu)</span>
-                <FormInput type="integer" min="0" nonull :value="variant.max" /> 
+                <FormInput type="integer" min="0" nonull :value="variant.max" :disabled="!variant.enable.get_local()" /> 
             </div>
 
         </template>

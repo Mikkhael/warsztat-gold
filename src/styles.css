@@ -103,6 +103,10 @@ input.nospin::-webkit-inner-spin-button {
     margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
 }
 
+input[type="checkbox"] {
+  cursor: pointer;
+}
+
 /* button:active {
   border-color: #396cd8;
   background-color: #e8e8e8;
@@ -129,6 +133,17 @@ button {
   opacity: 50%;
 }
 
+.FormControl.FormControlCheckbox {
+  border: 1px solid transparent;
+}
+.FormControl.FormControlCheckbox.changed {
+  background-color: #d3d320;
+  border-color: #ffff00;
+}
+
+.FormControl.FormControlCheckbox input{
+  margin: 2px;
+}
 
 /* /////////////////////// FORM  //////////////////////////// */
 

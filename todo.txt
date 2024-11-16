@@ -164,7 +164,8 @@
                 - advanced value modification
             + Query Enum
             + Field-Search
-            - Bool (checkbox)
+            + Bool (checkbox)
+                - convert from number
             - Radiobox
     + Reports
         + example report

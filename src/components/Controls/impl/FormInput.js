@@ -36,7 +36,7 @@ function auto_params_from_props(props) {
             case 'TINYINT':   {
                 params.type = 'integer';
                 if(col.targ === '3') params.max = 255;
-                if(col.targ === '1') params.max = 1;
+                if(col.targ === '1') params.type = 'boolean';
             } break;
             case 'DECIMAL':   params.type = 'decimal'; break;
             case 'DOUBLE':    params.type = 'number';  break;
