@@ -143,13 +143,28 @@ function iterate_query_result_values_single_row(result, callback, row_id=0) {
 }
 
 /**
- * 
- * @param {object} object 
- * @param {(value: any, key: string) => any} map_function 
- * @returns
+ * @template T
+ * @template R
+ * @param {T} obj 
+ * @param {(val: T[keyof T], key: keyof T) => R} map_function 
+ * @returns {{[P in keyof T]: R}}
  */
-function object_map(object, map_function) {
-	return Object.fromEntries(Object.entries(object).map(([key, value]) => map_function(value, key)));
+function object_map(obj, map_function) {
+	//@ts-ignore
+	return Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, map_function(value, key)]));
+}
+
+/**
+ * @param {any[]} arr1 
+ * @param {any[]} arr2 
+ * @returns 
+ */
+function array_compare(arr1, arr2) {
+	if(arr1.length !== arr2.length) return false;
+	for(let i = 0; i < arr1.length; i++) {
+		if(arr1[i] !== arr2[i]) return false;
+	}
+	return true;
 }
 
 function pad(str, width = 2, space = '0') {
@@ -299,12 +314,14 @@ export {
 	escape_backtick_smart,
 	escape_like,
 	escape_like_full,
+
 	arr_to_object,
 	query_row_to_object,
 	query_result_to_object,
 	iterate_query_result_values,
 	iterate_query_result_values_single_row,
 	object_map,
+	array_compare,
 	typeofpl,
 	as_promise,
 

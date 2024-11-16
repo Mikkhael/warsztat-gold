@@ -9,6 +9,10 @@ import useMainMsgManager from "./Msg/MsgManager";
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
 import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
 
+
+import SettingsWindow from "./Settings/SettingsWindow.vue";
+
+
 import Klienci from "../Forms/Klienci.vue";
 import SamochodyKlientow from "../Forms/SamochodyKlientow.vue";
 
@@ -34,6 +38,9 @@ function tool_open() {
 function tool_sql() {
     fwManager.open_or_focus_window("SQL Debug", SQLDebugConsole);
 }
+function tool_settings() {
+    fwManager.open_or_focus_window("Ustawienia", SettingsWindow);
+}
 
 function tool_zlecenia(){
     fwManager.open_or_focus_window("Zlecenia Otwarte", TestWindow1, {text: "sjifosfg", index: Math.round(Math.random()*10)});
@@ -54,6 +61,7 @@ function tool_klienci(){
             <div class="toolgroup">
                 <div class="tool" @click="tool_open();">Otwórz</div>
                 <div class="tool" @click="tool_sql();" >SQL</div>
+                <div class="tool" @click="tool_settings();" >Ustawienia</div>
             </div>
             <div class="toolgroup"></div>
             <div class="toolgroup">
@@ -63,7 +71,7 @@ function tool_klienci(){
             <div class="toolgroup"></div>
         </section>
         <main class="main">
-            <FWCollection :manager="fwManager" />
+            <FWCollection :manager="fwManager" @error="handle_error" />
             <div class="bigtext" v-show="!ipc.state.db_is_open" >
                 Żadna baza danych nie jest otwarta.
             </div>

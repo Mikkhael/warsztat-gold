@@ -285,20 +285,46 @@ class FormQuerySourceCachedValue extends AdvDependableReasRef {
     }
 }
 
-class FormDataValue {
+/**
+ * @template T
+ */
+class FormDataValueLike {
+    /**
+     * @param {T} initial_value 
+     */
+    constructor(initial_value) {
+        this.local = ref(initial_value);
+        this.changed = computed(() => this.is_changed());
+    }
+
+    get_local() {
+        return unref(this.local);
+    }
+
+    refresh() {}
+    is_changed() {return false;}
+    /**@returns {import('vue').Ref<T>?} */
+    get_cached_ref() {return null;}
+
+
+}
+
+/**
+ * @extends {FormDataValueLike<SQLValue>}
+ */
+class FormDataValue extends FormDataValueLike{
     /**
      * @param {FormDataSet} dataset
      * @param {FormQuerySourceCachedValue} src
      */
     constructor(dataset, src) {
+        super(src.get_value());
+
         this.dataset = dataset;
-        this.src = src;
-        this.local = ref(this.src.get_value());
+        this.src     = src;
 
         /**@type {Column?} */
         this.associated_col = null;
-
-        this.changed = computed(() => this.is_changed());
     }
 
     /**
@@ -311,10 +337,6 @@ class FormDataValue {
     refresh() {
         if(this.src === null) return;
         this.local.value = this.src.get_value();
-    }
-
-    get_local() {
-        return unref(this.local);
     }
     get_cached() {
         if(this.src === null) return undefined;
@@ -423,5 +445,6 @@ export {
     FormQuerySource,
     FormQuerySourceCachedValue,
     FormDataSet,
-    FormDataValue
+    FormDataValue,
+    FormDataValueLike
 }

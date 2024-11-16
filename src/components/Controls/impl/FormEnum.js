@@ -1,10 +1,10 @@
 //@ts-check
 import { computed, reactive, toRefs, watch } from 'vue';
-import { FormDataValue } from '../../Dataset';
+import { FormDataValueLike } from '../../Dataset';
 import { typeofpl } from '../../../utils';
 
 /**
- * @param {{value: FormDataValue, readonly: boolean, nonull: boolean, options: any[]}} props 
+ * @param {{value: FormDataValueLike, readonly: boolean, nonull: boolean, options: any[]}} props 
  */
 function use_FormEnum(props) {
     const value = props.value;

@@ -9,6 +9,7 @@ use tauri_plugin_context_menu;
 mod utils;
 mod sqlite_manager;
 mod encoding;
+mod backup;
 
 #[tauri::command]
 fn join_path(a: &Path, b: &Path) -> PathBuf {
@@ -46,6 +47,7 @@ fn main() {
         sqlite_manager::perform_execute_batch,
         sqlite_manager::perform_query,
         sqlite_manager::get_current_db_state,
+        backup::perform_backup_lists,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

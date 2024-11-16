@@ -17,6 +17,11 @@ const proxies_types = {
         get(x) { return x === null ? ''   : x; },
         set(x) { return x === ''   ? null : x; }
     },
+    // Display "true" as 1, false an "0", null as empty
+    boolean_as_num: {
+        get(x) { return x === null ? ''   : (x ? '1' : '0'); },
+        set(x) { return x === ''   ? null : x !== 0; }
+    },
     // Dont use any null elision (as above)
     pass: {
         get(x) { return x; },

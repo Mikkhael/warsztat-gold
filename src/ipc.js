@@ -149,6 +149,26 @@ async function db_as_transaction(callback) {
 }
 
 /**
+ * @typedef {{path: string, date: string}} BackupListEntry
+ * @typedef {{name: string, entries: BackupListEntry[]}} BackupList
+ */
+
+/**
+ * @param {string} dirpath
+ * @param {string[]} variantNames
+ * @returns {Promise<BackupList[]>}
+ */
+async function backup_list(dirpath, variantNames, prefix="kopia_warsztat", ext= '.db3') {
+    const res = await invoke('perform_backup_lists', {
+        dirpath,
+        variantNames,
+        prefix,
+        ext
+    });
+    return res;
+}
+
+/**
  * @typedef IPCQueryResult
  * @type {[any[][], string[]]} 
  * [value[row_index][column_index], column_name[column_index]]
@@ -189,4 +209,6 @@ export default {
     db_query,
 
     db_as_transaction,
+
+    backup_list,
 }

@@ -3,14 +3,14 @@
 
 
 import { computed, reactive, toRefs } from 'vue';
-import { FormDataValue } from '../../Dataset';
+import { FormDataValue, FormDataValueLike } from '../../Dataset';
 import { proxies_types } from './utils';
 
 
 /**
  * 
- * @typedef {"integer" | "number" | "decimal" | "date" | "datetime" | "datetime-local" | "text" } FormInputType
- * @typedef {{type?: FormInputType, auto?: boolean, value: FormDataValue, readonly: boolean, nonull: boolean, len?: number, hints: any[]}} PropsType 
+ * @typedef {"integer" | "number" | "decimal" | "boolean" | "date" | "datetime" | "datetime-local" | "text" } FormInputType
+ * @typedef {{type?: FormInputType, auto?: boolean, value: FormDataValueLike, readonly: boolean, nonull: boolean, len?: number, hints: any[]}} PropsType 
  */
 
 /**
@@ -28,7 +28,7 @@ function auto_params_from_props(props) {
      */
     const params = {};
 
-    const col = props.value.associated_col;
+    const col = (props.value instanceof FormDataValue) ? props.value.associated_col : null;
 
     if(props.auto && col) {
         switch(col.type) {
@@ -92,8 +92,9 @@ function use_FormInput(props) {
     });
     
     const proxy_type = apply_correct_attributes_and_proxy_based_on_type(auto_params.type ?? 'text', attributes);
+    
     const local_proxy = computed({
-        get()  {return proxy_type.get(value.get_local());},
+        get()  {return proxy_type.get(value.local.value);},
         set(x) {value.local.value = proxy_type.set(x);}
     });
 
@@ -129,6 +130,13 @@ function apply_correct_attributes_and_proxy_based_on_type(type, attributes){
         case 'decimal': {
             attributes.type = "text";
             return proxies_types.empty_as_null;
+        }
+        case 'boolean': {
+            attributes.type = 'number';
+            attributes.min  = 0;
+            attributes.max  = 1;
+            attributes.step = 1;
+            return proxies_types.boolean_as_num;
         }
         case 'date': {
             attributes.type = "date";

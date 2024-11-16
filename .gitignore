@@ -19,6 +19,8 @@ mdb/decimal.dll
 mdb/exported_test
 mdb/import_test
 
+ts_playground.js
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

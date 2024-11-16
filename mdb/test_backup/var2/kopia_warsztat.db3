@@ -1,0 +1,1 @@
+IPC.backup_list("C:\\Users\\bondg\\Desktop\\Dev\\warsztat-gold\\mdb\\test_backup", ['var1', 'var2', 'var3'])

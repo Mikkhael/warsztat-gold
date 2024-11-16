@@ -33,11 +33,21 @@
     + test decimals in csv in access (mniejsze niż 922337203685477,5808 [922 337 203 685 477] ), za duże się nie wpisują w ogóle
     - float and double constrains
 
++ Settings API
+    + core
+    - database integration
+        - sql
+        - save
+        - load
+
 - Buckups API
-    - local and manual
+    + backup_list
+    - manual
     - periodic
-    - remote
-    - progress
+    - standerd
+    - online
+    - settings update
+
 
 - Dynamic Forms API
 
@@ -120,7 +130,7 @@
                 + transactions
                 + integration with DataGraph
                 - delete
-            - forms
+            + forms
                 + form validation
                 + insert mode
                     + insert mode with nesting (disable)
@@ -153,16 +163,15 @@
             + Enum (select)
                 - advanced value modification
             + Query Enum
+            + Field-Search
             - Bool (checkbox)
             - Radiobox
-            - Frame
-            + Field-Search
     + Reports
         + example report
             + editable
             + font
         + printer template
-        - report QuerySource class
+        + report QuerySource class
 
     - create toolbars
 

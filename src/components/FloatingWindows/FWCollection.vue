@@ -9,6 +9,12 @@ const props = defineProps({
     }
 });
 
+const emit = defineEmits(['error']);
+
+function fwd_error(err) {
+    emit('error', err);
+}
+
 </script>
 
 <template>
@@ -20,7 +26,13 @@ const props = defineProps({
             title: {{ title.toString() }} <br>
             component: {{ window.box.id.toString() }} -->
             <Teleport :to="window.get_mount_selector()">
-                <component :is="window.component" v-bind="window.props" :parent_window="window" v-on="window.listeners"></component>
+                <component 
+                    :is="window.component"
+                    :parent_window="window"
+                    v-bind="window.props"
+                    v-on="window.listeners"
+                    @error="fwd_error"
+                ></component>
             </Teleport>
         </div>
 
