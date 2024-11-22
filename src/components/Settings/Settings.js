@@ -1,8 +1,8 @@
 //@ts-check
 
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, markRaw, onMounted, onUnmounted, ref, shallowRef } from "vue";
 import { FormDataValueLike } from "../Dataset";
-import { array_compare, object_map } from "../../utils";
+import { array_compare, deep_compare, deep_copy, object_leaf_map, object_map } from "../../utils";
 
 /**
  * @typedef {string | number | boolean} SettingTypeNonArray
@@ -13,90 +13,101 @@ import { array_compare, object_map } from "../../utils";
  */
 
 /**
- * @template {SettingsCategoryNames} N
- * @template {SettingType} [T=SettingType]
+ * @template T
  * @extends {FormDataValueLike<T>}
  */
-class ReactiveSetting extends FormDataValueLike {
+class ReactiveSettingValue extends FormDataValueLike {
     /**
-     * 
-     * @param {ReactiveSettingsCategory<N>} settings_category 
-     * @param {keyof Settings['categories'][N]} field_name
      * @param {T} initial_value 
+     * @param {T} cached
      */
-    constructor(settings_category, field_name, initial_value) {
+    constructor(initial_value, cached) {
         super(initial_value);
-
-        this.category = settings_category;
-        this.field_name = field_name;
+        this.cached = cached;
     }
 
-    /**@returns {T} */
-    get_true_value() {
-        return this.category.get_true_field(this.field_name);
+    get_cached() {
+        return this.cached;
     }
-    refresh() {
-        //@ts-ignore
-        this.local.value = NaN;
-        //@ts-ignore
-        this.local.value = this.get_true_value();
-    }
-    is_changed() {
-        const true_value = this.get_true_value();
-        if(Array.isArray(this.local.value) && Array.isArray(true_value)) {
-            return !array_compare(this.local.value, true_value);
-        } else {
-            return this.local.value !== true_value;
-        }
-    }
-
 }
 
-/**@template {SettingsCategoryNames} T */
-class ReactiveSettingsCategory {
+/**
+ * @template {SettingsCategoryNames} N
+ */
+class ReactiveSetting {
+
+	/**
+	 * @template [T=Settings['categories'][N]]
+	 * @typedef {T extends Array ? ReactiveSettingLeafMapped<T[number]>[] :
+	* 			 T extends Object.<string, any> ?
+	* 				{[P in keyof T]: ReactiveSettingLeafMapped<T[P]>} :
+	* 			 import('vue').Raw<ReactiveSettingValue<T>> } ReactiveSettingLeafMapped
+	*/
+
     /**
-     * 
-     * @param {Settings} settings 
-     * @param {T} category_name 
-     * @param {() => void} on_update
+     * @param {Settings} settings
+     * @param {N}        category_name
      */
-    constructor(settings, category_name, on_update) {
+    constructor(settings, category_name) {
+
         this.settings = settings;
         this.category_name = category_name;
-        this.on_update = on_update;
 
-        /**@type {{[P in keyof settings['categories'][T]]: ReactiveSetting<T, settings['categories'][T][P]>}} */
-        this.fields = object_map(settings.categories[category_name], (value, name) => {
-            let value_copy = value;
-            if(Array.isArray(value)) {
-                value_copy = value.filter(x => true);
-            }
-            return new ReactiveSetting(this, name, value_copy);
+        /**@type {import("vue").Ref<ReactiveSettingLeafMapped>} */
+        //@ts-ignore
+        this.ref = ref({});
+        /**@type {import("vue").ShallowRef<ReactiveSettingValue[]>} */
+        this.values_list = shallowRef([]);
+
+        const settings_copy = deep_copy(settings.categories[category_name]);
+        this.recreate_ref(settings_copy);
+
+        this.changed = computed(() => this.values_list.value.some(x => x.changed.value));
+
+    }
+
+    /**@returns {Settings['categories'][N]} */
+    unmap_reactive() {
+        //@ts-ignore
+        return object_leaf_map(this.ref.value,/**@param {ReactiveSettingValue} val */ val => {
+            return val.get_local();
+        },val => {
+            return val instanceof ReactiveSettingValue;
         });
-
-        this.changed = computed(() => Object.values(this.fields).some(x => x.changed.value));
     }
 
     /**
-     * @param {keyof Settings['categories'][T]} name 
+     * @param {Settings['categories'][N]} original_settings 
      */
-    get_true_field(name) {
-        return this.settings.categories[this.category_name][name];
+    recreate_ref(original_settings) {
+        /**@type {ReactiveSettingValue[]} */
+        const new_values_list = [];
+        /**@type {ReactiveSettingLeafMapped} */
+        const res = object_leaf_map(original_settings, /**@return {any} */ (val, acc) => {
+                const value = new ReactiveSettingValue(val, acc);
+                new_values_list.push(value);
+                return markRaw( value );
+            },
+            undefined,
+            (key, acc) => {
+                return acc[key];
+            }, 
+            /**@type {any} */ (this.settings.categories[this.category_name])
+        );
+
+        // console.log('Recreated: ', original_settings, res, new_values_list);
+
+        this.values_list.value = new_values_list;
+        this.ref.value = res;
     }
 
-    update_settings() {
-        for(const name in this.fields) {
-            this.settings.categories[this.category_name][name] = this.fields[name].get_local();
+    update_settings(no_poke = false) {
+        const new_original_settings = this.unmap_reactive();
+        this.settings.categories[this.category_name] = new_original_settings;
+        this.recreate_ref(new_original_settings);
+        if(!no_poke){
+            this.settings.poke_update(this.category_name);
         }
-        this.on_update();
-    }
-
-    get_raw_values() {
-        // /**@type {{[P in keyof Settings['categories'][T]]: Settings['categories'][T][P]}} */
-        /**@type {typeof Settings.prototype.categories[T]} */
-        //@ts-ignore
-        const res = object_map(this.fields, x => x.get_local());
-        return res;
     }
 }
 
@@ -107,46 +118,49 @@ function get_settings_event_name(category_name) {
     return 'settings_updated_' + category_name;
 }
 
-/**@template {SettingsCategoryNames} T */
+/**@template {SettingsCategoryNames} N */
 class SettingsManager {
     /**
      * @param {Settings} settings 
-     * @param {T}        category_name 
+     * @param {N}        category_name 
      */
     constructor(settings, category_name) {
         this.settings = settings;
         this.category_name = category_name;
+        /**@type {(() => void)?} */
+        this.unlisten = null;
     }
     
     /**
-     * @param {typeof Settings.prototype.categories[T]} new_values 
-     * @returns {Promise<boolean>} True if settings should be updated, false otherwise 
+     * @param {Settings['categories'][N]} new_values 
+     * @returns {void | Promise}
      */
-    async update_impl(new_values) {return true;}
+    update(new_values) {}
 
-
-    /**
-     * @param {ReactiveSettingsCategory<T>} new_values_reactive 
-     * @returns {Promise<boolean>} True if settings should be updated, false otherwise 
-     */
-    async try_update(new_values_reactive) {
-        if(!new_values_reactive.changed.value) return true;
-        const new_values = new_values_reactive.get_raw_values();
-        const good = await this.update_impl(new_values);
-        if(!good) return false;
-        this.confirmed_update(new_values);
-        Object.values(new_values_reactive.fields).forEach(x => x.refresh());
-        return true;
+    update_from_settings() {
+        return this.update(this.settings.categories[this.category_name]);
     }
 
-    /**
-     * @param {typeof Settings.prototype.categories[T]} new_values 
-     */
-    confirmed_update(new_values) {
-        const category = this.settings.categories[this.category_name];
-        for(const key in category) {
-            category[key] = new_values[key];
+    start_listener() {
+        this.stop_listener();
+        this.unlisten = add_settings_update_listener(
+            this.category_name, 
+            (new_values) => this.update(new_values)
+        );
+    }
+    stop_listener() {
+        if(this.unlisten){
+            this.unlisten();
+            this.unlisten = null;
         }
+    }
+    start_in_component() {
+        onMounted(() => {
+            this.start_listener();
+        });
+        onUnmounted(() => {
+            this.stop_listener();
+        })
     }
 }
 
@@ -159,16 +173,54 @@ class Settings {
                 val2: 0
             },
             backup: {
-                /**@type {string[]} */
-                paths: [],
-                mon_en: true,
-                wee_en: true,
-                day_en: true,
-                std_en: true,
-                mon_max: 0,
-                wee_max: 4,
-                day_max: 7,
-                std_max: 1
+                /**
+                 * @type {{
+                 *  path: string,
+                 *  mon_en: boolean,
+                 *  wee_en: boolean,
+                 *  day_en: boolean,
+                 *  std_en: boolean,
+                 *  mon_max: number
+                 *  wee_max: number
+                 *  day_max: number
+                 *  std_max: number
+                 * }[]}
+                 *  */
+                list: [
+                    {
+                        path: '../mdb/test_backup_live',
+                        mon_en: true,
+                        wee_en: true,
+                        day_en: true,
+                        std_en: true,
+                        mon_max: 0,
+                        wee_max: 4,
+                        day_max: 7,
+                        std_max: 1
+                    },
+                    {
+                        path: '../mdb/test_backup',
+                        mon_en: false,
+                        wee_en: false,
+                        day_en: true,
+                        std_en: false,
+                        mon_max: 0,
+                        wee_max: 0,
+                        day_max: 1,
+                        std_max: 0
+                    }
+                ]
+
+                // /**@type {string[]} */
+                // paths: [],
+                // mon_en: true,
+                // wee_en: true,
+                // day_en: true,
+                // std_en: true,
+                // mon_max: 0,
+                // wee_max: 4,
+                // day_max: 7,
+                // std_max: 1
             }
         };
 
@@ -186,13 +238,12 @@ class Settings {
      * @param {T} category_name 
      */
     get_reactive_settings(category_name) {
-        let on_update = () => {this.poke_update(category_name)};
-        const category = new ReactiveSettingsCategory(this, category_name, on_update);
-        return category;
+        const res = new ReactiveSetting(this, category_name);
+        return res;
     }
 
     get_reactive_settings_all() {
-        /**@type {{[K in SettingsCategoryNames]: ReactiveSettingsCategory<K>}} */
+        /**@type {{[K in SettingsCategoryNames]: ReactiveSetting<K>}} */
         //@ts-ignore
         const res = object_map(this.categories, (val, key) => this.get_reactive_settings(key));
         return res;
@@ -227,6 +278,5 @@ export {
     add_settings_update_listener,
     Settings,
     SettingsManager,
-    ReactiveSettingsCategory,
     ReactiveSetting
 };

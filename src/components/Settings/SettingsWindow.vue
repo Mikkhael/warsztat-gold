@@ -1,9 +1,7 @@
 <script setup>
 //@ts-check
-import { computed, ref, shallowRef } from 'vue';
+import { computed, nextTick, ref, shallowRef } from 'vue';
 import { useMainSettings, Settings } from './Settings';
-
-import { useMainBackupManager, BackupManager } from '../Backup';
 
 import SettingsWindowBackup from './SettingsWindowBackup.vue';
 import SettingsWindowTest from './SettingsWindowTest.vue';
@@ -21,10 +19,6 @@ const props = defineProps({
     settings: {
         type: Settings,
         required: false,
-    },
-    backupManager: {
-        type: BackupManager,
-        required: false,
     }
 });
 
@@ -36,8 +30,6 @@ function handle_error(err) {
 }
 
 
-const backupManager = props.backupManager ?? useMainBackupManager();
-
 const settings = props.settings ?? useMainSettings();
 
 const categories = /**@type {const} */ ([
@@ -48,31 +40,34 @@ const categories = /**@type {const} */ ([
 const reactive_categories = settings.get_reactive_settings_all();
 const changed = computed(() => Object.values(reactive_categories).some(x => x.changed.value));
 
-
 const selected_category_name = ref(/**@type {SettingsCategoryNames} */('none'));
-const subsettings_comp   = shallowRef(/**@type {any} */ (null));
-const subsettings_category = shallowRef(/**@type {import('./Settings').ReactiveSettingsCategory?} */ (null));
+const subsettings_comp       = shallowRef(/**@type {any} */ (null));
+const subsettings_reactive   = shallowRef(/**@type {import('./Settings').ReactiveSetting?} */ (null));
 
 
 
 /**
  * @param {SettingsCategoryNames} new_category_name 
  */
-function select_category_name(new_category_name) {
+async function select_category_name(new_category_name) {
+    subsettings_comp.value = null;
+    await nextTick();
     selected_category_name.value = new_category_name;
     const comp = categories.find(x => x[0] === new_category_name)?.[2] ?? null;
     subsettings_comp.value     = comp;
-    subsettings_category.value = reactive_categories[new_category_name];
+    subsettings_reactive.value = reactive_categories[new_category_name];
 }
 
-async function try_save_changes() {
-    await backupManager.try_update(reactive_categories.backup);
-    // TODO
+function save_changes() {
+    Object.values(reactive_categories).forEach(category => {
+        category.update_settings();
+    });
+    select_category_name(selected_category_name.value);
 }
 
 
 
-console.log(reactive_categories);
+// console.log(reactive_categories);
 
 
 </script>
@@ -92,12 +87,12 @@ console.log(reactive_categories);
             </div>
         </div>
         <div class="category_options">
-            <component v-if="subsettings_comp !== null" :is="subsettings_comp" :category="subsettings_category" />
+            <component v-if="subsettings_comp !== null" :is="subsettings_comp" :category="subsettings_reactive" />
         </div>
 
         <input type="button" 
             class="saving_panel"
-            @click="try_save_changes().catch(handle_error)"
+            @click="save_changes()"
             :disabled="!changed"
             :value="changed ? 'Zapisz Zmiany' : ''" />
     </div>

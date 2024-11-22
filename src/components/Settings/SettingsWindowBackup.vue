@@ -1,6 +1,6 @@
 <script setup>
 //@ts-check
-import { ref } from 'vue';
+import { compile, ref, shallowRef } from 'vue';
 import { useMainSettings, Settings } from './Settings';
 import { FormInput, FormCheckbox } from '../Controls';
 
@@ -10,38 +10,31 @@ import { FormInput, FormCheckbox } from '../Controls';
 
 const props = defineProps({
     category: {
-        /**@type {import('vue').PropType<import('./Settings').ReactiveSettingsCategory<'backup'>>} */
+        /**@type {import('vue').PropType<import('./Settings').ReactiveSetting<'backup'>>} */
         type: Object,
         required: true,
     },
 });
 
 
+const settings = props.category.ref;
 
 const variants = [
     {
         name: 'mon',
         display: 'Co miesiąc',
-        enable: props.category.fields.mon_en,
-        max:    props.category.fields.mon_max
     },
     {
         name: 'wee',
         display: 'Co tydzień',
-        enable: props.category.fields.wee_en,
-        max:    props.category.fields.wee_max
     },
     {
         name: 'day',
         display: 'Co dzień',
-        enable: props.category.fields.day_en,
-        max:    props.category.fields.day_max
     },
     {
         name: 'std',
         display: 'Co uruchomienie programu',
-        enable: props.category.fields.std_en,
-        max:    props.category.fields.std_max
     },
 ];
 
@@ -52,39 +45,63 @@ const variants = [
 
     <div class="sub_container">
 
-        <template
-          v-for="variant in variants"
+        <!-- <p style="text-wrap: wrap; grid-column: 1 / end;">
+            {{ settings }}
+        </p> -->
+
+        <div
+        v-for="entry in settings.list"
+        class="entry"
         >
-
-            <div class="variant_name"> {{ variant.display }} </div>
-            <div class="variant_enable">
-                <!-- <span>Włącz</span> -->
-                <!-- <br> -->
-                <!-- <FormInput type="boolean" min="0" max="1" style="width:2ch" nospin nonull :value="variant.enable" />  -->
-                <FormCheckbox :value="variant.enable" />
+            <div class="path">
+                <span>Ścierzka:</span>
+                <FormInput :value="entry.path" />
             </div>
-            <div class="variant_max">
-                <span>Maksymalna liczba kopii (0 = bez limitu)</span>
-                <FormInput type="integer" min="0" nonull :value="variant.max" :disabled="!variant.enable.get_local()" /> 
-            </div>
-
-        </template>
+            <div>Okres</div>
+            <div>Włącz/Wyłącz</div>
+            <div>Maksymalna liczba kopii (0 = bez limitu)</div>
+            <template
+            v-for="variant in variants"
+            >
+                <div class="variant_name"> {{ variant.display }} </div>
+                <div class="variant_enable">
+                    <FormCheckbox :value="entry[variant.name + '_en']" />
+                </div>
+                <div class="variant_max">
+                    <FormInput type="integer" min="0" nonull :value="entry[variant.name + '_max']" /> 
+                </div>
+            </template>
+        </div>
 
     </div>
 
 </template>
 
 <style scoped>
+    
 
-    .sub_container {
+    .path {
+        grid-column: 1/4;
+        display: flex;
+        flex-direction: row;
+    }
+    .path > ::v-deep(input) {
+        margin: 0px 10px;
+        flex-grow: 1;
+    }
+
+    .entry {
         display: grid;
         grid-template-columns: auto auto auto;
         justify-items: stretch;
         justify-content: space-around;
         align-items: center;
         column-gap: 4px;
+
+        margin-bottom: 3px;
+        border-bottom: 2px solid black;
     }
-    .sub_container > * {
+    .entry > * {
         text-wrap: nowrap;
     }
     .variant_name {

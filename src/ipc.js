@@ -149,14 +149,14 @@ async function db_as_transaction(callback) {
 }
 
 /**
- * @typedef {{path: string, date: string}} BackupListEntry
- * @typedef {{name: string, entries: BackupListEntry[]}} BackupList
+ * @typedef {{path: string, date: string}} BackupVariantListEntry
+ * @typedef {{name: string, entries: BackupVariantListEntry[]}} BackupVariantList
  */
 
 /**
  * @param {string} dirpath
  * @param {string[]} variantNames
- * @returns {Promise<BackupList[]>}
+ * @returns {Promise<BackupVariantList[]>}
  */
 async function backup_list(dirpath, variantNames, prefix="kopia_warsztat", ext= '.db3') {
     const res = await invoke('perform_backup_lists', {

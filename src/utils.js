@@ -143,15 +143,171 @@ function iterate_query_result_values_single_row(result, callback, row_id=0) {
 }
 
 /**
- * @template T
+ * @template {Object.<string, any>} T
+ * @typedef {T extends Array ? string : Extract<keyof T, string>} Keysof
+ */
+/**
+ * @template {Object.<string, any>} T
+ * @typedef {T extends Array ? T[number] : T[Extract<keyof T, string>]} Valsof
+ */
+
+/**
+ * @template {Object.<string, any>} T
+ * @param {T} val 
+ * @returns {Keysof<T>}
+ */
+function keysof(val) {
+	//@ts-ignore
+	return Object.keys(val);
+}
+
+/**
+ * @template {Object.<string, any>} T
  * @template R
  * @param {T} obj 
- * @param {(val: T[keyof T], key: keyof T) => R} map_function 
+ * @param {(val: Valsof<T>, key: T extends Array ? number : Keysof<T>) => R} map_function 
  * @returns {{[P in keyof T]: R}}
  */
 function object_map(obj, map_function) {
+	if(Array.isArray(obj)) {
+		//@ts-ignore
+		return obj.map((val, key) => map_function(val, key));
+	}
 	//@ts-ignore
 	return Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, map_function(value, key)]));
+}
+
+
+/**
+ * @template T
+ * @template [R=any]
+ * @typedef {T extends Array ? LeafMapped<T[number], R>[] :
+ * 			 T extends Object.<string, any> ?
+ * 				{[P in keyof T]: LeafMapped<T[P], R>} :
+ * 			 R } LeafMapped
+ */
+
+/**
+ * @template T
+ * @template [W=undefined]
+ * @template [R=any]
+ * @param {T} obj 
+ * @param {(val: any, walk_acc: W) => R} map_function 
+ * @param {(val: any, walk_acc: W) => boolean} [stopper]
+ * @param {(key: string, acc: W) => W} [walk_reducer]
+ * @param {W} [walk_acc]
+ * @returns {LeafMapped<T,R>}
+ */
+function object_leaf_map(
+		obj, 
+		map_function, 
+		stopper = val => typeof val !== 'object', 
+		walk_reducer, 
+		walk_acc) 
+{
+	//@ts-ignore
+	if(stopper(obj, walk_acc)) return map_function(obj, walk_acc);
+	//@ts-ignore
+	return object_map(obj, (val, key) => object_leaf_map(
+		val,
+		map_function,
+		stopper,
+		walk_reducer,
+		//@ts-ignore
+		walk_reducer?.(key, walk_acc)
+	));
+}
+
+const TEST = () => {
+	const leafmap_test = {
+		a: {
+		  b: 1,
+		  c: '2'
+		},
+		d: [
+		  10,
+		  20,
+		  30
+		],
+		e: 100,
+		f: [
+			{f1: 123, f2: '123'},
+			{f1: 124, f2: '124'},
+		],
+		g: [1,2,'3'],
+		h: [
+			'test1',
+			['test2'],
+		]
+	};
+
+	const leafmap_test_1 = object_leaf_map(leafmap_test, /**@returns {[any]} */ val => [val]);
+
+	/**
+	 * @template T
+	 * @typedef {T extends Array ? CustomLeafMapped<T[number]>[] :
+	* 			 T extends Object.<string, any> ?
+	* 				{[P in keyof T]: CustomLeafMapped<T[P]>} :
+	* 			 T extends string ? boolean : [T] } CustomLeafMapped
+	*/
+	/**@type {CustomLeafMapped<typeof leafmap_test>}*/
+	const leafmap_test_2 = object_leaf_map(leafmap_test, /**@returns {any} */ val => typeof val === 'string' ? val.length>1 : [val]);
+	
+	/**
+	 * @typedef {LeafMapped<typeof leafmap_test>} LeafMappedTest
+	 */
+
+	/**
+	 * @template T
+	 * @param {T} val 
+	 * @param {string | number} key 
+	 * @returns {T extends boolean ? null : [T]}
+	*/
+	//@ts-ignore
+	function test_object_map(val, key) {return null};
+
+	const t1 = [1,'tak',false];
+	const t2 = {a: 1, b: 'tak', c:false};
+	/**
+	 * @typedef {typeof t1} T1
+	 * @typedef {typeof t2} T2
+	 */
+
+	const a1 = object_map(t1, test_object_map);
+	const a2 = object_map(t2, test_object_map);
+
+	/**@type {ReturnType<typeof test_object_map<T1[number]>>[]} */
+	const b1 = object_map(t1, test_object_map);
+	/**@type {{[P in keyof T2]: ReturnType<typeof test_object_map<T2[P]>>}} */
+	//@ts-ignore
+	const b2 = object_map(t2, test_object_map);
+
+}
+
+
+
+/**
+ * @template T
+ * @param {T} val 
+ * @return {T}
+ */
+function deep_copy(val) {
+	if(typeof val === 'object') {
+		return window.structuredClone(val);
+	}
+	return val;
+}
+
+function deep_compare(val1, val2) {
+	if(val1 === val2) return true;
+	if(typeof val1 !== 'object' || typeof val2 !== 'object') return false;
+	const keys1 = Object.keys(val1);
+	const keys2 = Object.keys(val2);
+	if(!array_compare(keys1, keys2)) return false;
+	for(const key of keys1) {
+		if(!deep_compare(val1[key], val2[key])) return false;
+	}
+	return true;
 }
 
 /**
@@ -320,7 +476,11 @@ export {
 	query_result_to_object,
 	iterate_query_result_values,
 	iterate_query_result_values_single_row,
+
+	deep_copy,
+	deep_compare,
 	object_map,
+	object_leaf_map,
 	array_compare,
 	typeofpl,
 	as_promise,

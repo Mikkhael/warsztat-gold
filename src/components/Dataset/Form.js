@@ -1,11 +1,12 @@
 //@ts-check
 
 import ipc from '../../ipc';
+import { deep_compare, deep_copy, object_map } from '../../utils';
 import { Column, TableNode } from './Database';
 import {AdvDependableReasRef, AdvDependableRef, DataGraphNodeBase} from './DataGraph';
 import {QuerySource} from './QuerySource';
 import {TableSync} from './Sync';
-import {computed, ref, shallowReactive, unref} from 'vue';
+import {computed, customRef, markRaw, reactive, ref, shallowReactive, shallowRef, toRef, unref, watch} from 'vue';
 
 
 /**
@@ -285,29 +286,154 @@ class FormQuerySourceCachedValue extends AdvDependableReasRef {
     }
 }
 
+
+/**
+ * @template {Object.<string, any>} T
+ * @typedef {T extends Array ? string : Extract<keyof T, string>} Keysof
+ */
+
 /**
  * @template T
  */
 class FormDataValueLike {
     /**
-     * @param {T} initial_value 
+     * @param {import('vue').Ref<T> | T} initial_value 
      */
     constructor(initial_value) {
+        /**@type {import('vue').Ref<T>} */
+        //@ts-ignore
         this.local = ref(initial_value);
         this.changed = computed(() => this.is_changed());
     }
 
+    // /**
+    //  * @template {keyof T} K
+    //  * @param {K} key
+    //  * @returns {FormDataValueLikeSubView<T[K]>} 
+    //  */
+    // get_subview(key) {
+    //     if(typeof this.local.value !== 'object') throw new Error('Cannot create FormDataValue View of non-object');
+    //     //@ts-ignore
+    //     return FormDataValueLikeSubView.from(this, key);
+    // }
+
+    // /**
+    //  * @returns {{[P in Keysof<T>]: FormDataValueLikeSubView<T[P]>}}
+    //  */
+    // get_subview_all() {
+    //     if(typeof this.local.value !== 'object') throw new Error('Cannot create FormDataValue View of non-object');
+    //     //@ts-ignore
+    //     return Object.keys(this.local.value).map( key => {
+    //         //@ts-ignore
+    //         return this.get_subview(key);
+    //     });
+    // }
+    // /**
+    //  * @returns {FormDataValueLikeSubView<T[number]>[]}
+    //  */
+    // get_subview_all_array() {
+    //     if(typeof this.local.value !== 'object' ||
+    //        !Array.isArray(this.local.value))     throw new Error('Cannot create FormDataValue ArrayView of non-array');
+    //     //@ts-ignore
+    //     return this.local.value.map((x,i) => this.get_subview(i));
+    // }
+    // get_subview_all_array_ref_watcher() {
+    //     if(typeof this.local.value !== 'object' ||
+    //        !Array.isArray(this.local.value))     throw new Error('Cannot create FormDataValue ArrayView of non-array');
+
+    //     //@ts-ignore
+    //     const len = computed(() => this.local.value.length);
+    //     const res = shallowRef(this.get_subview_all_array());
+
+    //     watch(len, (new_len, old_len) => {
+    //         console.info("!!!! Recalculated Reactive SubView Watcher", new_len, old_len);
+    //         res.value = this.get_subview_all_array();
+    //     });
+
+    //     return res;
+    // }
+
     get_local() {
         return unref(this.local);
     }
+    refresh() { 
+        const cached = this.get_cached();
+        if(cached === undefined) return;
+        //@ts-ignore
+        this.local.value = NaN;
+        this.local.value = deep_copy(cached); 
+    }
+    is_changed() {
+        return !deep_compare(this.local.value, this.get_cached());
+    }
 
-    refresh() {}
-    is_changed() {return false;}
     /**@returns {import('vue').Ref<T>?} */
     get_cached_ref() {return null;}
-
-
+    /**@returns {T | undefined} */
+    get_cached() {
+        const cached_ref = this.get_cached_ref();
+        if(!cached_ref) return undefined;
+        return cached_ref.value;
+    }
 }
+
+// /**
+//  * @template T
+//  * @extends FormDataValueLike<T>
+//  */
+// class FormDataValueLikeSubView extends FormDataValueLike {
+//     /**
+//      * @param {FormDataValueLike} parent 
+//      * @param {string | number} key
+//      */
+//     constructor(parent, key) {
+//         const proxy = computed({
+//             /**@returns {T} */
+//             get()  {return parent.get_local()[key];},
+//             set(v) {parent.local.value[key] = v;}
+//         });
+//         super(proxy);
+//         this.parent = parent;
+//         this.key = key;
+//     }
+
+//     /**
+//      * @template {Object.<string, any>} P
+//      * @template {Extract<keyof P, string | number>} K
+//      * @param {FormDataValueLike<P>} parent 
+//      * @param {K} key 
+//      * @returns {FormDataValueLikeSubView<P[K]>}
+//      */
+//     static from(parent, key) {
+//         return new FormDataValueLikeSubView(parent, key);
+//     }
+
+//     /**@returns {T} */
+//     get_cached() {
+//         return this.parent.get_cached()?.[this.key];
+//     }
+//     //TODO cached_ref?
+// }
+
+
+// /**
+//  * @template T
+//  * @typedef {{[K in keyof T]: T[K]} & {}} Prettify 
+//  * */
+
+// /**
+//  * @template T
+//  * @typedef {T extends Array ? Exclude<keyof T, string> : keyof T} Keys 
+//  * */
+
+// const a = /**@type {const} */ ([1,2,3,4]);
+// /**
+//  * @typedef {[1,2,'23',4]} A
+//  * @typedef {Keys<A>} B
+//  * @typedef {Keys<{1: 'aba', 2: boolean, test: 34}>} C
+//  * @typedef {Prettify<Extract<keyof A, number>>} E1
+//  * @typedef {A[E1]} E2
+//  */
 
 /**
  * @extends {FormDataValueLike<SQLValue>}
@@ -446,5 +572,6 @@ export {
     FormQuerySourceCachedValue,
     FormDataSet,
     FormDataValue,
-    FormDataValueLike
+    FormDataValueLike,
+    // FormDataValueLikeSubView,
 }

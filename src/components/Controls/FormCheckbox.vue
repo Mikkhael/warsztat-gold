@@ -58,6 +58,10 @@ watch(toRef(impl, "custom_validity_message"), (new_value, old_value) => {
 
 <style scoped>
 
+div {
+    text-align: center;
+}
+
 /* .FormControlInput.null {
     background-image: repeating-linear-gradient(-60deg,
      #00f7ff00,

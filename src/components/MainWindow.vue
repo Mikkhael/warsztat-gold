@@ -5,6 +5,8 @@ import FWCollection from "./FloatingWindows/FWCollection.vue";
 import useMainFWManager from "./FloatingWindows/FWManager";
 import useMainMsgManager from "./Msg/MsgManager";
 
+import {useMainBackupManager} from "./Backup";
+
 
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
 import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
@@ -27,6 +29,9 @@ fwManager.set_viewport({top: '24px'});
 function handle_error(msg) {
     msgManager.postError(msg);
 }
+
+const backupManager = useMainBackupManager();
+backupManager.start_in_component();
 
 //////////// TOOLBAR HANDLERS
 

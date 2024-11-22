@@ -1,7 +1,6 @@
 <script setup>
 //@ts-check
-import { ref } from 'vue';
-import { useMainSettings, Settings } from './Settings';
+import { computed, watch } from 'vue';
 import { FormInput } from '../Controls';
 
 /**
@@ -10,11 +9,14 @@ import { FormInput } from '../Controls';
 
 const props = defineProps({
     category: {
-        /**@type {import('vue').PropType<import('./Settings').ReactiveSettingsCategory<'test'>>} */
+        /**@type {import('vue').PropType<import('./Settings').ReactiveSetting<'test'>>} */
         type: Object,
         required: true,
     },
 });
+
+const settings = props.category.ref.value;
+
 
 </script>
 
@@ -24,8 +26,8 @@ const props = defineProps({
     <div class="sub_container">
 
         TEST TEST <br>
-        val1 = <FormInput type="text"   :value="category.fields.val1" /> <br>
-        val2 = <FormInput type="number" :value="category.fields.val2" /> <br>
+        val1 = <FormInput type="text"   :value="settings.val1" /> <br>
+        val2 = <FormInput type="number" :value="settings.val2" /> <br>
 
     </div>
 

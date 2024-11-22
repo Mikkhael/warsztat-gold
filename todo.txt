@@ -35,6 +35,7 @@
 
 + Settings API
     + core
+    - editable array component
     - database integration
         - sql
         - save
@@ -46,7 +47,7 @@
     - periodic
     - standerd
     - online
-    - settings update
+    + settings update
 
 
 - Dynamic Forms API
