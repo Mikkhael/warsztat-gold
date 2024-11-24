@@ -35,7 +35,7 @@
 
 + Settings API
     + core
-    - editable array component
+    + editable array component
     - database integration
         - sql
         - save

@@ -2,12 +2,8 @@
 
 import { computed, markRaw, onMounted, onUnmounted, ref, shallowRef } from "vue";
 import { FormDataValueLike } from "../Dataset";
-import { array_compare, deep_compare, deep_copy, object_leaf_map, object_map } from "../../utils";
+import { deep_copy, object_leaf_map, object_map } from "../../utils";
 
-/**
- * @typedef {string | number | boolean} SettingTypeNonArray
- * @typedef {SettingTypeNonArray | SettingTypeNonArray[]} SettingType
- */
 /**
  * @typedef {"test" | "backup"} SettingsCategoryNames
  */
@@ -19,9 +15,9 @@ import { array_compare, deep_compare, deep_copy, object_leaf_map, object_map } f
 class ReactiveSettingValue extends FormDataValueLike {
     /**
      * @param {T} initial_value 
-     * @param {T} cached
+     * @param {T | undefined} cached
      */
-    constructor(initial_value, cached) {
+    constructor(initial_value, cached = undefined) {
         super(initial_value);
         this.cached = cached;
     }
@@ -36,12 +32,16 @@ class ReactiveSettingValue extends FormDataValueLike {
  */
 class ReactiveSetting {
 
+    /**
+     * @typedef {Settings['categories'][N]} SettingsType
+     */
+
 	/**
 	 * @template [T=Settings['categories'][N]]
 	 * @typedef {T extends Array ? ReactiveSettingLeafMapped<T[number]>[] :
 	* 			 T extends Object.<string, any> ?
 	* 				{[P in keyof T]: ReactiveSettingLeafMapped<T[P]>} :
-	* 			 import('vue').Raw<ReactiveSettingValue<T>> } ReactiveSettingLeafMapped
+	* 			 import('vue').Raw< T extends boolean ? ReactiveSettingValue<boolean> : ReactiveSettingValue<T> >} ReactiveSettingLeafMapped
 	*/
 
     /**
@@ -58,15 +58,15 @@ class ReactiveSetting {
         this.ref = ref({});
         /**@type {import("vue").ShallowRef<ReactiveSettingValue[]>} */
         this.values_list = shallowRef([]);
+        this.changed_structure = ref(false);
 
-        const settings_copy = deep_copy(settings.categories[category_name]);
-        this.recreate_ref(settings_copy);
+        this.recreate_ref_from_original();
 
-        this.changed = computed(() => this.values_list.value.some(x => x.changed.value));
+        this.changed = computed(() => this.changed_structure.value || this.values_list.value.some(x => x.changed.value));
 
     }
 
-    /**@returns {Settings['categories'][N]} */
+    /**@returns {SettingsType} */
     unmap_reactive() {
         //@ts-ignore
         return object_leaf_map(this.ref.value,/**@param {ReactiveSettingValue} val */ val => {
@@ -77,9 +77,12 @@ class ReactiveSetting {
     }
 
     /**
-     * @param {Settings['categories'][N]} original_settings 
+     * @param {SettingsType} [original_settings] 
      */
-    recreate_ref(original_settings) {
+    recreate_ref_from_original(original_settings) {
+        if(!original_settings){
+            original_settings = deep_copy(this.settings.categories[this.category_name]);
+        }
         /**@type {ReactiveSettingValue[]} */
         const new_values_list = [];
         /**@type {ReactiveSettingLeafMapped} */
@@ -90,21 +93,44 @@ class ReactiveSetting {
             },
             undefined,
             (key, acc) => {
-                return acc[key];
+                return acc ? acc[key] : NaN;
             }, 
             /**@type {any} */ (this.settings.categories[this.category_name])
         );
 
         // console.log('Recreated: ', original_settings, res, new_values_list);
 
+        this.changed_structure.value = false;
         this.values_list.value = new_values_list;
         this.ref.value = res;
+    }
+
+    recalculate_values_list() {
+        /**@type {ReactiveSettingValue[]} */
+        const new_values_list = [];
+        object_leaf_map(this.ref.value, (val) => {
+                new_values_list.push(val);
+                return val;
+            },
+            (val) => val instanceof ReactiveSettingValue,
+        );
+        this.values_list.value = new_values_list;
+    }
+
+    /**
+     * @param {(obj: ReactiveSettingLeafMapped) => ReactiveSettingLeafMapped} modifier 
+     */
+    modify_ref(modifier) {
+        const modified = modifier(this.ref.value);
+        this.ref.value = modified;
+        this.changed_structure.value = true;
+        this.recalculate_values_list();
     }
 
     update_settings(no_poke = false) {
         const new_original_settings = this.unmap_reactive();
         this.settings.categories[this.category_name] = new_original_settings;
-        this.recreate_ref(new_original_settings);
+        this.recreate_ref_from_original(new_original_settings);
         if(!no_poke){
             this.settings.poke_update(this.category_name);
         }
@@ -202,10 +228,10 @@ class Settings {
                         path: '../mdb/test_backup',
                         mon_en: false,
                         wee_en: false,
-                        day_en: true,
+                        day_en: false,
                         std_en: false,
                         mon_max: 0,
-                        wee_max: 0,
+                        wee_max: 4,
                         day_max: 1,
                         std_max: 0
                     }
@@ -278,5 +304,6 @@ export {
     add_settings_update_listener,
     Settings,
     SettingsManager,
-    ReactiveSetting
+    ReactiveSetting,
+    ReactiveSettingValue
 };

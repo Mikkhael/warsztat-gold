@@ -64,6 +64,12 @@ function save_changes() {
     });
     select_category_name(selected_category_name.value);
 }
+function undo_changes() {
+    Object.values(reactive_categories).forEach(category => {
+        category.recreate_ref_from_original();
+    });
+    select_category_name(selected_category_name.value);
+}
 
 
 
@@ -92,6 +98,11 @@ function save_changes() {
 
         <input type="button" 
             class="saving_panel"
+            @click="undo_changes()"
+            :disabled="!changed"
+            :value="changed ? 'Cofnij Zmiany' : ''" />
+        <input type="button" 
+            class="saving_panel"
             @click="save_changes()"
             :disabled="!changed"
             :value="changed ? 'Zapisz Zmiany' : ''" />
@@ -106,7 +117,7 @@ function save_changes() {
         width:  100%;
         height: 100%;
 
-        grid: 1fr auto / auto 1fr;
+        grid: 1fr auto / auto 1fr 1fr;
     }
 
     .categories {
@@ -146,6 +157,7 @@ function save_changes() {
         min-height: 0px;
         overflow-y: auto;
         scrollbar-width: thin;
+        grid-column: 2 / -1;
     }
 
     

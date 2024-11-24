@@ -1,8 +1,8 @@
 <script setup>
 //@ts-check
-import { compile, ref, shallowRef } from 'vue';
-import { useMainSettings, Settings } from './Settings';
-import { FormInput, FormCheckbox } from '../Controls';
+import { ReactiveSettingValue, Settings } from './Settings';
+import { EditableArray, FormInput, FormCheckbox } from '../Controls';
+import { markRaw } from 'vue';
 
 /**
  * @typedef {import('./Settings').SettingsCategoryNames} SettingsCategoryNames
@@ -16,8 +16,36 @@ const props = defineProps({
     },
 });
 
-
 const settings = props.category.ref;
+
+function add_new_list_elem() {
+    props.category.modify_ref(x => {
+        x.list.push({
+            path:    markRaw( new ReactiveSettingValue('')      ),
+            mon_en:  markRaw( new ReactiveSettingValue(false)   ),
+            wee_en:  markRaw( new ReactiveSettingValue(false)   ),
+            day_en:  markRaw( new ReactiveSettingValue(false)   ),
+            std_en:  markRaw( new ReactiveSettingValue(false)   ),
+            mon_max: markRaw( new ReactiveSettingValue(0)       ),
+            wee_max: markRaw( new ReactiveSettingValue(0)       ),
+            day_max: markRaw( new ReactiveSettingValue(0)       ),
+            std_max: markRaw( new ReactiveSettingValue(0)       ),
+        });
+        return x;
+    });
+    return true;
+}
+/**
+ * @param {number} index 
+ */
+function delete_list_elem(index) {
+    props.category.modify_ref(x => {
+        x.list.splice(index, 1);
+        return x;
+    });
+    return true;
+}
+
 
 const variants = [
     {
@@ -49,7 +77,7 @@ const variants = [
             {{ settings }}
         </p> -->
 
-        <div
+        <!-- <div
         v-for="entry in settings.list"
         class="entry"
         >
@@ -71,8 +99,34 @@ const variants = [
                     <FormInput type="integer" min="0" nonull :value="entry[variant.name + '_max']" /> 
                 </div>
             </template>
-        </div>
-
+        </div> -->
+        <EditableArray 
+          :value="settings.list" 
+          v-slot="/**@type {{elem: settings['value']['list'][number], index: number}} */ {elem, index}"
+          :insert_handler="add_new_list_elem"
+          :delete_handler="delete_list_elem">
+            <div class="entry">
+                <div class="path">
+                    <span>Ścierzka:</span>
+                    <FormInput :value="elem.path" />
+                </div>
+                <div>Okres</div>
+                <div>Włącz/Wyłącz</div>
+                <div>Maksymalna liczba kopii (0 = bez limitu)</div>
+                <template
+                v-for="variant in variants"
+                >
+                    <div class="variant_name"> {{ variant.display }} </div>
+                    <div class="variant_enable">
+                        <FormCheckbox :value="elem[variant.name + '_en']" />
+                    </div>
+                    <div class="variant_max">
+                        <FormInput type="integer" min="0" nonull :value="elem[variant.name + '_max']" /> 
+                    </div>
+                </template>
+            </div>
+    </EditableArray>
+        
     </div>
 
 </template>
