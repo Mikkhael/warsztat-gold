@@ -214,7 +214,7 @@ class Settings {
                  *  */
                 list: [
                     {
-                        path: '../mdb/test_backup_live',
+                        path: '..\\mdb\\test_backup_live',
                         mon_en: true,
                         wee_en: true,
                         day_en: true,
@@ -225,7 +225,7 @@ class Settings {
                         std_max: 1
                     },
                     {
-                        path: '../mdb/test_backup',
+                        path: '..\\mdb\\test_backup',
                         mon_en: false,
                         wee_en: false,
                         day_en: false,

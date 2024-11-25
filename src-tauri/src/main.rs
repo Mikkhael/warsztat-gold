@@ -48,6 +48,7 @@ fn main() {
         sqlite_manager::perform_query,
         sqlite_manager::get_current_db_state,
         backup::perform_backup_lists,
+        backup::perform_backup,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

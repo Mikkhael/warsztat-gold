@@ -47,7 +47,6 @@ function file_name(path) {
 //     }
 // }
 
-
 //////////// Database //////////////////////
 
 async function db_open() {
@@ -169,6 +168,25 @@ async function backup_list(dirpath, variantNames, prefix="kopia_warsztat", ext= 
 }
 
 /**
+ * @param {string[]} filepathsToDelete 
+ * @param {{path: string, variant: string, date: string}[]} copiesToCreate 
+ * @param {string}   prefix
+ * @param {string}   ext
+ * @param {boolean}  nodelete
+ * @returns {Promise<void>}
+ */
+async function backup(filepathsToDelete, copiesToCreate, prefix, ext, nodelete) {
+    const res = await invoke('perform_backup', {
+        filepathsToDelete,
+        copiesToCreate,
+        prefix,
+        ext,
+        nodelete
+    });
+    return res;
+}
+
+/**
  * @typedef IPCQueryResult
  * @type {[any[][], string[]]} 
  * [value[row_index][column_index], column_name[column_index]]
@@ -198,6 +216,7 @@ refresh_state().catch(err => {
 
 export default {
     state,
+    
     db_open,
     db_close,
     db_save,
@@ -211,4 +230,5 @@ export default {
     db_as_transaction,
 
     backup_list,
+    backup,
 }

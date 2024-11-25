@@ -2,7 +2,8 @@
 //@ts-check
 import { ReactiveSettingValue, Settings } from './Settings';
 import { EditableArray, SelectFileDialog, FormInput, FormCheckbox } from '../Controls';
-import { markRaw } from 'vue';
+import { markRaw, ref } from 'vue';
+import { useMainBackupManager } from '../Backup';
 
 /**
  * @typedef {import('./Settings').SettingsCategoryNames} SettingsCategoryNames
@@ -17,6 +18,8 @@ const props = defineProps({
 });
 
 const settings = props.category.ref;
+
+const backupManager = useMainBackupManager();
 
 function add_new_list_elem() {
     props.category.modify_ref(x => {
@@ -65,6 +68,18 @@ const variants = [
         display: 'Co uruchomienie programu',
     },
 ];
+
+const enable_debug = ref(false);
+const mock_date = ref("2024.02.10 11:22:03");
+const test_nomock = ref(false);
+const test_delete = ref(false);
+function perform_manual_backup(mock = false) {
+    if(mock) {
+        return backupManager.perform_backup(!test_delete.value, !test_nomock.value, mock_date.value);
+    } else {
+        return backupManager.perform_backup();
+    }
+}
 
 </script>
 
@@ -126,8 +141,18 @@ const variants = [
                     </div>
                 </template>
             </div>
-    </EditableArray>
-        
+        </EditableArray>
+        <button @click="e => e.shiftKey ? enable_debug = true : perform_manual_backup()">
+            Wykonaj kopię zapasową manualnie
+        </button>
+        <template v-if="enable_debug">
+            <button @click="perform_manual_backup(true)">
+                Debug
+            </button>
+            <input type="text" v-model="mock_date">
+            <label>no-mock: <input type="checkbox" v-model="test_nomock"></label>
+            <label>delete:  <input type="checkbox" v-model="test_delete"></label>
+        </template>
     </div>
 
 </template>

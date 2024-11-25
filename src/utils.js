@@ -323,6 +323,9 @@ function array_compare(arr1, arr2) {
 	return true;
 }
 
+/**
+ * @returns {string}
+ */
 function pad(str, width = 2, space = '0') {
 	str = str.toString();
 	if(str.length < width){
@@ -485,6 +488,7 @@ export {
 	typeofpl,
 	as_promise,
 
+	pad,
 	date,
 	time,
 	datetime,

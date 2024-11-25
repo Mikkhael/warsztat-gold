@@ -287,18 +287,16 @@ pub fn close_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result
     Ok(())
 }
 
-#[tauri::command]
-pub fn save_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
-    println!("[INVOKE] save_database");
+pub fn save_database_impl(path: &Path, sqlite_manager: &SqliteManagerLock, pages: i32, pause: std::time::Duration) -> Result<(), String> {
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
         let db_conn = &sqlite_conn.conn;
-        let mut backup_conn = Connection::open(&path).map_err(|err| err.to_string())?;
+        let mut backup_conn = Connection::open(path).map_err(|err| err.to_string())?;
         if db_conn.path() == backup_conn.path() {
             return Err("Connection to self".to_string());
         }
         let backup = Backup::new(db_conn, &mut backup_conn).map_err(|err| err.to_string())?;
-        backup.run_to_completion(50, std::time::Duration::from_millis(10), Some(|p| {
+        backup.run_to_completion(pages, pause, Some(|p| {
             let done = p.pagecount - p.remaining;
             let total = p.pagecount;
             println!("Saving Progress: {}%  ({}/{})", done*100/total, done, total);
@@ -307,6 +305,12 @@ pub fn save_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLo
     } else {
        Err("No connection opened".to_string())
     }
+}
+
+#[tauri::command]
+pub fn save_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
+    println!("[INVOKE] save_database");
+    return save_database_impl(&path, &sqlite_manager, 100, std::time::Duration::from_millis(0));
 }
 
 #[tauri::command]

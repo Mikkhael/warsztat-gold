@@ -73,6 +73,8 @@ function undo_changes() {
 
 
 
+
+select_category_name('backup');
 // console.log(reactive_categories);
 
 

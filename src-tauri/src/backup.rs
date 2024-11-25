@@ -1,9 +1,12 @@
 
+use std::ffi::OsString;
 use std::fs;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 use regex::Regex;
+
+use crate::sqlite_manager;
 
 
 
@@ -20,12 +23,25 @@ pub struct BackupList {
 }
 pub type BackupLists = Vec<BackupList>;
 
-
-pub fn get_backup_variant_entries(variant_dirpath: &Path, prefix: &str, ext: &str) -> io::Result<Vec<BackupsListEntry>> {
+fn get_regex(prefix: &str, ext: &str) -> Regex {
     let prefix_escaped = regex::escape(prefix);
     let ext_escaped    = regex::escape(ext);
     let backup_regex_re = format!(r"^{}_(\d\d\d\d\.\d\d\.\d\d_\d\d\.\d\d\.\d\d){}$", &prefix_escaped, &ext_escaped);
     let backup_regex = Regex::new(&backup_regex_re).unwrap();
+    return backup_regex;
+}
+
+fn has_valid_backup_filename(prefix: &str, ext: &str, filepath: &Path) -> bool {
+    let backup_regex = get_regex(prefix, ext);
+    if let Some(filename) = filepath.file_name() {
+        let filename_str = filename.to_string_lossy();
+        return backup_regex.is_match(&filename_str);
+    }
+    return false;
+}
+
+pub fn get_backup_variant_entries(variant_dirpath: &Path, prefix: &str, ext: &str) -> io::Result<Vec<BackupsListEntry>> {
+    let backup_regex = get_regex(prefix, ext);
 
     let mut res = Vec::<BackupsListEntry>::new();
     let entries = fs::read_dir(variant_dirpath)?;
@@ -71,4 +87,54 @@ pub fn perform_backup_lists(dirpath: String, prefix: String, ext: String, varian
     let lists = get_backup_lists(dirpath, &prefix, &ext, &variant_names).map_err(|err| err.to_string())?;
     println!("RESULT: {:?}", lists);
     Ok(lists)
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct BackupNewFormat {
+    path: String,
+    variant: String,
+    date: String
+}
+
+#[tauri::command]
+pub fn perform_backup(prefix: &str, ext: &str, filepaths_to_delete: Vec<PathBuf>, copies_to_create: Vec<BackupNewFormat>, nodelete: bool, sqlite_manager: tauri::State<sqlite_manager::SqliteManagerLock>) -> Result<(), String> {
+    println!("[INVOKE] perform_backup: {:?}, {:?}", filepaths_to_delete, copies_to_create);
+    if let Some(first_copy_format) = copies_to_create.first() {
+        let mut temp_filename = OsString::new();
+        temp_filename.push("warsztat_backup_temp_");
+        temp_filename.push(&first_copy_format.date);
+        temp_filename.push(".temp");
+        let mut temp_filepath = std::env::temp_dir();
+        temp_filepath.push(temp_filename);
+        println!("Starting temp backup {:?}", temp_filepath);
+        sqlite_manager::save_database_impl(&temp_filepath, &sqlite_manager, 100, std::time::Duration::from_millis(1))?;
+        for copy_format in copies_to_create {
+            let mut filename = OsString::new();
+            filename.push(prefix);
+            filename.push("_");
+            filename.push(copy_format.date);
+            filename.push(ext);
+            let mut filepath = PathBuf::from(copy_format.path);
+            filepath.push(copy_format.variant);
+            filepath.push(filename);
+            println!("Creating dest backup {:?}", filepath);
+            if let Some(dirpath) = filepath.parent() {
+                fs::create_dir_all(dirpath).map_err(|err| err.to_string())?;
+            }
+            fs::copy(&temp_filepath, &filepath).map_err(|err| err.to_string())?;
+        }
+        println!("Removing temp backup {:?}", temp_filepath);
+        fs::remove_file(temp_filepath).map_err(|err| err.to_string())?;
+    }
+    for filepath in filepaths_to_delete {
+        println!("Removing old backup {:?}", filepath);
+        if !filepath.is_file() || !has_valid_backup_filename(prefix, ext, &filepath) {
+            println!("Invalid filename {}_.{} or not a file", prefix, ext);
+            continue;
+        }
+        if !nodelete {
+            fs::remove_file(filepath).map_err(|err| err.to_string())?;
+        }
+    }
+    Ok(())
 }
