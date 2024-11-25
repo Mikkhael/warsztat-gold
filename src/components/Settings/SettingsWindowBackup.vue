@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 import { ReactiveSettingValue, Settings } from './Settings';
-import { EditableArray, FormInput, FormCheckbox } from '../Controls';
+import { EditableArray, SelectFileDialog, FormInput, FormCheckbox } from '../Controls';
 import { markRaw } from 'vue';
 
 /**
@@ -109,6 +109,7 @@ const variants = [
                 <div class="path">
                     <span>Ścierzka:</span>
                     <FormInput :value="elem.path" />
+                    <SelectFileDialog :options="{directory: true, defaultPath: elem.path.local.value}" @selected="res => elem.path.local.value = res"/>
                 </div>
                 <div>Okres</div>
                 <div>Włącz/Wyłącz</div>

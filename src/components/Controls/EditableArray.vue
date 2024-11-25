@@ -114,7 +114,7 @@ defineExpose({
     align-items: center;
 }
 
-.EditableArray_element > * {
+.EditableArray_element > ::v-deep(*) {
     flex-grow: 1;
 }
 
