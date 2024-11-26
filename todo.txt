@@ -37,17 +37,17 @@
     + core
     + editable array component
     - prevent closing unsaved
-    - database integration
-        - sql
-        - save
-        - load
+    + database integration
+        + sql
+        + save
+        + load
 
 - Buckups API
     + backup_list
     + manual
     + periodic
     + standerd
-    - auto trigger on db open
+    + auto trigger on db open
     - auto trigger std on db close
     - online
     + settings update

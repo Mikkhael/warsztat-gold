@@ -28,8 +28,6 @@ class BackupManager extends SettingsManager {
     constructor(settings, msgManager, prefix = 'kopia_warsztat', ext = '.db3') {
         super(settings, 'backup');
         this.msgManager = msgManager;
-        /**@type {BackupSettings?} */
-        this.self_settings = settings.categories.backup;
         this.prefix = prefix;
         this.ext = ext;
     }
@@ -59,50 +57,37 @@ class BackupManager extends SettingsManager {
     }
 
     
-
-    /**@param {BackupSettings} new_settings*/
-    async update_impl(new_settings) {
-        // if(new_settings.list.some(x => x.std_en)) {
-        //     throw new Error('TEST - backup std_en is set to TRUE');
-        // }
-        // return await this.fake_save(new_settings.list[0].path);
-        this.self_settings = new_settings;
-    }
-
-
-    /**@param {BackupSettings} new_settings*/
-    async update(new_settings) {
-        return this.update_impl(new_settings).catch(err => {
-            if(this.msgManager) {
-                this.msgManager.postError(err);
-            } else {
-                throw err;
-            }
-        });
+    
+    /**
+     * @param {boolean} loaded 
+     */
+    async on_changed(loaded) {
+        if(loaded) {
+            return this.perform_backup();
+        }
+        return true;
     }
 
     /**
-     * 
      * @param {string} [mock_date] 
-     * @returns 
      */
     async perform_backup(nodelete = false, mock = false, mock_date) {
-        if(!this.self_settings) {
-            this.msgManager.postError('Nie można wykonać kopii zapasowej. Nie wczytano poprawnie konfiguracji');
-            return false;
-        }
+        const self_settings = this.get_settings();
         try {
             const res = await BackupManager.do_backup_routine(
-                this.self_settings.list,
+                self_settings.list,
                 this.prefix,
                 this.ext,
                 nodelete,
                 mock,
                 mock_date
             );
-            this.msgManager.post('info', 'Wykonano kopię zapasową. Stworzono ' 
+            if(res.copies_to_create.length > 0 || res.filepaths_to_delete.length > 0) {
+                this.msgManager.post('info', 'Wykonano kopię zapasową. Stworzono ' 
                     + res.copies_to_create.length + ' nowych kopii. Usunięto '
-                    + res.filepaths_to_delete.length + ' przedawnionych kopii.');
+                    + res.filepaths_to_delete.length + ' przedawnionych kopii.',
+                10000);
+            }
             return res;
         } catch (err) {
             this.msgManager.postError(err);
@@ -117,11 +102,7 @@ class BackupManager extends SettingsManager {
      */
     async trigger_test(mock_date, nomock = false, allow_delete = false, prefix = 'kopia_warsztat', ext = ".db3", rules_list = null) {
         if(!rules_list) {
-            if(!this.self_settings){
-                console.error('No settings provided');
-                return;
-            }
-            rules_list = this.self_settings?.list;
+            rules_list = this.get_settings().list;
         }
         const res = await BackupManager.do_backup_routine(rules_list, prefix, ext, !allow_delete, !nomock, mock_date);
     }

@@ -2,10 +2,12 @@
 
 import { computed, markRaw, onMounted, onUnmounted, ref, shallowRef } from "vue";
 import { FormDataValueLike } from "../Dataset";
-import { deep_copy, object_leaf_map, object_map } from "../../utils";
+import { deep_copy, escape_sql_value, object_leaf_map, object_map, query_result_to_object } from "../../utils";
+import ipc from "../../ipc";
 
+const SETTINGS_CATEGORY_NAMES = /**@type {const} */ (['test', 'backup']);
 /**
- * @typedef {"test" | "backup"} SettingsCategoryNames
+ * @typedef {SETTINGS_CATEGORY_NAMES[number]} SettingsCategoryNames
  */
 
 /**
@@ -66,6 +68,25 @@ class ReactiveSetting {
 
     }
 
+    /**
+     * @template {Object.<string, any>} T
+     * @param {T}   obj 
+     * @param {any} [base] 
+     * @param {(mapped: any, unmapped: any, acc: any) => void} [on_leaf]
+     * @returns {ReactiveSettingLeafMapped<T>}
+     */
+    static wrap(obj, base, on_leaf) {
+        return object_leaf_map(obj, /**@return {any} */ (val, acc) => {
+                const value = new ReactiveSettingValue(val, acc);
+                on_leaf?.(value, val, acc);
+                return markRaw( value );
+            },
+            undefined,
+            (key, acc) => acc ? acc[key] : NaN, 
+            base
+        );
+    }
+
     /**@returns {SettingsType} */
     unmap_reactive() {
         //@ts-ignore
@@ -85,18 +106,9 @@ class ReactiveSetting {
         }
         /**@type {ReactiveSettingValue[]} */
         const new_values_list = [];
-        /**@type {ReactiveSettingLeafMapped} */
-        const res = object_leaf_map(original_settings, /**@return {any} */ (val, acc) => {
-                const value = new ReactiveSettingValue(val, acc);
-                new_values_list.push(value);
-                return markRaw( value );
-            },
-            undefined,
-            (key, acc) => {
-                return acc ? acc[key] : NaN;
-            }, 
-            /**@type {any} */ (this.settings.categories[this.category_name])
-        );
+        const res = ReactiveSetting.wrap(original_settings, this.settings.categories[this.category_name], (value) => {
+            new_values_list.push(value);
+        })
 
         // console.log('Recreated: ', original_settings, res, new_values_list);
 
@@ -137,6 +149,17 @@ class ReactiveSetting {
     }
 }
 
+class SettingsUpdateEvent extends Event {
+    /**
+     * @param {SettingsCategoryNames} category 
+     * @param {boolean} loaded 
+     */
+    constructor(category, loaded) {
+        super(get_settings_event_name(category));
+        this.loaded = loaded;
+    }
+}
+
 /**
  * @param {SettingsCategoryNames} category_name 
  */
@@ -156,22 +179,24 @@ class SettingsManager {
         /**@type {(() => void)?} */
         this.unlisten = null;
     }
-    
-    /**
-     * @param {Settings['categories'][N]} new_values 
-     * @returns {void | Promise}
-     */
-    update(new_values) {}
 
-    update_from_settings() {
-        return this.update(this.settings.categories[this.category_name]);
+    get_settings() {
+        return this.settings.categories[this.category_name];
     }
+
+    /**
+     * @param {boolean} loaded
+     * @returns {any | Promise<any>} 
+     */
+    on_changed(loaded) {}
 
     start_listener() {
         this.stop_listener();
         this.unlisten = add_settings_update_listener(
             this.category_name, 
-            (new_values) => this.update(new_values)
+            (new_values, loaded) => {
+                return this.on_changed(loaded);
+            }
         );
     }
     stop_listener() {
@@ -190,73 +215,44 @@ class SettingsManager {
     }
 }
 
+/**
+ * @typedef {{
+ *  path: string,
+ *  mon_en: boolean,
+ *  wee_en: boolean,
+ *  day_en: boolean,
+ *  std_en: boolean,
+ *  mon_max: number
+ *  wee_max: number
+ *  day_max: number
+ *  std_max: number
+ * }} CategoryBackupListElemType
+ * 
+ * @typedef {{
+ *  list: CategoryBackupListElemType[]
+ * }} CategoryBackupType
+ * 
+ * @typedef {{
+ *  val1: string,
+ *  val2: number
+ * }} CategoryTestType
+ *  */
+
+
 class Settings {
     constructor() {
 
         this.categories = {
-            test: {
-                val1: 'wartość 1',
-                val2: 0
-            },
-            backup: {
-                /**
-                 * @type {{
-                 *  path: string,
-                 *  mon_en: boolean,
-                 *  wee_en: boolean,
-                 *  day_en: boolean,
-                 *  std_en: boolean,
-                 *  mon_max: number
-                 *  wee_max: number
-                 *  day_max: number
-                 *  std_max: number
-                 * }[]}
-                 *  */
-                list: [
-                    {
-                        path: '..\\mdb\\test_backup_live',
-                        mon_en: true,
-                        wee_en: true,
-                        day_en: true,
-                        std_en: true,
-                        mon_max: 0,
-                        wee_max: 4,
-                        day_max: 7,
-                        std_max: 1
-                    },
-                    {
-                        path: '..\\mdb\\test_backup',
-                        mon_en: false,
-                        wee_en: false,
-                        day_en: false,
-                        std_en: false,
-                        mon_max: 0,
-                        wee_max: 4,
-                        day_max: 1,
-                        std_max: 0
-                    }
-                ]
-
-                // /**@type {string[]} */
-                // paths: [],
-                // mon_en: true,
-                // wee_en: true,
-                // day_en: true,
-                // std_en: true,
-                // mon_max: 0,
-                // wee_max: 4,
-                // day_max: 7,
-                // std_max: 1
-            }
+            test:   SettingsDefaults.test(null),
+            backup: SettingsDefaults.backup(null),
         };
-
     }
 
     /**
      * @param {SettingsCategoryNames} category_name 
      */
-    poke_update(category_name) {
-        window.dispatchEvent(new Event(get_settings_event_name(category_name)));
+    poke_update(category_name, loaded = false) {
+        window.dispatchEvent(new SettingsUpdateEvent(category_name, loaded));
     }
 
     /**
@@ -275,6 +271,95 @@ class Settings {
         return res;
     }
 
+    /**
+     * @param  {SettingsCategoryNames[]} cat_names 
+     */
+    async load_from_db(...cat_names) {
+        const load_routine = (/**@type {SettingsCategoryNames} */ cat_name, value) => {
+            //@ts-ignore
+            this.categories[cat_name] = SettingsDefaults[cat_name](value);
+            this.poke_update(cat_name, true);
+        }
+
+        const [rows] = await ipc.db_query('SELECT `key`,`value` FROM `_meta_setting_json`');
+        for(const cat_name of cat_names) {
+            let json = rows.find(x => x[0] === cat_name)?.[1] ?? null;
+            let value = null;
+            if (json !== null) try{
+                value = JSON.parse(json);
+            } catch (err) {};
+            load_routine(cat_name, value);
+        }
+    }
+
+    /**
+     * @param {[SettingsCategoryNames, ...SettingsCategoryNames[]]} cat_names
+     */
+    async save_to_db(...cat_names) {
+        const values = cat_names.map(cat_name => {
+            const json = JSON.stringify(this.categories[cat_name]);
+            const sql_key   = escape_sql_value(cat_name);
+            const sql_value = escape_sql_value(json);
+            return '('+ sql_key + ',' + sql_value +')';
+        }).join(', ');
+        const res = await ipc.db_execute('REPLACE INTO `_meta_setting_json` (`key`,`value`) VALUES ' + values);
+        return res;
+    }
+
+    load_from_db_all() {
+        return this.load_from_db(...SETTINGS_CATEGORY_NAMES);
+    }
+    save_to_db_all() {
+        return this.save_to_db(...SETTINGS_CATEGORY_NAMES);
+    }
+
+}
+
+function validate_array (val) {return Array.isArray(val) ? val : null}
+function validate_number(val) {return typeof val === 'number'  ? val : null}
+function validate_bool  (val) {return typeof val === 'boolean' ? val : null}
+function validate_string(val) {return typeof val === 'string'  ? val : null}
+
+const SettingsDefaults = {
+
+    /**
+     * @param {CategoryBackupListElemType} [partial] 
+     * @returns {CategoryBackupListElemType}
+     * */
+    backup_list_elem: (partial) => {
+        return {
+            path:    validate_string(partial?.path)    ?? '',
+            mon_en:  validate_bool  (partial?.mon_en)  ?? false,
+            wee_en:  validate_bool  (partial?.wee_en)  ?? false,
+            day_en:  validate_bool  (partial?.day_en)  ?? false,
+            std_en:  validate_bool  (partial?.std_en)  ?? false,
+            mon_max: validate_number(partial?.mon_max) ?? 0,
+            wee_max: validate_number(partial?.wee_max) ?? 4,
+            day_max: validate_number(partial?.day_max) ?? 7,
+            std_max: validate_number(partial?.std_max) ?? 2,
+        };
+    },
+
+    /**@type {(partial: CategoryBackupType?) => CategoryBackupType} */
+    backup: (partial = null) => {
+        if( !partial || 
+            !validate_array(partial.list)) {
+                return {list: []}
+        }
+        const list = partial.list.map(x => {
+            return SettingsDefaults.backup_list_elem(x);
+        })
+        return {list};
+    },
+
+    
+    /**@type {(partial: CategoryTestType?) => CategoryTestType} */
+    test: (partial = null) => {
+        return {
+            val1: validate_string(partial?.val1) ?? 'test_string',
+            val2: validate_number(partial?.val2) ?? 42
+        };
+    },
 }
 
 const mainSettings = new Settings();
@@ -287,10 +372,10 @@ function useMainSettings() {
 /**
  * @template {SettingsCategoryNames} T
  * @param {T} category_name 
- * @param {(settings: typeof Settings.prototype.categories[T]) => void} handler 
+ * @param {(settings: Settings['categories'][T], loaded: boolean) => void} handler 
  */
 function add_settings_update_listener(category_name, handler) {
-    const listener = () => handler(mainSettings.categories[category_name]);
+    const listener = (event) => handler(mainSettings.categories[category_name], event.loaded);
     const event_name = get_settings_event_name(category_name);
     window.addEventListener(event_name, listener);
     return () => {
@@ -302,6 +387,7 @@ function add_settings_update_listener(category_name, handler) {
 export {
     useMainSettings,
     add_settings_update_listener,
+    SettingsDefaults,
     Settings,
     SettingsManager,
     ReactiveSetting,

@@ -9,8 +9,8 @@ import fs from "fs"
 *  "DOUBLE"    |
 *  "FLOAT"     |
 *  "TIMESTAMP" |
-*   "DATETIME"  |
-*   "LONGTEXT"  |
+*  "DATETIME"  |
+*  "LONGTEXT"  |
 *  "VARCHAR"
 * )} ColType 
 */
@@ -38,24 +38,8 @@ import fs from "fs"
  * }} JsonStructure
  */
 
-const IN_FILE_JSON    = 'mdb_structure.json';
-const OUT_FILE_SQLITE = 'mdb_structure_sqlite_v2.sql';
-
-function main() {
-    const str = fs.readFileSync(IN_FILE_JSON).toString();
-    /**@type {JsonStructure} */
-    const json = JSON.parse(str);
-    // console.log(json);
-
-    const tabs = json.tabs.map(convert_table_def);
-    // console.log(tabs);
-
-    const res  = tabs.join('\n');
-    fs.writeFileSync(OUT_FILE_SQLITE, res);
-}
-
 /**@param {TabDefinition} tab */
-function convert_table_def(tab){
+function convert_table_def(tab, noview = false){
     const name_original  = escape(tab.name);
     const name_migration = escape(tab.name + '_migration');
     const name_csv_view  = escape(tab.name + '_csv_view');
@@ -108,9 +92,11 @@ ALTER TABLE ${name_migration} RENAME TO ${name_original};`
         '',
         ...indexes,
         ...triggers,
-        create_view_header,
-        create_view_body,
-        create_view_footer,
+        ...(noview ? [] : [
+            create_view_header,
+            create_view_body,
+            create_view_footer,
+        ]),
         '\n\n'
     ].join('\n');
 
@@ -220,6 +206,29 @@ function convert_column_view_def(col) {
     throw new Error('Invalid col type' + col.name);
 }
 
+//////////////////// Extra ///////////////////
+
+/**@type {TabDefinition} */
+const settings_tab_def = {
+    name: '_meta_setting_json',
+    cols: [
+        {
+            name: 'key',
+            type: 'LONGTEXT',
+            attr: 'p',
+            targ: ''
+        },
+        {
+            name: 'value',
+            type: 'LONGTEXT',
+            attr: '',
+            targ: ''
+        }
+    ],
+    inds: []
+};
+
+
 //////////////////// Utils ///////////////////
 
 /**
@@ -229,6 +238,32 @@ function escape(val) {
     return '`' + val + '`';
 }
 
+
 //////////////////// MAIN ///////////////////
+
+
+const IN_FILE_JSON    = 'mdb_structure.json';
+const OUT_FILE_SQLITE = 'mdb_structure_sqlite_v2.sql';
+
+function main() {
+    const str = fs.readFileSync(IN_FILE_JSON).toString();
+    /**@type {JsonStructure} */
+    const json = JSON.parse(str);
+    // console.log(json);
+
+    const tabs = json.tabs.map(x => convert_table_def(x));
+    // console.log(tabs);
+
+    const setting_tab = convert_table_def(settings_tab_def, true);
+
+    /**@type {string[]} */
+    const all_tabs = [
+        ...tabs,
+        setting_tab
+    ];
+
+    const res  = all_tabs.join('\n');
+    fs.writeFileSync(OUT_FILE_SQLITE, res);
+}
 
 main();

@@ -828,3 +828,16 @@ CREATE VIEW `zlecenia naprawy_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `da
 FROM `zlecenia naprawy`;
 
 
+
+DROP TABLE IF EXISTS `_meta_setting_json_migration`; CREATE TABLE `_meta_setting_json_migration` (
+  `key` TEXT PRIMARY KEY,
+  `value` TEXT
+) STRICT;
+DROP VIEW IF EXISTS `_meta_setting_json_csv_view`;
+CREATE TABlE IF NOT EXISTS `_meta_setting_json` AS SELECT * FROM `_meta_setting_json_migration`;
+INSERT INTO `_meta_setting_json_migration` SELECT * FROM `_meta_setting_json`;
+DROP TABLE `_meta_setting_json`;
+ALTER TABLE `_meta_setting_json_migration` RENAME TO `_meta_setting_json`;
+
+
+

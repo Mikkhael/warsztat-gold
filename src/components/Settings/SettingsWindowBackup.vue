@@ -1,6 +1,6 @@
 <script setup>
 //@ts-check
-import { ReactiveSettingValue, Settings } from './Settings';
+import { ReactiveSetting, ReactiveSettingValue, Settings, SettingsDefaults } from './Settings';
 import { EditableArray, SelectFileDialog, FormInput, FormCheckbox } from '../Controls';
 import { markRaw, ref } from 'vue';
 import { useMainBackupManager } from '../Backup';
@@ -23,17 +23,9 @@ const backupManager = useMainBackupManager();
 
 function add_new_list_elem() {
     props.category.modify_ref(x => {
-        x.list.push({
-            path:    markRaw( new ReactiveSettingValue('')      ),
-            mon_en:  markRaw( new ReactiveSettingValue(false)   ),
-            wee_en:  markRaw( new ReactiveSettingValue(false)   ),
-            day_en:  markRaw( new ReactiveSettingValue(false)   ),
-            std_en:  markRaw( new ReactiveSettingValue(false)   ),
-            mon_max: markRaw( new ReactiveSettingValue(0)       ),
-            wee_max: markRaw( new ReactiveSettingValue(0)       ),
-            day_max: markRaw( new ReactiveSettingValue(0)       ),
-            std_max: markRaw( new ReactiveSettingValue(0)       ),
-        });
+        const new_list_elem = SettingsDefaults.backup_list_elem();
+        const wrapped = ReactiveSetting.wrap(new_list_elem);
+        x.list.push(wrapped);
         return x;
     });
     return true;

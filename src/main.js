@@ -2,6 +2,7 @@
 
 import ipc from "./ipc";
 import useMainMsgManager from "./components/Msg/MsgManager";
+import { useMainSettings } from "./components/Settings/Settings";
 import { createApp, registerRuntimeCompiler } from "vue";
 import "./styles.css";
 import "./WinBox.css";
@@ -11,6 +12,7 @@ import { listen } from "@tauri-apps/api/event";
 import { writeText as clipboard_write, readText as clipboard_read} from "@tauri-apps/api/clipboard";
 
 const msgManager = useMainMsgManager();
+const mainSettings = useMainSettings();
 
 listen("request_db_open", async (e) => {
     ipc.db_open().catch((err) => {
@@ -26,6 +28,9 @@ listen("request_db_close", async (e) => {
 window.addEventListener('db_opened', () => {
     msgManager.post('info', 'Otworzono bazę danych', 3000);
     msgManager.close_all_with_content('Nie otworzono bazy danych');
+    mainSettings.load_from_db_all().catch((err) => {
+        msgManager.postError('Błąd podczas wczytywania konfiguracji z bazy danych: ' + (err?.message ?? err));
+    });
 });
 
 window.addEventListener('db_closed', () => {

@@ -5,10 +5,32 @@ import { save, open, message, confirm } from "@tauri-apps/api/dialog";
 import { exists } from "@tauri-apps/api/fs";
 
 
+
 const state = reactive({
     db_is_open: false,
     db_path: "",
 });
+
+/**
+ * @param {boolean} value 
+ */
+function set_state_db_opened(value) {
+    if(state.db_is_open !== value) {
+        state.db_is_open = value;
+        if(value) {
+            window.dispatchEvent(new Event('db_opened'));
+        } else {
+            window.dispatchEvent(new Event('db_closed'));
+        }
+    }
+}
+
+/**
+ * @param {string} value 
+ */
+function set_state_db_path(value) {
+    state.db_path = value;
+}
 
 // function get_state(){
 //     console.log("GOT STATE");
@@ -57,17 +79,15 @@ async function db_open() {
     if(!path) return path;
     return await invoke("open_database", {path}).then(() => {
         if(path instanceof Array) throw new Error("MULTIPLE PATHS CHOSEN FOR OPEN DATABASE");
-        state.db_is_open = true;
-        state.db_path = path;
-        window.dispatchEvent(new Event('db_opened'));
+        set_state_db_path(path);
+        set_state_db_opened(true);
         return path;
     });
 }
 function db_close() {
     return invoke("close_database").then(() => {
-        state.db_is_open = false;
-        state.db_path = "";
-        window.dispatchEvent(new Event('db_closed'));
+        set_state_db_path("");
+        set_state_db_opened(false);
     });
 }
 async function db_save() {
@@ -202,12 +222,10 @@ async function db_query(query) {
 
 function refresh_state(){
     console.log("Refreshing IPC state");
-    return Promise.all([
-        invoke("get_current_db_state").then(init_state => {
-            state.db_is_open = init_state.is_open;
-            state.db_path    = init_state.path;
-        })
-    ])
+    return invoke("get_current_db_state").then(init_state => {
+        set_state_db_path  (init_state.path);
+        set_state_db_opened(init_state.is_open);
+    });
 }
 
 refresh_state().catch(err => {

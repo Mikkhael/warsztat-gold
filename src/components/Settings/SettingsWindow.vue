@@ -1,7 +1,8 @@
 <script setup>
 //@ts-check
-import { computed, nextTick, ref, shallowRef } from 'vue';
+import { computed, nextTick, onMounted, ref, shallowRef } from 'vue';
 import { useMainSettings, Settings } from './Settings';
+import { useMainMsgManager, MsgManager } from '../Msg/MsgManager';
 
 import SettingsWindowBackup from './SettingsWindowBackup.vue';
 import SettingsWindowTest from './SettingsWindowTest.vue';
@@ -15,6 +16,9 @@ const props = defineProps({
         /**@type {import('vue').PropType<import('../FloatingWindows/FWManager').FWWindow>} */
         type: Object,
         required: false
+    },
+    msgManager: {
+        type: MsgManager
     },
     settings: {
         type: Settings,
@@ -31,6 +35,7 @@ function handle_error(err) {
 
 
 const settings = props.settings ?? useMainSettings();
+const msgManager = props.msgManager ?? useMainMsgManager();
 
 const categories = /**@type {const} */ ([
     ['backup', 'Kopia Zapasowa', SettingsWindowBackup],
@@ -63,6 +68,11 @@ function save_changes() {
         category.update_settings();
     });
     select_category_name(selected_category_name.value);
+    settings.save_to_db_all().then(() => {
+        msgManager.post('info', 'Zapisano konfigurację ustawień', 2000);
+    }).catch((err) => {
+        msgManager.postError(err);
+    });
 }
 function undo_changes() {
     Object.values(reactive_categories).forEach(category => {
@@ -73,8 +83,18 @@ function undo_changes() {
 
 
 
+onMounted(() => {
+    select_category_name('backup');
+    props.parent_window?.add_before_close(async (force) => {
+        if(force) return false;
+        if(changed.value){
+            const confirmed = await window.confirm('Posiadasz niezapisane zmiany. Czy chesz zamnknąć okno?');
+            return !confirmed;
+        }
+        return false;
+    });
+});
 
-select_category_name('backup');
 // console.log(reactive_categories);
 
 
