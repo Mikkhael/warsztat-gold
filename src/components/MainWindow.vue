@@ -21,6 +21,7 @@ import Klienci from "../Forms/Klienci.vue";
 import SamochodyKlientow from "../Forms/SamochodyKlientow.vue";
 
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
+import ZleceniaNaprawy from "../Forms/ZleceniaNaprawy.vue";
 
 
 const fwManager  = useMainFWManager();
@@ -56,7 +57,8 @@ function tool_settings() {
 }
 
 function tool_zlecenia(){
-    fwManager.open_or_focus_window("Zlecenia Otwarte", TestWindow1, {text: "sjifosfg", index: Math.round(Math.random()*10)});
+    // fwManager.open_or_focus_window("Zlecenia", Klienci, {readonly: true, force_klient_id: 24913, force_car_id: 53854});
+    fwManager.open_or_focus_window("Zlecenia", ZleceniaNaprawy, {show_clients: true});
 }
 
 function tool_klienci(){

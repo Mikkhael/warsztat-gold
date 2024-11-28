@@ -35,6 +35,7 @@ import {computed, customRef, markRaw, reactive, ref, shallowReactive, shallowRef
 
 /**
  * @typedef {{
+ * allow_param_null?: boolean,
 *  param?:    MaybeDependable,
 *  default?:  MaybeDependable,
 *  primary?:  boolean,
@@ -214,7 +215,7 @@ class FormQuerySource extends QuerySource {
         this.add_select_data(name, params.default ?? params.param ?? null, params.sql);
         const value = this.dataset.get(name);
         if(params.param !== undefined) {
-            this.add_where_eq(name, params.param, true);
+            this.add_where_eq(name, params.param, !params.allow_param_null);
         }
         if(params.sync) {
             params.sync.assoc_value(params.sync_col ?? name, value, params.primary)

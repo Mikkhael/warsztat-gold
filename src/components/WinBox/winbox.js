@@ -1273,11 +1273,11 @@ function get_dimensions_to_fit_content(body) {
     const w1 = body.scrollWidth;
     const h1 = body.scrollHeight;
     const inner = body.children[0];
-    if(inner && inner.classList.contains('form_container') && inner.children.length >= 2) {
+    if(inner && inner.classList.contains('form_container') && inner.children.length >= 1) {
         const content  = inner.children[0];
-        const scroller = inner.children[1];
+        const scroller = /**@type {Element?} */ (inner.children[1]);
         const w2 = content.scrollWidth;
-        const h2 = content.scrollHeight + scroller.scrollHeight;
+        const h2 = content.scrollHeight + (scroller?.scrollHeight ?? 0);
         // console.log('DIMS2', w1, h1, w2, h2);
         return [
             Math.max(w1, w2),
@@ -1290,7 +1290,7 @@ function get_dimensions_to_fit_content(body) {
 
 function is_scroller_visible(body) {
     const inner = body.children[0];
-    if(inner && inner.classList.contains('form_container') && inner.children.length >= 2) {
+    if(inner && inner.classList.contains('form_container') && inner.children.length >= 1) {
         return is_scroller_visible(body.children[0].children[0]);
     }
     if(body.scrollWidth > body.clientWidth || body.scrollHeight > body.clientHeight) {
@@ -1301,7 +1301,14 @@ function is_scroller_visible(body) {
 
 WinBox.prototype.recenter = function() {
     // setTimeout(() => this.move("center", "center"), 100);
-    return this.move("center", "center");
+    this.move("center", "center");
+    const top = parseInt(this.dom.style.top[0]);
+    console.log("TOP", top, this.dom.style.top[0]);
+    if(top < 0 || isNaN(top)) {
+        console.log('Moving');
+        this.move(this.x, 0);
+    }
+    return this;
 }
 
 WinBox.prototype.resize_to_content = function(snap = false){

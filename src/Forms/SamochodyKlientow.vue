@@ -23,12 +23,17 @@ const props = defineProps({
         type: Object,
         required: false
     },
+    readonly: {
+        type: Boolean,
+        default: false
+    },
     use_src: {
         /**@type {import('vue').PropType<FormQuerySource>} */
         type: Object,
         required: false
     },
-    id_klienta: FormParamProp
+    id_klienta:   FormParamProp,
+    force_car_id: FormParamProp,
 });
 
 
@@ -43,9 +48,10 @@ const COLS = db.TABS.samochody_klientów.cols;
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
 src.set_from_with_deps(TAB);
 
-const param_id_klienta = param_from_prop(props, 'id_klienta');
+const param_force_car_id = param_from_prop(props, 'force_car_id');
+const param_id_klienta   = param_from_prop(props, 'id_klienta');
 
-const car_id       = src.auto_form_value_synced(COLS.ID);
+const car_id       = src.auto_form_value_synced(COLS.ID, {param: param_force_car_id});
 const car_klient   = src.auto_form_value_synced(COLS.ID_klienta, {param: param_id_klienta});
 const car_marka    = src.auto_form_value_synced(COLS.marka);
 const car_model    = src.auto_form_value_synced(COLS.model);
@@ -93,17 +99,15 @@ defineExpose({
     <div class="form_container" :class="src.form_style.value">
 
         <form class="form_content form" :ref="e => src.assoc_form(e)">
-            <div>
-                <label class="label">Marka      </label>   <FormInput :value="car_marka"    auto pattern="[^ś]*"/>
-                <label class="label">Model      </label>   <FormInput :value="car_model"    auto/>
-                <label class="label">Nr Rej.    </label>   <FormInput :value="car_nrrej"    auto/>
-                <label class="label">Nr Silnika </label>   <FormInput :value="car_sinlink"  auto/>
-                <label class="label">Nr Nadwozia</label>   <FormInput :value="car_nadwozie" auto/>
-                <label class="label">ID         </label>   <FormInput :value="car_id"       auto readonly/>
-            </div>
-            <!-- <QueryViewerOpenBtn v-bind="find_options" :scroller="car_scroller" simple/> -->
+            <label class="label">Marka      </label>   <FormInput :readonly="props.readonly" :value="car_marka"    auto pattern="[^ś]*"/>
+            <label class="label">Model      </label>   <FormInput :readonly="props.readonly" :value="car_model"    auto/>
+            <label class="label">Nr Rej.    </label>   <FormInput :readonly="props.readonly" :value="car_nrrej"    auto/>
+            <label class="label">Nr Silnika </label>   <FormInput :readonly="props.readonly" :value="car_sinlink"  auto/>
+            <label class="label">Nr Nadwozia</label>   <FormInput :readonly="props.readonly" :value="car_nadwozie" auto/>
+            <label class="label">ID         </label>   <FormInput readonly                   :value="car_id"       auto />
         </form>
         <QuerySourceOffsetScroller
+            v-if="props.force_car_id === undefined"
             :src="src"
             insertable
             saveable
@@ -117,19 +121,13 @@ defineExpose({
 <style scoped>
 
     .form {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-evenly;
-        align-items: center;
-    }
-
-    .form > *:nth-child(1) {
+        padding: 3px;
         justify-self: start;
         display: grid;
-        grid: auto / auto auto;
+        grid: auto / auto 1fr;
         gap: 1px 2px;
-        justify-items: start;
-        justify-content: start;
+        justify-items: stretch;
+        align-items: stretch;
     }
 
 </style>

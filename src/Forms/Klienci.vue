@@ -16,7 +16,7 @@ import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 import {onMounted, onUnmounted, ref, nextTick} from 'vue';
 import { standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { use_datetime_now } from '../utils';
-import { FormQuerySource } from '../components/Dataset';
+import { FormParamProp, FormQuerySource, param_from_prop } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 import useMainFWManager from '../components/FloatingWindows/FWManager';
@@ -27,7 +27,19 @@ const props = defineProps({
         /**@type {import('vue').PropType<import('../components/FloatingWindows/FWManager').FWWindow>} */
         type: Object,
         required: false
-    }
+    },
+    readonly: {
+        type: Boolean,
+        default: false,
+    },
+    use_src: {
+        /**@type {import('vue').PropType<FormQuerySource>} */
+        type: Object,
+        required: false
+    },
+    no_zlec: Boolean,
+    force_klient_id: FormParamProp,
+    force_car_id:    FormParamProp
 });
 
 const msgManager = useMainMsgManager();
@@ -53,8 +65,9 @@ src.set_from_with_deps(TAB);
 const src_car      = new FormQuerySource();
 const src_zlecenia = new FormQuerySource();
 
+const param_force_klient_id = param_from_prop(props, 'force_klient_id');
 
-const id     = src.auto_form_value_synced(COLS.ID                   );
+const id     = src.auto_form_value_synced(COLS.ID,                  {param: param_force_klient_id});
 const nazwa  = src.auto_form_value_synced(COLS.NAZWA                );
 const miasto = src.auto_form_value_synced(COLS.MIASTO               );
 const ulica  = src.auto_form_value_synced(COLS.ULICA                );
@@ -155,20 +168,8 @@ defineExpose({
         <form class="form form_content flex_auto" :ref="e => src.assoc_form(e)">
             
             <div class="grid">
-
-                <fieldset class="subform_cars_field">
-                    <legend>Samochody Klienta</legend>
-                    <SamochodyKlientow 
-                        :use_src="src_car"
-                        :id_klienta="param_id_klienta"
-                    />
-                    <!-- <input type="text" v-model="test_ref">
-                    <SamochodyKlientow 
-                        :id_klienta="test_ref"
-                    /> -->
-                </fieldset>
                 
-                <div class="row flex_auto">
+                <div class="row flex_auto" v-if="!props.no_zlec">
                     <div>
                         <QueryViewerOpenBtn :query="find_query" @select="find_query_handler" text="Znajdź Klienta" />
                     </div>
@@ -181,28 +182,37 @@ defineExpose({
                     <!-- <button @click.prevent="click_zlecenia">ZLECENIA</button> -->
                 </div>
 
-                <label>Nazwa              </label>  <FormInput :value="nazwa "  auto class="main_input_field" pattern="[^ś]*"/>
-                <label>Odbierający Fakturę</label>  <FormInput :value="odbier"  auto class="main_input_field"/>
-                <label>Ulica i Nr Domu    </label>  <FormInput :value="ulica "  auto class="main_input_field"/>
+                <label>Nazwa              </label>  <FormInput :readonly="props.readonly" :value="nazwa " auto class="main_input_field" pattern="[^ś]*" />
+                <label>Odbierający Fakturę</label>  <FormInput :readonly="props.readonly" :value="odbier" auto class="main_input_field" />
+                <label>Ulica i Nr Domu    </label>  <FormInput :readonly="props.readonly" :value="ulica " auto class="main_input_field" />
                 <label>Kod i Miejscowość  </label>  
                 <div class="flex_auto main_input_field" > 
-                    <FormInput :value="kod   " auto style="width: 7ch" class="nogrow"/> 
-                    <FormInput :value="miasto" auto /> 
+                    <FormInput :readonly="props.readonly" :value="kod   " auto style="width: 7ch" class="nogrow" /> 
+                    <FormInput :readonly="props.readonly" :value="miasto" auto /> 
                 </div>
-                <label>NIP                </label>  <FormInput :value="nip   " auto />
-                <label>Telefon            </label>  <FormInput :value="tele1 " auto />
-                <label>Drugi Telefon      </label>  <FormInput :value="tele2 " auto />
-                <div c="2"></div>
-                <label>wpisał             </label>  <FormInput :value="kto   " auto />
-                <label>dnia               </label>  <FormInput :value="kiedy " auto />
-                <label>stały upust        </label>  <FormInput :value="upust " auto />
-                <label>ID                 </label>  <FormInput :value="id    " auto readonly />
+                <label>NIP                </label>  <FormInput :readonly="props.readonly" :value="nip   " auto />
+                <label>wpisał             </label>  <FormInput :readonly="props.readonly" :value="kto   " auto />
+                <label>Telefon            </label>  <FormInput :readonly="props.readonly" :value="tele1 " auto />
+                <label>dnia               </label>  <FormInput :readonly="props.readonly" :value="kiedy " auto />
+                <label>Drugi Telefon      </label>  <FormInput :readonly="props.readonly" :value="tele2 " auto />
+                <label>ID                 </label>  <FormInput readonly                   :value="id    " auto />
+                <label>stały upust        </label>  <FormInput :readonly="props.readonly" :value="upust " auto />
 
+                <fieldset class="subform_cars_field">
+                    <legend>{{props.force_car_id !== undefined ? "Samochód" : "Samochody Klienta"}}</legend>
+                    <SamochodyKlientow 
+                        :use_src="src_car"
+                        :id_klienta="props.force_car_id ? undefined : param_id_klienta"
+                        :readonly="props.readonly"
+                        :force_car_id="props.force_car_id"
+                    />
+                </fieldset>
             </div>
+            
 
-            <fieldset class="zlecenia" :style="{display: show_zlecenia ? 'unset' : 'none'}">
+            <fieldset class="zlecenia" :style="{display: show_zlecenia ? 'unset' : 'none'}" v-if="!props.no_zlec">
                 <legend>Zlecenia Naprawy</legend>
-                <ZleceniaNaprawy 
+                <ZleceniaNaprawy
                     ref="zlecenia_form"
                     :use_src="src_zlecenia"
                     :id_klienta="param_id_klienta"
@@ -213,7 +223,9 @@ defineExpose({
 
         </form>
 
+
         <QuerySourceOffsetScroller
+            v-if="props.force_klient_id === undefined"
             :src="src"
             @error="handle_err"
             insertable
@@ -232,11 +244,14 @@ defineExpose({
 
     .grid {
         padding: 1px 10px;
-        grid: repeat(13, 1fr) / auto [fields-start] auto [cars-start] 1fr [fields-end cars-end];
+        grid: repeat(8, auto) auto / auto [fields-start] 1fr auto 1fr  [fields-end];
         gap: 1px 2px;
-        align-items: center;
+        align-items: stretch;
         text-wrap: nowrap;
         justify-content: start;
+    }
+    .grid > :deep(label) {
+        align-self: center;
     }
 
     .grid > :deep(.main_input_field){
@@ -244,8 +259,8 @@ defineExpose({
     }
 
     .grid > :deep(.subform_cars_field) {
-        grid-row: 6 / -1;
-        grid-column: cars-start / cars-end;
+        grid-column: 1 / -1;
+        align-self: center;
     }
 
     fieldset {

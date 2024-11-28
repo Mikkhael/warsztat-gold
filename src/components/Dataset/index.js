@@ -17,10 +17,13 @@ export * from './Sync';
 export const FormParamProp = {
     /**@type {FormParamPropType} */ 
     type: [Number, String, DataGraphDependable],
-    required: false
+    required: /**@type {const} */ (false)
 };
 
 export function param_from_prop(props, paramName) {
+    if(props[paramName] === undefined) {
+        return undefined;
+    }
     if(props[paramName] instanceof DataGraphDependable) {
         /**@type {DataGraphDependable<SQLValue>} */
         const res = props[paramName];

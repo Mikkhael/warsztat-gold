@@ -1,8 +1,7 @@
 <script setup>
 //@ts-check
 
-// import { Dataset, DVUtil, QueryBuilder } from '../components/Dataset/Dataset';
-import {FormInput, FormEnum} from '../components/Controls';
+import {FormInput, FormEnum, FormCheckbox} from '../components/Controls';
 
 import useMainMsgManager from '../components/Msg/MsgManager';
 import useMainFWManager from '../components/FloatingWindows/FWManager';
@@ -10,12 +9,12 @@ import useMainFWManager from '../components/FloatingWindows/FWManager';
 import { FormQuerySource } from '../components/Dataset';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 
-// import QueryFormScrollerDataset from '../components/QueryFormScrollerDataset.vue';
+import Klienci from './Klienci.vue';
 
 import ReportPreparer from '../Reports/ReportPreparer.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
-import {onMounted, ref, toRef, readonly, watch} from 'vue';
+import {onMounted, ref, toRef, readonly, watch, computed} from 'vue';
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { date_now } from '../utils';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
@@ -35,6 +34,7 @@ const props = defineProps({
     },
     id_klienta:   FormParamProp,
     id_samochodu: FormParamProp,
+    show_clients: Boolean
 });
 
 // console.log("START_PROPS",typeof props.id_klienta, typeof props.id_samochodu,  props.id_klienta, props.id_samochodu, props);
@@ -53,6 +53,9 @@ const COLS = TAB.cols;
 
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
 src.set_from_with_deps(TAB);
+
+const show_only_open = ref(true);
+const show_only_open_quard = computed(() => show_only_open.value ? 0 : 1);
 
 const param_id_klienta = param_from_prop(props, 'id_klienta');
 const param_id_car     = param_from_prop(props, 'id_samochodu');
@@ -75,7 +78,12 @@ const pom2_p     = src.auto_form_value_synced(COLS['%_udziału_p2'],      {defau
 const zysk_rob   = src.auto_form_value_synced(COLS.zysk_z_robocizny,     {default: 0}          );
 const zysk_cz    = src.auto_form_value_synced(COLS.zysk_z_części,        {default: 0}          );
 
+src.add_where([show_only_open_quard] ,`OR`, [COLS.data_zamknięcia.name, 'b'], 'IS NULL');
+
 const param_id_zlec = src.get(COLS.ID);
+
+const param_force_klient_id = src.get(COLS.ID_klienta);
+const param_force_car_id    = src.get(COLS.ID_samochodu);
 
 
 function handle_err(/**@type {Error} */ err) {
@@ -102,40 +110,66 @@ defineExpose({
 
         <form class="form form_content" :ref="e => src.assoc_form(e)">
             
-            <div class="flex_auto vert">
+            <div class="sidebar" v-if="props.show_clients">
                 <div>
-                    <label>nr zlecenia</label>
-                    <FormInput :value="id"        auto readonly style="width: 10ch" />
+                    <div
+                        class="button"
+                        @click="e => {
+                            src.try_perform_and_update_confirmed(() => show_only_open = !show_only_open);
+                        }"
+                    >
+                        {{ show_only_open ? "Pokarz wszystkie zlecenia" : "Pokarz tylko otwarte zlecenia" }}
+                    </div>
                 </div>
-                <div>
-                    <label>data otwarcia</label>
-                    <FormInput :value="data_otw"  auto />
-                </div>
-                <div>
-                    <label>data zamknięcia</label>
-                    <FormInput :value="data_zamk" auto readonly />
-                </div>
+                <fieldset>
+                    <legend>Klient</legend>
+                    <Klienci 
+                        no_zlec
+                        :force_klient_id="param_force_klient_id"
+                        :force_car_id="param_force_car_id"
+                    />
+                </fieldset>
             </div>
 
-            <div class="subheader flex_auto">
-                <div class="udzialy grid">
-                    <div>Adres e-mail</div> <FormInput :value="prow" auto/> <FormInput auto :value="prow_p" nospin min="0" max="100"/> <span>%</span>
-                    <div>pomocnik 1</div>   <FormInput :value="pom1" auto/> <FormInput auto :value="pom1_p" nospin min="0" max="100"/> <span>%</span>
-                    <div>pomocnik 2</div>   <FormInput :value="pom2" auto/> <FormInput auto :value="pom2_p" nospin min="0" max="100"/> <span>%</span>
+            <div class="zlecenia_container">
+
+                <div class="flex_auto vert">
+                    <div>
+                        <label>nr zlecenia</label>
+                        <FormInput :value="id"        auto readonly style="width: 10ch" />
+                    </div>
+                    <div>
+                        <label>data otwarcia</label>
+                        <FormInput :value="data_otw"  auto />
+                    </div>
+                    <div v-if="data_zamk.get_local() !== null">
+                        <label>data zamknięcia</label>
+                        <FormInput :value="data_zamk" auto readonly />
+                    </div>
+                    <div class="big" v-else>
+                        OTWARTE
+                    </div>
                 </div>
-                <div class="buttons">
-                    <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
-                    <!-- <div>Części</div>
-                    <div>Czynności</div> -->
+
+                <div class="subheader flex_auto">
+                    <div class="udzialy grid">
+                        <div>Adres e-mail</div> <FormInput :value="prow" auto/> <FormInput auto :value="prow_p" nospin min="0" max="100"/> <span>%</span>
+                        <div>pomocnik 1</div>   <FormInput :value="pom1" auto/> <FormInput auto :value="pom1_p" nospin min="0" max="100"/> <span>%</span>
+                        <div>pomocnik 2</div>   <FormInput :value="pom2" auto/> <FormInput auto :value="pom2_p" nospin min="0" max="100"/> <span>%</span>
+                    </div>
+                    <div class="buttons">
+                        <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
+                        <!-- <div>Części</div>
+                        <div>Czynności</div> -->
+                    </div>
                 </div>
+
+                <label>Zgłoszenie do naprawy</label>
+                <FormInput :value="zgloszenie" auto class="grow" textarea/>
+                
+                <label>Uwagi</label>
+                <FormInput :value="uwagi" auto class="grow" textarea/>
             </div>
-
-            <label>Zgłoszenie do naprawy</label>
-            <FormInput :value="zgloszenie" auto class="grow" textarea/>
-            
-            <label>Uwagi</label>
-            <FormInput :value="uwagi" auto class="grow" textarea/>
-
         </form>
 
         <QuerySourceOffsetScroller
@@ -162,6 +196,23 @@ defineExpose({
         width: 100%;
     } */
 
+    .form {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: stretch;
+    }
+
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    .button {
+        padding: 3px;
+        margin: 0px 3px;
+    }
+
     img{
         height: 7ch;
         width:  7ch;
@@ -183,15 +234,25 @@ defineExpose({
         display: flex;
         flex-direction: column;
     }
+    .vert .big {
+        display: block;
+        text-align: center;
+    }
 
-    .form {
+    .big {
+        font-size: 2em;
+
+    }
+
+    .zlecenia_container {
         height: 100%;
+        width: 100%;
         display: flex;
         flex-direction: column;
         justify-content: space-around;
     }
 
-    .form > :deep(.grow) {
+    .zlecenia_container > :deep(.grow) {
         flex-grow: 1;
     }
 
