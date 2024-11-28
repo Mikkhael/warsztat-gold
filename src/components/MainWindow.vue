@@ -1,11 +1,13 @@
 <script setup>
+//@ts-check
 import { onMounted, readonly, ref } from "vue";
 import ipc from "../ipc";
 import FWCollection from "./FloatingWindows/FWCollection.vue";
 import useMainFWManager from "./FloatingWindows/FWManager";
 import useMainMsgManager from "./Msg/MsgManager";
 
-import {useMainBackupManager} from "./Backup";
+import { useMainBackupManager } from "./Backup";
+import { useMainClosePreventionManager } from "../ClosePrevention";
 
 
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
@@ -23,6 +25,10 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 
 const fwManager  = useMainFWManager();
 const msgManager = useMainMsgManager();
+
+const mainClosePreventionManager = useMainClosePreventionManager();
+mainClosePreventionManager.reset();
+mainClosePreventionManager.start_main_guard();
 
 fwManager.set_viewport({top: '24px'});
 

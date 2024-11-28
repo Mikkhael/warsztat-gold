@@ -16,9 +16,9 @@
       "dialog": {
         "all": true
       },
-      "shell": {
+      "window": {
         "all": false,
-        "open": false
+        "close": true
       },
       "fs": {
         "all": false,

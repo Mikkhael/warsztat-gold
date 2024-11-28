@@ -36,7 +36,7 @@
 + Settings API
     + core
     + editable array component
-    - prevent closing unsaved
+    + prevent closing unsaved
     + database integration
         + sql
         + save

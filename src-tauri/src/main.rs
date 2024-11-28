@@ -20,10 +20,20 @@ fn file_name(path: &Path) -> String {
     path.file_name().unwrap_or_default().to_string_lossy().to_string()
 }
 
+struct ClosePreventionState(std::sync::Mutex<bool>);
+
+#[tauri::command]
+fn sync_close_prevention(value: bool, close_prevention_state: tauri::State<ClosePreventionState>) {
+    let mut state = close_prevention_state.0.lock().unwrap();
+    // println!("Close Prevention State: {} (was {})", value, *state);
+    *state = value;
+}
+
 fn main() {
 
     tauri::Builder::default()
     .manage(sqlite_manager::SqliteManagerLock::default())
+    .manage(ClosePreventionState(false.into()))
     .plugin(tauri_plugin_context_menu::init())
     .setup(|app| {
         sqlite_manager::SqliteManager::init(app);
@@ -37,6 +47,7 @@ fn main() {
     .invoke_handler(tauri::generate_handler![
         join_path,
         file_name,
+        sync_close_prevention,
         sqlite_manager::open_database,
         sqlite_manager::close_database,
         sqlite_manager::save_database,

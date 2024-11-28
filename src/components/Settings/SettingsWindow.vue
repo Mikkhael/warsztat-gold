@@ -6,6 +6,7 @@ import { useMainMsgManager, MsgManager } from '../Msg/MsgManager';
 
 import SettingsWindowBackup from './SettingsWindowBackup.vue';
 import SettingsWindowTest from './SettingsWindowTest.vue';
+import { useMainClosePreventionManager } from '../../ClosePrevention';
 
 /**
  * @typedef {import('./Settings').SettingsCategoryNames} SettingsCategoryNames
@@ -36,6 +37,7 @@ function handle_error(err) {
 
 const settings = props.settings ?? useMainSettings();
 const msgManager = props.msgManager ?? useMainMsgManager();
+const mainClosePreventionManager = useMainClosePreventionManager();
 
 const categories = /**@type {const} */ ([
     ['backup', 'Kopia Zapasowa', SettingsWindowBackup],
@@ -83,17 +85,8 @@ function undo_changes() {
 
 
 
-onMounted(() => {
-    select_category_name('backup');
-    props.parent_window?.add_before_close(async (force) => {
-        if(force) return false;
-        if(changed.value){
-            const confirmed = await window.confirm('Posiadasz niezapisane zmiany. Czy chesz zamnknąć okno?');
-            return !confirmed;
-        }
-        return false;
-    });
-});
+select_category_name('backup');
+mainClosePreventionManager.start_in_component(changed, props.parent_window);
 
 // console.log(reactive_categories);
 

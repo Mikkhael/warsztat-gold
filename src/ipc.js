@@ -32,6 +32,15 @@ function set_state_db_path(value) {
     state.db_path = value;
 }
 
+/**
+ * @param {boolean} value 
+ */
+function sync_close_prevention(value) {
+    return invoke('sync_close_prevention', {value});
+}
+
+
+
 // function get_state(){
 //     console.log("GOT STATE");
 //     return state;
@@ -234,7 +243,10 @@ refresh_state().catch(err => {
 
 export default {
     state,
-    
+    set_state_db_opened,
+    set_state_db_path,
+    sync_close_prevention,
+
     db_open,
     db_close,
     db_save,

@@ -62,6 +62,15 @@ class FWManager {
         this.cointainer = markRaw(cointainer);
     }
 
+    /**
+     * 
+     * @param {{
+     *  left?:   string,
+     *  right?:  string,
+     *  top?:    string,
+     *  bottom?: string,
+     * }} param0 
+     */
     set_viewport({left, right, top, bottom}) {
         Object.assign(this.viewport, {left, right, top, bottom});
     }

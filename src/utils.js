@@ -1,6 +1,6 @@
 //@ts-check
 
-import { computed, isRef, ref, shallowRef, triggerRef } from 'vue';
+import { computed, ref, shallowRef, triggerRef } from 'vue';
 
 let last_UID = 0n;
 function generate_UID(){
