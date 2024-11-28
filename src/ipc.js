@@ -86,6 +86,7 @@ async function db_open() {
         filters: [{name: "Sqlite Database", extensions: ['db3']}]
     });
     if(!path) return path;
+    await db_close();
     return await invoke("open_database", {path}).then(() => {
         if(path instanceof Array) throw new Error("MULTIPLE PATHS CHOSEN FOR OPEN DATABASE");
         set_state_db_path(path);

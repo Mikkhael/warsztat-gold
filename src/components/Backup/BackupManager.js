@@ -68,6 +68,10 @@ class BackupManager extends SettingsManager {
         return true;
     }
 
+    async perform_backup_on_close() {
+        return await this.perform_backup(true);
+    }
+
     /**
      * @param {string} [mock_date] 
      */

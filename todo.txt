@@ -48,7 +48,7 @@
     + periodic
     + standerd
     + auto trigger on db open
-    - auto trigger std on db close
+    + auto trigger std on db close
     - online
     + settings update
 

@@ -61,7 +61,7 @@ class ClosePreventionManager{
         return ipc.sync_close_prevention(false);
     }
 
-    start_main_guard() {
+    start_main_guard(on_before_close = async () => {}) {
         const unlisteners = {
             watch: () => {},
             event: () => {}
@@ -73,7 +73,9 @@ class ClosePreventionManager{
                 await ClosePreventionManager.confirm_unsaved_changed()) {
                     console.log('CPM Prevented Close');
                     event.preventDefault();
+                    return;
             }
+            await on_before_close();
         }).then(unlisten => unlisteners.event = unlisten);
 
         console.log("CPM starting watcher");

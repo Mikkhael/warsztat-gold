@@ -26,10 +26,6 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 const fwManager  = useMainFWManager();
 const msgManager = useMainMsgManager();
 
-const mainClosePreventionManager = useMainClosePreventionManager();
-mainClosePreventionManager.reset();
-mainClosePreventionManager.start_main_guard();
-
 fwManager.set_viewport({top: '24px'});
 
 function handle_error(msg) {
@@ -38,6 +34,12 @@ function handle_error(msg) {
 
 const backupManager = useMainBackupManager();
 backupManager.start_in_component();
+
+const mainClosePreventionManager = useMainClosePreventionManager();
+mainClosePreventionManager.reset();
+mainClosePreventionManager.start_main_guard(async () => {
+    await backupManager.perform_backup_on_close();
+});
 
 //////////// TOOLBAR HANDLERS
 
