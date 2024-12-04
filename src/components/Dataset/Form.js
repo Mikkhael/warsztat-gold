@@ -1,12 +1,11 @@
 //@ts-check
 
 import ipc from '../../ipc';
-import { deep_compare, deep_copy, object_map } from '../../utils';
+import { deep_compare, deep_copy } from '../../utils';
 import { Column, TableNode } from './Database';
-import {AdvDependableReasRef, AdvDependableRef, DataGraphNodeBase} from './DataGraph';
-import {QuerySource} from './QuerySource';
-import {TableSync} from './Sync';
-import {computed, customRef, markRaw, reactive, ref, shallowReactive, shallowRef, toRef, unref, watch} from 'vue';
+import { QuerySource, QuerySourceResultValue } from './QuerySource';
+import { TableSyncRuleReactive } from './Sync';
+import { computed, reactive, ref, shallowRef, unref } from 'vue';
 
 
 /**
@@ -17,10 +16,6 @@ import {computed, customRef, markRaw, reactive, ref, shallowReactive, shallowRef
  * @typedef {"text" | "number" | "integer" | "date" | "datetime"} FormDataValueType
  */
 
-
-/**
- * @typedef {FormQuerySourceCachedValue | AdvDependableRef<SQLValue>} FormDataValueSrc
- */
 
 /**
  * @template [T=SQLValue]
@@ -40,36 +35,33 @@ import {computed, customRef, markRaw, reactive, ref, shallowReactive, shallowRef
 *  default?:  MaybeDependable,
 *  primary?:  boolean,
 *  sql?:      string,
-*  sync?:     TableSync
+*  sync?:     FormDataSetTableSync
 *  sync_col?: string 
 * }} StandardFormValueRoutineParams
 * */
 
+/////////////// FORM QUERY SOURCES ////////////////////////////////////////
 
-class QuerySourceRequest_Insert {
-    constructor(value = false) {this.value = value};
-}
-
-class FormQuerySource extends QuerySource {
-    constructor(implicit_order_rowid = true) {
+class FormQuerySourceBase extends QuerySource {
+    /**
+     * 
+     * @param {boolean} implicit_order_rowid 
+     */
+    constructor(implicit_order_rowid) {
         super(implicit_order_rowid);
+        this.associated_form_element = ref(/**@type {HTMLFormElement?} */ (null));
         
-        /**@type {string[]} */
-        this.result_query_names = [];
-        /**@type {Object.<string, FormQuerySourceCachedValue>} */
-        this.result = shallowReactive({});
-
-        this.insert_mode = ref(false);
-
-        this.dataset = new FormDataSet(this);
-
-        this.form_style = computed(() => {return {
-            empty:    (this.is_empty.value && !this.insert_mode.value) || this.disabled.value,
+        /**@type {FormDataSetBase} */
+        //@ts-ignore
+        this.dataset = null;
+        /**@type {MaybeRef<{empty: boolean, disabled: boolean}>} */
+        this.form_style = computed(() => { return {
+            empty:    this.is_empty.value || this.disabled.value,
             disabled: this.disabled.value
         }});
-
-        this.associated_form_element = ref(/**@type {HTMLFormElement?} */ (null));
     }
+
+    /// HTML FORM //////////////////////
 
     assoc_form(elem) {
         this.associated_form_element.value = elem;
@@ -77,7 +69,7 @@ class FormQuerySource extends QuerySource {
 
     report_validity_deep() {
         return !this.for_each_dist_deep(node => {
-            if(node instanceof FormQuerySource && !node.report_validity_self()) {
+            if(node instanceof FormQuerySourceBase && !node.report_validity_self()) {
                 return true;
             }
         }, true);
@@ -88,63 +80,145 @@ class FormQuerySource extends QuerySource {
         return res;
     }
 
-
-    /**
-     * 
-     * @param {string} name 
-     * @param {MaybeRef<SQLValue>} default_value 
-     * @returns 
-     */
-    register_result(name, default_value) {
-        if(this.result[name]) {
-            this.result[name].reregister(default_value);
-        }else{
-            this.result[name] = new FormQuerySourceCachedValue(this, default_value);
-        }
-        return this.result[name];
-    }
-
-    /**
-     * @param {string | Column} result_name 
-     * @param {MaybeRef<SQLValue>} initial_value 
-     */
-    get(result_name, initial_value = null) {
-        let name = '';
-        if(result_name instanceof Column) {
-            name = result_name.get_full_sql();
-        } else {
-            name = result_name;
-        }
-        if(this.result[name]) return this.result[name];
-        return this.register_result(name, initial_value);
-    }
-    /**
-     * @param {string | Column} result_name 
-     * @param {MaybeRef<SQLValue>} initial_value 
-     */
-    get_ref(result_name, initial_value = null) {
-        const cached = this.get(result_name, initial_value);
-        return cached.get_ref();
-    }
-
-    /// OVERWRITES //////////////////////
+    /// OVERWRITES DataGraph //////////////////////
     check_changed_impl() {
-        return this.dataset.changed.value || this.insert_mode.value;
+        return this.dataset?.changed.value || false;
     }
-    check_should_disable_dists_impl() {
-        return this.is_empty.value || this.insert_mode.value;
+
+    async save_impl(force = false) {
+        const res = await this.dataset.perform_save_notransaction(force);
+        return res;
+    }
+
+
+    /// OVERWRITES QuerySource //////////////////////
+
+    async perform_offset_query() {
+        const full_result = await super.perform_offset_query();
+        this.dataset.refresh();
+        return full_result;
     }
     
+    /**
+     * @param {string}   name 
+     * @param {string=}  sql_definition 
+     */
+    add_select(name, sql_definition = undefined) {
+        this.add_select_with_default(name, null, sql_definition);
+    }
+
+
+    /// Extensions for QuerySource //////////////////////
+
+    /**
+     * Set all dataset values to full_result (or defaults if unable to)
+     */
+    perform_reset() {
+        this.dataset.refresh();
+    }
+
+    /**
+     * @param {string}   name 
+     * @param {MaybeDependable} default_value
+     * @param {string=}  sql_definition 
+     */
+    add_select_with_default(name, default_value = null, sql_definition = undefined) {
+        this.query.add_select(name, sql_definition);
+        const default_value_ref = this.add_dependable(default_value);
+        this.dataset.add_column(name, default_value_ref);
+    }
+    
+    /**
+     * @param {string} name 
+     * @param {StandardFormValueRoutineParams} params
+     */
+    auto_add_column_impl(name, params = {}) {
+        this.add_select_with_default(name, params.default ?? params.param ?? null, params.sql);
+        if(params.param !== undefined) {
+            this.add_where_eq(name, params.param, !params.allow_param_null);
+        }
+        if(params.sync) {
+            params.sync.add_column(params.sync_col ?? name, params.primary, name);
+            // params.sync.assoc_value(params.sync_col ?? name, value, params.primary)
+        }
+        // const value = this.dataset.get(name);
+        // return value;
+    }
+    
+    /**
+     * Automatically get column name and wheather it is primary
+     * @param {Column} col 
+     * @param {StandardFormValueRoutineParams} params
+     */
+    auto_add_column(col, params = {}) {
+        /**@type {StandardFormValueRoutineParams} */
+        const auto_params = {primary: col.is_primary()};
+        Object.assign(auto_params, params);
+        this.auto_add_column_impl(col.get_full_sql(), auto_params);
+        // value.assoc_col(col);
+        // return value;
+    }
+    /**
+     * Automatically get column name and wheather it is primary, and generate appropiate sync
+     * @param {Column} col 
+     * @param {StandardFormValueRoutineParams} params
+     */
+    auto_add_column_synced(col, params = {}) {
+        const sync = this.dataset.get_or_create_sync(col.tab);
+        /**@type {StandardFormValueRoutineParams} */
+        const auto_params = Object.assign({}, {sync, sync_col: col.name}, params);
+        this.auto_add_column(col, auto_params);
+    }
+
+
+}
+
+class QuerySourceRequest_Insert {
+    constructor(value = false) {this.value = value};
+}
+class FormQuerySourceBaseInsertable extends FormQuerySourceBase{
+    /**
+     * 
+     * @param {boolean} implicit_order_rowid 
+     */
+    constructor(implicit_order_rowid) {
+        super(implicit_order_rowid);
+        this.insert_mode = ref(false);
+        
+        this.form_style = computed(() => { return {
+            empty:    (this.is_empty.value && !this.insert_mode.value) || this.disabled.value,
+            disabled: this.disabled.value
+        }});
+    }
+    
+    /// OVERWRITES DataGraph //////////////////////
+
+    check_changed_impl() {
+        return this.insert_mode.value || super.check_changed_impl();
+    }
+    check_should_disable_dists_impl() {
+        return this.insert_mode.value || super.check_should_disable_dists_impl();
+    }
+    
+    async save_impl(force = false) {
+        const res = await super.save_impl(force);
+        if(this.insert_mode.value) {
+            this.request_offset_goto(-1, true);
+        }
+        return res;
+    }
+    
+    /// OVERWRITES QuerySource //////////////////////
+
     async update__request_impl() {
+        this.insert_mode.value = false;
         if(this.request instanceof QuerySourceRequest_Insert) {
             this.insert_mode.value = this.request.value;
             if(this.insert_mode.value) {
-                this.for_each_dist_deep(node => {node instanceof FormQuerySource && 
+                this.for_each_dist_deep(node => {node instanceof FormQuerySourceBaseInsertable && 
                                                 (node.insert_mode.value = false)});
             }
             this.request_clear();
-        } else {
-            this.insert_mode.value = false;
         }
         await super.update__request_impl();
     }
@@ -156,137 +230,57 @@ class FormQuerySource extends QuerySource {
         await super.update__main_impl();
     }
 
-    async save_impl(force = false) {
-        const res = await this.dataset.perform_save_notransaction(undefined, force);
-        if(res.insert) {
-            this.request_offset_goto(-1, true);
-        }
-    }
+    /// Extensions to QuerySource //////////////////////
 
-    perform_reset() {
-        for(const key in this.result) {
-            this.result[key].reset();
-        }
-        this.dataset.refresh();
-    }
-
-    async perform_offset_query() {
-        const full_result = await super.perform_offset_query();
-        if(full_result === null) {
-            this.perform_reset();
-            return null;
-        }
-        const first_row = full_result[0][0];
-        for(let i in first_row) {
-            this.result[this.result_query_names[i]].ref.value = first_row[i];
-        }
-        this.dataset.refresh();
-        return full_result;
-    }
-    
-    /**
-     * @param {string}   name 
-     * @param {string=}  sql_definition 
-     */
-    add_select(name, sql_definition = undefined) {
-        this.add_select_data(name, null, sql_definition);
-    }
-
-    /**
-     * @param {string}   name 
-     * @param {MaybeDependable} default_value
-     * @param {string=}  sql_definition 
-     */
-    add_select_data(name, default_value = null, sql_definition = undefined) {
-        this.query.add_select(name, sql_definition);
-        this.result_query_names.push(name);
-        const ref    = this.add_dependable(default_value);
-        const cached = this.register_result(name, ref);
-        // const cached = new FormQuerySourceCachedValue(this, ref);
-        // this.result[name] = cached;
-        this.dataset.add(name, cached);
-    }
-
-    /**
-     * @param {string} name 
-     * @param {StandardFormValueRoutineParams} params
-     */
-    auto_form_value_adv(name, params = {}) {
-        this.add_select_data(name, params.default ?? params.param ?? null, params.sql);
-        const value = this.dataset.get(name);
-        if(params.param !== undefined) {
-            this.add_where_eq(name, params.param, !params.allow_param_null);
-        }
-        if(params.sync) {
-            params.sync.assoc_value(params.sync_col ?? name, value, params.primary)
-        }
-        return value;
-    }
-    
-    /**
-     * @param {Column} col 
-     * @param {StandardFormValueRoutineParams} params
-     */
-    auto_form_value(col, params = {}) {
-        /**@type {StandardFormValueRoutineParams} */
-        const auto_params = {primary: col.is_primary()};
-        Object.assign(auto_params, params);
-        const value = this.auto_form_value_adv(col.get_full_sql(), auto_params);
-        value.assoc_col(col);
-        return value;
-    }
-    /**
-     * @param {Column} col 
-     * @param {StandardFormValueRoutineParams} params
-     */
-    auto_form_value_synced(col, params = {}) {
-        const sync = this.dataset.get_or_create_sync(col.tab);
-        /**@type {StandardFormValueRoutineParams} */
-        const auto_params = Object.assign({}, {sync, sync_col: col.name}, params);
-        return this.auto_form_value(col, auto_params);
-    }
-
-    /**
-     * @param {boolean} value 
-     */
-    request_insert_mode(value) {
+    request_insert_mode(/**@type {boolean} */ value) {
         this._add_update_request_impl(new QuerySourceRequest_Insert(value), false);
     }
     request_insert_toggle() {
         this._add_update_request_impl(new QuerySourceRequest_Insert(!this.insert_mode.value), false);
     }
-
-
 }
 
 
-/**
- * @extends {AdvDependableReasRef<SQLValue>}
- */
-class FormQuerySourceCachedValue extends AdvDependableReasRef {
-    /**
-     * @param {QuerySource} src 
-     * @param {MaybeRef<SQLValue>}    default_value
-     */
-    constructor(src, default_value = null) {
-        super(src, unref(default_value));
-        this.src = src;
-        this.default_value = default_value;
+class FormQuerySourceFull extends FormQuerySourceBase {
+    constructor(implicit_order_rowid = false) {
+        super(implicit_order_rowid);
+        this.dataset = new FormDataSetFull(this);
+    }
+}
+class FormQuerySourceSingle extends FormQuerySourceBaseInsertable {
+    constructor(implicit_order_rowid = false) {
+        super(implicit_order_rowid);
+        this.dataset = new FormDataSetSingle(this);
     }
 
     /**
-     * @param {MaybeRef<SQLValue>} new_default_value
+     * @param {Parameters<FormQuerySourceBase['auto_add_column_impl']>} args 
      */
-    reregister(new_default_value) {
-        this.reassign(unref(new_default_value));
-        this.default_value = new_default_value;
+    auto_add_value_impl(...args) {
+        this.auto_add_column_impl(...args);
+        return this.dataset.get(args[0]);
     }
-
-    reset() {
-        this.ref.value = unref(this.default_value);
+    
+    /**
+     * Automatically get column name and wheather it is primary
+     * @param {Parameters<FormQuerySourceBase['auto_add_column_impl']>} args 
+     */
+    auto_add_value(...args) {
+        this.auto_add_value(...args);
+        return this.dataset.get(args[0]);
+    }
+    /**
+     * Automatically get column name and wheather it is primary, and generate appropiate sync
+     * @param {Parameters<FormQuerySourceBase['auto_add_column_impl']>} args 
+     */
+    auto_add_value_synced(...args) {
+        this.auto_add_value_synced(...args);
+        return this.dataset.get(args[0]);
     }
 }
 
+
+/////////////// CHANGABLE VALUES ////////////////////////////////
 
 /**
  * @template {Object.<string, any>} T
@@ -296,271 +290,328 @@ class FormQuerySourceCachedValue extends AdvDependableReasRef {
 /**
  * @template T
  */
-class FormDataValueLike {
-    /**
-     * @param {import('vue').Ref<T> | T} initial_value 
-     */
-    constructor(initial_value) {
-        /**@type {import('vue').Ref<T>} */
-        //@ts-ignore
-        this.local = ref(initial_value);
+class ChangableValueLike {
+    constructor() {
         this.changed = computed(() => this.is_changed());
     }
 
-    // /**
-    //  * @template {keyof T} K
-    //  * @param {K} key
-    //  * @returns {FormDataValueLikeSubView<T[K]>} 
-    //  */
-    // get_subview(key) {
-    //     if(typeof this.local.value !== 'object') throw new Error('Cannot create FormDataValue View of non-object');
-    //     //@ts-ignore
-    //     return FormDataValueLikeSubView.from(this, key);
-    // }
+    /**@returns {T | undefined} */
+    get_cached()    {return undefined;}
+    /**@returns {import('vue').Ref<T>} */
+    get_local_ref() {throw new Error('not implemented');}
 
-    // /**
-    //  * @returns {{[P in Keysof<T>]: FormDataValueLikeSubView<T[P]>}}
-    //  */
-    // get_subview_all() {
-    //     if(typeof this.local.value !== 'object') throw new Error('Cannot create FormDataValue View of non-object');
-    //     //@ts-ignore
-    //     return Object.keys(this.local.value).map( key => {
-    //         //@ts-ignore
-    //         return this.get_subview(key);
-    //     });
-    // }
-    // /**
-    //  * @returns {FormDataValueLikeSubView<T[number]>[]}
-    //  */
-    // get_subview_all_array() {
-    //     if(typeof this.local.value !== 'object' ||
-    //        !Array.isArray(this.local.value))     throw new Error('Cannot create FormDataValue ArrayView of non-array');
-    //     //@ts-ignore
-    //     return this.local.value.map((x,i) => this.get_subview(i));
-    // }
-    // get_subview_all_array_ref_watcher() {
-    //     if(typeof this.local.value !== 'object' ||
-    //        !Array.isArray(this.local.value))     throw new Error('Cannot create FormDataValue ArrayView of non-array');
-
-    //     //@ts-ignore
-    //     const len = computed(() => this.local.value.length);
-    //     const res = shallowRef(this.get_subview_all_array());
-
-    //     watch(len, (new_len, old_len) => {
-    //         console.info("!!!! Recalculated Reactive SubView Watcher", new_len, old_len);
-    //         res.value = this.get_subview_all_array();
-    //     });
-
-    //     return res;
-    // }
-
-    get_local() {
-        return unref(this.local);
-    }
+    /**@param {T} v */
+    set_local(v) {return this.get_local_ref().value = v;}
+    get_local()  {return unref(this.get_local_ref()); }
+    is_changed() {return !deep_compare(this.get_local(), this.get_cached());}
     refresh() { 
         const cached = this.get_cached();
         if(cached === undefined) return;
         //@ts-ignore
-        this.local.value = NaN;
-        this.local.value = deep_copy(cached); 
-    }
-    is_changed() {
-        return !deep_compare(this.local.value, this.get_cached());
-    }
-
-    /**@returns {import('vue').Ref<T>?} */
-    get_cached_ref() {return null;}
-    /**@returns {T | undefined} */
-    get_cached() {
-        const cached_ref = this.get_cached_ref();
-        if(!cached_ref) return undefined;
-        return cached_ref.value;
+        this.set_local(NaN);
+        this.set_local(deep_copy(cached));
     }
 }
+/**
+ * @template T
+ * @extends ChangableValueLike<T>
+ */
+class OwningChangableValue extends ChangableValueLike{
+    /**
+     * @param {MaybeRef<T>} initial_value
+     * @param {MaybeRef<T | undefined>}  cached
+     * */
+    constructor(initial_value, cached = undefined) {
+        super();
+        /**@type {import('vue').Ref<T>} */
+        //@ts-ignore
+        this.local  = ref(initial_value);
+        this.cached = cached;
+    }
+    get_local_ref() {return this.local;}
+    get_cached() { return unref(this.cached); }
+}
+/**
+ * @template T
+ * @extends {OwningChangableValue<T>}
+ */
+class DefaultableSimpleOwningChangableValue extends OwningChangableValue{
+    /**
+     * @param {MaybeRef<T>} default_value
+     * @param {MaybeRef<T>} initial_value
+     * @param {MaybeRef<T | undefined>}  cached
+     * */
+    constructor(default_value, initial_value, cached = undefined) {
+        super(initial_value, cached);
+        this.default_value = default_value;
+    }
+    reset() {
+        this.local.value = unref(this.default_value);
+    }
 
-// /**
-//  * @template T
-//  * @extends FormDataValueLike<T>
-//  */
-// class FormDataValueLikeSubView extends FormDataValueLike {
-//     /**
-//      * @param {FormDataValueLike} parent 
-//      * @param {string | number} key
-//      */
-//     constructor(parent, key) {
-//         const proxy = computed({
-//             /**@returns {T} */
-//             get()  {return parent.get_local()[key];},
-//             set(v) {parent.local.value[key] = v;}
-//         });
-//         super(proxy);
-//         this.parent = parent;
-//         this.key = key;
-//     }
-
-//     /**
-//      * @template {Object.<string, any>} P
-//      * @template {Extract<keyof P, string | number>} K
-//      * @param {FormDataValueLike<P>} parent 
-//      * @param {K} key 
-//      * @returns {FormDataValueLikeSubView<P[K]>}
-//      */
-//     static from(parent, key) {
-//         return new FormDataValueLikeSubView(parent, key);
-//     }
-
-//     /**@returns {T} */
-//     get_cached() {
-//         return this.parent.get_cached()?.[this.key];
-//     }
-//     //TODO cached_ref?
-// }
-
-
-// /**
-//  * @template T
-//  * @typedef {{[K in keyof T]: T[K]} & {}} Prettify 
-//  * */
-
-// /**
-//  * @template T
-//  * @typedef {T extends Array ? Exclude<keyof T, string> : keyof T} Keys 
-//  * */
-
-// const a = /**@type {const} */ ([1,2,3,4]);
-// /**
-//  * @typedef {[1,2,'23',4]} A
-//  * @typedef {Keys<A>} B
-//  * @typedef {Keys<{1: 'aba', 2: boolean, test: 34}>} C
-//  * @typedef {Prettify<Extract<keyof A, number>>} E1
-//  * @typedef {A[E1]} E2
-//  */
+    refresh() { 
+        const cached = unref(this.cached);
+        if(cached === undefined) {
+            this.local.value = unref(this.default_value);
+        } else {
+            this.local.value = cached;
+        }
+    }
+    is_changed() { return this.get_cached() !== this.get_local();}
+}
 
 /**
- * @extends {FormDataValueLike<SQLValue>}
+ * @extends {DefaultableSimpleOwningChangableValue<SQLValue>}
  */
-class FormDataValue extends FormDataValueLike{
+class FormChangebleValue extends DefaultableSimpleOwningChangableValue{
     /**
-     * @param {FormDataSet} dataset
-     * @param {FormQuerySourceCachedValue} src
+     * @param {FormDataSetBase} dataset
+     * @param {MaybeRef<SQLValue | undefined>} cached
+     * @param {MaybeRef<SQLValue>} default_value
      */
-    constructor(dataset, src) {
-        super(src.get_value());
+    constructor(dataset, cached, default_value = null) {
+        const initial_value = unref(cached);
+        super(default_value, initial_value === undefined ? default_value : initial_value, cached);
+        this.dataset        = dataset;
+        this.associated_col = /**@type {Column?} */ (null);
+    }
+    assoc_col(/**@type {Column} */ col) { this.associated_col = col; }
+}
 
+///////////////// DATASET SYNC //////////////////////////////////////////////
+
+class FormDataSetTableSync extends TableSyncRuleReactive {
+    /**
+     * @param {FormDataSetBase} dataset 
+     * @param {TableNode} table 
+     */
+    constructor(dataset, table) {
+        const data = computed(() => {
+            return {
+                cols: this.cols,
+                rows: this.generate_data_rows_computed(this.cols.map(x => x.dataset_name ?? x.name))
+            };
+        });
+        super(table, data);
+        this.cols = reactive(/**@type {{primary?: boolean, name: string, dataset_name?: string}[]} */ ([]));
         this.dataset = dataset;
-        this.src     = src;
-
-        /**@type {Column?} */
-        this.associated_col = null;
     }
 
     /**
-     * @param {Column} col
+     * @param {Column | string} column
+     * @param {boolean} [primary]
+     * @param {string} [dataset_name]
+     * */
+    add_column(column, primary, dataset_name) {
+        if(column instanceof Column) {
+            primary = primary ?? column.is_primary(); 
+            this.cols.push({primary, dataset_name, name: column.name});
+            return;
+        }
+        this.cols.push({primary, dataset_name, name: column});
+    }
+
+    /**
+     * @param {string[]} col_names 
      */
-    assoc_col(col) {
-        this.associated_col = col;
-    }
-
-    refresh() {
-        if(this.src === null) return;
-        this.local.value = this.src.get_value();
-    }
-    get_cached() {
-        if(this.src === null) return undefined;
-        return this.src.get_value();
-    }
-    get_cached_ref() {
-        if(this.src === null) return null;
-        return this.src.get_ref();
-    }
-
-    is_changed() {
-        const cached = this.get_cached();
-        return cached !== undefined &&
-               cached !== this.local.value;
+    generate_data_rows_computed(col_names) {
+        return this.dataset.generate_data_rows_computed(col_names);
     }
 }
 
-class FormDataSet {
+
+/////////////// FORM DATASETS ////////////////////////////////////////
+
+class FormDataSetBase {
+
+    constructor() {
+        /**@type {FormQuerySourceBase?} */
+        this.query_src = null;
+        this.changed = computed(() => this.check_changed());
+        /**@type {string[]} */
+        this._column_names = [];
+        /**@type {Object.<string, number>} */
+        this._col_index_lookup = {};
+        /**@type {MaybeRef<SQLValue>[]} */
+        this._col_default_lookup = [];
+
+        /**@type {Object.<string, FormDataSetTableSync>} */
+        this.syncs = {};
+    }
 
     /**
-     * @param {FormQuerySource?} query_src 
+     * @param {string | number} name 
+     */
+    lookup_col_index(name) {
+        if(typeof name === 'number') return name;
+        return this._col_index_lookup[name] ??
+               this.query_src?.lookup_col_index(name) ??
+               -1;
+    }
+
+    /**
+     * @param {string | number} col_index_or_name 
+     */
+    get_default_value_for_column(col_index_or_name) {
+        return this._col_default_lookup[this.lookup_col_index(col_index_or_name)] ?? null;
+    }
+
+    // TODO Disassosiate dataset value name from query source column name (can be same by default, but should not have to be)
+    // TODO get_or_add_column (add_column_if_dosen't exist)
+    /**
+     * @param {string} name 
+     * @param {MaybeRef<SQLValue>} default_value 
+     * @param {number} [index] 
+     */
+    add_column(name, default_value = null, index) {
+        index = index ?? this._column_names.length;
+        this._column_names[index] = name;
+        this._col_default_lookup[index] = default_value;
+        this._col_index_lookup[name] = index;
+    }
+
+    // TODO allow to get sync by string, not TableNode
+    /**@param {TableNode} table */
+    get_or_create_sync(table) {
+        const table_name = table.name;
+        const sync = this.syncs[table_name];
+        if(sync) return sync;
+
+        const new_sync = new FormDataSetTableSync(this, table);
+        this.syncs[table_name] = new_sync;
+        return new_sync;
+    }
+
+    /// TO OVERRIDE ///
+    /**@returns {boolean} */
+    check_changed() { throw new Error('not implemented'); }
+    refresh()       { throw new Error('not implemented'); }
+    /**@returns {Promise<number>} */
+    async perform_save_notransaction(all = false) {
+        throw new Error('not implemented');
+    }
+    /**@returns {import('./Sync.js').TableSyncReactiveRow[]}*/
+    generate_data_rows_computed(/**@type {string[]} */ col_names) {
+        throw new Error('not implemented');
+    }
+    //////////////////
+
+    async perform_save_transaction(all = false) {
+        return ipc.db_as_transaction(() => this.perform_save_notransaction(all));
+    }
+}
+
+class FormDataSetFull extends FormDataSetBase {
+    
+    /**
+     * @typedef {{deleted: import('vue').Ref<boolean>, values: FormChangebleValue[]}} LocalRow
+     */
+
+    /**
+     * @param {FormQuerySourceBase?} query_src 
      */
     constructor(query_src) {
+        super();
         this.query_src = query_src;
-        this.insert_mode = query_src?.insert_mode || false;
-
-        /**@type {Map<TableNode, TableSync>} */
-        this.syncs = new Map();
-
-        /**@type {Object.<string, FormDataValue>} */
-        this.values = shallowReactive({});
-
-        this.changed = computed(() => this.check_changed());
+        this.local_rows = shallowRef(/**@type {LocalRow[]} */ ([]));
     }
-
-    check_changed() { return Object.values(this.values).some(v => v.changed.value); }
-    refresh() { Object.values(this.values).forEach(v => v.refresh()); }
-
+    
     /**
-     * @param {TableNode} table 
-     */
-    create_sync(table) {
-        const sync = new TableSync(table, this);
-        if(this.syncs.has(table)) {
-            throw new Error("CANNOT HAVE MULTIPLE SYNCS FOR THE SAME TABLE IN ONE DATASET");
-        }
-        this.syncs.set(table, sync);
-        return sync;
-    }
-    /**
-     * @param {TableNode} table 
-     */
-    get_or_create_sync(table) {
-        const sync = this.syncs.get(table);
-        if(sync) return sync;
-        return this.create_sync(table);
-    }
-
-    async perform_save_notransaction(/**@type {boolean?} */ insert = null, force = false) {
-        if(insert === null) insert = unref(this.insert_mode);
-        const values = await Promise.all(Array.from(this.syncs).map(x => x[1].perform_save(insert, force)))
-        return {insert, values, dataset: this};
-    }
-    async perform_save_transaction(/**@type {boolean?} */ insert = null, force = false) {
-        if(insert === null) insert = unref(this.insert_mode);
-        return ipc.db_as_transaction(() => this.perform_save_notransaction(insert, force));
+     * @param {import('../../ipc').IPCQueryResult} full_result 
+     * @param {FormDataSetFull} dataset 
+     * @returns {LocalRow[]}
+     * */
+    static _rebuild_from_query_full_result(full_result, dataset) {
+        const [rows, cols] = full_result;
+        if(rows.length === 0 || rows[0].length === 0) return [];
+        const mapped = rows.map((row, row_index) => {
+            return {
+                deleted: ref(false),
+                values: row.map((cell, col_index) => {
+                    const cached        = dataset.query_src?.get_result_computed(col_index, row_index, undefined);
+                    const default_value = dataset.get_default_value_for_column(col_index);
+                    return new FormChangebleValue(dataset, cached, default_value);
+                })
+            }
+        });
+        return mapped;
     }
 
-    /**
-     * 
-     * @param {string} name 
-     * @param {FormDataValueSrc?} src 
-     */
-    add(name, src) {
-        if(this.values[name]) {
-            throw new Error('VALUE ALREADY EXISTS: ' + name);
-        }
-        if(src instanceof FormQuerySourceCachedValue && src.src !== this.query_src) {
-            throw new Error('WRONG QUERY SOURCE FOR SET: ' + name);
-        }
-        else if(!(src instanceof FormQuerySourceCachedValue)){
-            throw new Error('NON-QUERY-CACHE NOT IMPLEMENTED YET IN DATASET');
-        }
-        const value = new FormDataValue(this, src);
-        this.values[name] = value;
-        return value;
-    }
-    /**
-     * @param {string} name 
-     */
-    get(name) {
-        const res = this.values[name];
-        if(!res) throw new Error('GETTING UNDEFINED FORM VALUE: ' + name);
-        return res;
-    }
 
+    //// OVERRIDE /////
+    check_changed() { return this.local_rows.value.some(x => x.deleted || x.values.some(xx => xx.changed.value)); }
+    refresh() {
+        const new_local_rows = FormDataSetFull._rebuild_from_query_full_result(this.query_src?.full_result.value ?? [[],[]], this);
+        this.local_rows.value = new_local_rows;        
+    }
+    async perform_save_notransaction(all = false, no_delete = false) {
+        const syncs = Object.values(this.syncs);
+        const results = await Promise.all(syncs.map(async sync => {
+            let affected_rows = 0;
+            if(!no_delete) {
+                affected_rows += await sync.perform_sync_notransaction('delete', all);
+            }
+            affected_rows += await sync.perform_sync_notransaction('replace', all);
+            return affected_rows;
+        }));
+        return results.reduce((acc, v) => acc + v, 0);
+    }
+    /**@returns {import('./Sync.js').TableSyncReactiveRow[]}*/
+    generate_data_rows_computed(/**@type {string[]} */ col_names) {
+        const col_indexes = col_names.map(name => this.lookup_col_index(name));
+        const result = this.local_rows.value.map(row => {
+            const values = col_indexes.map(index => row.values[index]);
+            return {
+                deleted: row.deleted.value,
+                changed: values.some(x => x.changed.value),
+                values:  values.map (x => x.get_local()),
+            }
+        })
+        return result;
+    }
+    //////////////////
 }
+
+class FormDataSetSingle extends FormDataSetBase {
+    
+    /**
+     * @param {FormQuerySourceBaseInsertable?} query_src 
+     */
+    constructor(query_src) {
+        super();
+        this.query_src = query_src;
+        // TODO
+    }
+
+    /**@type {Column | string} */
+    get(column) {
+        // TODO
+    }
+    
+
+
+    //// OVERRIDE /////
+    check_changed() { 
+        throw new Error('not implemented');
+    }
+    refresh() {
+        throw new Error('not implemented');
+    }
+    async perform_save_notransaction(all = false) {
+        throw new Error('not implemented');
+    }
+    /**@returns {import('./Sync.js').TableSyncReactiveRow[]}*/
+    generate_data_rows_computed(/**@type {string[]} */ col_names) {
+        throw new Error('not implemented');
+    }
+    //////////////////
+}
+
+
+
+
+
+
 
 // src  expired -> dane w DB są prawdopodobnie inne niż w cache'u
 // src  changed -> wywołanie update'u teraz, spowoduje nadpisanie nie-zcommitowanych zmian
@@ -568,11 +619,23 @@ class FormDataSet {
 // data changed -> dane wpisane są inne niż w cache'u
 
 export {
+    // Form Query Sources
     QuerySourceRequest_Insert,
-    FormQuerySource,
-    FormQuerySourceCachedValue,
-    FormDataSet,
-    FormDataValue,
-    FormDataValueLike,
-    // FormDataValueLikeSubView,
+    FormQuerySourceBase,
+    FormQuerySourceBaseInsertable,
+    FormQuerySourceFull,
+    FormQuerySourceSingle,
+
+    // Values
+    ChangableValueLike,
+    OwningChangableValue,
+    FormChangebleValue,
+    
+    // Datasets and Sync
+    FormDataSetBase,
+    FormDataSetFull,
+    FormDataSetSingle,
+    FormDataSetTableSync,
+    
+
 }

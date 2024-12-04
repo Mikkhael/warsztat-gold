@@ -55,6 +55,28 @@ class QuerySourceRequest_Refresh {
     constructor() {};
 }
 
+/**
+ * @extends {DataGraphDependable<SQLValue>}
+ */
+class QuerySourceResultValue extends DataGraphDependable{
+    /**
+     * @param {QuerySource} src 
+     * @param {number | string} col 
+     * @param {number} row 
+     * @param {SQLValue} default_value
+     */
+    constructor(src, col, row, default_value) {
+        super();
+        this.src = src;
+        // this.col = col;
+        // this.row = row;
+        this.ref = this.src.get_result_computed(col, row, default_value);
+    }
+
+    get_ref()  {return this.ref;}
+    get_node() {return this.src;}
+}
+
 class QuerySource extends DataGraphNodeBase {
     constructor(implicit_order_rowid = true) {
         super();
@@ -73,9 +95,72 @@ class QuerySource extends DataGraphNodeBase {
 
         /**@type {import("vue").ShallowRef<import("../../ipc").IPCQueryResult?>} */
         this.full_result = shallowRef(null);
+        this._col_index_lookup = computed(() => {
+            /**@type {Object.<string, number>} */
+            const res = {};
+            this.full_result.value?.[1].forEach((name, i) => res[name] = i);
+            return res;
+        });
 
         this.is_empty = computed(() => this.count.value <= 0);
     }
+
+    /**@param {number | string} name */
+    lookup_col_index(name) {
+        if(typeof name === 'number') return name;
+        let lookup = this._col_index_lookup.value[name];
+        return lookup ?? -1;
+    }
+    /**@param {number} idx */
+    lookup_col_name(idx) {
+        let lookup = this.full_result.value?.[1][idx] ?? '';
+        return lookup;
+    }
+
+    /**
+     * @param {number | string} col_index 
+     * @param {number} row_index 
+     * @returns {SQLValue | undefined}
+     */
+    get_result_raw(col_index, row_index = 0) {
+        if(this.full_result.value === null) return undefined;
+        if(typeof col_index === 'string') {
+            let lookup = this._col_index_lookup[col_index];
+            if(lookup === undefined) {
+                lookup = this.full_result.value[1].indexOf(col_index);
+                if(lookup === -1) return undefined;
+                this._col_index_lookup[col_index] = lookup;
+            }
+            col_index = lookup;
+        }
+        return this.full_result.value[0][row_index]?.[col_index];
+    }
+    /**
+     * @template [D=undefined]
+     * @param {number | string} col_index 
+     * @param {number} row_index 
+     * @param {D} default_value 
+     */
+    get_result_computed(col_index, row_index = 0, default_value) {
+        return computed(() => {
+            const res = this.get_result_raw(col_index, row_index);
+            if(res === undefined) return default_value;
+            return res;
+        });
+    }
+    
+    /**
+     * @param {number | string} col_index 
+     * @param {number} row_index 
+     * @param {SQLValue} default_value 
+     */
+    get(col_index, row_index = 0, default_value = null) {
+        return new QuerySourceResultValue(this, col_index, row_index, default_value);
+    }
+
+
+
+
 
     /// OVERWRITES //////////////////////
     expire(expire_count = true) {
@@ -218,7 +303,7 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     /**
-     * @param {(string | TableNode | Column )[]} parts
+     * @param {(string | TableNode | Column)[]} parts
      */
     set_from_with_deps(...parts) {
         const string_parts = parts.map(part => {
@@ -231,7 +316,7 @@ class QuerySource extends DataGraphNodeBase {
             }
             return part;
         });
-        const from = string_parts.join('');
+        const from = string_parts.join(' ');
         this.query.from.value = from;
     }
 
@@ -285,5 +370,6 @@ class QuerySource extends DataGraphNodeBase {
 
 export {
     QuerySource,
+    QuerySourceResultValue,
     QueryBuilder,
 }

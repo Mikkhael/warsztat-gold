@@ -137,28 +137,21 @@ async function db_import_csv() {
 }
 
 
-/**
- * @param {string} query 
- * @returns {Promise<number>}
- */
-async function db_insert(query) {
-    return await invoke("perform_insert", {query});
-}
 
 /**
  * @param {string} query 
  * @returns {Promise<number>}
  */
-async function db_execute(query) {
-    return await invoke("perform_execute", {query});
+async function db_execute(query, as_batch = false, get_last_rowid = false) {
+    return await invoke("perform_execute", {query, as_batch, get_last_rowid});
 }
 
-/**
- * @param {string} query 
- */
-async function db_execute_batch(query) {
-    return await invoke("perform_execute_batch", {query});
-}
+// async function db_insert(query) {
+//     return await invoke("perform_insert", {query});
+// }
+// async function db_execute_batch(query) {
+//     return await invoke("perform_execute_batch", {query});
+// }
 
 
 /**
@@ -253,9 +246,9 @@ export default {
     db_save,
     db_export_csv,
     db_import_csv,
-    db_insert,
+    // db_insert,
     db_execute,
-    db_execute_batch,
+    // db_execute_batch,
     db_query,
 
     db_as_transaction,

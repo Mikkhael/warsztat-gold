@@ -1,11 +1,10 @@
 
 
 //@ts-check
-import { computed, unref } from "vue";
+import { unref } from "vue";
+import { TableNode } from "./Database";
 import { escape_backtick_smart, escape_sql_value} from "../../utils";
 import ipc from "../../ipc";
-import { FormDataSet, FormDataValue } from "./Form";
-import { TableNode } from "./Database";
 
 
 /**
@@ -27,103 +26,254 @@ import { TableNode } from "./Database";
 
 /**
  * 
- * @param {[string, FormDataValue][]} entries 
+ * @param {[string, SQLValue][]} entries 
  */
 function entries_to_sql(entries) {
     return entries
-        .map(x => [escape_backtick_smart(x[0]), escape_sql_value(x[1].get_local())])
+        .map(x => [escape_backtick_smart(x[0]), escape_sql_value(x[1])])
         .map(x => x[0] + ' = ' + x[1]);
 }
 
 
-class TableSync {
+/**
+ * @typedef {{[P in "primary" | "values"]: [col: string, val: SQLValue][]}[]} BatchToUpdate
+ * @typedef {{cols: string[], values: SQLValue[][]}[]} BatchToInsert
+ * @typedef {[[col: string, val: SQLValue][][]]} BatchToDelete
+ * @typedef {"update" | "insert" | "replace" | "delete" } SyncCommand
+ */
+/**
+ * @template C
+ * @typedef {C extends "update" ? BatchToUpdate : C extends "delete" ? BatchToDelete : BatchToInsert} CommandToBatchType
+ */
+
+
+class TableSyncRule {
+
     /**
-     * @param {TableNode} table
-     * @param {FormDataSet} dataset
+     * @param {TableNode} table 
      */
-    constructor(table, dataset) {
+    constructor(table) {
         this.table = table;
-        this.dataset = dataset;
+    }
 
-        /**@type {Object.<string, FormDataValue>} */ 
-        this.values    = {};
-        /**@type {Object.<string, FormDataValue>} */ 
-        this.primaries = {};
 
-        this.to_update = computed(() => this.check_to_update());
+    /**@returns {BatchToUpdate} */ get_batch_update(all = false)  {throw new Error('not implemented');}
+    /**@returns {BatchToDelete} */ get_batch_delete(all = false)  {throw new Error('not implemented');}
+    /**@returns {BatchToInsert} */ get_batch_insert(all = false)  {throw new Error('not implemented');}
+    /**@returns {BatchToInsert} */ get_batch_replace(all = false) {throw new Error('not implemented');}
+
+    /**
+     * @template {SyncCommand} C
+     * @param {C} command
+     * @param {boolean} all
+     * @returns {CommandToBatchType<C>}
+     */
+    get_batch(command, all) {
+        switch(command) {
+            //@ts-ignore
+            case 'update':  return this.get_batch_update(all);
+            //@ts-ignore
+            case 'delete':  return this.get_batch_update(all);
+            //@ts-ignore
+            case 'insert':  return this.get_batch_update(all);
+            //@ts-ignore
+            case 'replace': return this.get_batch_update(all);
+        }
+        throw new Error('invalid sync command: ' + command);
     }
 
     /**
-     * @param {string} column_name 
-     * @param {FormDataValue} value 
+     * @param {SyncCommand} command 
+     * @param {boolean} all 
+     * @returns {string[]}
      */
-    assoc_value(column_name, value, is_primary = false) {
-        if(this.values[column_name]){
-            throw new Error('Value for column ' + column_name + ' already is synced for table ' + this.table.name);
-        }
-        if(value.dataset !== this.dataset) {
-            throw new Error('Value of incorrect dataset synced for table ' + this.table.name);
-        }
-        this.values[column_name] = value;
-        if(is_primary) {
-            this.primaries[column_name] = value;
+    generate_queries(command, all = false) {
+        switch(command) {
+            case "update": {
+                const batch = this.get_batch(command, all);
+                return batch.map(rows => TableSyncRule.generate_update_query_raw(this.table.name, rows)).filter(x => x !== '');
+            }
+            case "delete": {
+                const batch = this.get_batch(command, all);
+                return batch.map(rows => TableSyncRule.generate_delete_query_raw(this.table.name, rows)).filter(x => x !== '');
+            }
+            case "insert": {
+                const batch = this.get_batch(command, all);
+                return batch.map(rows => TableSyncRule.generate_insert_query_raw(this.table.name, rows, false)).filter(x => x !== '');
+            }
+            case "replace": {
+                const batch = this.get_batch(command, all);
+                return batch.map(rows => TableSyncRule.generate_insert_query_raw(this.table.name, rows, true)).filter(x => x !== '');
+            }
         }
     }
 
-    check_to_update() {
-        return this.dataset.changed.value;
-    }
-
-    filter_values_to_update(force = false) {
-        if(force) {
-            return Object.entries(this.values);
+    /**
+     * @template {SyncCommand} C
+     * @param {C} command 
+     * @param {boolean} all 
+     * @param {boolean} [get_last_rowid]
+     */
+    async perform_sync_notransaction(command, all = false, get_last_rowid = false, as_batch = false) {
+        const queries = this.generate_queries(command, all);
+        if(queries.length === 0){
+            return 0;
         }
-        return Object.entries(this.values).filter(x => x[1].changed.value);
-    }
-
-    generate_update_query(force = false) {
-        const to_update = this.filter_values_to_update(force);
-        if (to_update.length === 0) return "";
-
-        const primaries = Object.entries(this.primaries);
-
-        const set   = entries_to_sql(to_update).join(",");
-        const where = entries_to_sql(primaries).join(" AND ");
-
-        if(where === '') {
-            throw new Error("NO PRIMARY KEY SET FOR SYNC " + this.table.name);
-        }
-        
-        const query = `UPDATE ${escape_backtick_smart(this.table.name)} SET ${set} WHERE ${where};`;
-        return query;
-    }
-    
-    generate_insert_query() {
-        const to_insert = Object.entries(this.values);
-
-        const names  = to_insert.map(x => escape_backtick_smart(x[0]            )).join(",");
-        const values = to_insert.map(x => escape_sql_value     (x[1].get_local())).join(",");
-        
-        const query = `INSERT INTO ${escape_backtick_smart(this.table.name)} (${names}) VALUES (${values});`;
-        return query;
-    }
-
-    async perform_save(insert = unref(this.dataset?.insert_mode), force = false) {
-        if(insert) {
-            const insert_query = this.generate_insert_query();
-            this.table.expire();
-            return await ipc.db_insert(insert_query);
+        if(as_batch || get_last_rowid || queries.length === 1) {
+            return ipc.db_execute(queries.join('\n'), queries.length > 1, get_last_rowid);
         } else {
-            const update_query = this.generate_update_query(force);
-            if(update_query === "")
-                return 0;
-            this.table.expire();
-            return await ipc.db_execute(update_query);
+            const results_promises = queries.map(query => ipc.db_execute(query, false, false));
+            return Promise.all(results_promises).then(results => {
+                let sum = 0;
+                for(const result of results) {
+                    sum += result;
+                }
+                return sum;
+            });
         }
     }
+
+    /**
+     * @param {string} table_name
+     * @param {BatchToUpdate[number]} row_to_update 
+     */
+    static generate_update_query_raw(table_name, row_to_update) {
+        const set_sql   = entries_to_sql(row_to_update.values) .join(",");
+        const where_sql = entries_to_sql(row_to_update.primary).join(" AND ");
+        const table_sql = escape_backtick_smart(table_name);
+        if(where_sql === '') {
+            throw new Error("NO PRIMARY KEY FOR UPDATE " + table_name);
+        }
+        const query = `UPDATE ${table_sql} SET ${set_sql} WHERE ${where_sql};`;
+        return query;
+    }
+    /**
+     * @param {string} table_name
+     * @param {BatchToInsert[number]} rows_to_insert 
+     * @param {boolean} as_replace 
+     */
+    static generate_insert_query_raw(table_name, rows_to_insert, as_replace) {
+        const {cols, values} = rows_to_insert;
+        if (cols.length === 0 || values.length === 0) return "";
+        const values_for_each_row = values.map(row_values => {
+            const row_values_sql = row_values.map(x => escape_sql_value(x)).join(',');
+            return row_values_sql;
+        });
+        const cols_sql   = cols.map(x => escape_backtick_smart(x)).join(',');
+        const values_sql = values_for_each_row.map(x => '('+x+')').join(',');
+        const table_sql  = escape_backtick_smart(table_name);
+        const command    = as_replace ? 'REPLACE' : 'INSERT';
+        const query = `${command} INTO ${table_sql} (${cols_sql}) VALUES ${values_sql};`;
+        return query;
+    }
+    /**
+     * @param {string} table_name
+     * @param {BatchToDelete[number]} rows_to_delete
+     */
+    static generate_delete_query_raw(table_name, rows_to_delete) {
+        if (rows_to_delete.length === 0) return "";
+        const where_for_each_row = rows_to_delete.map(row => {
+            const where_sql = entries_to_sql(row).join(' AND ');
+            if(where_sql === '') {
+                throw new Error("NO PRIMARY KEY FOR DELETE " + table_name);
+            }
+            return '(' + where_sql + ')';
+        });
+        const where_sql = where_for_each_row.join(' OR ');
+        const table_sql = escape_backtick_smart(table_name);
+        const query = `DELETE FROM ${table_sql} WHERE ${where_sql};`;
+        return query;
+    }
+
 }
 
 
+
+/**@typedef {{primary?: boolean, name: string}[]} TableSyncReactiveColsDef */
+/**@typedef {{deleted?: boolean, changed?: boolean, inserted?: boolean, values: SQLValue[]}} TableSyncReactiveRow */
+/**@typedef {{cols: TableSyncReactiveColsDef, rows: TableSyncReactiveRow[]}} TableSyncReactiveData */
+
+class TableSyncRuleReactive extends TableSyncRule {
+
+
+    /**
+     * @param {TableNode} table
+     * @param {MaybeRef<TableSyncReactiveData>} data
+     */
+    constructor(table, data) {
+        super(table);
+        this.data = data;
+    }
+
+    static row_as_entries(/**@type {TableSyncReactiveColsDef} */ cols, /**@type {SQLValue[]} */ row, prims_only = false) {
+        /**@type {[string, SQLValue][]} */
+        const res = [];
+        for(const col_i in cols) {
+            if(prims_only && !cols[col_i].primary) continue;
+            res.push([
+                cols[col_i].name,
+                row[col_i] ?? null
+            ]);
+        }
+        return res;
+    }
+    static row_as_values(/**@type {TableSyncReactiveColsDef} */ cols, /**@type {SQLValue[]} */ row, prims_only = false) {
+        /**@type {SQLValue[]} */
+        const res = [];
+        for(const col_i in cols) {
+            if(prims_only && !cols[col_i].primary) continue;
+            res.push(row[col_i] ?? null);
+        }
+        return res;
+    }
+
+
+    /**@returns {BatchToUpdate} */ get_batch_update(all = false)  {
+        const data = unref(this.data);
+        /**@type {BatchToUpdate} */
+        const batch = [];
+        for(const row_i in data.rows) {
+            const row = data.rows[row_i];
+            if(!all && !row.changed) continue;
+            if(row.deleted) continue;
+            const row_to_update = {
+                primary: TableSyncRuleReactive.row_as_entries(data.cols, row.values, true),
+                values:  TableSyncRuleReactive.row_as_entries(data.cols, row.values, false),
+            };
+            batch.push(row_to_update);
+        }
+        return batch;
+    }
+    /**@returns {BatchToDelete} */ get_batch_delete(all = false)  {
+        const data = unref(this.data);
+        const rows_to_delete    = data.rows.filter(row => row.deleted);
+        const entreis_to_delete = rows_to_delete.map(row => TableSyncRuleReactive.row_as_entries(data.cols, row.values, true));
+        return [entreis_to_delete];
+    }
+    /**@returns {BatchToInsert} */ get_batch_insert(all = false, as_replace = false)  {
+        const data = unref(this.data);
+        /**@type {BatchToInsert[number]} */
+        const rows_to_insert = {
+            cols: data.cols.map(x => x.name),
+            values: []
+        };
+        for(const row_i in data.rows) {
+            const row = data.rows[row_i];
+            if(row.deleted) continue;
+            if(!as_replace && !all && !(row.inserted)) continue;
+            if( as_replace && !all && !(row.changed || row.inserted)) continue;
+            /**@type {BatchToInsert[number]['values'][number]} */
+            const row_to_insert = TableSyncRuleReactive.row_as_values(data.cols, row.values, false);
+            rows_to_insert.values.push(row_to_insert);
+        }
+        return [rows_to_insert];
+    }
+    /**@returns {BatchToInsert} */ get_batch_replace(all = false) {
+        return this.get_batch_insert(all, true);
+    }
+}
+
 export {
-    TableSync
+    TableSyncRule,
+    TableSyncRuleReactive
 }

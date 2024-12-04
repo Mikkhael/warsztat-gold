@@ -275,7 +275,7 @@ class DataGraphNodeBase {
     }
 
     /**
-     * @param {(node: DataGraphNodeBase) => boolean | void} callback 
+     * @param {(node: DataGraphNodeBase) => boolean | void} callback Returns True, if function should end (and return true)
      */
     for_each_dist_deep(callback, with_self = false) {
         const nodes = get_all_dists([this]);
@@ -310,6 +310,7 @@ class DataGraphDependable {
     get_ref()  {throw new Error('not implemented');}
     /**@returns {DataGraphNodeBase?} */
     get_node() {throw new Error('not implemented');}
+    get_value() {return this.get_ref().value;}
 }
 
 /**@template T */

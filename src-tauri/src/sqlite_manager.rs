@@ -148,12 +148,12 @@ impl SqliteConn{
     pub fn execute<P : rusqlite::Params>(&self, query: &str, params: P) -> Result<usize> {
         self.conn.execute(&query, params)
     }
-    pub fn insert<P : rusqlite::Params>(&self, query: &str, params: P) -> Result<i64> {
-        self.conn.execute(&query, params)?;
-        Ok(self.conn.last_insert_rowid())
-    }
     pub fn execute_batch(&self, query: &str) -> Result<()> {
         self.conn.execute_batch(&query)
+    }
+    pub fn execute_batch_get_rowid(&self, query: &str) -> Result<i64> {
+        self.conn.execute_batch(&query)?;
+        Ok(self.conn.last_insert_rowid())
     }
     pub fn query<P : rusqlite::Params>(&self, query: &str, params: P, max_rows: Option<usize>) -> Result<(ExtractedRows, rusqlite::Statement)> {
         let mut stmt = self.conn.prepare(&query)?;
@@ -365,33 +365,42 @@ pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLo
     }
 }
 
+// #[tauri::command]
+// pub fn perform_insert(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<i64, String> {
+//     println!("[INVOKE] perform_insert: {}", query);
+//     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+//     if let Some(sqlite_conn) = &db.sqlite_conn {
+//         sqlite_conn.insert(&query, ()).map_err(|err| err.to_string())
+//     }else{
+//         Err("Nie otworzono bazy danych".into())
+//     }
+// }
 #[tauri::command]
-pub fn perform_insert(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<i64, String> {
-    println!("[INVOKE] perform_insert: {}", query);
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
-    if let Some(sqlite_conn) = &db.sqlite_conn {
-        sqlite_conn.insert(&query, ()).map_err(|err| err.to_string())
-    }else{
-        Err("Nie otworzono bazy danych".into())
-    }
-}
-#[tauri::command]
-pub fn perform_execute(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<usize, String> {
+pub fn perform_execute(query: String, as_batch: bool, get_last_rowid: bool, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<i64, String> {
     println!("[INVOKE] perform_execute: {}", query);
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
-        sqlite_conn.execute(&query, ()).map_err(|err| err.to_string())
+        if get_last_rowid {
+            let last_rowid = sqlite_conn.execute_batch_get_rowid(&query).map_err(|err| err.to_string())?;
+            return Ok(last_rowid);
+        } else if as_batch {
+            sqlite_conn.execute_batch(&query).map_err(|err| err.to_string())?;
+            return Ok(0);
+        } else {
+            let affected_rows = sqlite_conn.execute(&query, ()).map_err(|err| err.to_string())?;
+            return Ok(affected_rows.try_into().unwrap());
+        }
     }else{
         Err("Nie otworzono bazy danych".into())
     }
 }
-#[tauri::command]
-pub fn perform_execute_batch(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
-    println!("[INVOKE] perform_batch:   {}", query);
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
-    if let Some(sqlite_conn) = &db.sqlite_conn {
-        sqlite_conn.execute_batch(&query).map_err(|err| err.to_string())
-    }else{
-        Err("Nie otworzono bazy danych".into())
-    }
-}
+// #[tauri::command]
+// pub fn perform_execute_batch(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
+//     println!("[INVOKE] perform_batch:   {}", query);
+//     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+//     if let Some(sqlite_conn) = &db.sqlite_conn {
+//         sqlite_conn.execute_batch(&query).map_err(|err| err.to_string())
+//     }else{
+//         Err("Nie otworzono bazy danych".into())
+//     }
+// }
