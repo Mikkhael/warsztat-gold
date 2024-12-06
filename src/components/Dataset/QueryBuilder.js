@@ -3,6 +3,7 @@
 //@ts-check
 import { computed, unref, shallowRef } from "vue";
 import { escape_backtick_smart, escape_like_full, escape_sql_value, reasRef } from "../../utils";
+import { Column } from "./Database";
 
 
 /**
@@ -132,10 +133,10 @@ class QueryBuilder {
         this._sql_order  = computed(() => this.order.value.map(query_ordering_to_string).join(','));
 
         this.limit = reasRef(1);
-        this._sql_offset = computed(() => this.offset.value.toString());
-
+        this._sql_limit  = computed(() => this.limit.value <= 0 ? '' : this.limit.value.toString());
+        
         this.offset = reasRef(-1);
-        this._sql_limit  = computed(() => this.limit.value.toString());
+        this._sql_offset = computed(() => this.limit.value <  0 ? '' : this.offset.value.toString());
 
         if(implicit_order_roiwd) {
             this.order.value = [['rowid']];
@@ -219,10 +220,11 @@ class QueryBuilder {
     }
 
     /**
-     * @param {string } name 
+     * @param {Column | string} column 
      * @param {string=} sql_definition 
      */
-    add_select(name, sql_definition) {
+    add_select(column, sql_definition) {
+        const name = column instanceof Column ? column.get_full_sql() : column;
         if(sql_definition === undefined) {
             this.select_fields.value.push([name]);
         } else {

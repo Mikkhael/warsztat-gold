@@ -2,6 +2,7 @@
 
 import { escape_backtick_smart } from "../../utils";
 import { DataGraphNodeBase } from "./DataGraph";
+import { markRaw } from "vue";
 
 /**
  * @typedef {(
@@ -103,7 +104,7 @@ class Column {
      * @param {ColDefinition} params
      */
     constructor(tab, params) {
-        this.tab = tab;
+        this.tab = markRaw(tab);
         this.name = params.name;
         this.type = params.type;
         this.targ = params.targ;

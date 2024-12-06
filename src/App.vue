@@ -8,10 +8,11 @@ import SqlDebugConsole from "./components/SqlDebug/SqlDebugConsole.vue";
 // import FormControlsDebug from "./components/SqlDebug/FormControlsDebug.vue";
 import FloatingWindowsTest from "./components/FloatingWindows/FloatingWindowsTest.vue";
 import AlertsDebug from "./components/SqlDebug/AlertsDebug.vue";
-import QueryViewerDebug from "./components/SqlDebug/QueryViewerDebug.vue";
+// import QueryViewerDebug from "./components/SqlDebug/QueryViewerDebug.vue";
 import DataGraphDebug from "./components/SqlDebug/DataGraphDebug.vue";
-import QuerySourceDebug from "./components/SqlDebug/QuerySourceDebug.vue";
-import MainWindow from "./components/MainWindow.vue";
+// import QuerySourceDebug from "./components/SqlDebug/QuerySourceDebug.vue";
+import RevisedFormQueryDebug from "./components/SqlDebug/RevisedFormQueryDebug.vue";
+// import MainWindow from "./components/MainWindow.vue";
 import { onMounted, reactive, readonly, ref } from "vue";
 
 import WinBox from "./components/WinBox/winbox";
@@ -20,30 +21,32 @@ import useMainMsgManager from "./components/Msg/MsgManager";
 import CornerMsgContainer from "./components/Msg/CornerMsgContainer.vue";
 
 const main_components = [
-  MainWindow,
+  // MainWindow,
   SqlDebugConsole,
   // QueryFormDebug,
   // QueryFormSimpleDebug,
   // FormControlsDebug,
   FloatingWindowsTest,
-  QueryViewerDebug,
+  // QueryViewerDebug,
   AlertsDebug,
   DataGraphDebug,
-  QuerySourceDebug,
+  // QuerySourceDebug,
+  RevisedFormQueryDebug,
 ];
 const main_components_names = readonly([
-  "MainWindow",
+  // "MainWindow",
   "SqlDebugConsole",
   // "QueryFormDebug",
   // "QueryFormSimpleDebug",
   // "FormControlsDebug",
   "FloatingWindowsTest",
-  "QueryViewerDebug",
+  // "QueryViewerDebug",
   "AlertsDebug",
   "DataGraphDebug",
-  "QuerySourceDebug",
+  // "QuerySourceDebug",
+  "RevisedFormQueryDebug",
 ]);
-const current_main_component_index = ref(0);
+const current_main_component_index = ref(4);
 const current_main_component = ref();
 
 const msg_manager = useMainMsgManager();

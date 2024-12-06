@@ -25,7 +25,7 @@ const props = defineProps({
         default: false
     },
     value: {
-        /**@type {import('vue').PropType<import('../Dataset').FormDataValueLike>} */
+        /**@type {import('vue').PropType<import('../Dataset').ChangableValueLike>} */
         type: Object,
         required: true
     },

@@ -1,10 +1,10 @@
 //@ts-check
 import { computed, reactive, toRefs, watch } from 'vue';
-import { FormDataValueLike } from '../../Dataset';
+import { ChangableValueLike } from '../../Dataset';
 import { typeofpl } from '../../../utils';
 
 /**
- * @param {{value: FormDataValueLike, readonly: boolean, nonull: boolean, options: any[]}} props 
+ * @param {{value: ChangableValueLike, readonly: boolean, nonull: boolean, options: any[]}} props 
  */
 function use_FormEnum(props) {
     const value = props.value;
@@ -29,7 +29,7 @@ function use_FormEnum(props) {
         get() {return options.value.has(value.get_local()) ? value.get_local() : 
                       value.get_local() === null           ? null :
                                                             '___unknown'; },
-        set(new_value) {value.local.value = new_value;}
+        set(new_value) {value.set_local(new_value);}
     });
     
     // Jesli pusta - wartość jest poprawna
@@ -45,7 +45,7 @@ function use_FormEnum(props) {
     });
 
     const res = reactive({
-        local: value.local,
+        local: value.get_local_ref(),
         cached: value.get_cached_ref(),
         changed: value.changed,
         options,

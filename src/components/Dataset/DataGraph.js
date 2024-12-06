@@ -113,7 +113,7 @@ class DataGraphNodeBase {
     check_disabled_impl()  {return false;}
     check_should_disable_dists_impl()  {return false;}
     update_impl() {}
-    save_impl(force = false){}
+    /**@returns {Promise<number | void> | void} */ save_impl(force = false){}
     async confirm_update_on_changed() {
         return confirm('Posiadasz niezapisane zmiany, które zostaną utracone. Czy chcesz kontynuować?');
     }
@@ -197,19 +197,25 @@ class DataGraphNodeBase {
     /// SAVING
 
     async save_deep_notransaction(force = false) {
+        let affected = 0;
         const changed_dists = get_all_changed_dists([this]);
-        for(const dist of changed_dists) {
-            await dist.save_impl(force);
+        if(changed_dists.length === 0 && force) {
+            affected += await this.save_impl(force) ?? 0;
         }
+        for(const dist of changed_dists) {
+            affected += await dist.save_impl(force) ?? 0;
+        }
+        return affected;
     }
 
     async save_deep_transaction(force = false) {
-        await ipc.db_as_transaction(() => this.save_deep_notransaction(force));
+        return await ipc.db_as_transaction(() => this.save_deep_notransaction(force));
     }
 
     async save_deep_transaction_and_update(force = false) {
-        await this.save_deep_transaction(force);
+        const affected = await this.save_deep_transaction(force);
         await this.update_complete();
+        return affected;
     }
 
 

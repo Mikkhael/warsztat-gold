@@ -103,6 +103,7 @@ class QuerySource extends DataGraphNodeBase {
         });
 
         this.is_empty = computed(() => this.count.value <= 0);
+        this.no_disable_on_empty = false;
     }
 
     /**@param {number | string} name */
@@ -171,7 +172,7 @@ class QuerySource extends DataGraphNodeBase {
         return this.query.is_expired();
     }
     check_should_disable_dists_impl() {
-        return this.is_empty.value;
+        return !this.no_disable_on_empty && this.is_empty.value;
     }
 
     async update__count_impl() {
@@ -207,6 +208,12 @@ class QuerySource extends DataGraphNodeBase {
     disable_offset() {
         this.offset.value = 0;
         this.offset_disabled = true;
+    }
+    set_no_limit() {
+        this.query.limit.value = 0;
+    }
+    set_no_disable_on_empty(value = true) {
+        this.no_disable_on_empty = value;
     }
 
     perform_offset_goto(value = 0, wrapping = false) {
@@ -295,11 +302,11 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     /**
-     * @param {string}   name 
+     * @param {Column | string} column
      * @param {string=}  sql_definition 
      */
-    add_select(name, sql_definition = undefined) {
-        this.query.add_select(name, sql_definition);
+    add_select(column, sql_definition = undefined) {
+        this.query.add_select(column, sql_definition);
     }
 
     /**
@@ -323,11 +330,12 @@ class QuerySource extends DataGraphNodeBase {
     /**
      * @param {Column} col_main 
      * @param {Column} col_joined 
+     * @param {'' | 'LEFT' | 'RIGHT' | 'OUTER' | 'INNER'} type
      */
-    add_join(col_main, col_joined) {
+    add_join(col_main, col_joined, type = '') {
         this.add_table_dep(col_main.tab);
         this.add_table_dep(col_joined.tab);
-        const sql = ` JOIN ${col_joined.tab.get_full_sql()} ON ${col_joined.get_full_sql()}=${col_main.get_full_sql()}`;
+        const sql = ` ${type} JOIN ${col_joined.tab.get_full_sql()} ON ${col_joined.get_full_sql()}=${col_main.get_full_sql()}`;
         this.query.from.value += sql;
     }
 
@@ -368,8 +376,20 @@ class QuerySource extends DataGraphNodeBase {
 }
 
 
+class SimpleQuerySource extends QuerySource {
+    constructor(implicit_order_rowid = false) {
+        super(implicit_order_rowid);
+        this.disable_offset();
+        this.set_no_disable_on_empty();
+        this.set_no_limit();
+    }
+}
+
+
+
 export {
     QuerySource,
     QuerySourceResultValue,
+    SimpleQuerySource,
     QueryBuilder,
 }

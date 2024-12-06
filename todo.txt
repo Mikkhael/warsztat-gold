@@ -6,6 +6,8 @@
 - remember last paths in dialogs (localstorage keyd by title?)
 - print debug mesages as events to frontend
 
+- !!!! CHANGE ESCAPING EVERYWHERE !!!
+
 + Access
     + create interface for accual mdb [raczej nigdy się nie stanie]
     + import desired db structure form mdb

@@ -54,55 +54,59 @@ class TableSyncRule {
      */
     constructor(table) {
         this.table = table;
+        this.update_only = false;
     }
 
+    set_update_only(value = true) {
+        this.update_only = value;
+    }
 
-    /**@returns {BatchToUpdate} */ get_batch_update(all = false)  {throw new Error('not implemented');}
-    /**@returns {BatchToDelete} */ get_batch_delete(all = false)  {throw new Error('not implemented');}
-    /**@returns {BatchToInsert} */ get_batch_insert(all = false)  {throw new Error('not implemented');}
-    /**@returns {BatchToInsert} */ get_batch_replace(all = false) {throw new Error('not implemented');}
+    /**@returns {BatchToUpdate} */ get_batch_update (forced = false)  {throw new Error('not implemented');}
+    /**@returns {BatchToDelete} */ get_batch_delete ()                {throw new Error('not implemented');}
+    /**@returns {BatchToInsert} */ get_batch_insert ()                {throw new Error('not implemented');}
+    /**@returns {BatchToInsert} */ get_batch_replace(forced = false)  {throw new Error('not implemented');}
 
     /**
      * @template {SyncCommand} C
      * @param {C} command
-     * @param {boolean} all
+     * @param {boolean} [forced]
      * @returns {CommandToBatchType<C>}
      */
-    get_batch(command, all) {
+    get_batch(command, forced) {
         switch(command) {
             //@ts-ignore
-            case 'update':  return this.get_batch_update(all);
+            case 'update':  return this.get_batch_update(forced);
             //@ts-ignore
-            case 'delete':  return this.get_batch_update(all);
+            case 'delete':  return this.update_only ? [] : this.get_batch_delete();
             //@ts-ignore
-            case 'insert':  return this.get_batch_update(all);
+            case 'insert':  return this.update_only ? [] : this.get_batch_insert();
             //@ts-ignore
-            case 'replace': return this.get_batch_update(all);
+            case 'replace': return this.update_only ? [] : this.get_batch_replace(forced);
         }
         throw new Error('invalid sync command: ' + command);
     }
 
     /**
      * @param {SyncCommand} command 
-     * @param {boolean} all 
+     * @param {boolean} forced 
      * @returns {string[]}
      */
-    generate_queries(command, all = false) {
+    generate_queries(command, forced = false) {
         switch(command) {
             case "update": {
-                const batch = this.get_batch(command, all);
+                const batch = this.get_batch(command, forced);
                 return batch.map(rows => TableSyncRule.generate_update_query_raw(this.table.name, rows)).filter(x => x !== '');
             }
             case "delete": {
-                const batch = this.get_batch(command, all);
+                const batch = this.get_batch(command, forced);
                 return batch.map(rows => TableSyncRule.generate_delete_query_raw(this.table.name, rows)).filter(x => x !== '');
             }
             case "insert": {
-                const batch = this.get_batch(command, all);
+                const batch = this.get_batch(command, forced);
                 return batch.map(rows => TableSyncRule.generate_insert_query_raw(this.table.name, rows, false)).filter(x => x !== '');
             }
             case "replace": {
-                const batch = this.get_batch(command, all);
+                const batch = this.get_batch(command, forced);
                 return batch.map(rows => TableSyncRule.generate_insert_query_raw(this.table.name, rows, true)).filter(x => x !== '');
             }
         }
@@ -111,14 +115,15 @@ class TableSyncRule {
     /**
      * @template {SyncCommand} C
      * @param {C} command 
-     * @param {boolean} all 
+     * @param {boolean} forced 
      * @param {boolean} [get_last_rowid]
      */
-    async perform_sync_notransaction(command, all = false, get_last_rowid = false, as_batch = false) {
-        const queries = this.generate_queries(command, all);
+    async perform_sync_notransaction(command, forced = false, get_last_rowid = false, as_batch = false) {
+        const queries = this.generate_queries(command, forced);
         if(queries.length === 0){
             return 0;
         }
+        this.table.expire();
         if(as_batch || get_last_rowid || queries.length === 1) {
             return ipc.db_execute(queries.join('\n'), queries.length > 1, get_last_rowid);
         } else {
@@ -171,6 +176,7 @@ class TableSyncRule {
      * @param {BatchToDelete[number]} rows_to_delete
      */
     static generate_delete_query_raw(table_name, rows_to_delete) {
+        console.log('to delete', rows_to_delete);
         if (rows_to_delete.length === 0) return "";
         const where_for_each_row = rows_to_delete.map(row => {
             const where_sql = entries_to_sql(row).join(' AND ');
@@ -190,7 +196,7 @@ class TableSyncRule {
 
 
 /**@typedef {{primary?: boolean, name: string}[]} TableSyncReactiveColsDef */
-/**@typedef {{deleted?: boolean, changed?: boolean, inserted?: boolean, values: SQLValue[]}} TableSyncReactiveRow */
+/**@typedef {{deleted?: boolean, changed?: boolean, inserted?: boolean, cached?: (SQLValue|undefined)[], values: SQLValue[]}} TableSyncReactiveRow */
 /**@typedef {{cols: TableSyncReactiveColsDef, rows: TableSyncReactiveRow[]}} TableSyncReactiveData */
 
 class TableSyncRuleReactive extends TableSyncRule {
@@ -205,7 +211,7 @@ class TableSyncRuleReactive extends TableSyncRule {
         this.data = data;
     }
 
-    static row_as_entries(/**@type {TableSyncReactiveColsDef} */ cols, /**@type {SQLValue[]} */ row, prims_only = false) {
+    static row_as_entries(/**@type {TableSyncReactiveColsDef} */ cols, /**@type {(SQLValue | undefined)[]} */ row, prims_only = false) {
         /**@type {[string, SQLValue][]} */
         const res = [];
         for(const col_i in cols) {
@@ -228,29 +234,32 @@ class TableSyncRuleReactive extends TableSyncRule {
     }
 
 
-    /**@returns {BatchToUpdate} */ get_batch_update(all = false)  {
+    /**@returns {BatchToUpdate} */ get_batch_update(forced = false)  {
         const data = unref(this.data);
         /**@type {BatchToUpdate} */
         const batch = [];
         for(const row_i in data.rows) {
             const row = data.rows[row_i];
-            if(!all && !row.changed) continue;
-            if(row.deleted) continue;
+            if(row.deleted || row.inserted) continue;
+            if(!forced && !row.changed) continue;
+            if(row.cached === undefined) {
+                throw new Error("NOT PROVIDED CACHED VALUES FOR UPDATE");
+            }
             const row_to_update = {
-                primary: TableSyncRuleReactive.row_as_entries(data.cols, row.values, true),
+                primary: TableSyncRuleReactive.row_as_entries(data.cols, row.cached, true),
                 values:  TableSyncRuleReactive.row_as_entries(data.cols, row.values, false),
             };
             batch.push(row_to_update);
         }
         return batch;
     }
-    /**@returns {BatchToDelete} */ get_batch_delete(all = false)  {
+    /**@returns {BatchToDelete} */ get_batch_delete()  {
         const data = unref(this.data);
         const rows_to_delete    = data.rows.filter(row => row.deleted);
         const entreis_to_delete = rows_to_delete.map(row => TableSyncRuleReactive.row_as_entries(data.cols, row.values, true));
         return [entreis_to_delete];
     }
-    /**@returns {BatchToInsert} */ get_batch_insert(all = false, as_replace = false)  {
+    /**@returns {BatchToInsert} */ get_batch_insert(forced_replace = false, as_replace = false)  {
         const data = unref(this.data);
         /**@type {BatchToInsert[number]} */
         const rows_to_insert = {
@@ -260,16 +269,16 @@ class TableSyncRuleReactive extends TableSyncRule {
         for(const row_i in data.rows) {
             const row = data.rows[row_i];
             if(row.deleted) continue;
-            if(!as_replace && !all && !(row.inserted)) continue;
-            if( as_replace && !all && !(row.changed || row.inserted)) continue;
+            if(!as_replace && !(row.inserted)) continue;
+            if( as_replace && !forced_replace && !(row.changed || row.inserted)) continue;
             /**@type {BatchToInsert[number]['values'][number]} */
             const row_to_insert = TableSyncRuleReactive.row_as_values(data.cols, row.values, false);
             rows_to_insert.values.push(row_to_insert);
         }
         return [rows_to_insert];
     }
-    /**@returns {BatchToInsert} */ get_batch_replace(all = false) {
-        return this.get_batch_insert(all, true);
+    /**@returns {BatchToInsert} */ get_batch_replace(forced = false) {
+        return this.get_batch_insert(forced, true);
     }
 }
 

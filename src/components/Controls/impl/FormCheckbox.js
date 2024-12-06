@@ -1,9 +1,9 @@
 //@ts-check
 import { computed, reactive } from 'vue';
-import { FormDataValueLike } from '../../Dataset';
+import { ChangableValueLike } from '../../Dataset';
 
 /**
- * @param {{value: FormDataValueLike, readonly: boolean, allownull: boolean}} props 
+ * @param {{value: ChangableValueLike, readonly: boolean, allownull: boolean}} props 
  */
 function use_FormCheckbox(props) {
     const value = props.value;
@@ -11,7 +11,7 @@ function use_FormCheckbox(props) {
     // Uniemożliwienie wyświetlenia wartości innej niż dozwolona
     const local_proxy = computed({
         get() {return !!value.get_local(); },
-        set(new_value) {value.local.value = new_value;}
+        set(new_value) {value.set_local(new_value);}
     });
     
     // Jesli pusta - wartość jest poprawna
@@ -25,7 +25,7 @@ function use_FormCheckbox(props) {
     });
 
     const res = reactive({
-        local: value.local,
+        local: value.get_local_ref(),
         cached: value.get_cached_ref(),
         changed: value.changed,
         local_proxy,

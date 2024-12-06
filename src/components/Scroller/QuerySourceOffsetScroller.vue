@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 import { watch, ref, readonly, toRef, toRefs, computed, onMounted, onUnmounted } from "vue";
-import { FormQuerySource, QuerySource } from "../Dataset";
+import { FormQuerySourceBase, FormQuerySourceBaseInsertable, QuerySource } from "../Dataset";
 import useMainMsgManager, { MsgManager } from "../Msg/MsgManager";
 
 const props = defineProps({
@@ -42,7 +42,8 @@ const emit = defineEmits({
 	error(err) {return true;}
 })
 
-const src_form = computed(() => props.src instanceof FormQuerySource ? props.src : null);
+const src_form            = computed(() => props.src instanceof FormQuerySourceBase ? props.src : null);
+const src_form_insertable = computed(() => props.src instanceof FormQuerySourceBaseInsertable ? props.src : null);
 
 
 
@@ -83,7 +84,7 @@ async function clicked_refresh() {
 }
 async function clicked_insert() {
 	return props.src.try_perform_and_update_confirmed(() => 
-		src_form.value?.request_insert_toggle());
+		src_form_insertable.value?.request_insert_toggle());
 }
 async function clicked_save(shiftKey = false) {
 	const force = shiftKey;
@@ -105,7 +106,7 @@ async function clicked_save(shiftKey = false) {
 	:class="{
 		is_expired: props.src.expired.value, 
 		is_empty:   props.src.is_empty.value, 
-		is_insert:  src_form?.insert_mode.value
+		is_insert:  src_form_insertable?.insert_mode.value
 	}">
 	<input type="button" class="btn prev bound" @click="goto(0)            .catch(on_error)">
 	<input type="button" class="btn prev step2" @click="scroll(-props.step).catch(on_error)" v-if="props.step > 1">
@@ -117,7 +118,7 @@ async function clicked_save(shiftKey = false) {
 	<span class="txt bounds as_input"> ({{ props.src.count.value }}) </span>
 	<input type="button" class="btn refresh"    @click="clicked_refresh().catch(on_error)" v-if="!props.norefresh">
 	<input type="button" class="btn insert"     @click="clicked_insert().catch(on_error)"  v-if="props.insertable" 
-				:class="{indicate: src_form?.insert_mode.value}">
+				:class="{indicate: src_form_insertable?.insert_mode.value}">
 	<div class="spacer"></div>
 	<!-- <span  class="as_input"> | UTD: {{ state.is_bounds_utd }} | EMPTY: {{ state.is_empty }} | </span> -->
 	<input type="button" class="btn save"       @click="e => clicked_save(e.shiftKey).catch(on_error)" v-if="props.saveable" :class="{indicate: props.src.changed.value}">

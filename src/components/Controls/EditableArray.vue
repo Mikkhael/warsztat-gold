@@ -1,8 +1,7 @@
 <script setup generic="T">
 //@ts-check
 
-import { type } from '@tauri-apps/api/os';
-import { computed, ref, watch, toRef, useAttrs, nextTick } from 'vue';
+import { ref, watch, toRef, nextTick } from 'vue';
 
 const props = defineProps({
     value: {
@@ -18,6 +17,13 @@ const props = defineProps({
     nodelete: Boolean,
     noinsert: Boolean,
 
+    key_getter: {/**@type {import('vue').PropType<(index: number, elem: T) => boolean>} */ 
+        type: Function
+    },
+    vif_getter: {/**@type {import('vue').PropType<(index: number, elem: T) => any>} */ 
+        type: Function
+    }, 
+
     insert_handler: {
         /**@type {import('vue').PropType<(index: number, elem: T?, arr: T[]) => boolean>}   */ 
         //@ts-ignore
@@ -29,6 +35,10 @@ const props = defineProps({
         type: Function,
     },
 });
+
+watch(toRef(props, 'value'), (new_value) => {
+    console.log('CHANGED ARRAY VALUE', new_value, new_value.length);
+})
 
 
 const show = ref(true);
@@ -79,16 +89,20 @@ defineExpose({
 </script>
 
 <template>
-
     <div class="EditableArray_container" v-if="show" >
-        <div class="EditableArray_element" v-for="(elem, index) in props.value">
-            <slot :elem="/**@type {any}*/ (elem)" :index="index" ></slot>
-            <div class="EditableArray_erase_button_container">
-                <img class="button" 
-                     src="./../../assets/icons/trashx.svg" 
-                     @click="perform_delete(index)" 
-                     v-if="!props.nodelete"/>
-            </div>
+        <div class="EditableArray_element" 
+        v-for="(elem, index) in props.value"
+        :key="props.key_getter?.(index, elem)"
+        >
+            <template v-if="props.vif_getter?.(index, elem) ?? true">
+                <slot :elem="/**@type {any}*/ (elem)" :index="index" ></slot>
+                <div class="EditableArray_erase_button_container">
+                    <img class="button" 
+                    src="./../../assets/icons/trashx.svg" 
+                    @click="perform_delete(index)" 
+                    v-if="!props.nodelete"/>
+                </div>
+            </template>
         </div>
         <div class="button EditableArray_add" @click="perform_insert()" v-if="!props.noinsert">
             {{ props.add_text }}

@@ -142,8 +142,8 @@ async function db_import_csv() {
  * @param {string} query 
  * @returns {Promise<number>}
  */
-async function db_execute(query, as_batch = false, get_last_rowid = false) {
-    return await invoke("perform_execute", {query, as_batch, get_last_rowid});
+async function db_execute(query, asBatch = false, getLastRowid = false) {
+    return await invoke("perform_execute", {query, asBatch, getLastRowid});
 }
 
 // async function db_insert(query) {

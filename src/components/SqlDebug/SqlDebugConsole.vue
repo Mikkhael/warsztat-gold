@@ -62,7 +62,7 @@ function perform_select(){
 }
 function perform_insert(){
     save_query_to_history(query_string.value);
-    return ipc.db_insert(query_string.value).then(handle_success_insert).catch(handle_error);
+    return ipc.db_execute(query_string.value, true, true).then(handle_success_insert).catch(handle_error);
 }
 function perform_execute(){
     save_query_to_history(query_string.value);
@@ -70,7 +70,7 @@ function perform_execute(){
 }
 function perform_execute_batch(){
     save_query_to_history(query_string.value);
-    return ipc.db_execute_batch(query_string.value).then(handle_success_execute).catch(handle_error);
+    return ipc.db_execute(query_string.value, true).then(handle_success_execute).catch(handle_error);
 }
 function save(){
     return ipc.db_save().then(path => {

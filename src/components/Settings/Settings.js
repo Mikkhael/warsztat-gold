@@ -1,7 +1,7 @@
 //@ts-check
 
 import { computed, markRaw, onMounted, onUnmounted, ref, shallowRef } from "vue";
-import { FormDataValueLike } from "../Dataset";
+import { OwningChangableValue } from "../Dataset";
 import { deep_copy, escape_sql_value, object_leaf_map, object_map, query_result_to_object } from "../../utils";
 import ipc from "../../ipc";
 
@@ -12,21 +12,21 @@ const SETTINGS_CATEGORY_NAMES = /**@type {const} */ (['test', 'backup']);
 
 /**
  * @template T
- * @extends {FormDataValueLike<T>}
+ * @extends {OwningChangableValue<T>}
  */
-class ReactiveSettingValue extends FormDataValueLike {
+class ReactiveSettingValue extends OwningChangableValue {
     /**
      * @param {T} initial_value 
      * @param {T | undefined} cached
      */
     constructor(initial_value, cached = undefined) {
-        super(initial_value);
-        this.cached = cached;
+        super(initial_value, cached);
+        // this.cached = cached;
     }
 
-    get_cached() {
-        return this.cached;
-    }
+    // get_cached() {
+    //     return this.cached;
+    // }
 }
 
 /**

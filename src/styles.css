@@ -125,7 +125,7 @@ legend {
 
 
 
-.FormControl.changed {
+.FormControl.changed:not([disabled]) {
   background-color: #fcf5be;
 }
 
@@ -141,7 +141,7 @@ legend {
 .FormControl.FormControlCheckbox {
   border: 1px solid transparent;
 }
-.FormControl.FormControlCheckbox.changed {
+.FormControl.FormControlCheckbox.changed:not([disabled]) {
   background-color: #d3d320;
   border-color: #ffff00;
 }
