@@ -43,13 +43,20 @@ function wrap(val, past_max) {
 }
 
 class QuerySourceRequest_Offset_Goto{
-    constructor(value = 0, wrapping = false) {this.value = value, this.wrapping = wrapping};
+    constructor(value = 0, wrapping = false) {this.value = value, this.wrapping = wrapping;}
 }
 class QuerySourceRequest_Offset_Scroll {
-    constructor(value = 0) {this.value = value};
+    constructor(value = 0) {this.value = value;}
+    merge(other) {
+        if(other instanceof QuerySourceRequest_Offset_Scroll) {
+            this.value += other.value;
+            return true;
+        }
+        return false;
+    }
 }
 class QuerySourceRequest_Offset_Rownum {
-    constructor(value = 0, colname = 'rowid') {this.value = value, this.colname = colname};
+    constructor(value = 0, colname = 'rowid') {this.value = value, this.colname = colname;}
 }
 class QuerySourceRequest_Refresh {
     constructor() {};
@@ -104,6 +111,8 @@ class QuerySource extends DataGraphNodeBase {
 
         this.is_empty = computed(() => this.count.value <= 0);
         this.no_disable_on_empty = false;
+
+        this.is_marked_update_in_progress = false;
     }
 
     /**@param {number | string} name */
@@ -198,9 +207,13 @@ class QuerySource extends DataGraphNodeBase {
         await this.perform_offset_query();
     }
     async update_impl(){
-        await this.update__count_impl();
-        await this.update__request_impl();
-        await this.update__main_impl();
+        do {
+            await this.update__count_impl();
+            await this.update__request_impl();
+            await this.update__main_impl();
+        } while (this.request !== null);
+        console.log('Completed QuerySource update, marked: ' + this.is_marked_update_in_progress);
+        this.is_marked_update_in_progress = false;
         this.query.acknowledge_expried();
     }
     ///////////////////////////////////////
@@ -210,7 +223,8 @@ class QuerySource extends DataGraphNodeBase {
         this.offset_disabled = true;
     }
     set_no_limit() {
-        this.query.limit.value = 0;
+        this.disable_offset();
+        this.query.limit.value = -1;
     }
     set_no_disable_on_empty(value = true) {
         this.no_disable_on_empty = value;
@@ -255,11 +269,29 @@ class QuerySource extends DataGraphNodeBase {
         return result;
     }
 
+    mark_for_update() {
+        console.log("Marking for update ", this.is_marked_update_in_progress);
+        if(this.is_marked_update_in_progress) {
+            return Promise.resolve(false);
+        }
+        this.is_marked_update_in_progress = true;
+        this.expire(false);
+        return this.update_complete().then(x => true);
+    }
+    async try_mark_for_update(/**@type {(src: QuerySource) => any} */ callback) {
+        const confirmed = await this.assure_unchanged_or_confirm();
+        if(confirmed) {
+            await callback(this);
+            return this.mark_for_update();
+        }
+        return undefined;
+    }
+
     _add_update_request_impl(request, expire_count = true) {
         if(this.disabled.value) {
             return;
         }
-        this.request = request;
+        this.request = this.request?.merge?.(request) || request;
         this.expire(expire_count);
     }
     /**

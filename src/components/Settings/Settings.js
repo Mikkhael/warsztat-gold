@@ -280,8 +280,16 @@ class Settings {
             this.categories[cat_name] = SettingsDefaults[cat_name](value);
             this.poke_update(cat_name, true);
         }
-
-        const [rows] = await ipc.db_query('SELECT `key`,`value` FROM `_meta_setting_json`');
+        
+        const [rows] = await ipc.db_query('SELECT `key`,`value` FROM `_meta_setting_json`').catch(err => {
+            if(err === 'no such table: _meta_setting_json') {
+                return [undefined];
+            }
+            throw err;
+        });
+        if(rows === undefined) {
+            return false;
+        }
         for(const cat_name of cat_names) {
             let json = rows.find(x => x[0] === cat_name)?.[1] ?? null;
             let value = null;
@@ -290,6 +298,7 @@ class Settings {
             } catch (err) {};
             load_routine(cat_name, value);
         }
+        return true;
     }
 
     /**

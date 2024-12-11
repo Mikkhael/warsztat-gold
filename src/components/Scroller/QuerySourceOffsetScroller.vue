@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 import { watch, ref, readonly, toRef, toRefs, computed, onMounted, onUnmounted } from "vue";
-import { FormQuerySourceBase, FormQuerySourceBaseInsertable, QuerySource } from "../Dataset";
+import { FormQuerySourceBase, FormQuerySourceBaseInsertable, FormQuerySourceFull, QuerySource } from "../Dataset";
 import useMainMsgManager, { MsgManager } from "../Msg/MsgManager";
 
 const props = defineProps({
@@ -29,6 +29,11 @@ const props = defineProps({
 		default: false
 	},
 
+	full_limit: {
+		type: Number,
+		default: 0,
+	}
+
 	// indicate_save:{
 	// 	type: Boolean,
 	// 	default: false,
@@ -44,6 +49,7 @@ const emit = defineEmits({
 
 const src_form            = computed(() => props.src instanceof FormQuerySourceBase ? props.src : null);
 const src_form_insertable = computed(() => props.src instanceof FormQuerySourceBaseInsertable ? props.src : null);
+const src_form_full       = computed(() => props.src instanceof FormQuerySourceFull ? props.src : null)
 
 
 
@@ -83,8 +89,13 @@ async function clicked_refresh() {
 		props.src.request_refresh());
 }
 async function clicked_insert() {
-	return props.src.try_perform_and_update_confirmed(() => 
-		src_form_insertable.value?.request_insert_toggle());
+	if(src_form_insertable.value) {
+		return src_form_insertable.value.try_perform_and_update_confirmed(() => 
+			src_form_insertable.value?.request_insert_toggle());
+	} else if(src_form_full.value) {
+		src_form_full.value?.dataset.add_or_swap_row_default_with_limit(props.full_limit);
+		return true;
+	}
 }
 async function clicked_save(shiftKey = false) {
 	const force = shiftKey;

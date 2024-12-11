@@ -239,19 +239,12 @@ class FormQuerySourceBaseInsertable extends FormQuerySourceBase{
 
 class FormQuerySourceFull extends FormQuerySourceBase {
     /**
-     * 
      * @param {boolean} implicit_order_rowid 
      * @param {MaybeRef<number>} limit 
      */
-    constructor(implicit_order_rowid = false, limit = 0) {
+    constructor(implicit_order_rowid = false, limit = -1) {
         super(implicit_order_rowid);
-        if(typeof limit === 'number') {
-
-        }
-        this.query.limit.reas_on_unref(limit);
-        if(unref(limit) <= 0) {
-            this.disable_offset();
-        }
+        this.query.limit.reas_or_unref(limit);
         this.dataset = new FormDataSetFull(this);
     }
 }
@@ -548,6 +541,14 @@ class FormDataSetFull_LocalRow {
         }
         return this.values[index];
     }
+    get_local(/**@type {Column | string | number} */ name) {
+        const value = this.get(name);
+        return value?.get_local();
+    }
+    get_cached(/**@type {Column | string | number} */ name) {
+        const value = this.get(name);
+        return value?.get_cached();
+    }
     is_true(/**@type {Column | string | number} */ name) {
         return !!this.get(name).get_local();
     }
@@ -608,10 +609,35 @@ class FormDataSetFull extends FormDataSetBase {
         // triggerRef(this.local_rows);
         return new_local_row;
     }
+    add_or_swap_row_default_with_limit(limit = 0) {
+		console.log("ADDING OR SWAPPING WITH LIMIT " + limit);
+        const all_rows_count = this.local_rows.value.length;
+        if(all_rows_count < limit) {
+            console.log("HAS ROOM " + all_rows_count);
+            return this.add_row_default();
+        }
+        let noninserted_last_index = this.local_rows.value.length - 1;
+        while(noninserted_last_index >= 0 && this.local_rows.value[noninserted_last_index].inserted) {
+            noninserted_last_index -= 1;
+        }
+        if(noninserted_last_index < 0) {
+            console.log("NO MORE ROOM");
+            return this.add_row_default();
+        }
+        const noninserted_last = this.local_rows.value[noninserted_last_index];
+        if(noninserted_last.check_outdated()) {
+            console.log("WOULD ERASE CHANGES");
+            return this.add_row_default();
+        }
+        console.log("SWAP " + noninserted_last_index);
+        this._key_base += 1;
+        this.local_rows.value.splice(noninserted_last_index, 1);
+        return this.add_row_default();
+    }
 
     mark_row_deleted(/**@type {number} */ index, deleted_value = true) {
         if(this.local_rows.value[index]) {
-            if(this.local_rows.value[index].inserted) {
+            if(this.local_rows.value[index].inserted && deleted_value) {
                 this.local_rows.value.splice(index, 1);
             } else {
                 this.local_rows.value[index].deleted = deleted_value;
@@ -619,6 +645,9 @@ class FormDataSetFull extends FormDataSetBase {
             // console.log("DELETEDDDDD", index, this.local_rows.value.map(x => x.deleted), this.local_rows);
         }
         // triggerRef(this.local_rows);
+    }
+    flip_row_deleted(/**@type {number} */ index) {
+        return this.mark_row_deleted(index, !this.local_rows.value[index]?.deleted);
     }
 
     get_unique_key(index) {
@@ -700,17 +729,6 @@ class FormDataSetSingle extends FormDataSetBase {
     }
     //////////////////
 }
-
-
-
-
-
-
-
-// src  expired -> dane w DB są prawdopodobnie inne niż w cache'u
-// src  changed -> wywołanie update'u teraz, spowoduje nadpisanie nie-zcommitowanych zmian
-// data epxired -> dane w DB są prawdopodobnie inne niż w cache'u
-// data changed -> dane wpisane są inne niż w cache'u
 
 export {
     // Form Query Sources

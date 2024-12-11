@@ -1,7 +1,7 @@
 
 
 //@ts-check
-import { computed, unref, shallowRef } from "vue";
+import { computed, unref, shallowRef, triggerRef } from "vue";
 import { escape_backtick_smart, escape_like_full, escape_sql_value, reasRef } from "../../utils";
 import { Column } from "./Database";
 
@@ -116,12 +116,14 @@ class QueryBuilder {
         this.from = reasRef("");
         this._sql_from = this.from;
 
+        this.plugin_where_conj = shallowRef(/**@type {MaybeRef<QueryParts[]>[]} */ ([]));
         this.where_conj     = reasRef(/**@type {QueryParts[]} */ ([]));
         this.where_conj_opt = reasRef(/**@type {QueryParts[]} */ ([]));
         this._sql_where = computed(() => {
             const all_parts = [
                 ...this.where_conj.value,
-                ...this.where_conj_opt.value.filter(query_parts_is_not_null)
+                ...this.where_conj_opt.value.filter(query_parts_is_not_null),
+                ...this.plugin_where_conj.value.map(unref).flat()
             ];
             return all_parts
                 .map(query_parts_to_string)
@@ -129,14 +131,18 @@ class QueryBuilder {
                 .join(' AND ');
         });
 
+        this.plugin_orders = shallowRef(/**@type {MaybeRef<QueryOrdering[]>[]} */ ([]));
         this.order = reasRef(/**@type {QueryOrdering[]} */ ([]));
-        this._sql_order  = computed(() => this.order.value.map(query_ordering_to_string).join(','));
+        this._sql_order  = computed(() => [
+                ...this.order.value, 
+                ...this.plugin_orders.value.map(unref).flat()
+            ].map(query_ordering_to_string).join(','));
 
         this.limit = reasRef(1);
-        this._sql_limit  = computed(() => this.limit.value <= 0 ? '' : this.limit.value.toString());
+        this._sql_limit  = computed(() => this.limit.value < 0 ? '' : this.limit.value.toString());
         
         this.offset = reasRef(-1);
-        this._sql_offset = computed(() => this.limit.value <  0 ? '' : this.offset.value.toString());
+        this._sql_offset = computed(() => this.limit.value < 0 ? '' : this.offset.value.toString());
 
         if(implicit_order_roiwd) {
             this.order.value = [['rowid']];
@@ -250,6 +256,17 @@ class QueryBuilder {
             this.where_conj.value.push(parts);
         }
     }
+
+    add_order_plugin(/**@type {MaybeRef<QueryOrdering[]>} */ orders) {
+        this.plugin_orders.value.push(orders);
+        triggerRef(this.plugin_orders);
+    }
+
+    add_where_plugin(/**@type {MaybeRef<QueryParts[]>} */ parts) {
+        this.plugin_where_conj.value.push(parts);
+        triggerRef(this.plugin_where_conj);
+    }
+
 
     is_expired() {
         return this._expired.value;

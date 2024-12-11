@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import {computed, ref,shallowRef} from 'vue';
+import {computed, reactive, ref,shallowRef} from 'vue';
 
 import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
 import { FormQuerySourceFull, SimpleQuerySource } from '../Dataset';
@@ -10,6 +10,8 @@ import DatasetFullArray from '../Controls/DatasetFullArray.vue';
 
 import FormInput from '../Controls/FormInput.vue';
 import FormEnum from '../Controls/FormEnum.vue';
+import { QueryViewerSource } from '../QueryViewer/QueryViewer';
+import QueryViewerAdv from '../QueryViewer/QueryViewerAdv.vue';
 
 
 const db = useWarsztatDatabase();
@@ -62,12 +64,41 @@ async function save_full(force = false) {
     console.log("SAVE Affected " + affected + " rows");
 }
 
+//////////////////// Query Viewer //////////////
+
+const q_src = new QueryViewerSource();
+q_src.set_from_with_deps(PRAC_TAB);
+q_src.auto_add_column_synced(PRAC_COLS.ID_pracownika,     );
+q_src.auto_add_column_synced(PRAC_COLS.imię,              {display: "Imię"});
+q_src.auto_add_column       (PRAC_COLS.imię_matki,        {display: "Imię Matki"});
+q_src.auto_add_column_synced(PRAC_COLS.data_urodzenia,    {display: "Uro"});
+q_src.auto_add_column_impl('imie_caps', {sql: 'upper(`imię`)', display: 'Imie CAPS'});
+
+
+
+function handle_select(cols, row, offset) {
+    console.log("SELECTING (Cient)", cols, row, offset);
+}
+
+
+
+///////////////////////////////////////////////
 
 const show_deleted = ref(false);
 
 function handle_err(err) {
     console.error(err);
 }
+
+const opts = reactive({
+    qviewer_selectable: false,
+    qviewer_saveable:   true,
+    qviewer_insertable: true,
+    qviewer_deletable:  true,
+});
+
+
+
 
 
 </script>
@@ -121,6 +152,26 @@ function handle_err(err) {
             </div>
         </DatasetFullArray>
 
+
+
+        <p>
+            <label>Selectable: <input type="checkbox" v-model="opts.qviewer_selectable"> </label><br>
+            <label>Saveable:   <input type="checkbox" v-model="opts.qviewer_saveable">   </label><br>
+            <label>Insertable: <input type="checkbox" v-model="opts.qviewer_insertable"> </label><br>
+            <label>Deletable:  <input type="checkbox" v-model="opts.qviewer_deletable">  </label><br>
+        </p>
+        <div class="qviewer_container">
+            <QueryViewerAdv 
+                :src="q_src"
+                :saveable="opts.qviewer_saveable"
+                :insertable="opts.qviewer_insertable"
+                :deletable="opts.qviewer_deletable"
+                :selectable="opts.qviewer_selectable"
+                @select="handle_select"
+                @error="handle_err"
+            />
+        </div>
+
         <!-- <form class="full_form">
             <div class="full_form_row"
                 v-for=" (row, row_index) in prac_src_rows_ref"
@@ -154,6 +205,13 @@ function handle_err(err) {
     }
     .prac_src_dataset_row.deleted {
         background-color: red;
+    }
+
+    .qviewer_container {
+        border: 2px solid green;
+        resize: both;
+        height: 500px;
+        overflow: auto;
     }
 
 </style>

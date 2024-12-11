@@ -441,7 +441,7 @@ function as_promise(async_function) {
 
 /**
  * @template T
- * @typedef {import('vue').Ref<T> & {reas: (ref: import('vue').Ref<T>) => void, reas_on_unref: (maybe_ref: import('vue').MaybeRef<T>) => void}} ReasRef
+ * @typedef {import('vue').Ref<T> & {reas: (ref: import('vue').Ref<T>) => void, reas_or_unref: (maybe_ref: import('vue').MaybeRef<T>) => void}} ReasRef
  */
 
 /**
@@ -461,11 +461,11 @@ function reasRef(val) {
 		triggerRef(_ref);
 	}
 	/**@param { import('vue').MaybeRef<import('vue').UnwrapRef<T>>} maybe_ref */
-	const reas_on_unref = (maybe_ref) => {
+	const reas_or_unref = (maybe_ref) => {
 		if(isRef(maybe_ref)) {reas(maybe_ref);}
 		else                 {_computed.value = maybe_ref;}
 	}
-	return Object.assign(_computed, {reas, reas_on_unref});
+	return Object.assign(_computed, {reas, reas_or_unref});
 }
 
 

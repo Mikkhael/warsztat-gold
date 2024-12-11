@@ -59,15 +59,8 @@
 
 - Core
     + context menu
-    - create main UI layout
-        - icons
-        - toolbar
-        - footbar
-        - prompts and alerts
-            - content
-            - custom inputs
-            - custom buttons
-        - messages (popups)
+    + create main UI layout
+        + messages (popups)
             - history
                 - filtering
             + popup layout
@@ -80,10 +73,6 @@
                 + warn
                 + error
                 + critical error
-        - errors messages
-            - sql update constraint
-            - system error
-        - main area
     + Query Viewer
         + adapt for DataGraph interface
             + fix searches in unexisting QueryParts
@@ -92,10 +81,13 @@
         + advanced sorting
         + search
             - highlight
-        - update
-        - insert
+        + update
+        + insert
+        + delete
         + automate form integration
         + fix scrolling back to 0, when changing search fields
+        - add window and button for ADV
+        - add additional params for ADV
     - Forms API
         + Example form (Klienci)
             + adapt for DataGraph interface
@@ -111,11 +103,11 @@
             + automatic dataset generation, from predefined specs, for simple forms
         + Dataset and Forms (OLD VERSION SCRAPPED)
         + Query Form Scroller (OLD VERSION SCRAPPED)
-        - Dataset with DataGraph
+        + Dataset with DataGraph
             + DataGraph
             + QuerySource
                 + layerd test
-                - aux queries
+                + aux queries
                 + more dynamic query builder
                 + better handle different ValueName and ColName
                 + better handle dot-qualified column definitions (assumed, all values are from Column by default)
@@ -135,7 +127,7 @@
                     + (BUG) When pressing SAVE from "Klienci", "Zlecenia" inserts twice!
                 + transactions
                 + integration with DataGraph
-                - delete
+                + delete
             + forms
                 + form validation
                 + insert mode

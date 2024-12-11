@@ -28,7 +28,11 @@ listen("request_db_close", async (e) => {
 window.addEventListener('db_opened', () => {
     msgManager.post('info', 'Otworzono bazę danych', 3000);
     msgManager.close_all_with_content('Nie otworzono bazy danych');
-    mainSettings.load_from_db_all().catch((err) => {
+    mainSettings.load_from_db_all().then(has_settings_table => {
+        if(!has_settings_table){
+            msgManager.post('warn', 'Baza nie posiada tablicy pozwalającej na zapisywanie ustawień!', 4000);
+        }
+    }).catch((err) => {
         msgManager.postError('Błąd podczas wczytywania konfiguracji z bazy danych: ' + (err?.message ?? err));
     });
 });
