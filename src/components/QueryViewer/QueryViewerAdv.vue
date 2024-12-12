@@ -304,6 +304,7 @@ onUnmounted(() => {
     .table_container {
         display: flex;
         flex-direction: row;
+        align-items: stretch;
     }
 
     .table_column {
@@ -312,6 +313,9 @@ onUnmounted(() => {
         display: flex;
         flex-direction: column;
         flex-shrink: 0;
+    }
+    .table_column > ::v-deep(.data_cell) {
+        flex-grow: 1;
     }
     .table_column.iterators {
         width: unset;
