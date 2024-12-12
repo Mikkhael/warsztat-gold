@@ -5,7 +5,21 @@ import { FormQuerySourceFull, Column } from "../Dataset";
 import { escape_backtick_smart } from "../../utils";
 
 /**
- * @typedef {import("../Dataset/Form").StandardFormValueRoutineParams & {display?: string}} StandardFormValueRoutineParams_WithDisplay
+ * @typedef {import("../Dataset/Form").StandardFormValueRoutineParams & {
+ *  display?: string,
+ *  readonly?: boolean,
+ *  as_enum?: boolean,
+ *  input_props?: import('vue').MaybeRef<Object.<string, any>>
+ * }} StandardFormValueRoutineParams_WithDisplay
+ */
+
+/**
+ * @typedef {{
+ *  name: string,
+ *  readonly: boolean,
+ *  as_enum: boolean,
+ *  input_props: import('vue').MaybeRef<Object.<string, any>>
+ * }} DisplayColProps
  */
 
 class QueryViewerSource extends FormQuerySourceFull {
@@ -14,7 +28,7 @@ class QueryViewerSource extends FormQuerySourceFull {
      */
     constructor(implicit_order_rowid = false) {
         super(implicit_order_rowid, 0);
-        this.display_columns = reactive(/**@type {Map<string, string>} */ (new Map()));
+        this.display_columns = reactive(/**@type {Map<string, DisplayColProps>} */ (new Map()));
 
         this.order_plugin  = reactive(/**@type {Map<string, number>} */ (new Map()));
         this.search_plugin = reactive(/**@type {Map<string, string>}  */ (new Map()));
@@ -71,10 +85,18 @@ class QueryViewerSource extends FormQuerySourceFull {
     /**
      * @param {string | Column} column_name 
      * @param {string} display_name 
+     * @param {boolean} readonly
+     * @param {boolean} as_enum
+     * @param {import('vue').MaybeRef<Object.<string, any>>} input_props
      */
-    add_display_column(column_name, display_name) {
+    add_display_column(column_name, display_name, readonly = true, input_props = {}, as_enum = false) {
         const name = column_name instanceof Column ? column_name.get_full_sql() : column_name;
-        this.display_columns.set(name, display_name);
+        this.display_columns.set(name, {
+            name: display_name,
+            readonly,
+            as_enum,
+            input_props
+        });
     }
 
     /**
@@ -83,7 +105,7 @@ class QueryViewerSource extends FormQuerySourceFull {
      */
     auto_add_column_impl(name, params = {}) {
         if(params.display){
-            this.add_display_column(name, params.display);
+            this.add_display_column(name, params.display, params.readonly ?? !params.sync, params.input_props, params.as_enum);
         }
         super.auto_add_column_impl(name, params);
     }

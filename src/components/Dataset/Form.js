@@ -684,8 +684,8 @@ class FormDataSetFull extends FormDataSetBase {
             const inserted = row.inserted;
             const deleted  = row.deleted;
             const changed  = !inserted && !deleted && row_values.some(x => x.changed.value);
-            const cached   = changed ? row_values.map (x => x.get_cached()) : undefined;
-            const values   =           row_values.map (x => x.get_local());
+            const cached   = row_values.map (x => x.get_cached());
+            const values   = row_values.map (x => x.get_local());
             return {deleted,inserted,changed,cached,values}
         });
         return result;

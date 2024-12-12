@@ -6,6 +6,7 @@ import { ref, watch, toRef } from 'vue';
 
 const props = defineProps({
     options: {
+        /**@type {import('vue').PropType<(string | [value: any, name: string])[]>} */
         type: Array,
         required: true
     },
@@ -37,7 +38,6 @@ const elem = /**@type {import('vue').Ref<HTMLSelectElement>}*/ (ref());
 watch(toRef(impl, 'custom_validity_message'), (new_value) => {
     elem.value.setCustomValidity(new_value);
 });
-
 
 
 </script>

@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 import { generate_UID } from '../../utils';
 
 class Msg {
-    constructor(id, type = 'info', content = "", onclick = () => {}) {
+    constructor(id, type = 'info', content = "", onclick = (/**@type {Msg} */ self) => {}) {
         this.id = id;
         this.type = type;
         this.content = content;

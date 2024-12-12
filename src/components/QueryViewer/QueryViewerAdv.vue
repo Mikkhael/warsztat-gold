@@ -1,13 +1,15 @@
 <script setup>
 //@ts-check
 
-import { ref, onMounted, onUnmounted, watch, nextTick, toRef } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick, unref } from "vue";
 
 
 import { QueryViewerSource } from "./QueryViewer";
+import { FormDataSetFull } from "../Dataset";
 import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 import QuerySourceOffsetScroller from "../Scroller/QuerySourceOffsetScroller.vue";
 import FormInput from "../Controls/FormInput.vue";
+import FormEnum from "../Controls/FormEnum.vue";
 
 
 const props = defineProps({
@@ -39,9 +41,9 @@ function handle_err(err){
 }
 
 const columns_names   = Array.from(src.display_columns.keys());
-const columns_display = Array.from(src.display_columns.values());
+const columns_display_props = Array.from(src.display_columns.values());
 
-const result_rows = src.dataset.local_rows;
+const result_rows = /**@type {FormDataSetFull} */ (src.dataset).local_rows;
 
 const unwatch_first_fetch = watch(result_rows, () => {
     console.log('QVIERWER FIRST FETCH');
@@ -62,7 +64,7 @@ watch(props.src.changed, (new_changed) => {
 
 function recalculate_limit() {
     if(src.changed.value) return;
-    const container_height = container_ref.value?.getBoundingClientRect().height;
+    const container_height = container_ref.value?.clientHeight;
     const scroller_height  = row_ref      .value?.getBoundingClientRect().height;
     if(!container_height || !scroller_height) {
         if(scroller_limit.value !== 1) {
@@ -88,7 +90,7 @@ const resizeObserver = new ResizeObserver(recalculate_limit);
 
 let   current_resize_col_i = -1;
 const col_refs     = ref(/**@type {HTMLElement[]} */ ([]));
-const column_sizes = ref(/**@type {number[]} */ ([]));
+const column_sizes = ref(/**@type {[value: number, as_ch: boolean][]} */ ([]));
 const disable_table_search = ref(true);
 
 function handle_mouse_move(/**@type {MouseEvent} */ event) {
@@ -96,7 +98,10 @@ function handle_mouse_move(/**@type {MouseEvent} */ event) {
     if(current_resize_col_i !== -1) {
         console.log('MOVE', delta, column_sizes.value[current_resize_col_i]);
         window.getSelection()?.removeAllRanges();
-        column_sizes.value[current_resize_col_i] += delta;
+        if(!column_sizes.value[current_resize_col_i]?.[1]) {
+            return;
+        }
+        column_sizes.value[current_resize_col_i][0] += delta;
     }
 }
 function handle_mouse_up() {
@@ -107,15 +112,46 @@ function handle_mouse_down_on_resizer(/**@type {MouseEvent} */ event, /**@type {
     /**@type {HTMLElement} */
     //@ts-ignore
     const parent = event.target.parentNode;
-    console.log('DOWN', col_i,  parent.getBoundingClientRect().width);
-    column_sizes.value[col_i] = parent.getBoundingClientRect().width;
+    const width = parent.getBoundingClientRect().width;
+    console.log('DOWN', col_i, width);
+    column_sizes.value[col_i] = [width, true];
     current_resize_col_i = col_i;
 }
-function init_columns_sizes() {
+function minimize_columns_sizes() {
     for(let col_i in col_refs.value) {
-        column_sizes.value[col_i] = col_refs.value[col_i].getBoundingClientRect().width;
+        console.log("STARTING TO MINIMIZE", col_i);
+        const col = col_refs.value[col_i];
+        // children[0] = search
+        // children[1] = title
+        // children[2] = first result
+        if(col.children.length < 3) continue;
+        const first_row = col.children[2];
+        if(first_row.tagName !== 'INPUT' || !(
+            first_row.getAttribute('type') === 'text' ||
+            first_row.getAttribute('type') === 'number' ||
+            first_row.getAttribute('type') === '' )) {
+                continue;
+            }
+        let max_length = first_row['value']?.toString().length || 0;
+        console.log(first_row['value'], first_row);
+        for(let row_i = 3; row_i < col.children.length; row_i++) {
+            const new_max = col.children[row_i]['value']?.toString().length || 0;
+            if(new_max > max_length) max_length = new_max;
+        }
+        max_length += first_row.getAttribute('type') === 'number' ? 5 : 2;
+        column_sizes.value[col_i] = [max_length, false];
+        console.log("MINIMIZING", col_i, "TO", max_length);
     }
-    disable_table_search.value = false;
+}
+
+function init_columns_sizes() {
+    minimize_columns_sizes();
+    nextTick(() => {
+        for(let col_i in col_refs.value) {
+            column_sizes.value[col_i] = [col_refs.value[col_i].getBoundingClientRect().width, true];
+        }
+        disable_table_search.value = false;
+    });
 }
 
 const current_hovered_row_i = ref(-1);
@@ -134,8 +170,8 @@ function handle_row_unhover(row_i) {
  * @param {number} row_i
  */
 async function handle_select(row_i, is_from_col_id = false) {
-    console.log("SELECTING...",  is_from_col_id, src.offset.value, row_i, props.selectable);
     if(!props.selectable) return;
+    console.log("SELECTING...",  is_from_col_id, src.offset.value, row_i, props.selectable);
     const cols = src.full_result.value?.[1] ?? [];
     const row  = result_rows.value[row_i];
     emit("select", cols, row, src.offset.value + row_i);
@@ -149,7 +185,7 @@ async function handle_scroll(event) {
     if(event.shiftKey) return;
     event.preventDefault();
     event.stopPropagation();
-    const scroll_dist = (event.deltaY / 100) * (event.ctrlKey ? scroller_limit.value : 1);
+    const scroll_dist = Math.round(event.deltaY / 100) * (event.ctrlKey ? scroller_limit.value : 1);
     src.request_offset_scroll(scroll_dist);
     src.mark_for_update();
     // flag_for_refresh(scroll_dist);
@@ -161,14 +197,14 @@ src.start_plugin_watcher();
 onMounted(() => {
     src.assoc_form(container_ref.value);
     resizeObserver.observe(container_ref.value);
-    window.addEventListener('mouseup', handle_mouse_up);
-    window.addEventListener('mousemove', handle_mouse_move);
+    window.addEventListener('pointerup', handle_mouse_up);
+    window.addEventListener('pointermove', handle_mouse_move);
     recalculate_limit();
 });
 onUnmounted(() => {
     resizeObserver.disconnect();
-    window.removeEventListener('mouseup', handle_mouse_up);
-    window.removeEventListener('mousemove', handle_mouse_move);
+    window.removeEventListener('pointerup', handle_mouse_up);
+    window.removeEventListener('pointermove', handle_mouse_move);
 });
 
 // {{row.get_local(col_name) ?? '~'}}
@@ -193,12 +229,16 @@ onUnmounted(() => {
                 <div class="table_column iterators">
                     <div class="header" ref="row_ref"> </div>
                     <div class="header">#</div>
-                    <div class="data" v-for="(row, row_i) in result_rows" @click="handle_select(row_i, true)"
-                            :class="{hovered: current_hovered_row_i === row_i}">
+                    <div class="data" v-for="(row, row_i) in result_rows"
+                            :class="{hovered: current_hovered_row_i === row_i}"
+                            @pointerleave="handle_row_unhover(row_i)"
+                            @pointerenter="handle_row_hover  (row_i)" 
+                            @pointerup="handle_select(row_i, true)">
                         <img class="delete_button button" 
-                        src="./../../assets/icons/trashx.svg" 
-                        @click="src.dataset.flip_row_deleted(row_i)" 
-                        v-if="props.deletable"/>
+                            src="./../../assets/icons/trashx.svg" 
+                            @click="src.dataset.flip_row_deleted(row_i)" 
+                            v-if="props.deletable"
+                        />
                         {{ src.offset.value + row_i + 1 }}:
                     </div>
                 </div>
@@ -208,29 +248,36 @@ onUnmounted(() => {
                         type_number: typeof(result_rows[0]?.[col_i]) == 'number',
                         type_text:   typeof(result_rows[0]?.[col_i]) == 'string',
                     }"
-                    :style="{width: column_sizes[col_i] === undefined ? undefined : column_sizes[col_i] + 'px' }"
+                    :style="{width: column_sizes[col_i] === undefined ? undefined : column_sizes[col_i][0] + (column_sizes[col_i][1] ? 'px' : 'ch') }"
                 >
                     <div class="header col_search_cell">
-                        <input type="text" class="col_search" :class="{changed: !!src.search_plugin.get(col_name)}" :value="src.search_plugin.get(col_name)" @input="e => src.set_search(col_name, e.target?.['value'])">
-                        <div class="resizer" @mousedown="e => handle_mouse_down_on_resizer(e, col_i)"></div>
+                        <input type="text" class="col_search" 
+                            :class="{changed: !!src.search_plugin.get(col_name)}" 
+                            :value="src.search_plugin.get(col_name)" 
+                            @input="e => src.set_search(col_name, e.target?.['value'])"
+                            @reset_changes="e => src.search_plugin.delete(col_name)">
+                        <div class="resizer" @pointerdown="e => handle_mouse_down_on_resizer(e, col_i)"></div>
                     </div>
                     <div class="header col_name_cell">
                         <QueryOrderingBtn class="ordering_btns" :value="src.order_plugin.get(col_name)" @update:value="e => src.set_order(col_name, e)"/>
-                        <div class="col_name">{{ columns_display[col_i] }}</div>
+                        <div class="col_name">{{ columns_display_props[col_i].name }}</div>
                     </div>
-                    <component :is="props.selectable ? 'div' : FormInput" class="data data_cell" v-for="(row, row_i) in result_rows"
+                    <component :is="columns_display_props[col_i].as_enum ? FormEnum : FormInput"
                             :key="src.dataset.get_unique_key(col_i) + '_' + row_i" 
+                            class="data data_cell" v-for="(row, row_i) in result_rows"
                             :class="{
                                 hovered: current_hovered_row_i === row_i,
                                 deleted:  row.deleted,
                                 inserted: row.inserted,
                             }"
-                            @click="handle_select(row_i, false)"
-                            @mouseleave="handle_row_unhover(row_i)"
-                            @mouseenter="handle_row_hover  (row_i)" 
+                            @pointerleave="handle_row_unhover(row_i)"
+                            @pointerenter="handle_row_hover  (row_i)" 
+                            @pointerup="handle_select(row_i, false)"
                             :value="row.get(col_name)"
                             auto
-                            v-text="row.get_cached(col_name)"/>
+                            v-bind="unref(columns_display_props[col_i].input_props)"
+                            :readonly="!props.saveable || columns_display_props[col_i].readonly"
+                        />
                 </div>
             </div>
         </form>
@@ -249,6 +296,9 @@ onUnmounted(() => {
     }
     .form_content.enable_scroll {
         overflow-y: auto;
+    }
+    .form_content.selectable ::v-deep(.data){
+        cursor: pointer;
     }
 
     .table_container {
@@ -287,10 +337,10 @@ onUnmounted(() => {
     .delete_button {
         height: 2ch;
     }
-    .results ::v-deep(.data_cell.hovered) {
+    .table_column ::v-deep(.data.hovered) {
         background-color: #d7fffc;
     }   
-    .results ::v-deep(.data_cell.deleted) {
+    .table_column ::v-deep(.data_cell.deleted) {
         background-color: #ffd7d7;
     }   
 

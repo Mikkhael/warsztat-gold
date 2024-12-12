@@ -4,7 +4,7 @@
 import {computed, reactive, ref,shallowRef} from 'vue';
 
 import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
-import { FormQuerySourceFull, SimpleQuerySource } from '../Dataset';
+import { FormQuerySourceFull, OwningChangableValue, SimpleQuerySource } from '../Dataset';
 import QuerySourceOffsetScroller from '../Scroller/QuerySourceOffsetScroller.vue';
 import DatasetFullArray from '../Controls/DatasetFullArray.vue';
 
@@ -66,18 +66,33 @@ async function save_full(force = false) {
 
 //////////////////// Query Viewer //////////////
 
+const nazwisko_len      = ref(0);
+const nazwisko_readonly = ref(false);
+const nazwisko_input_props = computed(() => {
+    return {
+        len: nazwisko_len.value,
+        readonly: nazwisko_readonly.value,
+    }
+})
+
 const q_src = new QueryViewerSource();
 q_src.set_from_with_deps(PRAC_TAB);
 q_src.auto_add_column_synced(PRAC_COLS.ID_pracownika,     );
 q_src.auto_add_column_synced(PRAC_COLS.imię,              {display: "Imię"});
+q_src.auto_add_column_synced(PRAC_COLS.nazwisko,          {display: "Nazwisko", input_props: nazwisko_input_props});
+q_src.auto_add_column_impl  ('n',                         {display: "N", sql:"(`rowid` + 2)", readonly: false, input_props: {type:'integer'}});
 q_src.auto_add_column       (PRAC_COLS.imię_matki,        {display: "Imię Matki"});
+q_src.auto_add_column_synced(PRAC_COLS.imię_ojca,         {display: "Imię Ojca", readonly: true});
+q_src.auto_add_column_synced(PRAC_COLS.miejscowość,       {display: "Miasto",   readonly: true, input_props: {readonly: false}});
 q_src.auto_add_column_synced(PRAC_COLS.data_urodzenia,    {display: "Uro"});
+q_src.auto_add_column_synced(PRAC_COLS.miejsce_urodzenia, {display: "M. Uro",   as_enum: true, input_props: {options: ['Gliwice', ['Zabrze', 'HAHA']]}});
 q_src.auto_add_column_impl('imie_caps', {sql: 'upper(`imię`)', display: 'Imie CAPS'});
 
 
-
+const select_result = ref('');
 function handle_select(cols, row, offset) {
     console.log("SELECTING (Cient)", cols, row, offset);
+    select_result.value = row.values.map(x => x.get_local()).join('; ');
 }
 
 
@@ -160,6 +175,9 @@ const opts = reactive({
             <label>Insertable: <input type="checkbox" v-model="opts.qviewer_insertable"> </label><br>
             <label>Deletable:  <input type="checkbox" v-model="opts.qviewer_deletable">  </label><br>
         </p>
+        {{ select_result }} <br>
+        <!-- <FormInput :value="new OwningChangableValue('tak')" @click="console.log('CLICKED ME COMP!!')"  /><br> -->
+        <input value="tak" @click="console.log('CLICKED ME RAW!!')" disabled style="pointer-events: none" /><br>
         <div class="qviewer_container">
             <QueryViewerAdv 
                 :src="q_src"
@@ -210,7 +228,7 @@ const opts = reactive({
     .qviewer_container {
         border: 2px solid green;
         resize: both;
-        height: 500px;
+        height: 300px;
         overflow: auto;
     }
 
