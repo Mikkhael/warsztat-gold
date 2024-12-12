@@ -1,7 +1,7 @@
 //@ts-check
 
 import { onMounted, onUnmounted } from 'vue';
-import { FormQuerySource } from '../components/Dataset/Form';
+import { FormQuerySourceBase, FormQuerySourceSingle } from '../components/Dataset';
 import { QuerySource } from '../components/Dataset/QuerySource';
 import { ClosePreventionManager, useMainClosePreventionManager } from '../ClosePrevention';
 
@@ -24,25 +24,32 @@ import { ClosePreventionManager, useMainClosePreventionManager } from '../CloseP
 const default_on_error = err => {throw err};
 
 /**
- * @param {{use_src?: FormQuerySource?, parent_window?: FWWindow}} props 
- * @param {(err: any) => void} [on_error]
- * @param {FormQuerySource?} src 
- * @param {ClosePreventionManager?} src 
+ * @template {FormQuerySourceBase} [T=FormQuerySourceSingle]
+ * @param {{use_src?: FormQuerySourceSingle?, parent_window?: FWWindow}} props 
+ * @param {{
+ *  on_error?: (err: any) => any,
+ *  src?: T,
+ *  closePreventionManager?: ClosePreventionManager
+ * }} options
+ * @returns {T}
  */
-function CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, on_error = default_on_error, src = null, closePreventionManager = null) {
-    const _src = src ?? props.use_src ?? new FormQuerySource();
-    const _closePreventionManager = closePreventionManager ?? useMainClosePreventionManager();
+function CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, options) {
+    /**@type {T} */
+    //@ts-ignore
+    const _src      = options.src ?? props.use_src ?? new FormQuerySourceSingle();
+    const _on_error = options.on_error ?? default_on_error;
+    const _closePreventionManager = options.closePreventionManager ?? useMainClosePreventionManager();
     _closePreventionManager.start_in_component(_src.changed, props.parent_window);
 
     const db_opened_listener = () => {
         _src.request_refresh();
-        _src.update_complete().catch(on_error);
+        _src.update_complete().catch(_on_error);
     }
 
     onMounted(() => {
         props.parent_window?.box.resize_to_content(true).recenter();
         window.addEventListener   ('db_opened', db_opened_listener);
-        _src.update_complete().catch(on_error);
+        _src.update_complete().catch(_on_error);
     });
     onUnmounted(() => {
         _src.disconnect();

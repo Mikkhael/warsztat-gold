@@ -12,7 +12,16 @@ import FormInput from '../Controls/FormInput.vue';
 import FormEnum from '../Controls/FormEnum.vue';
 import { QueryViewerSource } from '../QueryViewer/QueryViewer';
 import QueryViewerAdv from '../QueryViewer/QueryViewerAdv.vue';
+import QueryViewerAdvOpenBtn from '../QueryViewer/QueryViewerAdvOpenBtn.vue';
 
+import {useMainClosePreventionManager} from '../../ClosePrevention';
+const closePreventionManager = useMainClosePreventionManager();
+closePreventionManager.start_main_guard();
+
+
+import { FWManager } from '../FloatingWindows/FWManager';
+import FWCollection from '../FloatingWindows/FWCollection.vue';
+const fwManager = FWManager.NewReactive();
 
 const db = useWarsztatDatabase();
 
@@ -75,18 +84,21 @@ const nazwisko_input_props = computed(() => {
     }
 })
 
-const q_src = new QueryViewerSource();
-q_src.set_from_with_deps(PRAC_TAB);
-q_src.auto_add_column_synced(PRAC_COLS.ID_pracownika,     );
-q_src.auto_add_column_synced(PRAC_COLS.imię,              {display: "Imię"});
-q_src.auto_add_column_synced(PRAC_COLS.nazwisko,          {display: "Nazwisko", input_props: nazwisko_input_props});
-q_src.auto_add_column_impl  ('n',                         {display: "N", sql:"(`rowid` + 2)", readonly: false, input_props: {type:'integer'}});
-q_src.auto_add_column       (PRAC_COLS.imię_matki,        {display: "Imię Matki"});
-q_src.auto_add_column_synced(PRAC_COLS.imię_ojca,         {display: "Imię Ojca", readonly: true});
-q_src.auto_add_column_synced(PRAC_COLS.miejscowość,       {display: "Miasto",   readonly: true, input_props: {readonly: false}});
-q_src.auto_add_column_synced(PRAC_COLS.data_urodzenia,    {display: "Uro"});
-q_src.auto_add_column_synced(PRAC_COLS.miejsce_urodzenia, {display: "M. Uro",   as_enum: true, input_props: {options: ['Gliwice', ['Zabrze', 'HAHA']]}});
-q_src.auto_add_column_impl('imie_caps', {sql: 'upper(`imię`)', display: 'Imie CAPS'});
+function q_src_factory() {
+    const q_src = new QueryViewerSource();
+    q_src.set_from_with_deps(PRAC_TAB);
+    q_src.auto_add_column_synced(PRAC_COLS.ID_pracownika,     );
+    q_src.auto_add_column_synced(PRAC_COLS.imię,              {display: "Imię"});
+    q_src.auto_add_column_synced(PRAC_COLS.nazwisko,          {display: "Nazwisko", input_props: nazwisko_input_props});
+    q_src.auto_add_column_impl  ('n',                         {display: "N", sql:"(`rowid` + 2)", readonly: false, input_props: {type:'integer'}});
+    q_src.auto_add_column       (PRAC_COLS.imię_matki,        {display: "Imię Matki"});
+    q_src.auto_add_column_synced(PRAC_COLS.imię_ojca,         {display: "Imię Ojca", readonly: true});
+    q_src.auto_add_column_synced(PRAC_COLS.miejscowość,       {display: "Miasto",   readonly: true, input_props: {readonly: false}});
+    q_src.auto_add_column_synced(PRAC_COLS.data_urodzenia,    {display: "Uro"});
+    q_src.auto_add_column_synced(PRAC_COLS.miejsce_urodzenia, {display: "M. Uro",   as_enum: true, input_props: {options: ['Gliwice', ['Zabrze', 'HAHA']]}});
+    q_src.auto_add_column_impl('imie_caps', {sql: 'upper(`imię`)', display: 'Imie CAPS'});
+    return q_src;
+}
 
 
 const select_result = ref('');
@@ -151,6 +163,8 @@ const opts = reactive({
             Show deleted: <input type="checkbox" v-model="show_deleted">
         </p>
 
+        
+
         <DatasetFullArray :dataset="src_full.dataset" v-slot="{elem, deleted}" :show_deleted="show_deleted">
             <div class="prac_src_dataset_row" :class="{deleted}">
                 <label> ID:         <FormInput auto :value="elem.get(PRAC_COLS.ID_pracownika)" /> </label>
@@ -177,7 +191,7 @@ const opts = reactive({
         </p>
         {{ select_result }} <br>
         <!-- <FormInput :value="new OwningChangableValue('tak')" @click="console.log('CLICKED ME COMP!!')"  /><br> -->
-        <input value="tak" @click="console.log('CLICKED ME RAW!!')" disabled style="pointer-events: none" /><br>
+        <!-- <input value="tak" @click="console.log('CLICKED ME RAW!!')" disabled style="pointer-events: none" /><br>
         <div class="qviewer_container">
             <QueryViewerAdv 
                 :src="q_src"
@@ -188,7 +202,25 @@ const opts = reactive({
                 @select="handle_select"
                 @error="handle_err"
             />
-        </div>
+        </div> -->
+        
+        <QueryViewerAdvOpenBtn 
+            :src_factory="q_src_factory"
+            :saveable="opts.qviewer_saveable"
+            :insertable="opts.qviewer_insertable"
+            :deletable="opts.qviewer_deletable"
+            :selectable="opts.qviewer_selectable"
+            @select="handle_select"
+            @error="handle_err"
+            title="Lista Pracowników"
+            text="Otwórz Listę Pracowników"
+            :fwManager="fwManager"
+        />
+
+
+
+        
+        <FWCollection :manager="fwManager" @error="err=>console.error(err)" />
 
         <!-- <form class="full_form">
             <div class="full_form_row"

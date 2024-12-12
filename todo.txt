@@ -86,8 +86,8 @@
         + delete
         + automate form integration
         + fix scrolling back to 0, when changing search fields
-        - add window and button for ADV
-        - add additional params for ADV
+        + add window and button for ADV
+        + add additional params for ADV
     - Forms API
         + Example form (Klienci)
             + adapt for DataGraph interface

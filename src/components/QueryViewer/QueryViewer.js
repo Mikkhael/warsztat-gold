@@ -73,7 +73,7 @@ class QueryViewerSource extends FormQuerySourceFull {
      */
     set_search(column, value) {
         const name = column instanceof Column ? column.get_full_sql() : column;
-        if(value === null) {
+        if(value === null || value === '') {
             this.search_plugin.delete(name);
         } else {
             this.search_plugin.set(name, value);

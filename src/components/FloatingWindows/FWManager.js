@@ -1,6 +1,7 @@
 //@ts-check
-import { reactive, markRaw, shallowReactive } from 'vue';
+import { reactive, markRaw, shallowReactive, nextTick } from 'vue';
 import WinBox from '../WinBox/winbox';
+import { generate_UID } from '../../utils';
 
 /**
  * @typedef {import('vue').Component} Component
@@ -18,6 +19,7 @@ class FWWindow {
         this.box = box;
         this.props = props;
         this.listeners = listeners;
+        this.id = 'window_' + generate_UID();
     }
 
     /**
@@ -133,6 +135,9 @@ class FWManager {
         }
         return this.open_window_unchecked(title, component, props, listeners);
     }
+    is_window_opened(title) {
+        return this.opened_windows.has(title);
+    }
 
     /**
      * @param {string} title 
@@ -140,20 +145,26 @@ class FWManager {
      * @param {Object.<string, any>} props
      * @param {Object.<string, Function>} listeners
      */
-    open_or_reopen_window(title, component, props = {}, listeners = {}) {        
-        this.close_window(title);
+    async open_or_reopen_window(title, component, props = {}, listeners = {}, force = false) {        
+        const prevented_close = await this.close_window(title, force);
+        if(prevented_close){
+            return null;
+        }
         return this.open_window_unchecked(title, component, props, listeners);
     }
 
     /**
      * @param {string} title 
      * @param {boolean} force 
+     * @returns {Promise<boolean | undefined>}
      */
-    close_window(title, force = false){
+    async close_window(title, force = false){
         const window = this.opened_windows.get(title);
         if(window) {
-            window.box.close(force);
+            console.log('CLOSING WINDOW', title, force);
+            return window.box.close(force);
         }
+        return false;
     }
 }
 

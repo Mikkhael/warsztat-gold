@@ -52,6 +52,7 @@ class ClosePreventionManager{
             }
         });
         onUnmounted(() => {
+            console.log("CPM Ended in component");
             this.preventors.delete(preventor);
         })
     }

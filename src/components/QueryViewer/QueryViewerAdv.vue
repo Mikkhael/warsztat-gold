@@ -3,13 +3,14 @@
 
 import { ref, onMounted, onUnmounted, watch, nextTick, unref } from "vue";
 
-
+import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from "../../Forms/FormCommon";
 import { QueryViewerSource } from "./QueryViewer";
-import { FormDataSetFull } from "../Dataset";
+import { FormDataSetFull, FormDataSetFull_LocalRow } from "../Dataset";
 import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 import QuerySourceOffsetScroller from "../Scroller/QuerySourceOffsetScroller.vue";
 import FormInput from "../Controls/FormInput.vue";
 import FormEnum from "../Controls/FormEnum.vue";
+
 
 
 const props = defineProps({
@@ -22,8 +23,31 @@ const props = defineProps({
     insertable: Boolean,
     saveable:   Boolean,
     deletable:  Boolean,
+
+    parent_window: {
+        /**@type {import('vue').PropType<import('../FloatingWindows/FWManager').FWWindow>} */
+        type: Object,
+        required: false
+    },
 });
-const src = props.src;
+
+// const emit = defineEmits(['select', 'error']);
+
+const emit = defineEmits({
+    /**
+     * @param {string[]} columns 
+     * @param {FormDataSetFull_LocalRow} row 
+     * @param {number} offset
+     */
+    select: (columns, row, offset) => true,
+    error:  (any) => true
+});
+
+function handle_err(err){
+    emit('error', err);
+}
+
+const src = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {src: props.src, on_error: handle_err});
 
 console.log("QUERY VIEWER ADV", props);
 
@@ -31,14 +55,6 @@ const row_ref        = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const container_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const scroller_limit = src.query.limit;
 scroller_limit.value = 0;
-
-const emit = defineEmits(['select', 'error']);
-
-// const msgManager = useMainMsgManager();
-function handle_err(err){
-	// msgManager.postError(err);
-    emit('error', err);
-}
 
 const columns_names   = Array.from(src.display_columns.keys());
 const columns_display_props = Array.from(src.display_columns.values());
@@ -77,7 +93,7 @@ function recalculate_limit() {
     }
     const rows_to_fit = Math.floor(container_height / scroller_height);
     const result = Math.max(rows_to_fit - 2, 1);
-    console.log("RESIZE", result);
+    // console.log("RESIZE", result);
     if(scroller_limit.value !== result) {
         scroller_limit.value = result;
         src.request_refresh();
@@ -96,7 +112,7 @@ const disable_table_search = ref(true);
 function handle_mouse_move(/**@type {MouseEvent} */ event) {
     const delta = event.movementX;
     if(current_resize_col_i !== -1) {
-        console.log('MOVE', delta, column_sizes.value[current_resize_col_i]);
+        // console.log('MOVE', delta, column_sizes.value[current_resize_col_i]);
         window.getSelection()?.removeAllRanges();
         if(!column_sizes.value[current_resize_col_i]?.[1]) {
             return;
@@ -105,7 +121,7 @@ function handle_mouse_move(/**@type {MouseEvent} */ event) {
     }
 }
 function handle_mouse_up() {
-    console.log('UP');
+    // console.log('UP');
     current_resize_col_i = -1;
 }
 function handle_mouse_down_on_resizer(/**@type {MouseEvent} */ event, /**@type {number} */ col_i){
@@ -113,13 +129,13 @@ function handle_mouse_down_on_resizer(/**@type {MouseEvent} */ event, /**@type {
     //@ts-ignore
     const parent = event.target.parentNode;
     const width = parent.getBoundingClientRect().width;
-    console.log('DOWN', col_i, width);
+    // console.log('DOWN', col_i, width);
     column_sizes.value[col_i] = [width, true];
     current_resize_col_i = col_i;
 }
 function minimize_columns_sizes() {
     for(let col_i in col_refs.value) {
-        console.log("STARTING TO MINIMIZE", col_i);
+        // console.log("STARTING TO MINIMIZE", col_i);
         const col = col_refs.value[col_i];
         // children[0] = search
         // children[1] = title
@@ -133,14 +149,14 @@ function minimize_columns_sizes() {
                 continue;
             }
         let max_length = first_row['value']?.toString().length || 0;
-        console.log(first_row['value'], first_row);
+        // console.log(first_row['value'], first_row);
         for(let row_i = 3; row_i < col.children.length; row_i++) {
             const new_max = col.children[row_i]['value']?.toString().length || 0;
             if(new_max > max_length) max_length = new_max;
         }
         max_length += first_row.getAttribute('type') === 'number' ? 5 : 2;
         column_sizes.value[col_i] = [max_length, false];
-        console.log("MINIMIZING", col_i, "TO", max_length);
+        // console.log("MINIMIZING", col_i, "TO", max_length);
     }
 }
 

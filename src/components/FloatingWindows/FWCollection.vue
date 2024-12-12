@@ -21,10 +21,7 @@ function fwd_error(err) {
 
     <div class="FW_collection">
 
-        <div class="FW_window" v-for="([title, window]) in props.manager.opened_windows" :key="title">
-<!-- 
-            title: {{ title.toString() }} <br>
-            component: {{ window.box.id.toString() }} -->
+        <div class="FW_window" v-for="([title, window]) in props.manager.opened_windows" :key="window.id">
             <Teleport :to="window.get_mount_selector()">
                 <component 
                     :is="window.component"
