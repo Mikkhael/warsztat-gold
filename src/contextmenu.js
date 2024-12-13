@@ -75,7 +75,7 @@ function handle_context_menu_event(event) {
         ] : [];
         const text_items = text ? [
             {label: "Wytnij", event: "request_clipboard_cut",   disabled: !selected || !editable},
-            {label: "Kopiuj", event: "request_clipboard_copy",  disabled: !selected},
+            {label: "Kopiuj", event: "request_clipboard_copy",  payload: target.value},
             {label: "Wklej",  event: "request_clipboard_paste", disabled: !editable},
             {label: "Zaznacz wszystko",  event: (e) => {target.select()}},
         ] : [];

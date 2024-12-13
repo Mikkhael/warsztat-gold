@@ -1,7 +1,7 @@
 //@ts-check
 
 import { computed, reactive, ref, watch } from "vue";
-import { FormQuerySourceFull, Column } from "../Dataset";
+import { FormQuerySourceFull, Column, QuerySource, FormDataSetFull_LocalRow } from "../Dataset";
 import { escape_backtick_smart } from "../../utils";
 
 /**
@@ -112,7 +112,7 @@ class QueryViewerSource extends FormQuerySourceFull {
     
     /**
      * Automatically get column name and wheather it is primary
-     * @param {Column} col 
+     * @param {Column | string} col 
      * @param {StandardFormValueRoutineParams_WithDisplay} params
      */
     auto_add_column(col, params = {}) {
@@ -120,16 +120,50 @@ class QueryViewerSource extends FormQuerySourceFull {
     }
     /**
      * Automatically get column name and wheather it is primary, and generate appropiate sync
-     * @param {Column} col 
+     * @param {Column | string} col 
      * @param {StandardFormValueRoutineParams_WithDisplay} params
      */
     auto_add_column_synced(col, params = {}) {
         super.auto_add_column_synced(col, params);
     }
+
+    //////////////////////////////// utils ////////////////
+
+    /** 
+     * 
+     * @param {QueryViewerSelectHandlerStanderdStep[]} steps 
+     * @param {(err: any) => void} handle_error
+     */
+    static create_default_select_handler(steps, handle_error, no_close = false) {
+        const first_src = steps[0][0];
+    
+        /**
+         * @param {string[]} cols 
+         * @param {FormDataSetFull_LocalRow} row 
+         * @param {number} offset
+         * @param {() => void} close 
+         */
+        const res_handler = (cols, row, offset, close) => {
+            return first_src.try_perform_and_update_confirmed(() => {
+                for(const [src, idx, colname] of steps) {
+                    src.request_offset_rownum(row.get_cached(idx) ?? null, colname);
+                }
+            }).then(succ => {
+                if(succ && !no_close) close();
+                return succ;
+            }).catch(err => {
+                handle_error(err);
+                return false;
+            });
+        };
+        return res_handler;
+    }
 }
 
-
-
+/**
+ * @typedef {[src: QuerySource, index_column: Column | string | number] | [src: QuerySource, index_column: Column | string | number, index_column_name: string]} QueryViewerSelectHandlerStanderdStep
+ * 
+ */
 
 
 

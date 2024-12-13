@@ -9,7 +9,7 @@ import useMainMsgManager from '../components/Msg/MsgManager';
 
 import { format_date_str_local } from '../utils';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
-import { RepQuerySource } from './RepCommon';
+import { RepQuerySourceSingle } from './RepCommon';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 
 const props = defineProps({
@@ -32,7 +32,7 @@ const COLS_S = TAB_S.cols;
 const id_zlecenia_param = param_from_prop(props, 'id_zlecenia');
 
 
-const src = new RepQuerySource();
+const src = new RepQuerySourceSingle();
 
 src.set_from_with_deps(TAB_Z);
 src.add_join(COLS_Z.ID_klienta,     COLS_K.ID);

@@ -59,9 +59,6 @@ const emit = defineEmits(['select']);
 
 /////////////////// AUTO REFRESHING ///////////////////////////////
 
-// TODO make core part of QuerySource
-// TODO debounde, instead of executing right at the begining
-
 let flagged_for_refresh = false;
 /**@type {number?} */
 let to_scroll_acc = null; 

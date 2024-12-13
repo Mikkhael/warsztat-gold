@@ -33,7 +33,7 @@ const props = defineProps({
     },
     title: {
         type: String,
-        default: "Znajdź"
+        required: false
     },
     fwManager: {
         /**@type {import('vue').PropType<FWManager>} */
@@ -55,7 +55,7 @@ const emit = defineEmits({
 })
 
 const fwManager = props.fwManager ?? useMainFWManager();
-const title = props.title;
+const title = props.title ?? (props.text || "Znajdź");
 
 function on_error(err) {
 	console.error(err);
@@ -68,12 +68,12 @@ function close_self () {
 }
 
 async function on_click() {
-    const prevented = await fwManager.close_window(props.title);
+    const prevented = await fwManager.close_window(title);
     if(prevented) {
         return null;
     }
     const src = props.src_factory();
-    return fwManager.open_or_reopen_window(props.title, QueryViewerAdv, {
+    return fwManager.open_or_reopen_window(title, QueryViewerAdv, {
         src,
         selectable: props.selectable,
         insertable: props.insertable,

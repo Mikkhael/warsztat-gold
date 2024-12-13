@@ -49,8 +49,11 @@ function get_selection_string(accept_empty) {
 }
 listen("request_clipboard_copy", async (e) => {
     const to_copy = get_selection_string(false);
-    if(to_copy === null)
+    console.log('COPY', e);
+    if(to_copy === null || to_copy === '') {
+        await clipboard_write(e.payload);
         return;
+    }
     await clipboard_write(to_copy);
     console.log("Coppied text: ", to_copy);
 });

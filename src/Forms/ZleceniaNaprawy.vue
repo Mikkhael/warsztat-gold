@@ -6,7 +6,7 @@ import {FormInput, FormEnum, FormCheckbox} from '../components/Controls';
 import useMainMsgManager from '../components/Msg/MsgManager';
 import useMainFWManager from '../components/FloatingWindows/FWManager';
 
-import { FormQuerySource } from '../components/Dataset';
+import { FormDefaultProps, FormQuerySourceSingle } from '../components/Dataset';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 
 import Klienci from './Klienci.vue';
@@ -14,24 +14,15 @@ import Klienci from './Klienci.vue';
 import ReportPreparer from '../Reports/ReportPreparer.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
-import {onMounted, ref, toRef, readonly, watch, computed} from 'vue';
+import { ref, computed} from 'vue';
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
-import { date_now } from '../utils';
+import { date_now, use_datetime_now } from '../utils';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 
 
 const props = defineProps({
-    parent_window: {
-        /**@type {import('vue').PropType<import('../components/FloatingWindows/FWManager').FWWindow>} */
-        type: Object,
-        required: false
-    },
-    use_src: {
-        /**@type {import('vue').PropType<FormQuerySource>} */
-        type: Object,
-        required: false
-    },
+    ...FormDefaultProps,
     id_klienta:   FormParamProp,
     id_samochodu: FormParamProp,
     show_clients: Boolean
@@ -51,34 +42,34 @@ const COLS = TAB.cols;
 // 0:	1	92	        17	            1998-09-02 00:00:00	    1947-01-12 00:00:00	    0.00	        0.00	            Dąbrowski Stanisław	0	        ~NULL~	      0	            ~NULL~	    0	            PINELES Naprawa blacharska przedniej cząści samochodu	1 2 3
 
 
-const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
+const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {on_error: handle_err});
 src.set_from_with_deps(TAB);
 
-const show_only_open = ref(true);
+const show_only_open = ref(props.show_clients);
 const show_only_open_quard = computed(() => show_only_open.value ? 0 : 1);
 
 const param_id_klienta = param_from_prop(props, 'id_klienta');
 const param_id_car     = param_from_prop(props, 'id_samochodu');
 
-const id         = src.auto_form_value_synced(COLS.ID,                                             );
-const id_klienta = src.auto_form_value_synced(COLS.ID_klienta,           {param: param_id_klienta} );
-const id_car     = src.auto_form_value_synced(COLS.ID_samochodu,         {param: param_id_car}     );
+const id         = src.auto_add_value_synced(COLS.ID,                                             );
+const id_klienta = src.auto_add_value_synced(COLS.ID_klienta,           {param: param_id_klienta} );
+const id_car     = src.auto_add_value_synced(COLS.ID_samochodu,         {param: param_id_car}     );
 
-const data_otw   = src.auto_form_value_synced(COLS.data_otwarcia,        {default: date_now()} );
-const data_zamk  = src.auto_form_value_synced(COLS.data_zamknięcia,                            );
-const zgloszenie = src.auto_form_value_synced(COLS.zgłoszone_naprawy,                          );
-const uwagi      = src.auto_form_value_synced(COLS.uwagi_o_naprawie,                           );
+const data_otw   = src.auto_add_value_synced(COLS.data_otwarcia,        {default: use_datetime_now()} );
+const data_zamk  = src.auto_add_value_synced(COLS.data_zamknięcia,                            );
+const zgloszenie = src.auto_add_value_synced(COLS.zgłoszone_naprawy,                          );
+const uwagi      = src.auto_add_value_synced(COLS.uwagi_o_naprawie,                           );
 
-const prow       = src.auto_form_value_synced(COLS.mechanik_prowadzący,                        );
-const pom1       = src.auto_form_value_synced(COLS.pomocnik_1,                                 );
-const pom2       = src.auto_form_value_synced(COLS.pomocnik_2,                                 );
-const prow_p     = src.auto_form_value_synced(COLS['%_udziału'],         {default: 0}          );
-const pom1_p     = src.auto_form_value_synced(COLS['%_udziału_p1'],      {default: 0}          );
-const pom2_p     = src.auto_form_value_synced(COLS['%_udziału_p2'],      {default: 0}          );
-const zysk_rob   = src.auto_form_value_synced(COLS.zysk_z_robocizny,     {default: 0}          );
-const zysk_cz    = src.auto_form_value_synced(COLS.zysk_z_części,        {default: 0}          );
+const prow       = src.auto_add_value_synced(COLS.mechanik_prowadzący,                        );
+const pom1       = src.auto_add_value_synced(COLS.pomocnik_1,                                 );
+const pom2       = src.auto_add_value_synced(COLS.pomocnik_2,                                 );
+const prow_p     = src.auto_add_value_synced(COLS['%_udziału'],         {default: 0}          );
+const pom1_p     = src.auto_add_value_synced(COLS['%_udziału_p1'],      {default: 0}          );
+const pom2_p     = src.auto_add_value_synced(COLS['%_udziału_p2'],      {default: 0}          );
+const zysk_rob   = src.auto_add_value_synced(COLS.zysk_z_robocizny,     {default: 0}          );
+const zysk_cz    = src.auto_add_value_synced(COLS.zysk_z_części,        {default: 0}          );
 
-src.add_where([show_only_open_quard] ,`OR`, [COLS.data_zamknięcia.name, 'b'], 'IS NULL');
+src.add_where([show_only_open_quard] ,`OR`, COLS.data_zamknięcia.get_full_sql(), 'IS NULL');
 
 const param_id_zlec = src.get(COLS.ID);
 
@@ -127,6 +118,7 @@ defineExpose({
                         no_zlec
                         :force_klient_id="param_force_klient_id"
                         :force_car_id="param_force_car_id"
+                        readonly
                     />
                 </fieldset>
             </div>
@@ -174,7 +166,7 @@ defineExpose({
 
         <QuerySourceOffsetScroller
             :src="src"
-            insertable
+            :insertable="!props.show_clients"
             saveable
             @error="handle_err"
         />

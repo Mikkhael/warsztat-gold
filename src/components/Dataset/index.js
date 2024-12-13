@@ -19,6 +19,18 @@ export const FormParamProp = {
     type: [Number, String, DataGraphDependable],
     required: /**@type {const} */ (false)
 };
+export const FormDefaultProps = {
+    parent_window: {
+        /**@type {import('vue').PropType<import('../FloatingWindows/FWManager').FWWindow>} */
+        type: Object,
+        required: false
+    },
+    use_src: {
+        /**@type {import('vue').PropType<import('./Form').FormQuerySourceSingle>} */
+        type: Object,
+        required: false
+    },
+}
 
 export function param_from_prop(props, paramName) {
     if(props[paramName] === undefined) {

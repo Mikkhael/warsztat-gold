@@ -153,18 +153,26 @@ function convert_db_type(json) {
         `}}}*/`
     ];
 }
+// /**@param {TabDefinition} tab */
+// function convert_table_type(tab) {
+//     const cols = tab.cols.map(convert_column_type);
+//     return [
+//         `"${to_snake_case(tab.name)}": TableNode & {cols: {`,
+//         ...indent(cols),
+//         `}},`,
+//     ];
+// }
+// /**@param {ColDefinition} col */
+// function convert_column_type(col) {
+//     return `"${to_snake_case(col.name)}": Column,`;
+// }
+
 /**@param {TabDefinition} tab */
 function convert_table_type(tab) {
-    const cols = tab.cols.map(convert_column_type);
+    const col_names = tab.cols.map(col => '"'+to_snake_case(col.name)+'"').join('|');
     return [
-        `"${to_snake_case(tab.name)}": TableNode & {cols: {`,
-        ...indent(cols),
-        `}},`,
+        `"${to_snake_case(tab.name)}": TableNode<${col_names}>,`
     ];
-}
-/**@param {ColDefinition} col */
-function convert_column_type(col) {
-    return `"${to_snake_case(col.name)}": Column,`;
 }
 
 

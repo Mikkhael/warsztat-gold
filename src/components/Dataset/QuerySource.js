@@ -1,7 +1,7 @@
 
 
 //@ts-check
-import { computed, ref, shallowRef } from "vue";
+import { computed, ref, shallowRef, unref } from "vue";
 import { DataGraphDependable, DataGraphNodeBase } from "./DataGraph";
 import ipc from "../../ipc";
 import { Column, TableNode } from "./Database";
@@ -56,7 +56,7 @@ class QuerySourceRequest_Offset_Scroll {
     }
 }
 class QuerySourceRequest_Offset_Rownum {
-    constructor(value = 0, colname = 'rowid') {this.value = value, this.colname = colname;}
+    constructor(/**@type {SQLValue} */ value = 0, colname = 'rowid') {this.value = value, this.colname = colname;}
 }
 class QuerySourceRequest_Refresh {
     constructor() {};
@@ -139,7 +139,7 @@ class QuerySource extends DataGraphNodeBase {
             let lookup = this._col_index_lookup[col_index];
             if(lookup === undefined) {
                 lookup = this.full_result.value[1].indexOf(col_index);
-                console.log("LOOKUP", lookup, this.full_result.value[1], col_index);
+                // console.log("LOOKUP", lookup, this.full_result.value[1], col_index, this.full_result.value[1]);
                 if(lookup === -1) return undefined;
                 this._col_index_lookup[col_index] = lookup;
             }
@@ -151,13 +151,17 @@ class QuerySource extends DataGraphNodeBase {
      * @template [D=undefined]
      * @param {number | string} col_index 
      * @param {number} row_index 
-     * @param {D} default_value 
+     * @param {import('vue').MaybeRef<D>} default_value 
      */
     get_result_computed(col_index, row_index = 0, default_value) {
         return computed(() => {
             const res = this.get_result_raw(col_index, row_index);
-            console.log("COMPUTED RES", col_index, row_index, default_value, res, this.full_result.value);
-            if(res === undefined) return default_value;
+            // console.log("COMPUTED RES", col_index, row_index, default_value, res, this.full_result.value);
+            // console.log("COMPUTED RES", col_index, row_index, default_value, res);
+            if(res === undefined) {
+                const def_res = unref(default_value);
+                return def_res;
+            } 
             return res;
         });
     }
@@ -239,7 +243,7 @@ class QuerySource extends DataGraphNodeBase {
         else         this.offset.value = clump(value, this.count.value);
     }
 
-    async perform_offset_rownum(/**@type {number}*/ value, colname = 'rowid') {
+    async perform_offset_rownum(/**@type {SQLValue}*/ value, colname = 'rowid') {
         const [rows] = await ipc.db_query(this.query.get_rownumber_select_sql(value, colname));
         const rownum = rows[0]?.[0];
         console.log('ROWNUM', rownum, rows, value, colname);
@@ -316,7 +320,7 @@ class QuerySource extends DataGraphNodeBase {
         this._add_update_request_impl(new QuerySourceRequest_Offset_Scroll(value), false);
     }
     /**
-     * @param {number} value  
+     * @param {SQLValue} value  
      */
     request_offset_rownum(value, colname = 'rowid') {
         this._add_update_request_impl(new QuerySourceRequest_Offset_Rownum(value, colname), false);

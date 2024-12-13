@@ -11,29 +11,20 @@ import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue
 
 import {onUnmounted, onMounted} from 'vue';
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
-import { FormParamProp, param_from_prop } from '../components/Dataset';
-import { FormQuerySource } from '../components/Dataset';
+import { FormDefaultProps, FormParamProp, param_from_prop } from '../components/Dataset';
+import { FormQuerySourceSingle } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 
 
 const props = defineProps({
-    parent_window: {
-        /**@type {import('vue').PropType<import('../components/FloatingWindows/FWManager').FWWindow>} */
-        type: Object,
-        required: false
-    },
+    ...FormDefaultProps,
+    id_klienta:   FormParamProp,
+    force_car_id: FormParamProp,
     readonly: {
         type: Boolean,
         default: false
     },
-    use_src: {
-        /**@type {import('vue').PropType<FormQuerySource>} */
-        type: Object,
-        required: false
-    },
-    id_klienta:   FormParamProp,
-    force_car_id: FormParamProp,
 });
 
 
@@ -45,47 +36,23 @@ const db = useWarsztatDatabase();
 
 const TAB  = db.TABS.samochody_klientów;
 const COLS = db.TABS.samochody_klientów.cols;
-const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
+const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {on_error: handle_err});
 src.set_from_with_deps(TAB);
 
 const param_force_car_id = param_from_prop(props, 'force_car_id');
 const param_id_klienta   = param_from_prop(props, 'id_klienta');
 
-const car_id       = src.auto_form_value_synced(COLS.ID, {param: param_force_car_id});
-const car_klient   = src.auto_form_value_synced(COLS.ID_klienta, {param: param_id_klienta});
-const car_marka    = src.auto_form_value_synced(COLS.marka);
-const car_model    = src.auto_form_value_synced(COLS.model);
-const car_nrrej    = src.auto_form_value_synced(COLS.nr_rej);
-const car_sinlink  = src.auto_form_value_synced(COLS.nr_silnika);
-const car_nadwozie = src.auto_form_value_synced(COLS.nr_nadwozia);
-
-// const car_id       = standard_form_value_routine(src, "ID",           {sync, primary: true}             );
-// const car_klient   = standard_form_value_routine(src, "ID klienta",   {sync, param: param_id_klienta}   );
-// const car_marka    = standard_form_value_routine(src, "marka",        {sync}                            );
-// const car_model    = standard_form_value_routine(src, "model",        {sync}                            );
-// const car_nrrej    = standard_form_value_routine(src, "nr rej",       {sync}                            );
-// const car_sinlink  = standard_form_value_routine(src, "nr silnika",   {sync}                            );
-// const car_nadwozie = standard_form_value_routine(src, "nr nadwozia",  {sync}                            );
+const car_id       = src.auto_add_value_synced(COLS.ID,         {param: param_force_car_id});
+const car_klient   = src.auto_add_value_synced(COLS.ID_klienta, {param: param_id_klienta});
+const car_marka    = src.auto_add_value_synced(COLS.marka);
+const car_model    = src.auto_add_value_synced(COLS.model);
+const car_nrrej    = src.auto_add_value_synced(COLS.nr_rej);
+const car_sinlink  = src.auto_add_value_synced(COLS.nr_silnika);
+const car_nadwozie = src.auto_add_value_synced(COLS.nr_nadwozia);
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
-
-
-// FIND
-
-// const find_options = readonly({
-//     query_select_fields: [
-//         ["`ID`"],
-//         ["`marka`",       "Marka"],
-//         ["`model`",       "Model"],
-//         ["`nr rej`",      "Nr Rej."],
-//         ["`nr silnika`",  "Nr Silnika"],
-//         ["`nr nadwozia`", "Nr Nadwozia"],
-//     ],
-//     // query_from: "`samochody klientów`",
-//     // query_where: car_scroller_query_where
-// });
 
 defineExpose({
     src,

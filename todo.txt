@@ -6,7 +6,7 @@
 - remember last paths in dialogs (localstorage keyd by title?)
 - print debug mesages as events to frontend
 
-- !!!! CHANGE ESCAPING EVERYWHERE !!!
++ !!!! CHANGE ESCAPING EVERYWHERE !!!
 
 + Access
     + create interface for accual mdb [raczej nigdy się nie stanie]
@@ -136,7 +136,8 @@
         - Kontrolki
             + adapt for DataGraph interface
             + custom context menu
-                - make "Zaznacz Wszystko" on read-only inputs work
+                + make ~~"Zaznacz Wszystko"~~ "Kopiuj" on read-only inputs work
+                - allow copying Selects and Dates
             + Labels
             + Input
                 + Integer

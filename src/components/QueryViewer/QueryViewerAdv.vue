@@ -182,10 +182,23 @@ function handle_row_unhover(row_i) {
 
 /////////////////// EVENT HANDLERS ///////////////////////////////
 
+
+let last_down_row_i = -1;
+async function handle_select_down(row_i, is_from_col_id = false, /**@type {PointerEvent} */ event) {
+    if(event.button !== 0) return;
+    last_down_row_i = row_i;
+}
+
 /**
  * @param {number} row_i
  */
-async function handle_select(row_i, is_from_col_id = false) {
+async function handle_select_up(row_i, is_from_col_id = false, /**@type {PointerEvent} */ event) {
+    if(event.button !== 0) return;
+    if(row_i !== last_down_row_i){
+        last_down_row_i = -1;
+        return;
+    }
+    last_down_row_i = -1;
     if(!props.selectable) return;
     console.log("SELECTING...",  is_from_col_id, src.offset.value, row_i, props.selectable);
     const cols = src.full_result.value?.[1] ?? [];
@@ -249,7 +262,8 @@ onUnmounted(() => {
                             :class="{hovered: current_hovered_row_i === row_i}"
                             @pointerleave="handle_row_unhover(row_i)"
                             @pointerenter="handle_row_hover  (row_i)" 
-                            @pointerup="handle_select(row_i, true)">
+                            @pointerdown="e => handle_select_down(row_i, true, e)"
+                            @pointerup="e => handle_select_up(row_i, true, e)">
                         <img class="delete_button button" 
                             src="./../../assets/icons/trashx.svg" 
                             @click="src.dataset.flip_row_deleted(row_i)" 
@@ -288,7 +302,8 @@ onUnmounted(() => {
                             }"
                             @pointerleave="handle_row_unhover(row_i)"
                             @pointerenter="handle_row_hover  (row_i)" 
-                            @pointerup="handle_select(row_i, false)"
+                            @pointerdown="e => handle_select_down(row_i, false, e)"
+                            @pointerup="e => handle_select_up(row_i, false, e)"
                             :value="row.get(col_name)"
                             auto
                             v-bind="unref(columns_display_props[col_i].input_props)"

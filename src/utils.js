@@ -39,7 +39,7 @@ function escape_sql_value(value){
 		console.error(`ESCAPING AN OBJECT VALUE `, value);
 		return 'NULL';
 	} else {
-		return '"' + value.toString().replace(/"/g, '""') + '"';
+		return "'" + value.toString().replace(/'/g, "''") + "'";
 	}
 }
 

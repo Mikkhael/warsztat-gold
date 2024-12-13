@@ -144,10 +144,11 @@ class FormQuerySourceBase extends QuerySource {
     
     /**
      * Automatically get column name and wheather it is primary
-     * @param {Column} col 
+     * @param {Column | string} col 
      * @param {StandardFormValueRoutineParams} params
      */
     auto_add_column(col, params = {}) {
+        if(typeof col === 'string') return this.auto_add_column_impl(col, params);
         /**@type {StandardFormValueRoutineParams} */
         const auto_params = {primary: col.is_primary(), assoc_col: col};
         Object.assign(auto_params, params);
@@ -155,10 +156,11 @@ class FormQuerySourceBase extends QuerySource {
     }
     /**
      * Automatically get column name and wheather it is primary, and generate appropiate sync
-     * @param {Column} col 
+     * @param {Column | string} col 
      * @param {StandardFormValueRoutineParams} params
      */
     auto_add_column_synced(col, params = {}) {
+        if(typeof col === 'string') return this.auto_add_column_impl(col, params);
         const sync = this.get_dataset().get_or_create_sync(col.tab);
         /**@type {StandardFormValueRoutineParams} */
         const auto_params = Object.assign({}, {sync, sync_col: col.name}, params);
@@ -392,7 +394,10 @@ class FormChangebleValue extends DefaultableSimpleOwningChangableValue{
      */
     constructor(dataset, cached, default_value = null) {
         const initial_value = unref(cached);
-        super(default_value, initial_value === undefined ? default_value : initial_value, cached);
+        const true_initial_value = initial_value === undefined ?
+            unref(default_value) :
+            initial_value;
+        super(default_value, true_initial_value, cached);
         this.dataset        = dataset;
         this.associated_col = /**@type {Column?} */ (null);
     }
@@ -735,6 +740,9 @@ class FormDataSetSingle extends FormDataSetBase {
             return value;
         }
         const new_value = this.local_row[index] = new FormChangebleValue(this, ref(undefined), null);
+        if(column instanceof Column) {
+            new_value.assoc_col(column);
+        }
         return new_value;
     }
     
@@ -755,7 +763,11 @@ class FormDataSetSingle extends FormDataSetBase {
             prev_value.set_cached(cached);
             return true_index;
         }
-        this.local_row[true_index] = new FormChangebleValue(this,ref(cached),default_value);
+        const new_value = new FormChangebleValue(this,ref(cached),default_value);
+        if(column instanceof Column) {
+            new_value.assoc_col(column);
+        }
+        this.local_row[true_index] = new_value;
         return true_index;
     }
 

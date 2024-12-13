@@ -66,6 +66,9 @@ class DatabaseNode extends DataGraphNodeBase {
     }
 }
 
+/**
+ * @template {string} [T=string]
+ */
 class TableNode extends DataGraphNodeBase{
     /**
      * @param {DatabaseNode} db
@@ -78,7 +81,8 @@ class TableNode extends DataGraphNodeBase{
         this.add_dep(db);
 
         this.name = name;
-        /**@type {Object.<string, Column>}*/
+        /**@type {{[P in T]: Column}}*/
+        //@ts-ignore
         this.cols = {};
 
         for(const col_def of cols_def) {

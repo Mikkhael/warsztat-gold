@@ -12,7 +12,7 @@ import AlertsDebug from "./components/SqlDebug/AlertsDebug.vue";
 import DataGraphDebug from "./components/SqlDebug/DataGraphDebug.vue";
 import QuerySourceDebug from "./components/SqlDebug/QuerySourceDebug.vue";
 import RevisedFormQueryDebug from "./components/SqlDebug/RevisedFormQueryDebug.vue";
-// import MainWindow from "./components/MainWindow.vue";
+import MainWindow from "./components/MainWindow.vue";
 import { onMounted, reactive, readonly, ref } from "vue";
 
 import WinBox from "./components/WinBox/winbox";
@@ -21,7 +21,7 @@ import useMainMsgManager from "./components/Msg/MsgManager";
 import CornerMsgContainer from "./components/Msg/CornerMsgContainer.vue";
 
 const main_components = [
-  // MainWindow,
+  MainWindow,
   SqlDebugConsole,
   // QueryFormDebug,
   // QueryFormSimpleDebug,
@@ -34,7 +34,7 @@ const main_components = [
   RevisedFormQueryDebug,
 ];
 const main_components_names = readonly([
-  // "MainWindow",
+  "MainWindow",
   "SqlDebugConsole",
   // "QueryFormDebug",
   // "QueryFormSimpleDebug",
@@ -46,7 +46,7 @@ const main_components_names = readonly([
   "QuerySourceDebug",
   "RevisedFormQueryDebug",
 ]);
-const current_main_component_index = ref(4);
+const current_main_component_index = ref(0);
 const current_main_component = ref();
 
 const msg_manager = useMainMsgManager();

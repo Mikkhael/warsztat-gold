@@ -58,7 +58,7 @@ function tool_settings() {
 
 function tool_zlecenia(){
     // fwManager.open_or_focus_window("Zlecenia", Klienci, {readonly: true, force_klient_id: 24913, force_car_id: 53854});
-    fwManager.open_or_focus_window("Zlecenia", ZleceniaNaprawy, {show_clients: true});
+    fwManager.open_or_focus_window("Zlecenia Otwarte", ZleceniaNaprawy, {show_clients: true});
 }
 
 function tool_klienci(){
@@ -80,7 +80,7 @@ function tool_klienci(){
             </div>
             <div class="toolgroup"></div>
             <div class="toolgroup">
-                <div class="tool" @click="tool_zlecenia();">Zlecenia</div>
+                <div class="tool" @click="tool_zlecenia();">Zlecenia Otwarte</div>
                 <div class="tool" @click="tool_klienci();" >Klienci</div>
             </div>
             <div class="toolgroup"></div>

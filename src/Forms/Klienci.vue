@@ -5,41 +5,31 @@ import {FormInput, FormEnum} from '../components/Controls';
 
 import useMainMsgManager from '../components/Msg/MsgManager';
 
-import QueryViewerOpenBtn from '../components/QueryViewer/QueryViewerOpenBtn.vue';
+import { QueryViewerSource } from '../components/QueryViewer/QueryViewer';
+import QueryViewerAdvOpenBtn from '../components/QueryViewer/QueryViewerAdvOpenBtn.vue';
 
 
 import SamochodyKlientow from './SamochodyKlientow.vue';
 import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 
-import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
-
 import {onMounted, onUnmounted, ref, nextTick} from 'vue';
 import { standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { use_datetime_now } from '../utils';
-import { FormParamProp, FormQuerySource, param_from_prop } from '../components/Dataset';
+import { FormParamProp, FormDefaultProps, FormQuerySourceSingle, param_from_prop } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 import useMainFWManager from '../components/FloatingWindows/FWManager';
 
 
 const props = defineProps({
-    parent_window: {
-        /**@type {import('vue').PropType<import('../components/FloatingWindows/FWManager').FWWindow>} */
-        type: Object,
-        required: false
-    },
+    ...FormDefaultProps,
+    force_klient_id: FormParamProp,
+    force_car_id:    FormParamProp,
+    no_zlec: Boolean,
     readonly: {
         type: Boolean,
         default: false,
     },
-    use_src: {
-        /**@type {import('vue').PropType<FormQuerySource>} */
-        type: Object,
-        required: false
-    },
-    no_zlec: Boolean,
-    force_klient_id: FormParamProp,
-    force_car_id:    FormParamProp
 });
 
 const msgManager = useMainMsgManager();
@@ -59,27 +49,27 @@ const db = useWarsztatDatabase();
 const TAB  = db.TABS.klienci;
 const COLS = TAB.cols;
 
-const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, handle_err);
+const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {on_error: handle_err});
 src.set_from_with_deps(TAB);
 
-const src_car      = new FormQuerySource();
-const src_zlecenia = new FormQuerySource();
+const src_car      = new FormQuerySourceSingle();
+const src_zlecenia = new FormQuerySourceSingle();
 
 const param_force_klient_id = param_from_prop(props, 'force_klient_id');
 
-const id     = src.auto_form_value_synced(COLS.ID,                  {param: param_force_klient_id});
-const nazwa  = src.auto_form_value_synced(COLS.NAZWA                );
-const miasto = src.auto_form_value_synced(COLS.MIASTO               );
-const ulica  = src.auto_form_value_synced(COLS.ULICA                );
-const kod    = src.auto_form_value_synced(COLS.KOD_POCZT            );
-const tele1  = src.auto_form_value_synced(COLS.TELEFON1             );
-const tele2  = src.auto_form_value_synced(COLS.TELEFON2             );
-const nip    = src.auto_form_value_synced(COLS.NIP                  );
-const odbier = src.auto_form_value_synced(COLS.odbierający_fakturę  );
-const kto    = src.auto_form_value_synced(COLS.KTO,                 {default: "Gold"});
-const kiedy  = src.auto_form_value_synced(COLS.KIEDY,               {default: use_datetime_now()});
-const upust  = src.auto_form_value_synced(COLS.UPUST,               {default: 0});
-const list   = src.auto_form_value_synced(COLS.list                 );
+const id     = src.auto_add_value_synced(COLS.ID,                  {param: param_force_klient_id});
+const nazwa  = src.auto_add_value_synced(COLS.NAZWA                );
+const miasto = src.auto_add_value_synced(COLS.MIASTO               );
+const ulica  = src.auto_add_value_synced(COLS.ULICA                );
+const kod    = src.auto_add_value_synced(COLS.KOD_POCZT            );
+const tele1  = src.auto_add_value_synced(COLS.TELEFON1             );
+const tele2  = src.auto_add_value_synced(COLS.TELEFON2             );
+const nip    = src.auto_add_value_synced(COLS.NIP                  );
+const odbier = src.auto_add_value_synced(COLS.odbierający_fakturę  );
+const kto    = src.auto_add_value_synced(COLS.KTO,                 {default: "Gold"});
+const kiedy  = src.auto_add_value_synced(COLS.KIEDY,               {default: use_datetime_now()});
+const upust  = src.auto_add_value_synced(COLS.UPUST,               {default: 0});
+const list   = src.auto_add_value_synced(COLS.list                 );
 
 
 const param_id_klienta   = src.get(COLS.ID);
@@ -87,58 +77,63 @@ const param_id_samochodu = src_car.get(db.TABS.samochody_klientów.cols.ID);
 
 // FIND
 
-/**@typedef {import('../components/QueryViewer/QueryViewerOpenBtn.vue').QueryViwerQueryParams} QueryViewerQueryParams*/
+const QVFactory_find_client = () => {
+    const src = new QueryViewerSource();
+    src.set_from_with_deps(TAB);
+    src.auto_add_column(COLS.ID,                  {display: 'ID'});
+    src.auto_add_column(COLS.NAZWA,               {display: 'Nazwa'});
+    src.auto_add_column("adres",                  {display: 'Adres', sql: "(`ULICA` || ', ' || `MIASTO` || ' ' || `KOD_POCZT`)"});
+    src.auto_add_column(COLS.NIP,                 {display: 'NIP'});
+    src.auto_add_column(COLS.TELEFON1,            {display: 'Telefon'});
+    src.auto_add_column(COLS.TELEFON2,            {display: 'Telefon 2'});
+    src.auto_add_column(COLS.odbierający_fakturę, {display: 'Odbierający Fakturę'});
+    src.auto_add_column(COLS.KTO,                 {display: 'wpisał'});
+    src.auto_add_column(COLS.KIEDY,               {display: 'dnia'});
+    return src;
+}
+const QVFactory_find_client_select = QueryViewerSource.create_default_select_handler([[src, COLS.ID]], handle_err, true);
 
-/**@type {QueryViewerQueryParams} */
-const find_query = {
-    from: "`klienci`",
-    select: [
-        [["`ID`",                  ], "ID"],
-        [["`NAZWA`",               ], "Nazwa"               ],
-        [["adres", '(ULICA || ", " || MIASTO || " " || KOD_POCZT)'], "Adres"],
-        [["`NIP`",                 ], "NIP"                 ],
-        [["`TELEFON1`",            ], "Telefon"             ],
-        [["`TELEFON2`",            ], "Telefon 2"           ],
-        [["`odbierający fakturę`", ], "Odbierający Fakturę" ],
-        [["`KTO`",                 ], "wpisał"              ],
-        [["`KIEDY`",               ], "dnia"                ],
-    ]
-};
-const find_query_handler = standard_QV_select([[src, 0]], handle_err);
 
-/**@type {QueryViewerQueryParams} */
-const find_query_car = {
-    from: "`samochody klientów` as s JOIN `klienci` as k ON k.`ID` = s.`ID klienta`",
-    select: [
-        [['k.`ID`']],
-        [['s.`ID`'], 'ID'],
+const QVFactory_find_car = () => {
+    const CAR_TAB  = db.TABS.samochody_klientów;
+    const CAR_COLS = db.TABS.samochody_klientów.cols;
+    const src = new QueryViewerSource();
+    src.set_from_with_deps(CAR_TAB);
+    src.add_join(CAR_COLS.ID_klienta, COLS.ID);
+    src.auto_add_column(CAR_COLS.ID_klienta);
+    src.auto_add_column(CAR_COLS.ID,                  {display: 'ID'});
+    src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
+    src.auto_add_column(COLS.NAZWA,                   {display: 'Klient'});
+    src.auto_add_column(CAR_COLS.marka,               {display: 'Marka'});
+    src.auto_add_column(CAR_COLS.model,               {display: 'Model'});
+    src.auto_add_column(CAR_COLS.nr_silnika,          {display: 'Nr Silnika'});
+    src.auto_add_column(CAR_COLS.nr_nadwozia,         {display: 'Nr Nadwozia'});
+    return src;
+}
+const QVFactory_find_car_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1]], handle_err, true);
 
-        [['nr rej'],      'Nr Rej.'],
-        [['NAZWA'],       'Klient'],
-        [['marka'],       'Marka'],
-        [['model'],       'Model'],
-        [['nr silnika'],  'Nr Silnika'],
-        [['nr nadwozia'], 'Nr Nadwozia'],
-    ]
-};
-const find_query_car_handler = standard_QV_select([[src, 0], [src_car, 1]], handle_err);
 
-/**@type {QueryViewerQueryParams} */
-const find_query_zlec = {
-    from: "`zlecenia naprawy` as z JOIN `klienci` as k ON k.`ID` = z.`ID klienta` JOIN `samochody klientów` as s ON s.`ID` = z.`ID samochodu`",
-    select: [
-        [['k.`ID`']],
-        [['s.`ID`']],
-        [['z.`ID`'],            'Nr Zlecenia'],
-        [["data otwarcia"],     'Otwarcie'],
-        [["data zamknięcia"],   'Zamknięcie'],
-        [['NAZWA'],             'Klient'],
-        [['nr rej'],            'Nr Rej.'],
-        [["zgłoszone naprawy"], 'Zgłoszenie'],
-        [["uwagi o naprawie"],  'Uwagi'],
-    ]
-};
-const find_query_zlec_handler = standard_QV_select([[src, 0], [src_car, 1], [src_zlecenia, 2]], handle_err);
+const QVFactory_find_zlec = () => {
+    const ZLEC_TAB  = db.TABS.zlecenia_naprawy;
+    const ZLEC_COLS = db.TABS.zlecenia_naprawy.cols;
+    const CAR_COLS  = db.TABS.samochody_klientów.cols;
+    const src = new QueryViewerSource();
+    src.set_from_with_deps(ZLEC_TAB);
+    src.add_join(ZLEC_COLS.ID_klienta,   COLS.ID);
+    src.add_join(ZLEC_COLS.ID_samochodu, CAR_COLS.ID);
+    src.auto_add_column(COLS.ID),
+    src.auto_add_column(CAR_COLS.ID),
+    src.auto_add_column(ZLEC_COLS.ID,                 {display: 'ID'});
+    src.auto_add_column(COLS.NAZWA,                   {display: 'Klient'});
+    src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
+    src.auto_add_column(ZLEC_COLS.data_otwarcia,      {display: 'Otwarcie'});
+    src.auto_add_column(ZLEC_COLS.data_zamknięcia,    {display: 'Zamknięcie'});
+
+    src.auto_add_column(ZLEC_COLS.zgłoszone_naprawy,  {display: 'Zgłoszenie'});
+    src.auto_add_column(ZLEC_COLS.uwagi_o_naprawie,   {display: 'Uwagi'});
+    return src;
+}
+const QVFactory_find_zlec_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1],[src_zlecenia,2]], handle_err, true);
 
 const show_zlecenia = ref(true);
 // function click_zlecenia(){
@@ -170,15 +165,32 @@ defineExpose({
             <div class="grid">
                 
                 <div class="row flex_auto" v-if="!props.no_zlec">
+                
                     <div>
-                        <QueryViewerOpenBtn :query="find_query" @select="find_query_handler" text="Znajdź Klienta" />
+                        <QueryViewerAdvOpenBtn 
+                            text="Znajdź Klienta"
+                            selectable
+                            :src_factory="QVFactory_find_client" 
+                                 @select="QVFactory_find_client_select"
+                                 @error="handle_err" />
                     </div>
                     <div>
-                        <QueryViewerOpenBtn :query="find_query_car" @select="find_query_car_handler" text="Znajdź Samochód" />
+                        <QueryViewerAdvOpenBtn 
+                            text="Znajdź Samochód"
+                            selectable
+                            :src_factory="QVFactory_find_car" 
+                                 @select="QVFactory_find_car_select"
+                                 @error="handle_err" />
                     </div>
                     <div>
-                        <QueryViewerOpenBtn :query="find_query_zlec" @select="find_query_zlec_handler" text="Znajdź Zlecenie" />
-                    </div>
+                        <QueryViewerAdvOpenBtn 
+                            text="Znajdź Zlecenie"
+                            selectable
+                            :src_factory="QVFactory_find_zlec" 
+                                 @select="QVFactory_find_zlec_select"
+                                 @error="handle_err" />
+                    </div> 
+               
                     <!-- <button @click.prevent="click_zlecenia">ZLECENIA</button> -->
                 </div>
 

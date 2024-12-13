@@ -1,6 +1,6 @@
 <script setup>
 //@ts-check
-import { FormQuerySource } from '../components/Dataset';
+import { QuerySource } from '../components/Dataset';
 import { nextTick, ref } from 'vue';
 
 
@@ -12,7 +12,7 @@ const props = defineProps({
     }
 });
 
-/**@type {import('vue').Ref<{src: FormQuerySource}?>} */
+/**@type {import('vue').Ref<{src: QuerySource}?>} */
 const rep_ref = ref(null);
 /**@type {import('vue').Ref<HTMLElement?>} */
 const rep_renderer_ref = ref(null);
@@ -23,7 +23,7 @@ const rep_renderer_ref = ref(null);
         throw new Error('Report component not assigned');
     }
     await rep_ref.value.src.update_complete(true);
-    open(with_print);
+    return open(with_print);
 }
 
 function open(with_print = true) {

@@ -66,8 +66,6 @@ function on_error(err) {
 	console.error(err);
 	emit('error', err);
 }
-
-// TODO identify window by more than just the title, to avoid colisions
 function close_self () {
     fwManager.close_window("Znajdź");
 }
