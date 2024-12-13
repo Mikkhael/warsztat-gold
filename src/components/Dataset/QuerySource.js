@@ -77,6 +77,7 @@ class QuerySourceResultValue extends DataGraphDependable{
         this.src = src;
         // this.col = col;
         // this.row = row;
+        console.log("GETTING RESULT VALUE", col, row, default_value);
         this.ref = this.src.get_result_computed(col, row, default_value);
     }
 
@@ -138,6 +139,7 @@ class QuerySource extends DataGraphNodeBase {
             let lookup = this._col_index_lookup[col_index];
             if(lookup === undefined) {
                 lookup = this.full_result.value[1].indexOf(col_index);
+                console.log("LOOKUP", lookup, this.full_result.value[1], col_index);
                 if(lookup === -1) return undefined;
                 this._col_index_lookup[col_index] = lookup;
             }
@@ -154,17 +156,19 @@ class QuerySource extends DataGraphNodeBase {
     get_result_computed(col_index, row_index = 0, default_value) {
         return computed(() => {
             const res = this.get_result_raw(col_index, row_index);
+            console.log("COMPUTED RES", col_index, row_index, default_value, res, this.full_result.value);
             if(res === undefined) return default_value;
             return res;
         });
     }
     
     /**
-     * @param {number | string} col_index 
+     * @param {number | string | Column} col_index 
      * @param {number} row_index 
      * @param {SQLValue} default_value 
      */
     get(col_index, row_index = 0, default_value = null) {
+        if(col_index instanceof Column) col_index = col_index.name;
         return new QuerySourceResultValue(this, col_index, row_index, default_value);
     }
 

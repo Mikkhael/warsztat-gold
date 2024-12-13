@@ -4,7 +4,7 @@
 import {computed, ref,shallowRef} from 'vue';
 
 import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
-import {FormQuerySource, FormDataSet} from '../Dataset';
+import {FormQuerySourceSingle} from '../Dataset';
 
 import QueryViewerOpenBtn from '../QueryViewer/QueryViewerOpenBtn.vue';
 
@@ -42,18 +42,18 @@ function res_to_str(obj) {
 const kto_ref_raw = ref('Gold');
 const kto_ref = computed(() => kto_ref_raw.value === "" ? null : kto_ref_raw.value);
 
-const KLIENCI_SELECT_FIELDS = ref([
-    ['ID'],
-    ['Nazwa'],
-    ['MIASTO'],
-    ['ULICA'],
-    ['KOD_POCZT'],
-    ['KTO', 'ktoś'],
-    ['KIEDY', datetime_now()],
-    ['ulicaCaps', null, 'upper(ULICA)']
-]);
-const KLIENCI_SELECT_FIELDS_json = computed_json(KLIENCI_SELECT_FIELDS);
-const KLIENCI_FROM = ref('`klienci`');
+// const KLIENCI_SELECT_FIELDS = ref([
+//     ['ID'],
+//     ['Nazwa'],
+//     ['MIASTO'],
+//     ['ULICA'],
+//     ['KOD_POCZT'],
+//     ['KTO', 'ktoś'],
+//     ['KIEDY', datetime_now()],
+//     ['ulicaCaps', null, 'upper(ULICA)']
+// ]);
+// const KLIENCI_SELECT_FIELDS_json = computed_json(KLIENCI_SELECT_FIELDS);
+// const KLIENCI_FROM = ref('`klienci`');
 
 //////////////// QUERY VIEWERS ////////////////////
 
@@ -88,28 +88,27 @@ const QV_KLIENCI_BYCAR = {
 
 
 function create_form1() {
-    const src = new FormQuerySource();
+    const src = new FormQuerySourceSingle();
     src.add_table_dep(db.TABS.klienci);
-    for(const field of KLIENCI_SELECT_FIELDS.value) {
-        src.add_select_data(field[0] ?? "", field[1], field[2] ?? undefined);
-    }
-    src.register_result('KIEDY', use_datetime_now());
+    // for(const field of KLIENCI_SELECT_FIELDS.value) {
+    //     src.add_select_with_default(field[0] ?? "", field[1], field[2] ?? undefined);
+    // }
+    // src.register_result('KIEDY', use_datetime_now());
 
-    src.query.from.value = KLIENCI_FROM.value;
+
+    const COLS = db.TABS.klienci.cols;
+    src.set_from_with_deps(db.TABS.klienci);
+    src.auto_add_value_synced(COLS.ID);
+    src.auto_add_value_synced(COLS.NAZWA);
+    src.auto_add_value_synced(COLS.MIASTO);
+    src.auto_add_value_synced(COLS.ULICA);
+    src.auto_add_value_synced(COLS.KOD_POCZT);
+    src.auto_add_value_synced(COLS.KTO);
+    src.auto_add_value_synced(COLS.KIEDY);
+    src.auto_add_value_impl('ulicaCaps', {sql: "upper(`ULICA`)"});
+
     // src.add_where_eq('KTO', kto_ref, true);
-    src.query.add_where_eq('KTO', kto_ref, true);
-
-    /**@type {FormDataSet} */
-    const data = src.dataset;
-
-    const sync = data.get_or_create_sync(db.TABS.klienci);
-    sync?.assoc_value('ID',        data.values.ID, true);
-    sync?.assoc_value('NAZWA',     data.values.Nazwa);
-    sync?.assoc_value('MIASTO',    data.values.MIASTO);
-    sync?.assoc_value('ULICA',     data.values.ULICA);
-    sync?.assoc_value('KOD_POCZT', data.values.KOD_POCZT);
-    sync?.assoc_value('KTO',       data.values.KTO);
-    sync?.assoc_value('KIEDY',     data.values.KIEDY);
+    src.add_where_eq(COLS.KTO.get_full_sql(), kto_ref, true);
 
     return src;
 }
@@ -117,50 +116,41 @@ function create_form2(
     /**@type {import('./../Dataset').MaybeDependable} */ param1 = null,
     /**@type {import('./../Dataset').MaybeDependable} */ param2 = null,
 ) {
-    const src = new FormQuerySource();
-    src.add_table_dep(db.TABS.samochody_klientów);
+    const src = new FormQuerySourceSingle();
+    src.set_from_with_deps(db.TABS.samochody_klientów);
+    const COLS = db.TABS.samochody_klientów.cols;
 
-    src.add_select_data("ID",            null);
-    src.add_select_data("marka",         null);
-    src.add_select_data("model",         null);
-    src.add_select_data("nr_rej",        null, '`nr rej`');
-    src.add_select_data("nr_sil",        null, '`nr silnika`');
-    src.add_select_data("nr_nad",        'brak nadwozia', '`nr nadwozia`');
-    src.query.from.value = '`samochody klientów`';
+    const sync = src.dataset.get_or_create_sync(db.TABS.samochody_klientów);
 
-    src.add_select_data("ID_klienta",  param1, '`ID klienta`');
-    if(param2 === null) {
-        src.add_where_eq("ID klienta", param1, true);
-    } else {
-        src.add_where_opt("`ID klienta` BETWEEN ", [param1], " AND ", [param2]);
-    }
-
-
-    /**@type {FormDataSet} */
-    const data = src.dataset;
-
-    const sync = data.get_or_create_sync(db.TABS.samochody_klientów);
+    src.auto_add_value_synced(COLS.ID,    );
+    src.auto_add_value_synced(COLS.marka, );
+    src.auto_add_value_synced(COLS.model, );
+    src.auto_add_value_impl  ("nr_rej",        {sql: '`nr rej`'    , sync, sync_col: COLS.nr_rej.name});
+    src.auto_add_value_impl  ("nr_sil",        {sql: '`nr silnika`', sync, sync_col: COLS.nr_silnika.name});
+    src.auto_add_value_impl  ("nr_nad",        {sql: '`nr silnika`', sync, sync_col: COLS.nr_nadwozia.name, default: 'brak nadwozia'});
     
-    sync?.assoc_value("ID",          data.values.ID,    true);
-    sync?.assoc_value("marka",       data.values.marka      );
-    sync?.assoc_value("model",       data.values.model      );
-    sync?.assoc_value("nr rej",      data.values.nr_rej     );
-    sync?.assoc_value("nr silnika",  data.values.nr_sil     );
-    sync?.assoc_value("nr nadwozia", data.values.nr_nad     );
-    sync?.assoc_value("ID klienta",  data.values.ID_klienta );
-
+    src.auto_add_value_synced(COLS.ID_klienta);
+    
+    if(param2 === null) {
+        // src.auto_add_value_synced(COLS.ID_klienta, {param: param1});
+        src.add_where_eq(COLS.ID_klienta.get_full_sql(), param1, true);
+    } else {
+        // src.auto_add_value_synced(COLS.ID_klienta);
+        console.log("PARAMS ", param1, param2);
+        src.add_where(COLS.ID_klienta.get_full_sql(), "BETWEEN", [param1], "AND", [param2]);
+    }
     return src;
 }
 
 
 //@ts-ignore
-const src1  = shallowRef(/**@type {FormQuerySource} */ (undefined));
+const src1  = shallowRef(/**@type {FormQuerySourceSingle} */ (undefined));
 //@ts-ignore
-const src2_1  = shallowRef(/**@type {FormQuerySource} */ (undefined));
+const src2_1  = shallowRef(/**@type {FormQuerySourceSingle} */ (undefined));
 //@ts-ignore
-const src2_2  = shallowRef(/**@type {FormQuerySource} */ (undefined));
+const src2_2  = shallowRef(/**@type {FormQuerySourceSingle} */ (undefined));
 //@ts-ignore
-const src2_3  = shallowRef(/**@type {FormQuerySource} */ (undefined));
+const src2_3  = shallowRef(/**@type {FormQuerySourceSingle} */ (undefined));
 //@ts-ignore
 // const data1 = computed(() => src1.value.dataset ?? new FormDataSet());
 const src1_res = computed(() => res_to_str(src1.value.result));
@@ -174,9 +164,12 @@ function reset_sources(no_disconnect = false) {
     }
 
     src1.value = create_form1();
-    src2_1.value = create_form2(src1.value.result.ID);
+    src2_1.value = create_form2(src1.value.get(0));
     src2_2.value = create_form2(null);
-    src2_3.value = create_form2(src2_1.value.result.ID_klienta, src2_2.value.result.ID_klienta);
+    src2_3.value = create_form2(
+        src2_1.value.get(db.TABS.samochody_klientów.cols.ID_klienta), 
+        src2_2.value.get(db.TABS.samochody_klientów.cols.ID_klienta)
+    );
 }
 reset_sources();
 
@@ -226,8 +219,6 @@ defineExpose({
         <button @click="disconnect_tabs" >DISC TABS</button>
         <button @click="disconnect_tabs2" >DISC TABS 2</button>
 
-        <p>SELECT: <input v-model="KLIENCI_SELECT_FIELDS_json"></p>
-        <p>FROM:   <input v-model="KLIENCI_FROM"></p>
         <p>.</p>
         <p>KTO:   <input v-model="kto_ref_raw"></p>
 
@@ -254,47 +245,47 @@ defineExpose({
                     @select="QV_KLIENCI_BYCAR_handler"/>
                 <br>
 
-                <label>ID  <FormInput type="number"          :value="data.values.ID"        readonly />    </label> <br>
-                <label>NAZ <FormInput type="text"            :value="data.values.Nazwa"     nonull   />    </label> <br>
-                <label>MIA <FormInput type="text"            :value="data.values.MIASTO"    nonull   />    </label> <br>
-                <label>ULI <FormInput type="text"            :value="data.values.ULICA"     nonull   />    </label> <br>
-                <label>KOD <FormInput type="text"            :value="data.values.KOD_POCZT" nonull   />    </label> <br>
-                <label>KTO <FormInput type="text"            :value="data.values.KTO"                />    </label> <br>     
-                <label>KIE <FormInput type="date"            :value="data.values.KIEDY"              />    </label> <br>   
-                <label>KIE <FormInput type="datetime-local"  :value="data.values.KIEDY"              />    </label> <br>   
-                <label>KIE <FormInput type="datetime-local"  :value="data.values.KIEDY"     step="1" />    </label> <br>   
-                <label>UL  <FormInput type="text"            :value="data.values.ulicaCaps" nonull   />    </label> <br>
+                <label>ID  <FormInput type="number"          :value="data.get(db.TABS.klienci.cols.ID)"        readonly />    </label> <br>
+                <label>NAZ <FormInput type="text"            :value="data.get(db.TABS.klienci.cols.NAZWA)"     nonull   />    </label> <br>
+                <label>MIA <FormInput type="text"            :value="data.get(db.TABS.klienci.cols.MIASTO)"    nonull   />    </label> <br>
+                <label>ULI <FormInput type="text"            :value="data.get(db.TABS.klienci.cols.ULICA)"     nonull   />    </label> <br>
+                <label>KOD <FormInput type="text"            :value="data.get(db.TABS.klienci.cols.KOD_POCZT)" nonull   />    </label> <br>
+                <label>KTO <FormInput type="text"            :value="data.get(db.TABS.klienci.cols.KTO)"                />    </label> <br>     
+                <label>KIE <FormInput type="date"            :value="data.get(db.TABS.klienci.cols.KIEDY)"              />    </label> <br>   
+                <label>KIE <FormInput type="datetime-local"  :value="data.get(db.TABS.klienci.cols.KIEDY)"              />    </label> <br>   
+                <label>KIE <FormInput type="datetime-local"  :value="data.get(db.TABS.klienci.cols.KIEDY)"     step="1" />    </label> <br>   
+                <label>UL  <FormInput type="text"            :value="data.get('ulicaCaps')" nonull   />    </label> <br>
 
-                <label>KTO <FormEnum  :value="data.values.KTO" :options="['kot', 'gold', 'Gold']"/>        </label> <br>
-                <label>KTO <FormEnum  :value="data.values.KTO" :options="['kot', 'gold', 'Gold']" nonull/> </label> <br>
+                <label>KTO <FormEnum  :value="data.get(db.TABS.klienci.cols.KTO)" :options="['kot', 'gold', 'Gold']"/>        </label> <br>
+                <label>KTO <FormEnum  :value="data.get(db.TABS.klienci.cols.KTO)" :options="['kot', 'gold', 'Gold']" nonull/> </label> <br>
             </QuerySourceDebug_form>
             
             <QuerySourceDebug_form name="Samochody" :src="src2_1" v-slot="{data}" class="abc">
-                <label>ID    </label> <FormInput type="number"          :value="data.values.ID"         readonly /> <br>
-                <label>ID_K  </label> <FormInput type="number"          :value="data.values.ID_klienta" readonly /> <br>
-                <label>MARK  </label> <FormInput type="text"            :value="data.values.marka"      />          <br>   
-                <label>MODE  </label> <FormInput type="text"            :value="data.values.model"      />          <br>   
-                <label>N REJ </label> <FormInput type="text"            :value="data.values.nr_rej"     />          <br>   
-                <label>N SIL </label> <FormInput type="text"            :value="data.values.nr_sil"     />          <br>   
-                <label>N NAD </label> <FormInput type="text"            :value="data.values.nr_nad"     />          <br>   
+                <label>ID    </label> <FormInput type="number"          :value="data.get(db.TABS.samochody_klientów.cols.ID)"         readonly /> <br>
+                <label>ID_K  </label> <FormInput type="number"          :value="data.get(db.TABS.samochody_klientów.cols.ID_klienta)" readonly /> <br>
+                <label>MARK  </label> <FormInput type="text"            :value="data.get(db.TABS.samochody_klientów.cols.marka)"      />          <br>   
+                <label>MODE  </label> <FormInput type="text"            :value="data.get(db.TABS.samochody_klientów.cols.model)"      />          <br>   
+                <label>N REJ </label> <FormInput type="text"            :value="data.get('nr_rej')"                                   />          <br>   
+                <label>N SIL </label> <FormInput type="text"            :value="data.get('nr_sil')"                                   />          <br>   
+                <label>N NAD </label> <FormInput type="text"            :value="data.get('nr_nad')"                                   />          <br>   
             </QuerySourceDebug_form>
             <QuerySourceDebug_form name="Samochody All" :src="src2_2" v-slot="{data}" class="abc">
-                <label>ID    </label> <FormInput type="number"          :value="data.values.ID"         readonly /> <br>
-                <label>ID_K  </label> <FormInput type="number"          :value="data.values.ID_klienta" />          <br>
-                <label>MARK  </label> <FormInput type="text"            :value="data.values.marka"      />          <br>   
-                <label>MODE  </label> <FormInput type="text"            :value="data.values.model"      />          <br>   
-                <label>N REJ </label> <FormInput type="text"            :value="data.values.nr_rej"     />          <br>   
-                <label>N SIL </label> <FormInput type="text"            :value="data.values.nr_sil"     />          <br>   
-                <label>N NAD </label> <FormInput type="text"            :value="data.values.nr_nad"     />          <br>   
+                <label>ID    </label> <FormInput type="number"          :value="data.get('`samochody klientów`.`ID`')"         readonly /> <br>
+                <label>ID_K  </label> <FormInput type="number"          :value="data.get('`samochody klientów`.`ID klienta`')" />          <br>
+                <label>MARK  </label> <FormInput type="text"            :value="data.get('`samochody klientów`.`marka`')"      />          <br>   
+                <label>MODE  </label> <FormInput type="text"            :value="data.get('`samochody klientów`.`model`')"      />          <br>   
+                <label>N REJ </label> <FormInput type="text"            :value="data.get('nr_rej')"                            />          <br>   
+                <label>N SIL </label> <FormInput type="text"            :value="data.get('nr_sil')"                            />          <br>   
+                <label>N NAD </label> <FormInput type="text"            :value="data.get('nr_nad')"                            />          <br>   
             </QuerySourceDebug_form>
             <QuerySourceDebug_form name="Samochody Comb" :src="src2_3" v-slot="{data}" class="abc">
-                <label>ID    </label> <FormInput type="number"          :value="data.values.ID"         readonly /> <br>
-                <label>ID_K  </label> <FormInput type="number"          :value="data.values.ID_klienta" />          <br>
-                <label>MARK  </label> <FormInput type="text"            :value="data.values.marka"      />          <br>   
-                <label>MODE  </label> <FormInput type="text"            :value="data.values.model"      />          <br>   
-                <label>N REJ </label> <FormInput type="text"            :value="data.values.nr_rej"     />          <br>   
-                <label>N SIL </label> <FormInput type="text"            :value="data.values.nr_sil"     />          <br>   
-                <label>N NAD </label> <FormInput type="text"            :value="data.values.nr_nad"     />          <br>   
+                <label>ID    </label> <FormInput type="number"          :value="data.get(0)"         readonly /> <br>
+                <label>ID_K  </label> <FormInput type="number"          :value="data.get(6)"                  /> <br>
+                <label>MARK  </label> <FormInput type="text"            :value="data.get(1)"                  /> <br>   
+                <label>MODE  </label> <FormInput type="text"            :value="data.get(2)"                  /> <br>   
+                <label>N REJ </label> <FormInput type="text"            :value="data.get(3)"                  /> <br>   
+                <label>N SIL </label> <FormInput type="text"            :value="data.get(4)"                  /> <br>   
+                <label>N NAD </label> <FormInput type="text"            :value="data.get(5)"                  /> <br>   
             </QuerySourceDebug_form>
         </div> 
 

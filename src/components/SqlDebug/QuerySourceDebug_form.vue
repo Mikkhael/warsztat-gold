@@ -1,15 +1,14 @@
 <script setup>
 //@ts-check
 
-import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
-import {QuerySource, FormDataSet, FormQuerySource} from '../Dataset';
+import {FormQuerySourceSingle} from '../Dataset';
 import useMainMsgManager from '../Msg/MsgManager';
 import QuerySourceOffsetScroller from '../Scroller/QuerySourceOffsetScroller.vue';
 
 
 const props = defineProps({
     src: {
-        type: FormQuerySource,
+        type: FormQuerySourceSingle,
         required: true
     },
     name: {
