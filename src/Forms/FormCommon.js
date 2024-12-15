@@ -29,14 +29,15 @@ const default_on_error = err => {throw err};
  * @param {{
  *  on_error?: (err: any) => any,
  *  src?: T,
- *  closePreventionManager?: ClosePreventionManager
+ *  closePreventionManager?: ClosePreventionManager,
+ *  implicit_order_rowid?: boolean,
  * }} options
  * @returns {T}
  */
 function CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, options) {
     /**@type {T} */
     //@ts-ignore
-    const _src      = options.src ?? props.use_src ?? new FormQuerySourceSingle();
+    const _src      = options.src ?? props.use_src ?? new FormQuerySourceSingle(options.implicit_order_rowid ?? true);
     const _on_error = options.on_error ?? default_on_error;
     const _closePreventionManager = options.closePreventionManager ?? useMainClosePreventionManager();
     _closePreventionManager.start_in_component(_src.changed, props.parent_window);

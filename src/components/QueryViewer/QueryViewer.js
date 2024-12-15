@@ -144,6 +144,7 @@ class QueryViewerSource extends FormQuerySourceFull {
          * @param {() => void} close 
          */
         const res_handler = (cols, row, offset, close) => {
+            console.log("SELECTING ", row);
             return first_src.try_perform_and_update_confirmed(() => {
                 for(const [src, idx, colname] of steps) {
                     src.request_offset_rownum(row.get_cached(idx) ?? null, colname);

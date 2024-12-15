@@ -783,7 +783,10 @@ class FormDataSetSingle extends FormDataSetBase {
         });
     }
     reset() {
-        return this.local_row.forEach(value => value.reset());
+        return this.local_row.forEach(value => {
+            value.set_cached(undefined);
+            value.reset();
+        });
     }
     async perform_save_notransaction(forced = false) {
         const syncs = Object.values(this.syncs);

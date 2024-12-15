@@ -192,10 +192,12 @@ class QueryBuilder {
             limit:  this._sections2.value.limit, 
         }));
 
-        this.full_sql_for_rownumber = computed(() => concat_query({
-            from:   this._sections1.value.from, 
-            where:  this._sections1.value.where, 
+        this.full_sql_for_rownumber_window = computed(() => concat_query({
             order:  this._sections2.value.order,
+        }))
+        this.full_sql_for_rownumber_main = computed(() => concat_query({
+            from:   this._sections1.value.from, 
+            where:  this._sections1.value.where,
         }));
                 
         this.full_sql_count = computed(() => concat_query({
@@ -220,9 +222,10 @@ class QueryBuilder {
     get_rownumber_select_sql(value, colname = 'rowid') {
         const _name    = escape_backtick_smart(colname);
         const _value   = escape_sql_value(value);
-        const sql_prefix  = 'SELECT n FROM (SELECT row_number() OVER () AS n, ' + _name + ' AS i ';
-        const sql_sufix   = ') WHERE i=' + _value + ' LIMIT 1';
-        return sql_prefix + this.full_sql_for_rownumber.value + sql_sufix;
+        const sql_window = this.full_sql_for_rownumber_window.value;
+        const sql_main   = this.full_sql_for_rownumber_main.value;
+        const sql_res = `SELECT n FROM (SELECT row_number() OVER (${sql_window}) AS n, ${_name} AS i ${sql_main}) WHERE i=${_value} LIMIT 1`;
+        return sql_res;
     }
 
     /**

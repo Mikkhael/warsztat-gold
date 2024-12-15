@@ -22,7 +22,7 @@ import { markRaw } from "vue";
  * @typedef {{
 *   name: string,
 *   type: ColType,
-*   targ: string,
+*   targ?: string,
 *   attr: string,
 *   def?: string
  * }} ColDefinition
@@ -84,6 +84,11 @@ class TableNode extends DataGraphNodeBase{
         /**@type {{[P in T]: Column}}*/
         //@ts-ignore
         this.cols = {};
+        this.rowid = new Column(this, {
+            name: "rowid",
+            type: "INTEGER",
+            attr: "pu",
+        });
 
         for(const col_def of cols_def) {
             this.add_col(col_def);
@@ -111,7 +116,7 @@ class Column {
         this.tab = markRaw(tab);
         this.name = params.name;
         this.type = params.type;
-        this.targ = params.targ;
+        this.targ = params.targ ?? "";
         this.def  = params.def;
         this.attr = params.attr;
     }

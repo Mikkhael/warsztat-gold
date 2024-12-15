@@ -66,12 +66,12 @@ defineExpose({
     <div class="form_container" :class="src.form_style.value">
 
         <form class="form_content form" :ref="e => src.assoc_form(e)">
-            <label class="label">Marka      </label>   <FormInput :readonly="props.readonly" :value="car_marka"    auto pattern="[^ś]*"/>
+            <label class="label">Marka      </label>   <FormInput :readonly="props.readonly" :value="car_marka"    auto/>
             <label class="label">Model      </label>   <FormInput :readonly="props.readonly" :value="car_model"    auto/>
             <label class="label">Nr Rej.    </label>   <FormInput :readonly="props.readonly" :value="car_nrrej"    auto/>
             <label class="label">Nr Silnika </label>   <FormInput :readonly="props.readonly" :value="car_sinlink"  auto/>
             <label class="label">Nr Nadwozia</label>   <FormInput :readonly="props.readonly" :value="car_nadwozie" auto/>
-            <label class="label">ID         </label>   <FormInput readonly                   :value="car_id"       auto />
+            <label class="label">ID         </label>   <FormInput readonly                   :value="car_id"       auto/>
         </form>
         <QuerySourceOffsetScroller
             v-if="props.force_car_id === undefined"

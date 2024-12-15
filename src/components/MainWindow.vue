@@ -19,9 +19,10 @@ import SettingsWindow from "./Settings/SettingsWindow.vue";
 
 import Klienci from "../Forms/Klienci.vue";
 import SamochodyKlientow from "../Forms/SamochodyKlientow.vue";
+import ZleceniaNaprawy from "../Forms/ZleceniaNaprawy.vue";
+import NazwyCzesci from "../Forms/NazwyCzesci.vue";
 
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
-import ZleceniaNaprawy from "../Forms/ZleceniaNaprawy.vue";
 
 
 const fwManager  = useMainFWManager();
@@ -66,6 +67,11 @@ function tool_klienci(){
     fwManager.open_or_focus_window("Klienci", Klienci);
 }
 
+function tool_czesci(){
+    // fwManager.open_or_focus_window("Klienci (temp samochody)", SamochodyKlientow);
+    fwManager.open_or_focus_window("Części", NazwyCzesci);
+}
+
 </script>
 
 <template>
@@ -82,6 +88,7 @@ function tool_klienci(){
             <div class="toolgroup">
                 <div class="tool" @click="tool_zlecenia();">Zlecenia Otwarte</div>
                 <div class="tool" @click="tool_klienci();" >Klienci</div>
+                <div class="tool" @click="tool_czesci();" >Części</div>
             </div>
             <div class="toolgroup"></div>
         </section>
