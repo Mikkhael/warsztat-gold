@@ -35,6 +35,7 @@ function use_FormEnum(props) {
     // Jesli pusta - wartość jest poprawna
     const custom_validity_message = computed(() => {
         const local = value.get_local();
+        if(local === undefined) return 'Wartość jest niezdefiniowana';
         const map   = options.value;
         const rdonly = props.readonly;
         const nonull = props.nonull;

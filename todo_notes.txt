@@ -14,3 +14,11 @@ Dowolny, nawet pusty button, reloaduje Vite
 Najnowsze `zlecenia instalacji gazowej` jest z 2000-09-19
 Najnowsze nie-zlec w `obroty magazynowe` jest z 2000-02-15 (zlec jest z 2022-06-27)
 Najnowsza płaca w 2000-05-04
+
+Cena brutton części jest liczona na sztywno jako * 1.23 (a mają one teoretycznie kolumnę VAT)
+
+w obrotach magazynowych ID nie jest ustawione na PRIMARY KEY
+
+Ceny są nie-zaokrąglane, ale wyświetlane są zaokrąglone
+VAT w podglądzie jest stały 1.23, a w raporcie "rachunek" jest stałe 22%
+JAK SIĘ DODAJE CZĘŚCI ???

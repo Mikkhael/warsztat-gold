@@ -380,7 +380,7 @@ FROM `nazwy części`;
 
 
 DROP TABLE IF EXISTS `obroty magazynowe_migration`; CREATE TABLE `obroty magazynowe_migration` (
-  `ID` INTEGER,
+  `ID` INTEGER NOT NULL PRIMARY KEY,
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NOT NULL,
   `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,

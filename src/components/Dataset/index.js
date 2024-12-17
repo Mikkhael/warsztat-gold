@@ -32,6 +32,11 @@ export const FormDefaultProps = {
     },
 }
 
+/**
+ * @template T
+ * @param {T} props 
+ * @param {keyof T} paramName 
+ */
 export function param_from_prop(props, paramName) {
     if(props[paramName] === undefined) {
         return undefined;

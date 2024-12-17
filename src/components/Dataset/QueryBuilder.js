@@ -107,6 +107,7 @@ class QueryBuilder {
             .map(select_field_definition_to_sql)
             .join(', ')
         );
+        // TODO remove if unnessesary in count query
         this._sql_select_fields_part_custom_only_app = computed(() => 
             this._sql_select_fields_part_custom_only.value ?
             ', ' + this._sql_select_fields_part_custom_only.value :

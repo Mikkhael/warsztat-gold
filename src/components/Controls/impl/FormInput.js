@@ -3,7 +3,7 @@
 
 
 import { computed, reactive, toRefs } from 'vue';
-import { ChangableValueLike, FormChangebleValue } from '../../Dataset';
+import { ChangableValueLike, Column, FormChangebleValue } from '../../Dataset';
 import { proxies_types } from './utils';
 
 
@@ -28,7 +28,9 @@ function auto_params_from_props(props) {
      */
     const params = {};
 
-    const col = (props.value instanceof FormChangebleValue) ? props.value.associated_col : null;
+    /**@type {Column?} */
+    //@ts-ignore
+    const col = props.value.associated_col ?? null;
 
     // console.log('AUTO PARAMS', props.value);
 
@@ -84,6 +86,7 @@ function use_FormInput(props) {
 
     const custom_validity_message = computed(() => {
         const local      = value.get_local();
+        if(local === undefined) return 'Wartość jest niezdefiniowana';
         const rdonly     = props.readonly;
         const nonull     = auto_params.nonull;
         const is_decimal = auto_params.type === 'decimal';

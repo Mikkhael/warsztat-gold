@@ -15,11 +15,6 @@ const props = defineProps({
 function handle_close(id) {
     props.manager.close(id);
 }
-
-watch(props, (new_props) => {
- console.log('props', new_props);
-})
-
 </script>
 
 <template>

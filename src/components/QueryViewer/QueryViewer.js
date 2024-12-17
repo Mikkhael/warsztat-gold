@@ -1,7 +1,7 @@
 //@ts-check
 
 import { computed, reactive, ref, watch } from "vue";
-import { FormQuerySourceFull, Column, QuerySource, FormDataSetFull_LocalRow } from "../Dataset";
+import { FormQuerySourceFull, Column, QuerySource, FormDataSetFull_LocalRow, FormDataSetFull } from "../Dataset";
 import { escape_backtick_smart } from "../../utils";
 
 /**
@@ -21,6 +21,16 @@ import { escape_backtick_smart } from "../../utils";
  *  input_props: import('vue').MaybeRef<Object.<string, any>>
  * }} DisplayColProps
  */
+
+/**
+ * @typedef {(
+ *  columns: string[],
+ *  row:     FormDataSetFull_LocalRow,
+ *  offset:  number,
+ *  close:   () => void
+ * ) => void} QueryViewerSelectHandler
+ */
+
 
 class QueryViewerSource extends FormQuerySourceFull {
     /**
@@ -91,6 +101,9 @@ class QueryViewerSource extends FormQuerySourceFull {
      */
     add_display_column(column_name, display_name, readonly = true, input_props = {}, as_enum = false) {
         const name = column_name instanceof Column ? column_name.get_full_sql() : column_name;
+        if(this.display_columns.has(name)) {
+            throw new Error("Display column already exists: " + name);
+        }
         this.display_columns.set(name, {
             name: display_name,
             readonly,
@@ -108,6 +121,16 @@ class QueryViewerSource extends FormQuerySourceFull {
             this.add_display_column(name, params.display, params.readonly ?? !params.sync, params.input_props, params.as_enum);
         }
         super.auto_add_column_impl(name, params);
+    }
+    /**
+     * @param {Column | string} col 
+     * @param {StandardFormValueRoutineParams_WithDisplay & {computed: Parameters<FormDataSetFull['add_column_local']>[1]}} params
+     */
+    auto_add_column_local(col, params) {
+        if(params.display){
+            this.add_display_column(col, params.display, params.readonly ?? !params.computed.setter, params.input_props, params.as_enum);
+        }
+        this.dataset.add_column_local(col, params.computed, params.assoc_col);
     }
     
     /**

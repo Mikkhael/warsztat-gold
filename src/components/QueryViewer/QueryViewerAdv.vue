@@ -24,6 +24,7 @@ const props = defineProps({
     saveable:   Boolean,
     deletable:  Boolean,
 
+    inbeded: Boolean,
     parent_window: {
         /**@type {import('vue').PropType<import('../FloatingWindows/FWManager').FWWindow>} */
         type: Object,
@@ -47,9 +48,11 @@ function handle_err(err){
     emit('error', err);
 }
 
-const src = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {src: props.src, on_error: handle_err});
-
-console.log("QUERY VIEWER ADV", props);
+const src = props.inbeded ? props.src : CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {
+    src: props.src, 
+    no_update_on_mounted: true,
+    on_error: handle_err
+});
 
 const row_ref        = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const container_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
@@ -62,7 +65,6 @@ const columns_display_props = Array.from(src.display_columns.values());
 const result_rows = /**@type {FormDataSetFull} */ (src.dataset).local_rows;
 
 const unwatch_first_fetch = watch(result_rows, () => {
-    console.log('QVIERWER FIRST FETCH');
     nextTick(() => {
         init_columns_sizes();
     })
@@ -85,7 +87,7 @@ function recalculate_limit() {
     if(!container_height || !scroller_height) {
         if(scroller_limit.value !== 1) {
             scroller_limit.value = 1;
-            src.request_refresh();
+            // src.request_refresh();
             src.mark_for_update();
             // flag_for_refresh(0);
         }
@@ -96,7 +98,7 @@ function recalculate_limit() {
     // console.log("RESIZE", result);
     if(scroller_limit.value !== result) {
         scroller_limit.value = result;
-        src.request_refresh();
+        // src.request_refresh();
         src.mark_for_update();
         // flag_for_refresh(0);
     }
@@ -154,7 +156,7 @@ function minimize_columns_sizes() {
             const new_max = col.children[row_i]['value']?.toString().length || 0;
             if(new_max > max_length) max_length = new_max;
         }
-        max_length += first_row.getAttribute('type') === 'number' ? 5 : 2;
+        max_length += first_row.getAttribute('type') === 'number' ? 2 : 2;
         column_sizes.value[col_i] = [max_length, false];
         // console.log("MINIMIZING", col_i, "TO", max_length);
     }
@@ -200,7 +202,7 @@ async function handle_select_up(row_i, is_from_col_id = false, /**@type {Pointer
     }
     last_down_row_i = -1;
     if(!props.selectable) return;
-    console.log("SELECTING...",  is_from_col_id, src.offset.value, row_i, props.selectable);
+    // console.log("SELECTING...",  is_from_col_id, src.offset.value, row_i, props.selectable);
     const cols = src.full_result.value?.[1] ?? [];
     const row  = result_rows.value[row_i];
     emit("select", cols, row, src.offset.value + row_i);
@@ -221,10 +223,36 @@ async function handle_scroll(event) {
     // scroller_ref.value.scroll_by(scroll_dist);
 }
 
+/**
+ * @param {Event} event 
+ * @param {string} col_name 
+ */
+async function handle_search(event, col_name, is_delete = false) {
+    if(src.changed.value) return;
+    if(is_delete) {
+        src.search_plugin.delete(col_name);
+        return;
+    }
+    /**@type {string | null} */
+    //@ts-ignore
+    const value = event.target?.value;
+    src.set_search(col_name, value);
+}
+/**
+ * @param {number} new_order 
+ * @param {string} col_name 
+ */
+async function handle_order(new_order, col_name) {
+    if(src.changed.value) return;
+    src.set_order(col_name, new_order);
+}
+
 src.start_plugin_watcher();
 
 onMounted(() => {
-    src.assoc_form(container_ref.value);
+    if(!props.inbeded) {
+        src.assoc_form(container_ref.value);
+    }
     resizeObserver.observe(container_ref.value);
     window.addEventListener('pointerup', handle_mouse_up);
     window.addEventListener('pointermove', handle_mouse_move);
@@ -250,9 +278,9 @@ onUnmounted(() => {
         :saveable="props.saveable"
         :insertable="props.insertable"
         :full_limit="scroller_limit"
-        nosave/>
+        />
 
-        <form class="form_content" ref="container_ref" @wheel.capture="handle_scroll" :class="{enable_scroll: src.changed, selectable: props.selectable}">
+        <component :is="props.inbeded ? 'div' : 'form'" class="form_content" ref="container_ref" @wheel.capture="handle_scroll" :class="{enable_scroll: src.changed, selectable: props.selectable}">
             <div class="table_container" :class="{disable_table_search}">
 
                 <div class="table_column iterators">
@@ -281,15 +309,15 @@ onUnmounted(() => {
                     :style="{width: column_sizes[col_i] === undefined ? undefined : column_sizes[col_i][0] + (column_sizes[col_i][1] ? 'px' : 'ch') }"
                 >
                     <div class="header col_search_cell">
-                        <input type="text" class="col_search" 
+                        <input type="text" class="col_search"
                             :class="{changed: !!src.search_plugin.get(col_name)}" 
                             :value="src.search_plugin.get(col_name)" 
-                            @input="e => src.set_search(col_name, e.target?.['value'])"
-                            @reset_changes="e => src.search_plugin.delete(col_name)">
+                                    @input="e => handle_search(e, col_name, false)"
+                            @reset_changes="e => handle_search(e, col_name, true)">
                         <div class="resizer" @pointerdown="e => handle_mouse_down_on_resizer(e, col_i)"></div>
                     </div>
                     <div class="header col_name_cell">
-                        <QueryOrderingBtn class="ordering_btns" :value="src.order_plugin.get(col_name)" @update:value="e => src.set_order(col_name, e)"/>
+                        <QueryOrderingBtn class="ordering_btns" :value="src.order_plugin.get(col_name)" @update:value="new_order => handle_order(new_order, col_name)"/>
                         <div class="col_name">{{ columns_display_props[col_i].name }}</div>
                     </div>
                     <component :is="columns_display_props[col_i].as_enum ? FormEnum : FormInput"
@@ -306,12 +334,13 @@ onUnmounted(() => {
                             @pointerup="e => handle_select_up(row_i, false, e)"
                             :value="row.get(col_name)"
                             auto
+                            nospin
                             v-bind="unref(columns_display_props[col_i].input_props)"
                             :readonly="!props.saveable || columns_display_props[col_i].readonly"
                         />
                 </div>
             </div>
-        </form>
+        </component>
     </div>
 
 </template>

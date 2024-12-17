@@ -14,6 +14,8 @@ import Klienci from './Klienci.vue';
 import ReportPreparer from '../Reports/ReportPreparer.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
+import ZleceniaNaprawy_Czesci from './ZleceniaNaprawy_Czesci.vue';
+
 import { ref, computed} from 'vue';
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { date_now, use_datetime_now } from '../utils';
@@ -81,11 +83,16 @@ function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
-
-
 const RepZlecenieNaprawy_ref = ref(/**@type {ReportPreparer?} */ (null));
 function open_print_window() {
     RepZlecenieNaprawy_ref.value?.update_and_open(true).catch(handle_err);
+}
+
+function open_czesci_window() {
+    const title = "Części - Zlecenie nr " + param_id_zlec.get_value();
+    return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Czesci, {
+        id_zlecenia: param_id_zlec
+    });
 }
 
 defineExpose({
@@ -151,6 +158,7 @@ defineExpose({
                     </div>
                     <div class="buttons">
                         <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
+                        <div class="button" @click="open_czesci_window">CZĘŚCI</div>
                         <!-- <div>Części</div>
                         <div>Czynności</div> -->
                     </div>

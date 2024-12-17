@@ -17,11 +17,6 @@ const props = defineProps({
 
 const value = props.dataset.local_rows;
 
-
-watch(value, (new_value) => {
-    console.log('CHANGED DATASET VALUE', new_value, new_value.length);
-});
-
 function row_insert() {
     // console.log("INSERTING", value, value.value.length);
     props.dataset.add_row_default();
@@ -29,7 +24,6 @@ function row_insert() {
     triggerRef(value);
 }
 function row_delete(index) {
-    console.log("MARKING AS DELETED", index);
     props.dataset.mark_row_deleted(index);
 }
 function key_getter(index) {

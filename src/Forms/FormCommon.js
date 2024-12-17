@@ -29,6 +29,7 @@ const default_on_error = err => {throw err};
  * @param {{
  *  on_error?: (err: any) => any,
  *  src?: T,
+ *  no_update_on_mounted?: boolean,
  *  closePreventionManager?: ClosePreventionManager,
  *  implicit_order_rowid?: boolean,
  * }} options
@@ -50,7 +51,9 @@ function CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, options) {
     onMounted(() => {
         props.parent_window?.box.resize_to_content(true).recenter();
         window.addEventListener   ('db_opened', db_opened_listener);
-        _src.update_complete().catch(_on_error);
+        if(!options.no_update_on_mounted){
+            _src.update_complete().catch(_on_error);
+        }
     });
     onUnmounted(() => {
         _src.disconnect();

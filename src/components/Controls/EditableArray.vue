@@ -36,11 +36,6 @@ const props = defineProps({
     },
 });
 
-watch(toRef(props, 'value'), (new_value) => {
-    console.log('CHANGED ARRAY VALUE', new_value, new_value.length);
-})
-
-
 const show = ref(true);
 async function force_refresh() {
     show.value = false;

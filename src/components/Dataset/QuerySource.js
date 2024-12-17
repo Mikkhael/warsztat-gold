@@ -77,7 +77,6 @@ class QuerySourceResultValue extends DataGraphDependable{
         this.src = src;
         // this.col = col;
         // this.row = row;
-        console.log("GETTING RESULT VALUE", col, row, default_value);
         this.ref = this.src.get_result_computed(col, row, default_value);
     }
 
@@ -296,6 +295,7 @@ class QuerySource extends DataGraphNodeBase {
     }
 
     _add_update_request_impl(request, expire_count = true) {
+        console.log("=== REQUESTING ", this.query.from.value, this.expired.value, request, expire_count, "D:", this.disabled.value);
         if(this.disabled.value) {
             return;
         }

@@ -21,6 +21,7 @@ import Klienci from "../Forms/Klienci.vue";
 import SamochodyKlientow from "../Forms/SamochodyKlientow.vue";
 import ZleceniaNaprawy from "../Forms/ZleceniaNaprawy.vue";
 import NazwyCzesci from "../Forms/NazwyCzesci.vue";
+import ZleceniaNaprawy_Czesci from "../Forms/ZleceniaNaprawy_Czesci.vue";
 
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 
@@ -58,18 +59,19 @@ function tool_settings() {
 }
 
 function tool_zlecenia(){
-    // fwManager.open_or_focus_window("Zlecenia", Klienci, {readonly: true, force_klient_id: 24913, force_car_id: 53854});
     fwManager.open_or_focus_window("Zlecenia Otwarte", ZleceniaNaprawy, {show_clients: true});
 }
 
 function tool_klienci(){
-    // fwManager.open_or_focus_window("Klienci (temp samochody)", SamochodyKlientow);
     fwManager.open_or_focus_window("Klienci", Klienci);
 }
 
 function tool_czesci(){
-    // fwManager.open_or_focus_window("Klienci (temp samochody)", SamochodyKlientow);
     fwManager.open_or_focus_window("Części", NazwyCzesci);
+}
+
+function tool_obroty_zlec(){
+    fwManager.open_or_focus_window("Test Obroty Zlec", ZleceniaNaprawy_Czesci);
 }
 
 </script>
@@ -84,13 +86,14 @@ function tool_czesci(){
                 <div class="tool" @click="tool_sql();" >SQL</div>
                 <div class="tool" @click="tool_settings();" >Ustawienia</div>
             </div>
-            <div class="toolgroup"></div>
+            <div class="toolgroup grow"></div>
             <div class="toolgroup">
                 <div class="tool" @click="tool_zlecenia();">Zlecenia Otwarte</div>
                 <div class="tool" @click="tool_klienci();" >Klienci</div>
                 <div class="tool" @click="tool_czesci();" >Części</div>
+                <div class="tool" @click="tool_obroty_zlec();" >Test Obroty Zlec</div>
             </div>
-            <div class="toolgroup"></div>
+            <div class="toolgroup grow"></div>
         </section>
         <main class="main">
             <FWCollection :manager="fwManager" @error="handle_error" />
@@ -129,22 +132,25 @@ function tool_czesci(){
 
 
 .toolbar {
-    padding: 2px;
-    height: 24px;
-    background-color: #d8d8d8;
     display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 2px;
+    height: 28px;
+    background-color: #d8d8d8;
 }
-
 .toolgroup {
     display: flex;
-    flex-grow: 1;
+    flex-direction: row;
 }
 .tool{
-    outline: 1px solid black;
-    padding: 0px 5%;
+    border: 2px solid black;
+    display: flex;
+    align-items: center;
+    padding: 0ch 1ch;
     cursor: pointer;
-    user-select: none;
     transition: 0.2s;
+    user-select: none;
 }
 .tool:hover {
     background-color: #fff;

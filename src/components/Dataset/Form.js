@@ -3,9 +3,10 @@
 import ipc from '../../ipc';
 import { deep_compare, deep_copy } from '../../utils';
 import { Column, TableNode } from './Database';
+import { DataGraphDependable } from './DataGraph';
 import { QuerySource, QuerySourceResultValue } from './QuerySource';
 import { TableSyncRuleReactive } from './Sync';
-import { computed, isRef, markRaw, reactive, ref, unref } from 'vue';
+import { computed, isRef, markRaw, nextTick, reactive, ref, toRaw, toRef, unref } from 'vue';
 
 
 /**
@@ -52,7 +53,6 @@ class FormQuerySourceBase extends QuerySource {
         super(implicit_order_rowid);
         this.associated_form_element = ref(/**@type {HTMLFormElement?} */ (null));
         
-        /**@type {MaybeRef<{empty: boolean, disabled: boolean}>} */
         this.form_style = computed(() => { return {
             empty:    this.is_empty.value || this.disabled.value,
             disabled: this.disabled.value
@@ -124,8 +124,9 @@ class FormQuerySourceBase extends QuerySource {
      */
     add_select_with_default(column, default_value = null, sql_definition = undefined) {
         this.query.add_select(column, sql_definition);
+        const src_index = this.query.select_fields.value.length - 1;
         const default_value_ref = this.add_dependable(default_value);
-        this.get_dataset().add_column(column, default_value_ref);
+        this.get_dataset().add_column(column, default_value_ref, src_index);
     }
     
     /**
@@ -323,6 +324,78 @@ class ChangableValueLike {
         this.set_local(deep_copy(cached));
     }
 }
+
+/**
+ * @template T
+ * @extends {ChangableValueLike<T>}
+ */
+class RefChangableValue extends ChangableValueLike{
+    /**
+     * @param {import('vue').Ref<T>} ref 
+     * @param {(() => boolean) | boolean} [is_changed] 
+     */
+    constructor(ref, is_changed) {
+        super();
+        this.ref = ref;
+        if(typeof is_changed !== 'function') {
+            this.is_changed_check = (() => !!is_changed);
+        } else {
+            this.is_changed_check = is_changed;
+        }
+    }
+    get_local_ref() {return this.ref;}
+    is_changed() {return this.is_changed_check();}
+
+    /**
+     * @template T
+     * @param {MaybeDependable<T>} dep
+     * @param {(() => boolean) | boolean} [is_changed]
+     */
+    static from(dep, is_changed) {
+        if(dep instanceof DataGraphDependable) return new RefChangableValue(dep.get_ref(), is_changed);
+        if(isRef(dep))                         return new RefChangableValue(dep, is_changed);
+        return new RefChangableValue(ref(dep), is_changed);
+    }
+    /**
+     * @param {MaybeDependable<SQLValue> | undefined} dep
+     * @param {(() => boolean) | boolean} [is_changed]
+     */
+    static from_sqlvalue(dep, is_changed) {
+        if(dep instanceof DataGraphDependable) return new RefChangableValue(dep.get_ref(), is_changed);
+        if(isRef(dep))                         return new RefChangableValue(dep, is_changed);
+        return new RefChangableValue(ref(dep ?? null), is_changed);
+    }
+}
+
+
+/**
+ * @template [T=SQLValue]
+ * @extends {ChangableValueLike<T>}
+ */
+class ComputedChangableValue extends ChangableValueLike {
+    /**
+     * @param {() => T}             local_getter 
+     * @param {(value: T) => void}  local_setter 
+     * @param {() => T | undefined} cached_getter 
+     */
+    constructor(local_getter, local_setter, cached_getter = () => undefined) {
+        super();
+        this.local = computed({
+            get: local_getter,
+            set: local_setter,
+        });
+        this.cached = computed(cached_getter);
+    }
+    get_local_ref()  {return this.local;}
+    get_cached_ref() {return this.cached;}
+
+    refresh() { 
+        const cached = this.get_cached();
+        if(cached === undefined) return;
+        //@ts-ignore
+        this.set_local(deep_copy(cached));
+    }
+}
 /**
  * @template T
  * @extends ChangableValueLike<T>
@@ -404,6 +477,24 @@ class FormChangebleValue extends DefaultableSimpleOwningChangableValue{
     assoc_col(/**@type {Column} */ col) { this.associated_col = col; }
 }
 
+/**
+ * @extends {ComputedChangableValue<SQLValue>}
+ */
+class FormComputedChangebleValue extends ComputedChangableValue{
+    /**
+     * @param {FormDataSetBase}              dataset
+     * @param {() => SQLValue}               local_getter 
+     * @param {(value: SQLValue) => void}    local_setter 
+     * @param {() => (SQLValue | undefined)} cached_getter 
+     */
+    constructor(dataset, local_getter, local_setter, cached_getter = () => undefined) {
+        super(local_getter, local_setter, cached_getter);
+        this.dataset        = dataset;
+        this.associated_col = /**@type {Column?} */ (null);
+    }
+    assoc_col(/**@type {Column} */ col) { this.associated_col = col; }
+}
+
 ///////////////// DATASET SYNC //////////////////////////////////////////////
 
 class FormDataSetTableSync extends TableSyncRuleReactive {
@@ -429,6 +520,7 @@ class FormDataSetTableSync extends TableSyncRuleReactive {
      * @param {string} [dataset_name]
      * */
     add_column(column, primary, dataset_name) {
+        // console.log("ADDING SYNC COLUMN", column, primary, dataset_name);
         if(column instanceof Column) {
             primary = primary ?? column.is_primary(); 
             this.cols.push({primary, dataset_name, name: column.name});
@@ -445,8 +537,28 @@ class FormDataSetTableSync extends TableSyncRuleReactive {
     }
 }
 
+/**
+ * @template {Array} K
+ * @template [T=SQLValue]
+ * @typedef {{
+ *  getter:  (...params: K) => T, 
+ *  cached?: (...params: K) => (T | undefined),
+ *  setter?: (value: T, ...params: K) => void, 
+ * }} ComputedChangeableValueDef;
+ */
 
 /////////////// FORM DATASETS ////////////////////////////////////////
+
+
+/**
+ * @typedef {{
+ *  name:          string,
+ *  default:       MaybeRef<SQLValue>,  
+ *  src_index?:    number | string,
+ *  computed_def?: ComputedChangeableValueDef<any[]>,
+ *  assoc?:        Column,
+ * }} FormDataSetColumnDef
+ */
 
 class FormDataSetBase {
 
@@ -454,14 +566,10 @@ class FormDataSetBase {
         /**@type {FormQuerySourceBase?} */
         this.query_src = null;
         this.changed = computed(() => this.check_changed());
-        /**@type {string[]} */
-        this._column_names = [];
-        /**@type {Column[]} */
-        this._associated_columns = [];
+        /**@type {FormDataSetColumnDef[]} */
+        this._columns_defs = [];
         /**@type {Object.<string, number>} */
         this._col_index_lookup = {};
-        /**@type {MaybeRef<SQLValue>[]} */
-        this._col_default_lookup = [];
 
         /**@type {Object.<string, FormDataSetTableSync>} */
         this.syncs = {};
@@ -473,34 +581,77 @@ class FormDataSetBase {
     lookup_col_index(name) {
         if(typeof name === 'number') return name;
         if(name instanceof Column) name = name.get_full_sql();
-        return this._col_index_lookup[name] ??
-               this.query_src?.lookup_col_index(name) ??
-               -1;
+        return this._col_index_lookup[name] ?? -1;
     }
 
     /**
-     * @param {string | number} col_index_or_name 
+     * @param {Column | string | number} column 
      */
-    get_default_value_for_column(col_index_or_name) {
-        return this._col_default_lookup[this.lookup_col_index(col_index_or_name)] ?? null;
+    get_column_def_try(column) {
+        const index = this.lookup_col_index(column);
+        const col = this._columns_defs[index];
+        if(!col) {
+            return null;
+        }
+        return col;
+    }
+    /**
+     * @param {Column | string | number} column 
+     */
+    get_column_def(column) {
+        const res = this.get_column_def_try(column);
+        if(!res) {
+            throw new Error("Non existant column in dataet: " + (column instanceof Column ? column.get_full_sql() : column));
+        }
+        return res;
     }
 
-    // TODO Disassosiate dataset value name from query source column name (can be same by default, but should not have to be)
+    /**
+     * @param {Column | string | number} column 
+     */
+    get_default_value(column) {
+        return this.get_column_def_try(column)?.default ?? null;
+    }
+
     // TODO get_or_add_column (add_column_if_dosen't exist)
     /**
      * @param {Column | string} column 
      * @param {MaybeRef<SQLValue>} default_value 
+     * @param {string | number} [src_index] 
      * @param {number} [index] 
      */
-    add_column(column, default_value = null, index) {
+    add_column(column, default_value = null, src_index, index) {
         const name = column instanceof Column ? column.get_full_sql() : column;
-        index = index ?? this._column_names.length;
-        this._column_names[index] = name;
-        this._col_default_lookup[index] = default_value;
+        index      = index     ?? this._columns_defs.length;
+        // console.log("ADDING COLUMN NOR", name, default_value, src_index, index);
+        this._columns_defs[index] = {
+            name,
+            default: default_value,
+            src_index: src_index,
+            assoc: column instanceof Column ? column : undefined,
+        };
         this._col_index_lookup[name] = index;
-        if(column instanceof Column) {
-            this._associated_columns[index] = column;
-        }
+        return index;
+    }
+
+    /**
+     * @param {Column | string} column 
+     * @param {ComputedChangeableValueDef<any[]>} computed_def 
+     * @param {Column} [assoc_col] 
+     * @param {number} [index]
+     */
+    add_column_local(column, computed_def, assoc_col, index) {
+        const name  = column instanceof Column ? column.get_full_sql() : column;
+        const assoc = assoc_col ?? (column instanceof Column ? column : undefined);
+        index = index ?? this._columns_defs.length;
+        // console.log('ADDING COLUMN LOC', name, assoc, index, computed_def);
+        this._columns_defs[index] = {
+            name,
+            assoc,
+            default: null,
+            computed_def: computed_def,
+        };
+        this._col_index_lookup[name] = index;
         return index;
     }
 
@@ -539,7 +690,7 @@ class FormDataSetBase {
 class FormDataSetFull_LocalRow {
     /**
      * @param {FormDataSetFull} dataset 
-     * @param {FormChangebleValue[]} values 
+     * @param {(FormChangebleValue | FormComputedChangebleValue)[]} values 
      */
     constructor(dataset, values = [], inserted = false) {
         this.dataset  = markRaw(dataset);
@@ -567,6 +718,10 @@ class FormDataSetFull_LocalRow {
         const value = this.get(name);
         return value?.get_local();
     }
+    set_local(/**@type {Column | string | number} */ name, /**@type {SQLValue} */ set_value) {
+        const value = this.get(name);
+        return value?.set_local(set_value);
+    }
     get_cached(/**@type {Column | string | number} */ name) {
         const value = this.get(name);
         return value?.get_cached();
@@ -583,9 +738,93 @@ class FormDataSetFull extends FormDataSetBase {
      */
     constructor(query_src) {
         super();
-        this.query_src = query_src;
-        this.local_rows = ref(/**@type {FormDataSetFull_LocalRow[]} */ ([]));
-        this._key_base = 0;
+        this.query_src   = query_src;
+        this.local_rows  = ref(/**@type {FormDataSetFull_LocalRow[]} */ ([]));
+        this._key_base   = 0;
+        /**
+         * @type {FormComputedChangebleValue[]}
+         */
+        this._computed_values = [];
+    }
+    
+    /**@param {Column | string | number} column */
+    computed_value(column, row_index = 0) {
+        const col_index     = this.lookup_col_index(column);
+        const default_value = this.get_default_value(col_index);
+        const value      = new FormComputedChangebleValue(this,
+            ()  => {
+                const res = this.local_rows.value[row_index]?.get_local(col_index); 
+                if(res === undefined) return unref(default_value); 
+                return res;},
+            (v) => {this.local_rows.value[row_index]?.set_local(col_index, v);},
+            ()  => {return this.local_rows.value[row_index]?.get_cached(col_index);}
+        );
+        if(column instanceof Column) {
+            value.assoc_col(column);
+        }
+        this._computed_values.push(value);
+        return value;
+    }
+    /**
+     * @param {Column | string | number} column 
+     * @param {(value: SQLValue) => SQLValue} map 
+     * @param {(value: SQLValue) => SQLValue} [unmap] 
+     */
+    static auto_computed_def(column, map, unmap) {
+        const getter  = (/**@type {FormDataSetFull_LocalRow} */ row)        => {if(row === undefined) debugger; return map(row.get_local(column))};
+        const setter  = (value, /**@type {FormDataSetFull_LocalRow} */ row) => row.set_local(column, unmap?.(value) ?? map(value));
+        const cached = (/**@type {FormDataSetFull_LocalRow} */ row)         => {
+            const cached_val = row.get_cached(column);
+            if(cached_val === undefined) return undefined;
+            return map(cached_val);
+        };
+        return {getter, setter, cached}
+    }
+
+    /**
+     * @param {FormDataSetColumnDef} column_def 
+     * @param {number} row_index 
+     * @param {boolean} no_cached
+     */
+    create_form_value(column_def, row_index, no_cached = false) {
+        const computed_def = column_def.computed_def;
+        let value;
+        if(computed_def) {
+            /**@template R */
+            const if_exists_row = (/**@type {(FormDataSetFull_LocalRow) => R} */ callback) => {
+                const val = this.local_rows.value[row_index]; 
+                return val === undefined ? null : callback(val)
+            };
+            const local_getter  = ()      => if_exists_row(row => computed_def.getter(row));
+            const local_setter  = (value) => if_exists_row(row => computed_def.setter?.(value, row));
+            const cached_getter = !computed_def.cached ? local_getter :
+                                  (()     => if_exists_row(row => computed_def.cached?.(row)));
+            value = new FormComputedChangebleValue(this, 
+                local_getter, 
+                local_setter, 
+                no_cached ? (()=>undefined) : cached_getter);
+            // console.log("CREATED COMPUTED VALUE", value);
+        } else {
+            const cached        = this.query_src?.get_result_computed(column_def.src_index ?? -1, row_index, undefined);
+            const default_value = column_def.default;
+            value = new FormChangebleValue(this,
+                no_cached ? undefined : cached,
+                default_value);
+        }
+        if(column_def.assoc) {
+            value.assoc_col(column_def.assoc);
+        }
+        return value;
+    }
+
+    /**
+     * @param {Column | string} column 
+     * @param {ComputedChangeableValueDef<[FormDataSetFull_LocalRow]>} computed_def 
+     * @param {Column} [assoc_col] 
+     * @param {number} [index]
+     */
+    add_column_local(column, computed_def, assoc_col, index) {
+        return super.add_column_local(column, computed_def, assoc_col, index);
     }
     
     /**
@@ -598,16 +837,7 @@ class FormDataSetFull extends FormDataSetBase {
         const [rows, cols] = full_result;
         if(rows.length === 0 || rows[0].length === 0) return [];
         const mapped = rows.map((row, row_index) => {
-            const values = row.map((cell, col_index) => {
-                const cached        = dataset.query_src?.get_result_computed(col_index, row_index, undefined);
-                const default_value = dataset.get_default_value_for_column(col_index);
-                const value = new FormChangebleValue(dataset, cached, default_value);
-                const assoced = dataset._associated_columns[col_index];
-                if(assoced) {
-                    value.assoc_col(assoced);
-                }
-                return value;
-            });
+            const values = dataset._columns_defs.map((def) => dataset.create_form_value(def, row_index, false));
             const local_row = new FormDataSetFull_LocalRow(dataset, values);
             return local_row;
         });
@@ -616,16 +846,7 @@ class FormDataSetFull extends FormDataSetBase {
 
     add_row_default() {
         const new_row_index = this.local_rows.value.length;
-        const new_values =  this._column_names.map((col_name, col_index) => {
-            // const cached        = this.query_src?.get_result_computed(col_name, new_row_index, undefined);
-            const default_value = this.get_default_value_for_column(col_name);
-            const value = new FormChangebleValue(this, undefined, default_value);
-            const assoced = this._associated_columns[col_index];
-            if(assoced) {
-                value.assoc_col(assoced);
-            }
-            return value;
-        });
+        const new_values    = this._columns_defs.map(def => this.create_form_value(def, new_row_index, true));
         const new_local_row = new FormDataSetFull_LocalRow(this, new_values, true);
         this.local_rows.value.push(new_local_row);
         // triggerRef(this.local_rows);
@@ -734,7 +955,7 @@ class FormDataSetSingle extends FormDataSetBase {
 
     /**@param {Column | string | number} column */
     get(column) {
-        const index  = this.lookup_col_index(column);
+        const index = this.lookup_col_index(column);
         const value = this.local_row[index];
         if(value) {
             return value;
@@ -743,6 +964,7 @@ class FormDataSetSingle extends FormDataSetBase {
         if(column instanceof Column) {
             new_value.assoc_col(column);
         }
+        console.log("GETTING COLUMN NEW", index, column, new_value);
         return new_value;
     }
     
@@ -752,10 +974,11 @@ class FormDataSetSingle extends FormDataSetBase {
     /**
      * @param {Column | string} column 
      * @param {MaybeRef<SQLValue>} default_value 
+     * @param {string | number} [src_index] 
      * @param {number} [index] 
      */
-    add_column(column, default_value = null, index) {
-        const true_index = super.add_column(column, default_value, index);
+    add_column(column, default_value = null, src_index, index) {
+        const true_index = super.add_column(column, default_value, src_index, index);
         const cached = this.query_src?.get_result_raw(true_index, 0);
         const prev_value = this.local_row[true_index];
         if(prev_value) {
@@ -822,8 +1045,11 @@ export {
 
     // Values
     ChangableValueLike,
+    RefChangableValue,
+    ComputedChangableValue,
     OwningChangableValue,
     FormChangebleValue,
+    FormComputedChangebleValue,
     
     // Datasets and Sync
     FormDataSetBase,

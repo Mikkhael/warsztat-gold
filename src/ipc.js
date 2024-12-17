@@ -220,7 +220,8 @@ async function backup(filepathsToDelete, copiesToCreate, prefix, ext, nodelete) 
  * @returns {Promise<IPCQueryResult>}
  */
 async function db_query(query) {
-    return await invoke("perform_query", {query});
+    const res = await invoke("perform_query", {query});
+    return res;
 }
 
 function refresh_state(){

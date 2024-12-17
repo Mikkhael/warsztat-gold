@@ -123,7 +123,7 @@ class BackupManager extends SettingsManager {
     static async do_backup_routine(rules_list, prefix, ext, nodelete, mock = false, mock_date) {
         const processed = await Promise.all( rules_list.map(async rules => {
             const lists = await ipc.backup_list(rules.path, VARIANT_DISPLAYS, prefix, ext);
-            console.log('TEST LIST', rules.path, lists);
+            console.log('BACKUP TEST LIST', rules.path, lists);
             const processed = this.process_backup_lists(lists, rules, mock_date);
             return processed;
         }));
@@ -161,7 +161,7 @@ class BackupManager extends SettingsManager {
             std: "9999.99.99_99.99.99"
         }
 
-        console.log('TEST DATES', date_now, date_limits);
+        console.log('BACKUP TEST DATES', date_now, date_limits);
 
         const variant_routine = (/**@type {string} */ name) => {
             const en  = rules[name + '_en'];

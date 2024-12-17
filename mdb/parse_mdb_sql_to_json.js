@@ -11,7 +11,15 @@ function main() {
     parser.run();
     const res = parser.result;
 
-    console.log(res.tables[4]);
+    /// CORRECTIONS /////
+    const obroty = res.tables.find(x => x.name === 'obroty magazynowe');
+    const obroty_id = obroty?.cols.find(x => x.name === 'ID') ?? new ColNode('error');
+    obroty_id.primary = true;
+    obroty_id.notnull = true;
+    console.log(obroty_id);
+    /////////////////////
+
+    // console.log(res.tables[4]);
 
     const json = JSON.stringify(res.to_compact());
     fs.writeFileSync(OUT_FILE_JSON, json);
@@ -254,7 +262,7 @@ class Parser {
      * @param {string} attr 
      */
     parse_col_attr(col, attr) {
-        console.log("##", attr);
+        // console.log("##", attr);
         if(this.last_attr === 'NOT') {
             if(attr !== 'NULL') throw this.ERROR("Expected NOT NULL");
             col.notnull = true;

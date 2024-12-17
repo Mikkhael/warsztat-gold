@@ -146,7 +146,7 @@ const DB = new DatabaseNode([
         {"name":"odpowiedniki","type":"VARCHAR","targ":"50","attr":""},
     ]},
     {name: "obroty magazynowe", cols: [
-        {"name":"ID","type":"INTEGER","attr":"a"},
+        {"name":"ID","type":"INTEGER","attr":"pan"},
         {"name":"numer cz","type":"VARCHAR","targ":"15","attr":"n"},
         {"name":"ilość","type":"DOUBLE","attr":"n"},
         {"name":"cena netto","type":"DECIMAL","targ":"19,4","def":"0","attr":""},

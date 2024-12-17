@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { toRef } from 'vue';
+import { computed, toRef } from 'vue';
 import useMainFWManager, { FWManager } from '../FloatingWindows/FWManager';
 import QueryViewerAdv from './QueryViewerAdv.vue';
 import { QueryViewerSource } from './QueryViewer';
@@ -27,6 +27,7 @@ const props = defineProps({
     saveable:   Boolean,
     deletable:  Boolean,
 
+
     text: {
         type: String,
         default: ""
@@ -34,6 +35,10 @@ const props = defineProps({
     title: {
         type: String,
         required: false
+    },
+    icon_name: {
+        type: String,
+        default: 'search',
     },
     fwManager: {
         /**@type {import('vue').PropType<FWManager>} */
@@ -56,6 +61,7 @@ const emit = defineEmits({
 
 const fwManager = props.fwManager ?? useMainFWManager();
 const title = props.title ?? (props.text || "Znajdź");
+const icon_src = computed(() => "./../../assets/icons/" + props.icon_name + ".svg");
 
 function on_error(err) {
 	console.error(err);

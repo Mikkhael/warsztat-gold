@@ -176,7 +176,6 @@ class TableSyncRule {
      * @param {BatchToDelete[number]} rows_to_delete
      */
     static generate_delete_query_raw(table_name, rows_to_delete) {
-        console.log('to delete', rows_to_delete);
         if (rows_to_delete.length === 0) return "";
         const where_for_each_row = rows_to_delete.map(row => {
             const where_sql = entries_to_sql(row).join(' AND ');

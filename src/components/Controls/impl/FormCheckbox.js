@@ -17,6 +17,7 @@ function use_FormCheckbox(props) {
     // Jesli pusta - wartość jest poprawna
     const custom_validity_message = computed(() => {
         const local = value.get_local();
+        if(local === undefined) return 'Wartość jest niezdefiniowana';
         const rdonly = props.readonly;
         const nonull = !props.allownull;
         if (rdonly) return '';
