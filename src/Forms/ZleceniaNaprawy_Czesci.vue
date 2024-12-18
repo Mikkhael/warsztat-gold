@@ -12,8 +12,6 @@ import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import useMainMsgManager from '../components/Msg/MsgManager';
 
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
-import { ref } from 'vue';
-import { RepQuerySourceSingle } from '../Reports/RepCommon';
 
 
 
@@ -63,14 +61,16 @@ src.auto_add_column        ("brutto",                       {
         type: 'decimal'
     }
 });
+// TODO add decimal COLLATE
 
 //////////////// TOTAL ///////////////
 
 const src_total = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {src: new FormQuerySourceSingle(), no_update_on_mounted: true, on_error: handle_err});
+src.add_aux_query(src_total);
+// src.add_dep(src_total);
+// src_total.set_no_disable_on_empty();
 src_total.disable_offset();
-src_total.set_no_disable_on_empty();
 src_total.set_from_with_deps(OBR_TAB);
-src.add_dep(src_total);
 const total_zlec     = src_total.auto_add_value (OBR_COLS.rodzaj_dokumentu, {param: "zlec"});
 const total_zlec_id  = src_total.auto_add_value (OBR_COLS.numer_dokumentu,  {param: param_id_zlecenia});
 // const total_netto_pr = src_total.auto_add_value ("total_netto_profit",  {sql: "decimal_mul(-1,    decimal_sum(decimal_mul(`ilość`, decimal_sub(`cena netto sprzedaży`, `cena netto`))))"})
@@ -84,24 +84,30 @@ const id_zlecenia = RefChangableValue.from_sqlvalue(param_id_zlecenia);
 const QVFactory_parts_add = () => {
     const src = new QueryViewerSource();
     src.set_from_with_deps(CZ_TAB);
-    src.auto_add_column('cena netto', {sql: "'0'"}); // TODO Cena Netto
+    src.add_join(CZ_COLS.numer_części, OBR_COLS.numer_cz, "LEFT");
+    src.query.add_groupby_column(OBR_COLS.numer_cz);
+    src.auto_add_column("max rowid", {sql: "max("+OBR_TAB.rowid.get_full_sql()+")"});
     src.auto_add_column(CZ_COLS.numer_części, {display: "Numer"});
-    src.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa"});
+    src.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa", width: 10});
+    src.auto_add_column("last_cena_netto_sprz",  {sql:"ifnull("+OBR_COLS.cena_netto_sprzedaży.get_full_sql()+",'0.00')", display: "Netto Ostatnia Sprzedaży"});
+    src.auto_add_column("last_cena_netto",       {sql:"ifnull("+OBR_COLS.cena_netto.get_full_sql()          +",'0.00')", display: "Netto Ostatnia"});
     return src;
 }
 const QVFactory_parts_add_src = QVFactory_parts_add();
+src.add_aux_query(QVFactory_parts_add_src);
+
 /**
  * @param {string[]} columns 
  * @param {FormDataSetFull_LocalRow} row 
  */
 // /**@type {import('../components/QueryViewer/QueryViewer').QueryViewerSelectHandler} */
 function QVFactory_parts_add_select(columns, row) {
-    const new_row = src.dataset.add_or_swap_row_default_with_limit(Infinity); // TODO ADD LIMIT
-    new_row.set_local(OBR_COLS.ilość,                  0);
-    new_row.set_local(OBR_COLS.cena_netto_sprzedaży, "0");
-    new_row.set_local(OBR_COLS.cena_netto,       row.get_local("cena netto")); // TODO Cena Netto
-    new_row.set_local(OBR_COLS.numer_cz,         row.get_local(CZ_COLS.numer_części));
-    new_row.set_local(CZ_COLS.nazwa_części,      row.get_local(CZ_COLS.nazwa_części));
+    const new_row = src.dataset.add_or_swap_row_default_with_limit(src.get_limit());
+    new_row.set_local(OBR_COLS.ilość, 0);
+    new_row.set_local(OBR_COLS.cena_netto_sprzedaży, row.get_local("last_cena_netto_sprz"));
+    new_row.set_local(OBR_COLS.cena_netto,           row.get_local("last_cena_netto"));
+    new_row.set_local(OBR_COLS.numer_cz,             row.get_local(CZ_COLS.numer_części));
+    new_row.set_local(CZ_COLS.nazwa_części,          row.get_local(CZ_COLS.nazwa_części));
 };
 
 ///////////////////////////////////////////////////////
@@ -110,6 +116,8 @@ function QVFactory_parts_add_select(columns, row) {
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
+
+QueryViewerSource.window_resize_on_columns_fixed([src, QVFactory_parts_add_src], props.parent_window);
 
 defineExpose({
     src
@@ -188,14 +196,15 @@ defineExpose({
         height: 100%;
     }
     .zlec_czesci_form > .mod_parts {
-        flex-grow: 3;
+        flex-grow: 1;
     }
     .zlec_czesci_form > .add_parts {
         flex-grow: 1;
+        min-width: 50px;
     }
 
     .add_parts > legend {
-        font-size: 2em;
+        font-size: 1.4em;
     }
 
     .form{

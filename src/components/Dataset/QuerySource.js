@@ -91,6 +91,9 @@ class QuerySource extends DataGraphNodeBase {
         this.dependant_tables = [];
         this.query = new QueryBuilder(implicit_order_rowid);
 
+        /**@type {QuerySource[]} */
+        this.aux_queries = [];
+
         /**@type {any} */
         this.request = null;
         this.offset = this.query.offset;
@@ -222,6 +225,9 @@ class QuerySource extends DataGraphNodeBase {
         console.log('Completed QuerySource update, marked: ' + this.is_marked_update_in_progress);
         this.is_marked_update_in_progress = false;
         this.query.acknowledge_expried();
+        for(const aux_query of this.aux_queries) {
+            aux_query.mark_for_update(false);
+        }
     }
     ///////////////////////////////////////
 
@@ -276,10 +282,13 @@ class QuerySource extends DataGraphNodeBase {
         return result;
     }
 
-    mark_for_update() {
+    mark_for_update(auto_expire = true) {
         console.log("Marking for update ", this.is_marked_update_in_progress);
         if(this.is_marked_update_in_progress) {
             return Promise.resolve(false);
+        }
+        if(!this.expired.value && !auto_expire) {
+            return Promise.resolve(true);
         }
         this.is_marked_update_in_progress = true;
         this.expire(false);
@@ -330,6 +339,13 @@ class QuerySource extends DataGraphNodeBase {
     }
     request_clear(){
         this.request = null;
+    }
+
+    /**
+     * @param {QuerySource} src 
+     */
+    add_aux_query(src) {
+        this.aux_queries.push(src);
     }
 
     /**

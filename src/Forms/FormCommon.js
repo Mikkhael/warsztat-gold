@@ -30,8 +30,8 @@ const default_on_error = err => {throw err};
  *  on_error?: (err: any) => any,
  *  src?: T,
  *  no_update_on_mounted?: boolean,
- *  closePreventionManager?: ClosePreventionManager,
  *  implicit_order_rowid?: boolean,
+ *  closePreventionManager?: ClosePreventionManager,
  * }} options
  * @returns {T}
  */

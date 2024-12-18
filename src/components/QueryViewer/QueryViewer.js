@@ -1,23 +1,26 @@
 //@ts-check
 
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { FormQuerySourceFull, Column, QuerySource, FormDataSetFull_LocalRow, FormDataSetFull } from "../Dataset";
-import { escape_backtick_smart } from "../../utils";
+import { deffered_promise, escape_backtick_smart } from "../../utils";
+import { FWWindow } from "../FloatingWindows/FWManager";
 
 /**
  * @typedef {import("../Dataset/Form").StandardFormValueRoutineParams & {
- *  display?: string,
+ *  display?:  string,
  *  readonly?: boolean,
- *  as_enum?: boolean,
+ *  as_enum?:  boolean,
+ *  width?:    number,
  *  input_props?: import('vue').MaybeRef<Object.<string, any>>
  * }} StandardFormValueRoutineParams_WithDisplay
  */
 
 /**
  * @typedef {{
- *  name: string,
+ *  name:     string,
  *  readonly: boolean,
- *  as_enum: boolean,
+ *  as_enum:  boolean,
+ *  width:    number | undefined,
  *  input_props: import('vue').MaybeRef<Object.<string, any>>
  * }} DisplayColProps
  */
@@ -48,14 +51,37 @@ class QueryViewerSource extends FormQuerySourceFull {
 
         this.query.add_order_plugin(order_plugin_array);
         this.query.add_where_plugin(search_plugin_array);
-    }
 
+        this.columns_fixed = ref(false);
+        this.columns_fixed_promise = deffered_promise();
+    }
 
     start_plugin_watcher() {
         return watch([this.order_plugin, this.search_plugin], () => {
             this.request_offset_goto(0, false);
             this.mark_for_update();
         });
+    }
+
+    get_limit() {
+        const limit = this.query.limit.value;
+        return limit < 0 ? 0 : (limit ?? 0);
+    }
+    set_columns_fixed(value = true) {
+        this.columns_fixed.value = value;
+        this.columns_fixed_promise.resolve(value);
+    }
+    get_columns_fixed_promise() {
+        return this.columns_fixed_promise.promise;
+    }
+    /**
+     * @param {QueryViewerSource[]} srcs 
+     * @param {FWWindow | undefined} window
+     */
+    static async window_resize_on_columns_fixed(srcs, window) {
+        if(!window) return;
+        await Promise.all(srcs.map(x => x.get_columns_fixed_promise()));
+        window.box.resize_to_content().recenter();
     }
 
     /////// Ordering //////////////////////
@@ -95,20 +121,24 @@ class QueryViewerSource extends FormQuerySourceFull {
     /**
      * @param {string | Column} column_name 
      * @param {string} display_name 
-     * @param {boolean} readonly
-     * @param {boolean} as_enum
-     * @param {import('vue').MaybeRef<Object.<string, any>>} input_props
+     * @param {{
+     *  readonly?:    boolean,
+     *  as_enum?:     boolean,
+     *  width?:       number | undefined,
+     *  input_props?: import('vue').MaybeRef<Object.<string, any>>
+     * }} props
      */
-    add_display_column(column_name, display_name, readonly = true, input_props = {}, as_enum = false) {
+    add_display_column(column_name, display_name, props) {
         const name = column_name instanceof Column ? column_name.get_full_sql() : column_name;
         if(this.display_columns.has(name)) {
             throw new Error("Display column already exists: " + name);
         }
         this.display_columns.set(name, {
             name: display_name,
-            readonly,
-            as_enum,
-            input_props
+            readonly: props.readonly ?? false,
+            as_enum:  props.as_enum ?? false,
+            width:    props.width,
+            input_props: props.input_props ?? {},
         });
     }
 
@@ -118,7 +148,12 @@ class QueryViewerSource extends FormQuerySourceFull {
      */
     auto_add_column_impl(name, params = {}) {
         if(params.display){
-            this.add_display_column(name, params.display, params.readonly ?? !params.sync, params.input_props, params.as_enum);
+            this.add_display_column(name, params.display, {
+                readonly: params.readonly ?? !params.sync,
+                as_enum: params.as_enum,
+                input_props: params.input_props,
+                width: params.width,
+            });
         }
         super.auto_add_column_impl(name, params);
     }
@@ -128,7 +163,12 @@ class QueryViewerSource extends FormQuerySourceFull {
      */
     auto_add_column_local(col, params) {
         if(params.display){
-            this.add_display_column(col, params.display, params.readonly ?? !params.computed.setter, params.input_props, params.as_enum);
+            this.add_display_column(col, params.display, {
+                readonly: params.readonly ?? !params.computed.setter,
+                as_enum: params.as_enum,
+                input_props: params.input_props,
+                width: params.width,
+            });
         }
         this.dataset.add_column_local(col, params.computed, params.assoc_col);
     }

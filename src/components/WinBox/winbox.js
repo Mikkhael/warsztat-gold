@@ -1257,12 +1257,18 @@ WinBox.prototype.move = function(x, y, _skip_update){
 /**
  * @param {number|string=} w
  * @param {number|string=} h
- * @param {boolean=} _skip_update
+ * @param {bound_factor} bound_factor
+ * @param {boolean} [_skip_update]
  * @this WinBox
  */
 
-WinBox.prototype.resize_true = function(w, h, _skip_update){
+WinBox.prototype.resize_true = function(w, h, bound_factor = 0.9, _skip_update){
     // console.log("REsizing to ", w, h);
+    if(bound_factor > 0) {
+        w = Math.min(w, bound_factor * (this.maxwidth  ?? Infinity));
+        h = Math.min(h, bound_factor * (this.maxheight ?? Infinity - 35));
+    }
+    console.log("RESIZING", w, h, this.maxwidth, this.maxheight, bound_factor);
     return this.resize(w, h + 35, _skip_update);
 }
 
@@ -1274,10 +1280,14 @@ function get_dimensions_to_fit_content(body) {
     const h1 = body.scrollHeight;
     const inner = body.children[0];
     if(inner && inner.classList.contains('form_container') && inner.children.length >= 1) {
-        const content  = inner.children[0];
-        const scroller = /**@type {Element?} */ (inner.children[1]);
-        const w2 = content.scrollWidth;
-        const h2 = content.scrollHeight + (scroller?.scrollHeight ?? 0);
+        let content  = /**@type {Element?} */ (null);
+        let scroller = /**@type {Element?} */ (null);
+        for(const child of inner.children) {
+            if(child.classList.contains('form_content'))  {content  = child; continue;}
+            if(child.classList.contains('form_scroller')) {scroller = child; continue;}
+        }
+        const w2 = (content?.scrollWidth  ?? 0);
+        const h2 = (content?.scrollHeight ?? 0) + (scroller?.scrollHeight ?? 0);
         // console.log('DIMS2', w1, h1, w2, h2);
         return [
             Math.max(w1, w2),

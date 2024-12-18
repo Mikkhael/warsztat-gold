@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { ref, onMounted, onUnmounted, watch, nextTick, unref } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick, unref, compile, computed } from "vue";
 
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from "../../Forms/FormCommon";
 import { QueryViewerSource } from "./QueryViewer";
@@ -109,8 +109,12 @@ const resizeObserver = new ResizeObserver(recalculate_limit);
 
 let   current_resize_col_i = -1;
 const col_refs     = ref(/**@type {HTMLElement[]} */ ([]));
-const column_sizes = ref(/**@type {[value: number, as_ch: boolean][]} */ ([]));
+const column_sizes = ref(/**@type {[value: number, as_px_not_ch: boolean][]} */ ([]));
 const disable_table_search = ref(true);
+
+const column_sizes_style = computed(() => column_sizes.value.map(([value, as_px_not_ch]) => {
+    return value === undefined ? undefined : value + (as_px_not_ch ? 'px' : 'ch');
+}));
 
 function handle_mouse_move(/**@type {MouseEvent} */ event) {
     const delta = event.movementX;
@@ -140,9 +144,11 @@ function minimize_columns_sizes() {
     for(let col_i in col_refs.value) {
         // console.log("STARTING TO MINIMIZE", col_i);
         const col = col_refs.value[col_i];
-        // children[0] = search
-        // children[1] = title
-        // children[2] = first result
+        const preset_len = columns_display_props[col_i].width;
+        if(preset_len !== undefined) {
+            column_sizes.value[col_i] = [preset_len, false];
+            continue;
+        }
         if(col.children.length < 3) continue;
         const first_row = col.children[2];
         if(first_row.tagName !== 'INPUT' || !(
@@ -170,8 +176,10 @@ function init_columns_sizes() {
             column_sizes.value[col_i] = [col_refs.value[col_i].getBoundingClientRect().width, true];
         }
         disable_table_search.value = false;
+        src.set_columns_fixed();
     });
 }
+
 
 const current_hovered_row_i = ref(-1);
 function handle_row_hover(row_i) {
@@ -248,6 +256,7 @@ async function handle_order(new_order, col_name) {
     src.set_order(col_name, new_order);
 }
 
+QueryViewerSource.window_resize_on_columns_fixed([src], props.parent_window);
 src.start_plugin_watcher();
 
 onMounted(() => {
@@ -288,7 +297,11 @@ onUnmounted(() => {
                     <div class="header" ref="row_ref"> </div>
                     <div class="header">#</div>
                     <div class="data" v-for="(row, row_i) in result_rows"
-                            :class="{hovered: current_hovered_row_i === row_i}"
+                            :class="{
+                                hovered: current_hovered_row_i === row_i,
+                                deleted:  row.deleted,
+                                inserted: row.inserted,
+                            }"
                             @pointerleave="handle_row_unhover(row_i)"
                             @pointerenter="handle_row_hover  (row_i)" 
                             @pointerdown="e => handle_select_down(row_i, true, e)"
@@ -307,7 +320,7 @@ onUnmounted(() => {
                         type_number: typeof(result_rows[0]?.[col_i]) == 'number',
                         type_text:   typeof(result_rows[0]?.[col_i]) == 'string',
                     }"
-                    :style="{width: column_sizes[col_i] === undefined ? undefined : column_sizes[col_i][0] + (column_sizes[col_i][1] ? 'px' : 'ch') }"
+                    :style="{width: column_sizes_style[col_i] }"
                 >
                     <div class="header col_search_cell">
                         <input type="text" class="col_search"
@@ -404,9 +417,12 @@ onUnmounted(() => {
     }
     .table_column ::v-deep(.data.hovered) {
         background-color: #d7fffc;
-    }   
-    .table_column ::v-deep(.data_cell.deleted) {
+    }
+    .table_column ::v-deep(.data.deleted) {
         background-color: #ffd7d7;
+    }
+    .table_column ::v-deep(.data.inserted:not(.changed)) {
+        background-color: #dcffd7;
     }   
 
     .col_search_cell{

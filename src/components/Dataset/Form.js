@@ -655,7 +655,6 @@ class FormDataSetBase {
         return index;
     }
 
-    // TODO allow to get sync by string, not TableNode
     /**@param {TableNode} table */
     get_or_create_sync(table) {
         const table_name = table.name;
@@ -740,7 +739,7 @@ class FormDataSetFull extends FormDataSetBase {
         super();
         this.query_src   = query_src;
         this.local_rows  = ref(/**@type {FormDataSetFull_LocalRow[]} */ ([]));
-        this._key_base   = 0;
+        this._key_base   = ref(0);
         /**
          * @type {FormComputedChangebleValue[]}
          */
@@ -787,6 +786,7 @@ class FormDataSetFull extends FormDataSetBase {
      * @param {boolean} no_cached
      */
     create_form_value(column_def, row_index, no_cached = false) {
+        console.log("Creating Form Value", row_index, column_def);
         const computed_def = column_def.computed_def;
         let value;
         if(computed_def) {
@@ -859,22 +859,26 @@ class FormDataSetFull extends FormDataSetBase {
             console.log("HAS ROOM " + all_rows_count);
             return this.add_row_default();
         }
-        let noninserted_last_index = this.local_rows.value.length - 1;
-        while(noninserted_last_index >= 0 && this.local_rows.value[noninserted_last_index].inserted) {
-            noninserted_last_index -= 1;
-        }
-        if(noninserted_last_index < 0) {
-            console.log("NO MORE ROOM");
+        // let noninserted_last_index = this.local_rows.value.length - 1;
+        // while(noninserted_last_index >= 0 && this.local_rows.value[noninserted_last_index].inserted) {
+        //     noninserted_last_index -= 1;
+        // }
+        const last_row = this.local_rows.value[all_rows_count-1];
+        if(last_row.inserted) {
+            console.log("NO MORE ROOM FOR NEW INSERTS");
             return this.add_row_default();
         }
-        const noninserted_last = this.local_rows.value[noninserted_last_index];
-        if(noninserted_last.check_outdated()) {
+        // const noninserted_last = this.local_rows.value[noninserted_last_index];
+        // if(noninserted_last.check_outdated()) {
+        if(last_row.check_outdated()) {
             console.log("WOULD ERASE CHANGES");
             return this.add_row_default();
         }
-        console.log("SWAP " + noninserted_last_index);
-        this._key_base += 1;
-        this.local_rows.value.splice(noninserted_last_index, 1);
+        // console.log("SWAP " + noninserted_last_index);
+        console.log("SWAP");
+        this._key_base.value += 1;
+        // this.local_rows.value.splice(noninserted_last_index, 1);
+        this.local_rows.value.pop();
         return this.add_row_default();
     }
 
@@ -894,19 +898,19 @@ class FormDataSetFull extends FormDataSetBase {
     }
 
     get_unique_key(index) {
-        return this._key_base + '_' + index;
+        return this._key_base.value + '_' + index;
     }
 
 
     //// OVERRIDE /////
     check_changed() { return this.local_rows.value.some(row => row.check_outdated()); }
     refresh() {
-        this._key_base += 1;
+        this._key_base.value += 1;
         const new_local_rows = FormDataSetFull._rebuild_from_query_full_result(this.query_src?.full_result.value ?? [[],[]], this);
         this.local_rows.value = new_local_rows;
     }
     reset() {
-        this._key_base += 1;
+        this._key_base.value += 1;
         this.local_rows.value = [];
     }
     async perform_save_notransaction(forced = false, no_delete = false) {

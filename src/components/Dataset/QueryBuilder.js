@@ -132,6 +132,17 @@ class QueryBuilder {
                 .join(' AND ');
         });
 
+        this.groupby = reasRef(/**@type {QueryParts[]} */ ([]));
+        this._sql_groupby = computed(() => {
+            const all_parts = [
+                ...this.groupby.value,
+            ];
+            return all_parts
+                .map(query_parts_to_string)
+                .map(x => '(' + x + ')')
+                .join(', ');
+        });
+
         this.plugin_orders = shallowRef(/**@type {MaybeRef<QueryOrdering[]>[]} */ ([]));
         this.order = reasRef(/**@type {QueryOrdering[]} */ ([]));
         this._sql_order  = computed(() => [
@@ -151,9 +162,10 @@ class QueryBuilder {
 
         this._sections1 = computed(() => {
             return {
-                select: this._sql_select_fields.value, 
-                from:   this._sql_from.value,
-                where:  this._sql_where.value,
+                select:  this._sql_select_fields.value, 
+                from:    this._sql_from.value,
+                where:   this._sql_where.value,
+                groupby: this._sql_groupby.value,
             };
         });
         this._sections2 = computed(() => {
@@ -165,18 +177,20 @@ class QueryBuilder {
         });
 
         this._last_sections = shallowRef({
-            select: "",
-            from:   "",
-            where:  "",
-            order:  "",
-            limit:  "",
-            offset: "",
+            select:  "",
+            from:    "",
+            where:   "",
+            groupby: "",
+            order:   "",
+            limit:   "",
+            offset:  "",
         });
 
         this._expired_count = computed(() => {
-            return this._last_sections.value.select !== this._sections1.value.select  ||
-                   this._last_sections.value.from   !== this._sections1.value.from    ||
-                   this._last_sections.value.where  !== this._sections1.value.where;
+            return this._last_sections.value.select  !== this._sections1.value.select  ||
+                   this._last_sections.value.from    !== this._sections1.value.from    ||
+                   this._last_sections.value.where   !== this._sections1.value.where   ||
+                   this._last_sections.value.groupby !== this._sections1.value.groupby;
         });
         this._expired = computed(() => {
             return this._expired_count.value  ||
@@ -186,34 +200,45 @@ class QueryBuilder {
         });
 
         this.full_sql_base = computed(() => concat_query({
-            select: this._sections1.value.select, 
-            from:   this._sections1.value.from, 
-            where:  this._sections1.value.where, 
-            order:  this._sections2.value.order, 
-            limit:  this._sections2.value.limit, 
+            select:  this._sections1.value.select,
+            from:    this._sections1.value.from,
+            where:   this._sections1.value.where,
+            groupby: this._sections1.value.groupby,
+            order:   this._sections2.value.order,
+            limit:   this._sections2.value.limit,
         }));
 
         this.full_sql_for_rownumber_window = computed(() => concat_query({
-            order:  this._sections2.value.order,
+            order:   this._sections2.value.order,
         }))
         this.full_sql_for_rownumber_main = computed(() => concat_query({
-            from:   this._sections1.value.from, 
-            where:  this._sections1.value.where,
+            from:    this._sections1.value.from, 
+            where:   this._sections1.value.where,
+            groupby: this._sections1.value.groupby,
         }));
                 
-        this.full_sql_count = computed(() => concat_query({
-            select: 'count(*)' + this._sql_select_fields_part_custom_only_app.value,
-            from:   this._sections1.value.from, 
-            where:  this._sections1.value.where, 
-        }));
+        this.full_sql_count = computed(() => {
+            const base_query = concat_query({
+                select:  'count(*)' + this._sql_select_fields_part_custom_only_app.value,
+                from:    this._sections1.value.from, 
+                where:   this._sections1.value.where, 
+                groupby: this._sections1.value.groupby,
+            });
+            if(this._sections1.value.groupby.length === 0) {
+                return base_query;
+            } else {
+                return `SELECT count(*) FROM (${base_query})`;
+            }
+        });
         
         this.full_sql_offset = computed(() => concat_query({
-            select: this._sections1.value.select, 
-            from:   this._sections1.value.from, 
-            where:  this._sections1.value.where, 
-            order:  this._sections2.value.order, 
-            limit:  this._sections2.value.limit, 
-            offset: this._sections2.value.offset, 
+            select:  this._sections1.value.select, 
+            from:    this._sections1.value.from, 
+            where:   this._sections1.value.where, 
+            groupby: this._sections1.value.groupby,
+            order:   this._sections2.value.order, 
+            limit:   this._sections2.value.limit, 
+            offset:  this._sections2.value.offset, 
         }));
     }
 
@@ -260,6 +285,16 @@ class QueryBuilder {
             this.where_conj.value.push(parts);
         }
     }
+    /**
+     * @param {Column | string} column
+     */
+    add_groupby_column(column) {
+        if(column instanceof Column) {
+            this.groupby.value.push([column.get_full_sql()]);
+        } else {
+            this.groupby.value.push([[column, 'b']]);
+        }
+    }
 
     add_order_plugin(/**@type {MaybeRef<QueryOrdering[]>} */ orders) {
         this.plugin_orders.value.push(orders);
@@ -295,6 +330,7 @@ function concat_query(sections) {
     return  concat_query_section('SELECT',   sections.select) +
             concat_query_section('FROM',     sections.from) +
             concat_query_section('WHERE',    sections.where) +
+            concat_query_section('GROUP BY', sections.groupby) +
             concat_query_section('ORDER BY', sections.order) +
             concat_query_section('LIMIT',    sections.limit) +
             concat_query_section('OFFSET',   sections.offset);

@@ -417,6 +417,19 @@ function as_promise(async_function) {
 	return async_function();
 }
 
+function deffered_promise() {
+	/**@type {(value: any) => any} */
+	let resolve;
+	/**@type {(value: any) => any} */
+	let reject;
+	const promise = new Promise((_resolve, _reject) => {
+		resolve = _resolve;
+		reject  = _reject;
+	});
+	//@ts-ignore
+	return {promise,resolve,reject};
+}
+
 ///// Reactivity ////
 
 // /**
@@ -492,6 +505,7 @@ export {
 	array_compare,
 	typeofpl,
 	as_promise,
+	deffered_promise,
 
 	pad,
 	date,
