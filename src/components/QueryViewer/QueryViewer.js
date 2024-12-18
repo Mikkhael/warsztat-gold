@@ -26,8 +26,8 @@ import { escape_backtick_smart } from "../../utils";
  * @typedef {(
  *  columns: string[],
  *  row:     FormDataSetFull_LocalRow,
- *  offset:  number,
- *  close:   () => void
+ *  offset?: number,
+ *  close?:  () => void
  * ) => void} QueryViewerSelectHandler
  */
 

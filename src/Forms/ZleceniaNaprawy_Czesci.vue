@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
-import { FormDataSetFull, FormDataSetSingle, FormDefaultProps, FormParamProp, FormQuerySourceSingle, param_from_prop, RefChangableValue } from '../components/Dataset';
+import { FormDataSetFull, FormDataSetFull_LocalRow, FormDataSetSingle, FormDefaultProps, FormParamProp, FormQuerySourceSingle, param_from_prop, RefChangableValue } from '../components/Dataset';
 import { QueryViewerSource } from '../components/QueryViewer/QueryViewer';
 import QueryViewerAdv from '../components/QueryViewer/QueryViewerAdv.vue';
 import QueryViewerAdvOpenBtn from '../components/QueryViewer/QueryViewerAdvOpenBtn.vue';
@@ -89,9 +89,13 @@ const QVFactory_parts_add = () => {
     src.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa"});
     return src;
 }
-
-/**@type {import('../components/QueryViewer/QueryViewer').QueryViewerSelectHandler} */
-function QVFactory_parts_add_select(columns, row, offset, close) {
+const QVFactory_parts_add_src = QVFactory_parts_add();
+/**
+ * @param {string[]} columns 
+ * @param {FormDataSetFull_LocalRow} row 
+ */
+// /**@type {import('../components/QueryViewer/QueryViewer').QueryViewerSelectHandler} */
+function QVFactory_parts_add_select(columns, row) {
     const new_row = src.dataset.add_or_swap_row_default_with_limit(Infinity); // TODO ADD LIMIT
     new_row.set_local(OBR_COLS.ilość,                  0);
     new_row.set_local(OBR_COLS.cena_netto_sprzedaży, "0");
@@ -115,53 +119,84 @@ defineExpose({
 
 <template>
 
-<form class="form" :ref="e => src.assoc_form(e)">
+<div class="zlec_czesci_form">
+    <form class="form mod_parts" :ref="e => src.assoc_form(e)">
 
-    <div class="obroty_list">
-        <QueryViewerAdv 
-            :src="src"
+        <div class="obroty_list">
+            <QueryViewerAdv 
+                :src="src"
+                inbeded
+                saveable
+                deletable
+                @error="handle_err"
+            />
+        </div>
+
+
+        <div class="obroty_panel">
+            <label class="summary_part">
+                <div>ID Zlecenia</div>
+                <FormInput :value="id_zlecenia" readonly />
+            </label>
+            <!-- <label class="summary_part">
+                <div>Zysk Netto</div>
+                <FormInput type="decimal" :value="total_netto_pr" readonly />
+            </label> -->
+            <label class="summary_part">
+                <div>Suma Netto</div>
+                <FormInput type="decimal" :value="total_netto" readonly />
+            </label>
+            <label class="summary_part">
+                <div>Suma Brutto</div>
+                <FormInput type="decimal" :value="total_brutto" readonly />
+            </label>
+            <div class="spacer"></div>
+            <!-- <QueryViewerAdvOpenBtn 
+                icon="plus"
+                text="Dodaj Części"
+                :title="`Dodawanie Części Do Zlecenia nr ${id_zlecenia.get_local()}`"
+                :src_factory="QVFactory_parts_add"
+                    @select="QVFactory_parts_add_select"
+                selectable
+                @error="handle_err"
+            /> -->
+        </div>
+    </form>
+
+    <fieldset class="add_parts">
+        <legend>Dopisywanie Części</legend>
+        <QueryViewerAdv
+            :src="QVFactory_parts_add_src"
             inbeded
-            saveable
-            deletable
-            @error="handle_err"
-        />
-    </div>
-
-
-    <div class="obroty_panel">
-        <label class="summary_part">
-            <div>ID Zlecenia</div>
-            <FormInput :value="id_zlecenia" readonly />
-        </label>
-        <!-- <label class="summary_part">
-            <div>Zysk Netto</div>
-            <FormInput type="decimal" :value="total_netto_pr" readonly />
-        </label> -->
-        <label class="summary_part">
-            <div>Suma Netto</div>
-            <FormInput type="decimal" :value="total_netto" readonly />
-        </label>
-        <label class="summary_part">
-            <div>Suma Brutto</div>
-            <FormInput type="decimal" :value="total_brutto" readonly />
-        </label>
-        <div class="spacer"></div>
-        <QueryViewerAdvOpenBtn 
-            style="padding: 1ch"
-            text="Dodaj Części"
-            :title="`Dodawanie Części Do Zlecenia nr ${id_zlecenia.get_local()}`"
-            :src_factory="QVFactory_parts_add"
-                 @select="QVFactory_parts_add_select"
             selectable
             @error="handle_err"
+            @select="QVFactory_parts_add_select"
         />
-    </div>
-</form>
+    </fieldset>
+
+</div>
 
 
 </template>
 
 <style scoped>
+
+    .zlec_czesci_form {
+        display: flex;
+        flex-direction: row;
+        justify-content: stretch;
+        height: 100%;
+    }
+    .zlec_czesci_form > .mod_parts {
+        flex-grow: 3;
+    }
+    .zlec_czesci_form > .add_parts {
+        flex-grow: 1;
+    }
+
+    .add_parts > legend {
+        font-size: 2em;
+    }
 
     .form{
         height: 100%;

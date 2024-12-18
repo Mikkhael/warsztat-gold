@@ -51,6 +51,7 @@ function handle_err(err){
 const src = props.inbeded ? props.src : CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {
     src: props.src, 
     no_update_on_mounted: true,
+    // shrink_before_resize: true,
     on_error: handle_err
 });
 

@@ -6,6 +6,7 @@ import useMainFWManager, { FWManager } from '../FloatingWindows/FWManager';
 import QueryViewerAdv from './QueryViewerAdv.vue';
 import { QueryViewerSource } from './QueryViewer';
 import { FormDataSetFull_LocalRow } from '../Dataset';
+import IconButton from '../Controls/IconButton.vue';
 
 
 /**
@@ -36,10 +37,6 @@ const props = defineProps({
         type: String,
         required: false
     },
-    icon_name: {
-        type: String,
-        default: 'search',
-    },
     fwManager: {
         /**@type {import('vue').PropType<FWManager>} */
         type: Object,
@@ -61,7 +58,6 @@ const emit = defineEmits({
 
 const fwManager = props.fwManager ?? useMainFWManager();
 const title = props.title ?? (props.text || "Znajdź");
-const icon_src = computed(() => "./../../assets/icons/" + props.icon_name + ".svg");
 
 function on_error(err) {
 	console.error(err);
@@ -102,35 +98,13 @@ async function on_click() {
 
 <template>
 
-<div class="button container" @click="on_click">
-    <img src="./../../assets/icons/search.svg"/>
-    <div class="text">
-        {{ props.text }}
-    </div>
-</div>
+<IconButton
+    @click="on_click"
+    :text="props.text"
+/>
 
 </template>
 
 <style scoped>
-
-    .container {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-    }
-
-    img{
-        box-sizing: border-box;
-        height: 3ch;
-        padding: 2px;
-    }
-
-    .text {
-        flex-grow: 1;
-        justify-self: flex-end;
-        text-wrap: nowrap;
-        text-align: center;
-    }
-
 
 </style>

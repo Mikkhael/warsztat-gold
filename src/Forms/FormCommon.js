@@ -1,6 +1,6 @@
 //@ts-check
 
-import { onMounted, onUnmounted } from 'vue';
+import { nextTick, onMounted, onUnmounted } from 'vue';
 import { FormQuerySourceBase, FormQuerySourceSingle } from '../components/Dataset';
 import { QuerySource } from '../components/Dataset/QuerySource';
 import { ClosePreventionManager, useMainClosePreventionManager } from '../ClosePrevention';
