@@ -160,7 +160,7 @@ defineExpose({
 
     <div class="form_container" :class="src.form_style.value">
 
-        <form class="form form_content flex_auto" :ref="e => src.assoc_form(e)">
+        <form onsubmit="return false" class="form form_content flex_auto" :ref="e => src.assoc_form(e)">
             
             <div class="grid">
                 
@@ -191,7 +191,7 @@ defineExpose({
                                  @error="handle_err" />
                     </div> 
                
-                    <!-- <button @click.prevent="click_zlecenia">ZLECENIA</button> -->
+                    <!-- <button type="button" @click.prevent="click_zlecenia">ZLECENIA</button> -->
                 </div>
 
                 <label>Nazwa              </label>  <FormInput :readonly="props.readonly" :value="nazwa " auto class="main_input_field" pattern="[^ś]*" />

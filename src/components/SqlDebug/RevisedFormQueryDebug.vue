@@ -111,6 +111,15 @@ function handle_select(cols, row, offset) {
 
 ///////////////////////////////////////////////
 
+const decimal_form = ref();
+
+const decimal_test_cached = ref("0.00");
+/**@type {OwningChangableValue<null | string>} */
+const decimal_test = new OwningChangableValue('0.00', decimal_test_cached);
+const decimal_test_ref = decimal_test.get_local_ref();
+/**@type {OwningChangableValue<null | string>} */
+const decimal_test2 = new OwningChangableValue('0.00', decimal_test_cached);
+
 const show_deleted = ref(false);
 
 function handle_err(err) {
@@ -134,10 +143,22 @@ const opts = reactive({
 
 	<div>
 
-        <button @click="add_row()"       > ADD ROW         </button>
-        <button @click="fetch_full()"    > FETCH FULL      </button>
-        <button @click="save_full()"     > SAVE FULL       </button>
-        <button @click="save_full(true)" > SAVE FULL FORCE </button>
+        
+        <form onsubmit="return false" ref="decimal_form">
+            <button type="button" @click="decimal_test.set_local(null)">SET NULL</button> <br>
+            <input type="text" value="NO MODEL"> <br>
+            Typeof: {{ typeof decimal_test_ref }} <br>
+            Decimal:         <input type="text" v-model="decimal_test_ref"> <br>
+            Cached:          <input type="text" v-model="decimal_test_cached"> <br>
+            FormInput:       <FormInput type="decimal" :value="decimal_test" /> <br>
+            FormInput:       <FormInput type="decimal" :value="decimal_test2" @onpointermove="console.log('moving')" /> <br>
+            <!-- FormInputNonull: <FormInput type="decimal" :value="decimal_test" required nonull /> <br> -->
+        </form>
+
+        <button type="button" @click="add_row()"       > ADD ROW         </button>
+        <button type="button" @click="fetch_full()"    > FETCH FULL      </button>
+        <button type="button" @click="save_full()"     > SAVE FULL       </button>
+        <button type="button" @click="save_full(true)" > SAVE FULL FORCE </button>
 
         <!-- <QuerySourceOffsetScroller 
             :src="prac_src"
@@ -222,7 +243,7 @@ const opts = reactive({
         
         <FWCollection :manager="fwManager" @error="err=>console.error(err)" />
 
-        <!-- <form class="full_form">
+        <!-- <form onsubmit="return false" class="full_form">
             <div class="full_form_row"
                 v-for=" (row, row_index) in prac_src_rows_ref"
                 :key="prac_src.dataset.get_unique_key(row_index)"

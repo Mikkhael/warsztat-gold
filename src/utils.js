@@ -408,6 +408,69 @@ function format_date_str_local(/**@type {string} */ date_str) {
 	return res;
 }
 
+///////////////// DECIMAL //////////////
+
+const parse_decimal_regex = /^[^\d\-]*(\-?\d+(?:[\.\,]\d+)?)\D*$/;
+const decimal_regex = /^\-?\d+(?:[\.]\d+)?$/;
+const decimal_parts_regex = /^\+(\-?\d+)(\.\d+)?$/;
+const decimal_neg_zero_regex = /^\-0+(?:\.0*)?$/;
+function is_decimal(/**@type {string?} */ value) {return !!value?.match(decimal_regex);}
+/**
+ * Convert a decimal string (with possible sufix and comma), to only the number part (with dot separator)
+ * @param {string?} source_string
+ */
+function parse_decimal(source_string) {
+	const match_result = source_string?.match(parse_decimal_regex);
+	if(!match_result || !match_result[1]) return null;
+	return match_result[1].trim().replace(',','.');
+}
+/**
+ * @param {string?} decimal_value 
+ * @returns 
+ */
+function get_decimal_parts(decimal_value) {
+	const match_result = decimal_value?.match(decimal_parts_regex);
+	if(!match_result) return null;
+	return [match_result[1] || '0', match_result[2] || '0'];
+}
+/**
+ * Appends sufix and sets precision, if input is a valid decimal string. Otherwise returns null
+ * @param {string} source_string 
+ * @param {number} precision 
+ * @param {string} sufix 
+ */
+function format_decimal(source_string, precision = 2, sufix = " zł") {
+	const decimal_value = parse_decimal(source_string);
+	if(!decimal_value) return null;
+	let parts = decimal_value.split('.');
+	let int_part  = parts[0] || '0';
+	let frac_part = parts[1] || '0';
+	let res_numeric;
+	if(precision <= 0) {
+
+		res_numeric = int_part;
+	} else {
+		if(frac_part.length > precision) {
+			frac_part = frac_part.slice(0, precision);
+		}
+		if(frac_part.length < precision) {
+			frac_part += '0'.repeat(precision - frac_part.length);
+		}
+		res_numeric = int_part + '.' + frac_part
+	}
+	if(res_numeric.match(decimal_neg_zero_regex)) {
+		res_numeric = res_numeric.slice(1);
+	}
+	return res_numeric + sufix;
+}
+
+
+
+
+
+////////////////////////////////////////
+
+
 
 /**
  * @template T
@@ -520,6 +583,11 @@ export {
 
 	str_to_date,
 	format_date_str_local,
+
+	is_decimal,
+	get_decimal_parts,
+	parse_decimal,
+	format_decimal,
 
 	reasRef,
 	// watchedRef

@@ -134,11 +134,11 @@ function perform_manual_backup(mock = false) {
                 </template>
             </div>
         </EditableArray>
-        <button @click="e => e.shiftKey ? enable_debug = true : perform_manual_backup()">
+        <button type="button" @click="e => e.shiftKey ? enable_debug = true : perform_manual_backup()">
             Wykonaj kopię zapasową manualnie
         </button>
         <template v-if="enable_debug">
-            <button @click="perform_manual_backup(true)">
+            <button type="button" @click="perform_manual_backup(true)">
                 Debug
             </button>
             <input type="text" v-model="mock_date">

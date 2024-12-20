@@ -75,7 +75,7 @@ defineExpose({
 
 <template>
     
-    <button onclick="window.print();" class="print_fallback_button"> DRUKUJ </button>
+    <button type="button" onclick="window.print();" class="print_fallback_button"> DRUKUJ </button>
     <select onchange="document.querySelector('.page').style.fontFamily = this.value" class="noprint">
         <option value="Times New Roman"   > Times New Roman   </option>
         <option value="Arial"             > Arial             </option>

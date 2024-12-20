@@ -106,7 +106,7 @@ defineExpose({
 
     <div class="form_container" :class="src.form_style.value">
 
-        <form class="form form_content" :ref="e => src.assoc_form(e)">
+        <form onsubmit="return false" class="form form_content" :ref="e => src.assoc_form(e)">
             
             <div class="sidebar" v-if="props.show_clients">
                 <div>

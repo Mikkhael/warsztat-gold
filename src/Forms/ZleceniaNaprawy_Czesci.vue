@@ -81,20 +81,19 @@ const id_zlecenia = RefChangableValue.from_sqlvalue(param_id_zlecenia);
 
 ////////////////// FIND (DODAJ CZĘŚCI) ///////////////////
 
-const QVFactory_parts_add = () => {
-    const src = new QueryViewerSource();
-    src.set_from_with_deps(CZ_TAB);
-    src.add_join(CZ_COLS.numer_części, OBR_COLS.numer_cz, "LEFT");
-    src.query.add_groupby_column(OBR_COLS.numer_cz);
-    src.auto_add_column("max rowid", {sql: "max("+OBR_TAB.rowid.get_full_sql()+")"});
-    src.auto_add_column(CZ_COLS.numer_części, {display: "Numer"});
-    src.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa", width: 10});
-    src.auto_add_column("last_cena_netto_sprz",  {sql:"ifnull("+OBR_COLS.cena_netto_sprzedaży.get_full_sql()+",'0.00')", display: "Netto Ostatnia Sprzedaży"});
-    src.auto_add_column("last_cena_netto",       {sql:"ifnull("+OBR_COLS.cena_netto.get_full_sql()          +",'0.00')", display: "Netto Ostatnia"});
-    return src;
-}
-const QVFactory_parts_add_src = QVFactory_parts_add();
-src.add_aux_query(QVFactory_parts_add_src);
+// const QVFactory_parts_add = () => {
+    const src_list = new QueryViewerSource();
+    src_list.set_from_with_deps(CZ_TAB);
+    src_list.add_join(CZ_COLS.numer_części, OBR_COLS.numer_cz, "LEFT");
+    src_list.query.add_groupby_column(OBR_COLS.numer_cz);
+    src_list.auto_add_column("max rowid", {sql: "max("+OBR_TAB.rowid.get_full_sql()+")"});
+    src_list.auto_add_column(CZ_COLS.numer_części, {display: "Numer"});
+    src_list.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa", width: 10});
+    src_list.auto_add_column("last_cena_netto_sprz",  {sql:"ifnull("+OBR_COLS.cena_netto_sprzedaży.get_full_sql()+",'0.00')", display: "Netto Ostatnia Sprzedaży"});
+    src_list.auto_add_column("last_cena_netto",       {sql:"ifnull("+OBR_COLS.cena_netto.get_full_sql()          +",'0.00')", display: "Netto Ostatnia"});
+//     return src_list;
+// }
+src.add_aux_query(src_list);
 
 /**
  * @param {string[]} columns 
@@ -117,7 +116,7 @@ function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
-QueryViewerSource.window_resize_on_columns_fixed([src, QVFactory_parts_add_src], props.parent_window);
+QueryViewerSource.window_resize_on_columns_fixed([src, src_list], props.parent_window);
 
 defineExpose({
     src
@@ -128,7 +127,7 @@ defineExpose({
 <template>
 
 <div class="zlec_czesci_form">
-    <form class="form mod_parts" :ref="e => src.assoc_form(e)">
+    <form onsubmit="return false" class="form mod_parts" :ref="e => src.assoc_form(e)">
 
         <div class="obroty_list">
             <QueryViewerAdv 
@@ -174,7 +173,7 @@ defineExpose({
     <fieldset class="add_parts">
         <legend>Dopisywanie Części</legend>
         <QueryViewerAdv
-            :src="QVFactory_parts_add_src"
+            :src="src_list"
             inbeded
             selectable
             @error="handle_err"

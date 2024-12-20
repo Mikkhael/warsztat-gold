@@ -154,7 +154,7 @@
                     + presets for different-sized fields from access
                 + tooltips for constraint violation
                 + readonly
-                - optional comma as separator
+                + optional comma as separator
                 + null
                     + better null handling
                     - add CTRL+Z history when clearing a field

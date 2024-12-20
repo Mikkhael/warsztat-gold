@@ -79,6 +79,7 @@ const HINTS_UID = ref(uid + '_hint');
                  :list="use_datalist ? HINTS_UID : undefined"
                  :id="  use_datalist ? INPUT_UID : undefined"
                  v-bind="{...impl.attributes, ...fallthrough_attrs}"
+                 v-on="{...impl.listeners}"
                  @set_as_null="set_as_null()"
                  @reset_changes="reset_changes()"
         />
@@ -90,6 +91,7 @@ const HINTS_UID = ref(uid + '_hint');
                  :list="use_datalist ? HINTS_UID : ''"
                  :id="  use_datalist ? INPUT_UID : undefined"
                  v-bind="{...impl.attributes, ...fallthrough_attrs}"
+                 v-on="{...impl.listeners}"
                  @set_as_null="set_as_null()"
                  @reset_changes="reset_changes()"
         ></textarea>
@@ -98,7 +100,12 @@ const HINTS_UID = ref(uid + '_hint');
         </datalist>
 </template>
 
-<style>
+<style scoped>
+
+*[right] {
+    text-align: right;
+}
+
 
 /* .FormControlInput.null {
     background-image: repeating-linear-gradient(-60deg,

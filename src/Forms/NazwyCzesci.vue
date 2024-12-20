@@ -78,7 +78,7 @@ defineExpose({
 
 <div class="form_container" :class="src.form_style.value">
 
-<form class="form_content form" :ref="e => src.assoc_form(e)">
+<form onsubmit="return false" class="form_content form" :ref="e => src.assoc_form(e)">
     <label class="label">Numer                  </label> <FormInput :value="numer" auto />
     <div></div>
     <QueryViewerAdvOpenBtn 

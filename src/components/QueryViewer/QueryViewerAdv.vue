@@ -180,14 +180,42 @@ function init_columns_sizes() {
     });
 }
 
+/////////////////// EVENT HANDLERS (indicator) ///////////////////////////////
 
-const current_hovered_row_i = ref(-1);
-function handle_row_hover(row_i) {
-    current_hovered_row_i.value = row_i;
+/**@type {import('vue').Ref<HTMLElement | undefined>} */
+const indicator_ref = ref();
+
+function move_indicator(element) {
+    const indicator_elem = indicator_ref.value;
+    if(!indicator_elem) return;
+    if(!element) {
+        indicator_elem.style.top = '';
+        indicator_elem.style.height = '0px';
+        return;
+    }
+    const top    = element.offsetTop;
+    const height = element.clientHeight;
+    indicator_elem.style.top    = top+'px';
+    indicator_elem.style.height = height+'px';
 }
-function handle_row_unhover(row_i) {
-    if(current_hovered_row_i.value === row_i){
-        current_hovered_row_i.value = -1;
+
+let current_hovered_row_i = -1;
+/**
+ * @param {Event} event 
+ * @param {number} row_i 
+ */
+function handle_row_hover(event, row_i) {
+    current_hovered_row_i = row_i;
+    move_indicator(event.target);
+}
+/**
+ * @param {Event} event 
+ * @param {number} row_i 
+ */
+function handle_row_unhover(event, row_i) {
+    if(current_hovered_row_i === row_i){
+        current_hovered_row_i = -1;
+        move_indicator(null);
     }
 }
 
@@ -281,6 +309,7 @@ onUnmounted(() => {
 <template>
 
     <div class="form_container">
+
         <QuerySourceOffsetScroller simple
         :src="src"
         :step="scroller_limit"
@@ -290,20 +319,18 @@ onUnmounted(() => {
         :full_limit="scroller_limit"
         />
 
-        <component :is="props.inbeded ? 'div' : 'form'" class="form_content" ref="container_ref" @wheel.capture="handle_scroll" :class="{enable_scroll: src.changed, selectable: props.selectable}">
+        <component onsubmit="return false" :is="props.inbeded ? 'div' : 'form'" class="form_content" ref="container_ref" @wheel.capture="handle_scroll" :class="{enable_scroll: src.changed, selectable: props.selectable}">
             <div class="table_container" :class="{disable_table_search}">
-
                 <div class="table_column iterators">
                     <div class="header" ref="row_ref"> </div>
                     <div class="header">#</div>
                     <div class="data" v-for="(row, row_i) in result_rows"
                             :class="{
-                                hovered: current_hovered_row_i === row_i,
                                 deleted:  row.deleted,
                                 inserted: row.inserted,
                             }"
-                            @pointerleave="handle_row_unhover(row_i)"
-                            @pointerenter="handle_row_hover  (row_i)" 
+                            @pointerleave="e => handle_row_unhover(e, row_i)"
+                            @pointerenter="e => handle_row_hover  (e, row_i)" 
                             @pointerdown="e => handle_select_down(row_i, true, e)"
                             @pointerup="e => handle_select_up(row_i, true, e)">
                         <img class="delete_button button" 
@@ -338,12 +365,11 @@ onUnmounted(() => {
                             :key="src.dataset.get_unique_key(col_i) + '_' + row_i" 
                             class="data data_cell" v-for="(row, row_i) in result_rows"
                             :class="{
-                                hovered: current_hovered_row_i === row_i,
                                 deleted:  row.deleted,
                                 inserted: row.inserted,
                             }"
-                            @pointerleave="handle_row_unhover(row_i)"
-                            @pointerenter="handle_row_hover  (row_i)" 
+                            @pointerleave="e => handle_row_unhover(e, row_i)"
+                            @pointerenter="e => handle_row_hover  (e, row_i)" 
                             @pointerdown="e => handle_select_down(row_i, false, e)"
                             @pointerup="e => handle_select_up(row_i, false, e)"
                             :value="row.get(col_name)"
@@ -353,6 +379,7 @@ onUnmounted(() => {
                             :readonly="!props.saveable || columns_display_props[col_i].readonly"
                         />
                 </div>
+                <div class="indicator" ref="indicator_ref"></div>
             </div>
         </component>
     </div>
@@ -376,9 +403,20 @@ onUnmounted(() => {
     }
 
     .table_container {
+        position: relative;
         display: flex;
         flex-direction: row;
         align-items: stretch;
+    }
+    .indicator {
+        user-select: none;
+        pointer-events: none;
+        position: absolute;
+        left: 0px;
+        right: 0px;
+        height: 0ch;
+        background-color: #00fff2;
+        opacity: 10%;
     }
 
     .table_column {

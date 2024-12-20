@@ -136,15 +136,15 @@ defineExpose({
         <option value="-1"></option>
     </select>
     <div class="control">
-        <button @click="perform_select()">SELECT</button>
-        <button @click="perform_insert()">INSERT</button>
-        <button @click="perform_execute()">EXE1</button>
-        <button @click="perform_execute_batch()">EXECUTE</button>
-        <button @click="open()">OPEN</button>
-        <button @click="save()">SAVE</button>
-        <button @click="export_csv()">EXPORT CSV</button>
-        <button @click="import_csv()">IMPORT CSV</button>
-        <button @click="close()">CLOSE</button>
+        <button type="button" @click="perform_select()">SELECT</button>
+        <button type="button" @click="perform_insert()">INSERT</button>
+        <button type="button" @click="perform_execute()">EXE1</button>
+        <button type="button" @click="perform_execute_batch()">EXECUTE</button>
+        <button type="button" @click="open()">OPEN</button>
+        <button type="button" @click="save()">SAVE</button>
+        <button type="button" @click="export_csv()">EXPORT CSV</button>
+        <button type="button" @click="import_csv()">IMPORT CSV</button>
+        <button type="button" @click="close()">CLOSE</button>
     </div>
     <span v-if="ipc.state.db_is_open" >{{ ipc.state.db_path }} </span>
     <p :style="{color: last_status_success ? 'green' : 'red'}">{{last_status_message}}</p>

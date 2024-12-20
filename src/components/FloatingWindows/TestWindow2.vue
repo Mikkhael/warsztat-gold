@@ -48,9 +48,9 @@ onMounted(() => {
     <p>{{ props.text }}</p>
     <p>ZINDEX: <input type="number" step="1" :value="aha[0]" @change="update_aha($event)"></p>
 
-    <button @click="minimize_self()">MINIMIZE</button>
-    <button @click="close_self(false)">CLOSE</button>
-    <button @click="close_self(true)">CLOSE FORCE</button>
+    <button type="button" @click="minimize_self()">MINIMIZE</button>
+    <button type="button" @click="close_self(false)">CLOSE</button>
+    <button type="button" @click="close_self(true)">CLOSE FORCE</button>
 
 </template>
 

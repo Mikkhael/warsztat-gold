@@ -49,8 +49,8 @@ function post_random(on_main = false) {
 
 <template>
 
-    <button @click="post_random(false)" >Post Random</button>
-    <button @click="post_random(true)" >Post Random MAIN</button>
+    <button type="button" @click="post_random(false)" >Post Random</button>
+    <button type="button" @click="post_random(true)" >Post Random MAIN</button>
 
     <CornerMsgContainer :manager="manager" class="msg_container"/>
 

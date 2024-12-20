@@ -38,12 +38,14 @@ import fs from "fs"
  * }} JsonStructure
  */
 
+
 /**@param {TabDefinition} tab */
 function convert_table_def(tab, noview = false){
-    const name_original  = escape(tab.name);
-    const name_migration = escape(tab.name + '_migration');
-    const name_csv_view  = escape(tab.name + '_csv_view');
-    const name_trigger   = escape(tab.name + '_dec_insert_trigger');
+    const name_original    = escape(tab.name);
+    const name_migration   = escape(tab.name + '_migration');
+    const name_csv_view    = escape(tab.name + '_csv_view');
+    const name_trigger_ins = escape(tab.name + '_dec_insert_trigger');
+    const name_trigger_upd = escape(tab.name + '_dec_update_trigger');
 
     const columns_definition = tab.cols.map(convert_column_def)
                                        .map(x => '  ' + x)
@@ -66,7 +68,8 @@ ALTER TABLE ${name_migration} RENAME TO ${name_original};`
     });
 
 
-    const create_trigger_header = `DROP TRIGGER IF EXISTS ${name_trigger}; CREATE TRIGGER ${name_trigger} AFTER INSERT ON ${name_original} BEGIN\n   UPDATE ${name_original} SET `;
+    const create_trigger_header_ins = `DROP TRIGGER IF EXISTS ${name_trigger_ins}; CREATE TRIGGER ${name_trigger_ins} AFTER INSERT ON ${name_original} BEGIN\n   UPDATE ${name_original} SET `;
+    // const create_trigger_header_upd = `DROP TRIGGER IF EXISTS ${name_trigger_upd}; CREATE TRIGGER ${name_trigger_upd} AFTER UPDATE ON ${name_original} BEGIN\n   UPDATE ${name_original} SET `;
     const create_trigger_body   = tab.cols.filter(c => c.type === 'DECIMAL')
             .map(c => {
                 const col_name = escape(c.name);
@@ -74,11 +77,16 @@ ALTER TABLE ${name_migration} RENAME TO ${name_original};`
             });
     const create_trigger_footer = ` WHERE ROWID = new.ROWID;\nEND;`;
 
-    const triggers = create_trigger_body.length === 0 ? [] : [[
-        create_trigger_header,
+    const triggers_ins = create_trigger_body.length === 0 ? [] : [[
+        create_trigger_header_ins,
         create_trigger_body.join(', '),
         create_trigger_footer
     ].join('')];
+    // const triggers_upd = create_trigger_body.length === 0 ? [] : [[
+    //     create_trigger_header_upd,
+    //     create_trigger_body.join(', '),
+    //     create_trigger_footer
+    // ].join('')];
 
     const all_cols_names = tab.cols.map(c => escape(c.name)).join(', ');
     const create_view_header = `CREATE VIEW ${name_csv_view} (${all_cols_names}) AS SELECT `;
@@ -91,7 +99,8 @@ ALTER TABLE ${name_migration} RENAME TO ${name_original};`
         create_table_footer,
         '',
         ...indexes,
-        ...triggers,
+        ...triggers_ins,
+        // ...triggers_upd,
         ...(noview ? [] : [
             create_view_header,
             create_view_body,
@@ -134,6 +143,7 @@ function convert_column_def(col) {
         } break;
         case "DECIMAL":
             if(col.targ !== '19,4') throw new Error('Invalid DECIMAL size: ' + col.name);
+            checks.push(`decimal(${name}) IS ${name}`)
             checks.push(`decimal_cmp(${name},"922337203685477,5808") < 0`);
             checks.push(`decimal_cmp(${name},"-922337203685477,5808") > 0`);
             check_allow_null = true;

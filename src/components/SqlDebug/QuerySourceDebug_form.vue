@@ -62,7 +62,7 @@ function handle_error(err) {
 
             <!-- <p><textarea v-model="src1_res"></textarea></p> -->
 
-            <form :class="{disabled: src.disabled.value, empty: src.is_empty.value}">
+            <form onsubmit="return false" :class="{disabled: src.disabled.value, empty: src.is_empty.value}">
                 <slot :data="props.src.dataset" ></slot>
 
                 <QuerySourceOffsetScroller 

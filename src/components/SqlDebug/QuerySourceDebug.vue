@@ -214,10 +214,10 @@ defineExpose({
 	<div>
 
         <input type="text" v-model="mem_leak_reps">
-        <button @click="test_mem_leaks(false)" >TEST MEM LEAKS safe</button>
-        <button @click="test_mem_leaks(true)" >TEST MEM LEAKS</button>
-        <button @click="disconnect_tabs" >DISC TABS</button>
-        <button @click="disconnect_tabs2" >DISC TABS 2</button>
+        <button type="button" @click="test_mem_leaks(false)" >TEST MEM LEAKS safe</button>
+        <button type="button" @click="test_mem_leaks(true)" >TEST MEM LEAKS</button>
+        <button type="button" @click="disconnect_tabs" >DISC TABS</button>
+        <button type="button" @click="disconnect_tabs2" >DISC TABS 2</button>
 
         <p>.</p>
         <p>KTO:   <input v-model="kto_ref_raw"></p>

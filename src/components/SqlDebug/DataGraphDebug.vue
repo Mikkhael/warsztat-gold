@@ -192,8 +192,8 @@ new_node( 'Q3c2',    ['Q3b', 'Q3']);
             </div>
         </div>
 
-        <button @click="clear_expired" >CLEAR EXPIRED</button>
-        <button @click="clear_updated" >CLEAR UPDATED</button>
+        <button type="button" @click="clear_expired" >CLEAR EXPIRED</button>
+        <button type="button" @click="clear_updated" >CLEAR UPDATED</button>
 
     </div>
 

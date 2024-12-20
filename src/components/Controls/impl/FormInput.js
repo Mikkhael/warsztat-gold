@@ -4,12 +4,12 @@
 
 import { computed, reactive, toRefs } from 'vue';
 import { ChangableValueLike, Column, FormChangebleValue } from '../../Dataset';
-import { proxies_types } from './utils';
+import { format_decimal, get_decimal_parts, is_decimal, parse_decimal } from '../../../utils';
 
 
 /**
  * 
- * @typedef {"integer" | "number" | "decimal" | "boolean" | "date" | "datetime" | "datetime-local" | "text" } FormInputType
+ * @typedef {"integer" | "number" | "decimal" | "boolean" | "date" | "datetime" | "datetime-local" | "text" | "money" } FormInputType
  * @typedef {{type?: FormInputType, auto?: boolean, value: ChangableValueLike, readonly: boolean, nonull: boolean, len?: number, hints: any[]}} PropsType 
  */
 
@@ -76,6 +76,7 @@ function use_FormInput(props) {
 
     const auto_params = auto_params_from_props(props);
 
+    const listeners  = reactive(/**@type {Object.<string, (...any) => any>} */({}));
     const attributes = reactive(/**@type {object} */({}));
     attributes.disabled   = props.readonly;
     if(auto_params.nonull !== true)      attributes.nullable  = true;
@@ -83,6 +84,24 @@ function use_FormInput(props) {
     if(auto_params.len    !== undefined) attributes.maxlength = auto_params.len;
     if(auto_params.min    !== undefined) attributes.min = auto_params.min;
     if(auto_params.max    !== undefined) attributes.max = auto_params.max;
+
+
+    if(auto_params.type === 'decimal') {
+        listeners.change = (event) => {
+            const input = event.target?.value?.toString() ?? null;
+            if(input === null) {
+                event.target.value = '';
+                value.set_local(null);
+                console.log("!DECIMAL SETTING NULL", input);
+            } else {
+                const formated = format_decimal(input) ?? input;
+                const parsed   = parse_decimal(formated) ?? input;
+                event.target.value = formated;
+                value.set_local(parsed);
+                console.log("!DECIMAL SETTING ", input, formated, parse_decimal(formated), parsed);
+            }
+        }
+    }
 
     const custom_validity_message = computed(() => {
         const local      = value.get_local();
@@ -96,11 +115,12 @@ function use_FormInput(props) {
         return '';
     });
     
-    const proxy_type = apply_correct_attributes_and_proxy_based_on_type(auto_params.type ?? 'text', attributes);
+    const proxy_type = apply_correct_attributes_and_proxy_based_on_type(auto_params.type ?? 'text', attributes, listeners);
     
+
     const local_proxy = computed({
         get()  {return proxy_type.get(value.get_local());},
-        set(x) {value.set_local(proxy_type.set(x));}
+        set(x) {proxy_type.set && value.set_local(proxy_type.set(x));}
     });
 
     const res = reactive({
@@ -108,6 +128,7 @@ function use_FormInput(props) {
         cached: value.get_cached_ref(),
         changed: value.changed,
         attributes,
+        listeners,
         local_proxy,
         custom_validity_message
     });
@@ -119,8 +140,9 @@ function use_FormInput(props) {
  * 
  * @param {FormInputType} type 
  * @param {object} attributes 
+ * @param {object} listeners 
  */
-function apply_correct_attributes_and_proxy_based_on_type(type, attributes){
+function apply_correct_attributes_and_proxy_based_on_type(type, attributes, listeners){
     switch(type){
         case 'number': {
             attributes.type = "number";
@@ -133,8 +155,9 @@ function apply_correct_attributes_and_proxy_based_on_type(type, attributes){
             return proxies_types.empty_as_null;
         }
         case 'decimal': {
-            attributes.type = "text";
-            return proxies_types.empty_as_null;
+            attributes.type  = "text";
+            attributes.right = true;
+            return proxies_types.decimal_standard_no_set;
         }
         case 'boolean': {
             attributes.type = 'number';
@@ -168,25 +191,57 @@ function apply_correct_attributes_and_proxy_based_on_type(type, attributes){
 }
 
 
+// get(x) - how to display "x"
+// set(x) - how to parse inputed "x"
+const proxies_types = {
+    // By default, treat setting value to empty string as 'null' (and reading null as '')
+    empty_as_null: {
+        get(x) { return x === null ? ''   : x; },
+        set(x) { return x === ''   ? null : x; }
+    },
+    // Display "true" as 1, false an "0", null as empty
+    boolean_as_num: {
+        get(x) { return x === null ? ''   : (x ? '1' : '0'); },
+        set(x) { return x === ''   ? null : x !== 0; }
+    },
+    // Dont use any null elision (as above)
+    pass: {
+        get(x) { return x; },
+        set(x) { return x; }
+    },
+    // Wszystkie wartośći z MDB są w formacie YYYY-MM-DD HH:MM:SS. type="date" zwraca "YYYY-MM-DD"
+    dateYYYY_MM_DD: {
+        get(x) { return x === null ? '' : x.toString().slice(0, 10); },        // usuń przy wyświetlaniu czas
+        set(x) { return (x === '' || x === null) ? null : (x + ' 00:00:00'); } // dodaj czas przy nadpisaniu
+    },
+    // decimal_standard: {
+    //     get(x) { return x === null ? ''   : (format_decimal(x.toString()) ?? x.toString()); },
+    //     set(x) { return x === ''   ? null : (parse_decimal (x.toString()) ?? x.toString()); }
+    // }
+    decimal_standard_no_set: {
+        get(x) { console.log("!DECIMAL GETTING ", x, x === null ? '' : format_decimal(x.toString()));
+                 return x === null ? ''   : format_decimal(x.toString()) ?? x.toString(); },
+    },
+};
+
 
 function check_decimal(/**@type {string} */ value) {
-    if(value === '') return '';
-    const match = value.match(/^[\+\-]?(\d+)(?:\.(\d+))?$/);
-    // console.log(match);
-    if(match === null) {
+    // if(value === '') return '';
+    if(!is_decimal(value)) {
         return 'Wartośc musi mieć postać liczby, z ewentualnym seperatorem dziesiętnym';
     }
-    const whole = match[1];
-    const decim = match[2] || '0';
+    const parts   = get_decimal_parts(value) ?? ['0',''];
+    let [whole, decim] = parts;
+    whole = whole.replace('-', '');
     const res = [];
     if(decim.length > 4) {
         res.push('Cyfr dziesiętnych po przecinku może być co najwyżej 4');
     }
     // "922337203685477,5808"
-    if((whole.length >  '922337203685477'.length) ||
+    if( (whole.length >  '922337203685477'.length) ||
         (whole.length == '922337203685477'.length && whole > '922337203685477') ||
-        (whole == '922337203685477' && decim >= `5808`)) {
-        res.push('Wartość musi mieścić się w zakresie +/-922337203685477,5808');
+        (whole == '922337203685477' && decim >= `5807`)) {
+        res.push('Wartość musi mieścić się w zakresie +/-922337203685477,5807');
     }
     if(res.length === 0) return '';
     return res.join('\n');

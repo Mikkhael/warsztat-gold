@@ -65,7 +65,7 @@ defineExpose({
 
     <div class="form_container" :class="src.form_style.value">
 
-        <form class="form_content form" :ref="e => src.assoc_form(e)">
+        <form onsubmit="return false" class="form_content form" :ref="e => src.assoc_form(e)">
             <label class="label">Marka      </label>   <FormInput :readonly="props.readonly" :value="car_marka"    auto/>
             <label class="label">Model      </label>   <FormInput :readonly="props.readonly" :value="car_model"    auto/>
             <label class="label">Nr Rej.    </label>   <FormInput :readonly="props.readonly" :value="car_nrrej"    auto/>
