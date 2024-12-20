@@ -89,8 +89,9 @@ const id_zlecenia = RefChangableValue.from_sqlvalue(param_id_zlecenia);
     src_list.auto_add_column("max rowid", {sql: "max("+OBR_TAB.rowid.get_full_sql()+")"});
     src_list.auto_add_column(CZ_COLS.numer_części, {display: "Numer"});
     src_list.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa", width: 10});
-    src_list.auto_add_column("last_cena_netto_sprz",  {sql:"ifnull("+OBR_COLS.cena_netto_sprzedaży.get_full_sql()+",'0.00')", display: "Netto Ostatnia Sprzedaży"});
-    src_list.auto_add_column("last_cena_netto",       {sql:"ifnull("+OBR_COLS.cena_netto.get_full_sql()          +",'0.00')", display: "Netto Ostatnia"});
+    // TODO allow for assoc_col on non-local columns
+    src_list.auto_add_column("last_cena_netto_sprz",  {display: "Netto Ostatnia Sprzedaży", sql:"ifnull("+OBR_COLS.cena_netto_sprzedaży.get_full_sql()+",'0.00')", input_props: {type: 'decimal'} });
+    src_list.auto_add_column("last_cena_netto",       {display: "Netto Ostatnia",           sql:"ifnull("+OBR_COLS.cena_netto.get_full_sql()          +",'0.00')", input_props: {type: 'decimal'} });
 //     return src_list;
 // }
 src.add_aux_query(src_list);

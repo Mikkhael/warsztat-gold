@@ -4,7 +4,7 @@
 
 import { computed, reactive, toRefs } from 'vue';
 import { ChangableValueLike, Column, FormChangebleValue } from '../../Dataset';
-import { format_decimal, get_decimal_parts, is_decimal, parse_decimal } from '../../../utils';
+import { format_decimal, is_decimal, parse_decimal_adv, parse_decimal } from '../../../utils';
 
 
 /**
@@ -94,11 +94,11 @@ function use_FormInput(props) {
                 value.set_local(null);
                 console.log("!DECIMAL SETTING NULL", input);
             } else {
-                const formated = format_decimal(input) ?? input;
+                const formated = format_decimal(input)   ?? input;
                 const parsed   = parse_decimal(formated) ?? input;
                 event.target.value = formated;
                 value.set_local(parsed);
-                console.log("!DECIMAL SETTING ", input, formated, parse_decimal(formated), parsed);
+                console.log("!DECIMAL SETTING ", input, formated, parse_decimal(formated), parse_decimal_adv(input));
             }
         }
     }
@@ -230,20 +230,20 @@ function check_decimal(/**@type {string} */ value) {
     if(!is_decimal(value)) {
         return 'Wartośc musi mieć postać liczby, z ewentualnym seperatorem dziesiętnym';
     }
-    const parts   = get_decimal_parts(value) ?? ['0',''];
-    let [whole, decim] = parts;
-    whole = whole.replace('-', '');
+    const parts   = parse_decimal_adv(value) ?? ['0', ''];
+    let [whole, frac] = parts;
     const res = [];
-    if(decim.length > 4) {
+    if(frac.length > 4) {
         res.push('Cyfr dziesiętnych po przecinku może być co najwyżej 4');
     }
     // "922337203685477,5808"
-    if( (whole.length >  '922337203685477'.length) ||
-        (whole.length == '922337203685477'.length && whole > '922337203685477') ||
-        (whole == '922337203685477' && decim >= `5807`)) {
+    const limit_whole = '922337203685477';
+    const limit_frac  = '5808';
+    if( (whole.length >  limit_whole.length) ||
+        (whole.length == limit_whole.length && whole >  limit_whole) ||
+        (whole        == limit_whole        && frac  >= limit_frac)) {
         res.push('Wartość musi mieścić się w zakresie +/-922337203685477,5807');
     }
-    if(res.length === 0) return '';
     return res.join('\n');
 }
 

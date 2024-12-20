@@ -82,7 +82,7 @@ class FormQuerySourceBase extends QuerySource {
 
     /// OVERWRITES DataGraph //////////////////////
     check_changed_impl() {
-        return !this.is_empty.value && this.get_dataset()?.changed.value;
+        return this.get_dataset()?.force_changed.value || (!this.is_empty.value && this.get_dataset()?.changed.value);
     }
 
     async save_impl(force = false) {
@@ -565,7 +565,8 @@ class FormDataSetBase {
     constructor() {
         /**@type {FormQuerySourceBase?} */
         this.query_src = null;
-        this.changed = computed(() => this.check_changed());
+        this.changed       = computed(() => this.check_changed());
+        this.force_changed = computed(() => this.check_changed_forced());
         /**@type {FormDataSetColumnDef[]} */
         this._columns_defs = [];
         /**@type {Object.<string, number>} */
@@ -668,9 +669,10 @@ class FormDataSetBase {
 
     /// TO OVERRIDE ///
     /**@returns {boolean} */
-    check_changed() { throw new Error('not implemented'); }
-    refresh()       { throw new Error('not implemented'); }
-    reset()         { throw new Error('not implemented'); }
+    check_changed()   { throw new Error('not implemented'); }
+    check_changed_forced() { return false; }
+    refresh()         { throw new Error('not implemented'); }
+    reset()           { throw new Error('not implemented'); }
     /**@returns {Promise<number>} */
     async perform_save_notransaction(forced = false) {
         throw new Error('not implemented');
@@ -699,6 +701,7 @@ class FormDataSetFull_LocalRow {
     }
 
     check_outdated() {
+        // console.log("CHECKING OUTDATED", this.deleted, this.inserted, this.values);
         return this.deleted  ||
                this.inserted || 
                this.values.some(v => v.changed.value);
@@ -903,7 +906,8 @@ class FormDataSetFull extends FormDataSetBase {
 
 
     //// OVERRIDE /////
-    check_changed() { return this.local_rows.value.some(row => row.check_outdated()); }
+    check_changed()        { return this.local_rows.value.some(row => row.check_outdated()); }
+    check_changed_forced() { return this.local_rows.value.some(row => row.inserted); }
     refresh() {
         this._key_base.value += 1;
         const new_local_rows = FormDataSetFull._rebuild_from_query_full_result(this.query_src?.full_result.value ?? [[],[]], this);

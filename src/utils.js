@@ -410,8 +410,18 @@ function format_date_str_local(/**@type {string} */ date_str) {
 
 ///////////////// DECIMAL //////////////
 
-const parse_decimal_regex = /^[^\d\-]*(\-?\d+(?:[\.\,]\d+)?)\D*$/;
-const decimal_regex = /^\-?\d+(?:[\.]\d+)?$/;
+// list of non-digits, non minus
+// optional minus ()
+// string of zeros
+// string of digits dec ()
+// optional
+//   separator
+//   string of digits frac ()
+// list of non-digits
+const decimal_parse_adv_regex = /^[^\d\-]*(\-)?0*(\d*)(?:[\,\.](\d*))?\D*$/;
+
+const parse_decimal_regex = /^[^\d\-]*(?:0(?=\d))*(\-?\d+(?:[\.\,]\d+)?)\D*$/;
+const decimal_regex = /^\-?\d+(?:\.\d+)?$/;
 const decimal_parts_regex = /^\+(\-?\d+)(\.\d+)?$/;
 const decimal_neg_zero_regex = /^\-0+(?:\.0*)?$/;
 function is_decimal(/**@type {string?} */ value) {return !!value?.match(decimal_regex);}
@@ -420,19 +430,57 @@ function is_decimal(/**@type {string?} */ value) {return !!value?.match(decimal_
  * @param {string?} source_string
  */
 function parse_decimal(source_string) {
-	const match_result = source_string?.match(parse_decimal_regex);
-	if(!match_result || !match_result[1]) return null;
-	return match_result[1].trim().replace(',','.');
+	const parts = parse_decimal_adv(source_string);
+	if(!parts) return null;
+	return parts[2];
 }
 /**
- * @param {string?} decimal_value 
- * @returns 
+ * 
+ * @param {string?} source_string 
+ * @returns {[whole: string, frac: string, full: string, sign: string, sep: string, is_zero: boolean]?}
  */
-function get_decimal_parts(decimal_value) {
-	const match_result = decimal_value?.match(decimal_parts_regex);
-	if(!match_result) return null;
-	return [match_result[1] || '0', match_result[2] || '0'];
+function parse_decimal_adv(source_string) {
+	const match_res = source_string?.match(decimal_parse_adv_regex);
+	if(!match_res) return null;
+	const whole   = match_res[2] === '' ? '0' : match_res[2];
+	const frac    = match_res[3] ??  '';
+	const is_zero = whole.match(/^0*$/) && frac.match(/^0*$/);
+	const is_neg  = match_res[1] === '-' && !is_zero;
+	const sign = (is_neg ? '-' : '');
+	const sep  = (frac.length > 0 ? '.' : '');
+	const full = sign + whole + sep + frac;
+	return [whole, frac, full, sign, sep, !!is_zero];
 }
+// function parse_decimal(source_string) {
+// 	if(source_string === '') return '0';
+// 	if(!source_string) return null;
+// 	let sign_set = false;
+// 	let has_frac = false; 
+// 	let sign  = '';
+// 	let whole = '';
+// 	let frac  = '';
+// 	for(const ch of source_string) {
+// 		if(!sign_set && (ch === '+' || ch === '-')) {
+// 			sign_set = true;
+// 			if(ch === '-') sign = '-';
+// 			continue;
+// 		}
+// 		if(ch === '.' || ch === ',') {
+// 			sign_set = true;
+// 			whole += frac;
+// 			frac = '';
+// 			continue;
+// 		}
+// 		if(ch < '0' || ch > '9') continue;
+// 		sign_set = true;
+// 		if(has_frac) {
+// 			frac  += ch;
+// 		} else {
+// 			whole += ch;
+// 		}
+// 	}
+// }
+
 /**
  * Appends sufix and sets precision, if input is a valid decimal string. Otherwise returns null
  * @param {string} source_string 
@@ -440,28 +488,19 @@ function get_decimal_parts(decimal_value) {
  * @param {string} sufix 
  */
 function format_decimal(source_string, precision = 2, sufix = " zł") {
-	const decimal_value = parse_decimal(source_string);
-	if(!decimal_value) return null;
-	let parts = decimal_value.split('.');
-	let int_part  = parts[0] || '0';
-	let frac_part = parts[1] || '0';
-	let res_numeric;
+	const parse_res = parse_decimal_adv(source_string);
+	if(!parse_res) return null;
+	let [whole, frac, full, sign, sep, zero] = parse_res;
 	if(precision <= 0) {
-
-		res_numeric = int_part;
-	} else {
-		if(frac_part.length > precision) {
-			frac_part = frac_part.slice(0, precision);
-		}
-		if(frac_part.length < precision) {
-			frac_part += '0'.repeat(precision - frac_part.length);
-		}
-		res_numeric = int_part + '.' + frac_part
+		return sign + whole + sufix;
 	}
-	if(res_numeric.match(decimal_neg_zero_regex)) {
-		res_numeric = res_numeric.slice(1);
+	if(frac.length > precision) {
+		frac = frac.slice(0, precision);
 	}
-	return res_numeric + sufix;
+	if(frac.length < precision) {
+		frac += '0'.repeat(precision - frac.length);
+	}
+	return sign + whole + '.' + frac + sufix;
 }
 
 
@@ -585,7 +624,7 @@ export {
 	format_date_str_local,
 
 	is_decimal,
-	get_decimal_parts,
+	parse_decimal_adv,
 	parse_decimal,
 	format_decimal,
 
