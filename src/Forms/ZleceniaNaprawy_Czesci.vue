@@ -39,7 +39,7 @@ const param_id_zlecenia = param_from_prop(props, 'id_zlecenia');
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {src: new QueryViewerSource(), no_update_on_mounted: true, on_error: handle_err});
 src.set_from_with_deps(OBR_TAB);
 // src.add_join(OBR_COLS.numer_dokumentu, ZLEC_COLS.ID, "LEFT");
-src.add_join(OBR_COLS.numer_cz,        CZ_COLS.numer_części);
+src.add_join(OBR_COLS.numer_cz, CZ_COLS.numer_części, 'LEFT');
 
 src.auto_add_column_synced (OBR_COLS.ID);
 src.auto_add_column_synced (OBR_COLS.rodzaj_dokumentu, {param: "zlec"});

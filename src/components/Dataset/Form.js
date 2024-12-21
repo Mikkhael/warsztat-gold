@@ -748,6 +748,10 @@ class FormDataSetFull extends FormDataSetBase {
          */
         this._computed_values = [];
     }
+
+    poke() {
+        this._key_base.value += 1;
+    }
     
     /**@param {Column | string | number} column */
     computed_value(column, row_index = 0) {
@@ -879,7 +883,7 @@ class FormDataSetFull extends FormDataSetBase {
         }
         // console.log("SWAP " + noninserted_last_index);
         console.log("SWAP");
-        this._key_base.value += 1;
+        this.poke();
         // this.local_rows.value.splice(noninserted_last_index, 1);
         this.local_rows.value.pop();
         return this.add_row_default();
@@ -909,12 +913,12 @@ class FormDataSetFull extends FormDataSetBase {
     check_changed()        { return this.local_rows.value.some(row => row.check_outdated()); }
     check_changed_forced() { return this.local_rows.value.some(row => row.inserted); }
     refresh() {
-        this._key_base.value += 1;
+        this.poke();
         const new_local_rows = FormDataSetFull._rebuild_from_query_full_result(this.query_src?.full_result.value ?? [[],[]], this);
         this.local_rows.value = new_local_rows;
     }
     reset() {
-        this._key_base.value += 1;
+        this.poke();
         this.local_rows.value = [];
     }
     async perform_save_notransaction(forced = false, no_delete = false) {

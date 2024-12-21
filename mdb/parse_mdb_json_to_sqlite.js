@@ -143,7 +143,7 @@ function convert_column_def(col) {
         } break;
         case "DECIMAL":
             if(col.targ !== '19,4') throw new Error('Invalid DECIMAL size: ' + col.name);
-            checks.push(`decimal(${name}) IS ${name}`)
+            checks.push(`(${name} IS decimal(${name}) OR ${name} LIKE (decimal(${name}) || ' z_'))`);
             checks.push(`decimal_cmp(${name},"922337203685477,5808") < 0`);
             checks.push(`decimal_cmp(${name},"-922337203685477,5808") > 0`);
             check_allow_null = true;

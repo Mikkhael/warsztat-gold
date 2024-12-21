@@ -15,6 +15,7 @@ import ReportPreparer from '../Reports/ReportPreparer.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
 
 import ZleceniaNaprawy_Czesci from './ZleceniaNaprawy_Czesci.vue';
+import ZleceniaNaprawy_Robocizna from './ZleceniaNaprawy_Robocizna.vue';
 
 import { ref, computed} from 'vue';
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
@@ -94,6 +95,12 @@ function open_czesci_window() {
         id_zlecenia: param_id_zlec
     });
 }
+function open_robocizna_window() {
+    const title = "Robocizna - Zlecenie nr " + param_id_zlec.get_value();
+    return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Robocizna, {
+        id_zlecenia: param_id_zlec
+    });
+}
 
 defineExpose({
     src
@@ -159,8 +166,7 @@ defineExpose({
                     <div class="buttons">
                         <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
                         <div class="button" @click="open_czesci_window">CZĘŚCI</div>
-                        <!-- <div>Części</div>
-                        <div>Czynności</div> -->
+                        <div class="button" @click="open_robocizna_window">ROBOCIZNA</div>
                     </div>
                 </div>
 
@@ -224,6 +230,12 @@ defineExpose({
         display: flex;
         flex-direction: row;
         justify-content: space-around;
+    }
+    .buttons > * {
+        display: flex;
+        text-align: center;
+        justify-content: center;
+        align-items: center;
     }
 
     :deep(textarea) {

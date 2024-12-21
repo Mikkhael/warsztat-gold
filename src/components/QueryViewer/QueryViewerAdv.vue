@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 
-import { ref, onMounted, onUnmounted, watch, nextTick, unref, compile, computed } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick, unref, compile, computed, reactive } from "vue";
 
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from "../../Forms/FormCommon";
 import { QueryViewerSource } from "./QueryViewer";
@@ -20,6 +20,7 @@ const props = defineProps({
         required: true
     },
     selectable: Boolean,
+    editable:   Boolean,
     insertable: Boolean,
     saveable:   Boolean,
     deletable:  Boolean,
@@ -54,6 +55,34 @@ const src = props.inbeded ? props.src : CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(pr
     // shrink_before_resize: true,
     on_error: handle_err
 });
+
+
+const editable_state = ref(false);
+const editable_custom_btn_def = reactive({
+    name: 'qv_edit',
+    icon: 'edit',
+    class: {
+        indicate: editable_state
+    }
+});
+
+async function handle_scroller_custom_button(name) {
+    console.log("CUSTOM ", name);
+    if(name !== 'qv_edit') return;
+    if(editable_state.value) { // TURN OFF
+        const confirmed = await src.try_perform_and_update_confirmed(() => src.request_refresh());
+        if(confirmed) {
+            editable_state.value = false;
+            src.dataset.poke();
+        }
+    } else { // TURN ON
+        editable_state.value = true;
+        src.dataset.poke();
+    }
+}
+
+const true_selectable = computed(() => props.selectable && !editable_state.value);
+const true_insertable = computed(() => !true_selectable.value && props.insertable);
 
 const row_ref        = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const container_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
@@ -238,8 +267,7 @@ async function handle_select_up(row_i, is_from_col_id = false, /**@type {Pointer
         return;
     }
     last_down_row_i = -1;
-    if(!props.selectable) return;
-    // console.log("SELECTING...",  is_from_col_id, src.offset.value, row_i, props.selectable);
+    if(!true_selectable.value) return;
     const cols = src.full_result.value?.[1] ?? [];
     const row  = result_rows.value[row_i];
     emit("select", cols, row, src.offset.value + row_i);
@@ -315,11 +343,13 @@ onUnmounted(() => {
         :step="scroller_limit"
         @error="handle_err"
         :saveable="props.saveable"
-        :insertable="props.insertable"
+        :insertable="true_insertable"
         :full_limit="scroller_limit"
+        :custom_buttons="props.editable ? [editable_custom_btn_def] : undefined"
+        @custom="handle_scroller_custom_button"
         />
 
-        <component onsubmit="return false" :is="props.inbeded ? 'div' : 'form'" class="form_content" ref="container_ref" @wheel.capture="handle_scroll" :class="{enable_scroll: src.changed, selectable: props.selectable}">
+        <component onsubmit="return false" :is="props.inbeded ? 'div' : 'form'" class="form_content" ref="container_ref" @wheel.capture="handle_scroll" :class="{enable_scroll: src.changed, selectable: true_selectable}">
             <div class="table_container" :class="{disable_table_search}">
                 <div class="table_column iterators">
                     <div class="header" ref="row_ref"> </div>
@@ -376,7 +406,7 @@ onUnmounted(() => {
                             auto
                             nospin
                             v-bind="unref(columns_display_props[col_i].input_props)"
-                            :readonly="!props.saveable || columns_display_props[col_i].readonly"
+                            :readonly="!props.saveable || true_selectable || columns_display_props[col_i].readonly"
                         />
                 </div>
                 <div class="indicator" ref="indicator_ref"></div>

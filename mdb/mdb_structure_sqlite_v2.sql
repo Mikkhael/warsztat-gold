@@ -163,7 +163,7 @@ DROP TABLE IF EXISTS `faktura szczegóły chwilówka_migration`; CREATE TABLE `f
   `nazwa części lub czynności` TEXT CHECK (length(`nazwa części lub czynności`) <= 50),
   `jednostka` TEXT CHECK (length(`jednostka`) <= 5),
   `ilość` REAL DEFAULT 0,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal(`cena netto`) IS `cena netto` AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `numer` TEXT CHECK (length(`numer`) <= 10)
 ) STRICT;
 DROP VIEW IF EXISTS `faktura szczegóły chwilówka_csv_view`;
@@ -240,7 +240,7 @@ DROP TABLE IF EXISTS `jamar_migration`; CREATE TABLE `jamar_migration` (
   `nazwa części lub czynności` TEXT CHECK (length(`nazwa części lub czynności`) <= 50),
   `jednostka` TEXT CHECK (length(`jednostka`) <= 5),
   `ilość` REAL DEFAULT 0,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal(`cena netto`) IS `cena netto` AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `numer` TEXT CHECK (length(`numer`) <= 10)
 ) STRICT;
 DROP VIEW IF EXISTS `jamar_csv_view`;
@@ -383,11 +383,11 @@ DROP TABLE IF EXISTS `obroty magazynowe_migration`; CREATE TABLE `obroty magazyn
   `ID` INTEGER NOT NULL PRIMARY KEY,
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL NOT NULL,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal(`cena netto`) IS `cena netto` AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL,
   `numer dokumentu` INTEGER DEFAULT 0,
-  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR (decimal(`cena netto sprzedaży`) IS `cena netto sprzedaży` AND decimal_cmp(`cena netto sprzedaży`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto sprzedaży`,"-922337203685477,5808") > 0)) DEFAULT 0
+  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR ((`cena netto sprzedaży` IS decimal(`cena netto sprzedaży`) OR `cena netto sprzedaży` LIKE (decimal(`cena netto sprzedaży`) || ' z_')) AND decimal_cmp(`cena netto sprzedaży`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto sprzedaży`,"-922337203685477,5808") > 0)) DEFAULT 0
 ) STRICT;
 DROP VIEW IF EXISTS `obroty magazynowe_csv_view`;
 CREATE TABlE IF NOT EXISTS `obroty magazynowe` AS SELECT * FROM `obroty magazynowe_migration`;
@@ -505,7 +505,7 @@ FROM `pracownicy`;
 DROP TABLE IF EXISTS `przyjęcia PZ_migration`; CREATE TABLE `przyjęcia PZ_migration` (
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
   `ilość` REAL,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal(`cena netto`) IS `cena netto` AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL DEFAULT 'dosta',
   `numer dokumentu` INTEGER DEFAULT 0
@@ -598,8 +598,8 @@ FROM `sposób zapłaty`;
 DROP TABLE IF EXISTS `sprzedaż_migration`; CREATE TABLE `sprzedaż_migration` (
   `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL UNIQUE,
   `ilość` REAL,
-  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR (decimal(`cena netto sprzedaży`) IS `cena netto sprzedaży` AND decimal_cmp(`cena netto sprzedaży`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto sprzedaży`,"-922337203685477,5808") > 0)),
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal(`cena netto`) IS `cena netto` AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `cena netto sprzedaży` TEXT CHECK (`cena netto sprzedaży` IS NULL OR ((`cena netto sprzedaży` IS decimal(`cena netto sprzedaży`) OR `cena netto sprzedaży` LIKE (decimal(`cena netto sprzedaży`) || ' z_')) AND decimal_cmp(`cena netto sprzedaży`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto sprzedaży`,"-922337203685477,5808") > 0)),
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL,
   `numer dokumentu` INTEGER NOT NULL,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -681,7 +681,7 @@ DROP TABLE IF EXISTS `zlecenia czynności_migration`; CREATE TABLE `zlecenia czy
   `ID zlecenia` INTEGER DEFAULT 0,
   `ID czynności` INTEGER DEFAULT 0,
   `krotność wykonania` REAL DEFAULT 0,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal(`cena netto`) IS `cena netto` AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0
 ) STRICT;
 DROP VIEW IF EXISTS `zlecenia czynności_csv_view`;
 CREATE TABlE IF NOT EXISTS `zlecenia czynności` AS SELECT * FROM `zlecenia czynności_migration`;
@@ -707,7 +707,7 @@ DROP TABLE IF EXISTS `zlecenia gaz_migration`; CREATE TABLE `zlecenia gaz_migrat
   `ID zlecenia` INTEGER DEFAULT 0,
   `ID czynności` INTEGER DEFAULT 0,
   `krotność wykonania` REAL DEFAULT 0,
-  `cena netto` TEXT CHECK (`cena netto` IS NULL OR (decimal(`cena netto`) IS `cena netto` AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0
+  `cena netto` TEXT CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0
 ) STRICT;
 DROP VIEW IF EXISTS `zlecenia gaz_csv_view`;
 CREATE TABlE IF NOT EXISTS `zlecenia gaz` AS SELECT * FROM `zlecenia gaz_migration`;
@@ -735,8 +735,8 @@ DROP TABLE IF EXISTS `zlecenia instalacji gazowej_migration`; CREATE TABLE `zlec
   `ID samochodu` INTEGER DEFAULT 0,
   `data otwarcia` TEXT CHECK (`data otwarcia` IS NULL OR datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
-  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR (decimal(`zysk z części`) IS `zysk z części` AND decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
-  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR (decimal(`zysk z robocizny`) IS `zysk z robocizny` AND decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR ((`zysk z części` IS decimal(`zysk z części`) OR `zysk z części` LIKE (decimal(`zysk z części`) || ' z_')) AND decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR ((`zysk z robocizny` IS decimal(`zysk z robocizny`) OR `zysk z robocizny` LIKE (decimal(`zysk z robocizny`) || ' z_')) AND decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
   `% udziału` INTEGER CHECK (`% udziału` <= 255 AND `% udziału` >= 0) DEFAULT 0,
   `pomocnik 1` TEXT CHECK (length(`pomocnik 1`) <= 30),
@@ -785,8 +785,8 @@ DROP TABLE IF EXISTS `zlecenia naprawy_migration`; CREATE TABLE `zlecenia napraw
   `ID samochodu` INTEGER DEFAULT 0,
   `data otwarcia` TEXT CHECK (`data otwarcia` IS NULL OR datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
-  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR (decimal(`zysk z części`) IS `zysk z części` AND decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
-  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR (decimal(`zysk z robocizny`) IS `zysk z robocizny` AND decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `zysk z części` TEXT CHECK (`zysk z części` IS NULL OR ((`zysk z części` IS decimal(`zysk z części`) OR `zysk z części` LIKE (decimal(`zysk z części`) || ' z_')) AND decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
+  `zysk z robocizny` TEXT CHECK (`zysk z robocizny` IS NULL OR ((`zysk z robocizny` IS decimal(`zysk z robocizny`) OR `zysk z robocizny` LIKE (decimal(`zysk z robocizny`) || ' z_')) AND decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
   `% udziału` INTEGER CHECK (`% udziału` <= 255 AND `% udziału` >= 0) DEFAULT 0,
   `pomocnik 1` TEXT CHECK (length(`pomocnik 1`) <= 30),

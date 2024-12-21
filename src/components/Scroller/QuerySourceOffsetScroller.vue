@@ -4,6 +4,16 @@ import { watch, ref, readonly, toRef, toRefs, computed, onMounted, onUnmounted }
 import { FormQuerySourceBase, FormQuerySourceBaseInsertable, FormQuerySourceFull, QuerySource } from "../Dataset";
 import useMainMsgManager, { MsgManager } from "../Msg/MsgManager";
 
+/**
+ * @typedef {{
+ * 	name: string,
+ *  icon?:  string,
+ *  value?: string,
+ *  class?: Object.<string, boolean>,
+ *  style?: Object.<string, any>, 
+ * }} CustomButtonDef
+ */
+
 const props = defineProps({
 
 	src: {
@@ -32,6 +42,12 @@ const props = defineProps({
 	full_limit: {
 		type: Number,
 		default: 0,
+	},
+
+	custom_buttons: {
+		/**@type {import('vue').PropType<CustomButtonDef[]>} */
+		type: Array,
+		default: []
 	}
 
 	// indicate_save:{
@@ -44,7 +60,8 @@ const props = defineProps({
 const msgManager = useMainMsgManager();
 
 const emit = defineEmits({
-	error(err) {return true;}
+	error(err) {return true;},
+	custom(/**@type {string} */ name) {return true;}
 })
 
 const src_form            = computed(() => props.src instanceof FormQuerySourceBase ? props.src : null);
@@ -108,6 +125,10 @@ async function clicked_save(shiftKey = false) {
 	return true;
 }
 
+function clicked_custom(/**@type {string} */ name) {
+	emit('custom', name);
+}
+
 
 </script>
 
@@ -131,6 +152,13 @@ async function clicked_save(shiftKey = false) {
 	<input type="button" class="btn insert"     @click="clicked_insert().catch(on_error)"  v-if="props.insertable" 
 				:class="{indicate: src_form_insertable?.insert_mode.value}">
 	<div class="spacer"></div>
+	<input type="button" class="btn custom" 
+		v-for="custom_btn in props.custom_buttons"
+		:style="{'background-image': custom_btn.icon ? `url('src/assets/icons/${custom_btn.icon}.svg')` : 'none', ...(custom_btn.style ?? {})}"
+		:value="custom_btn.value ?? ''"
+		:class="custom_btn.class ?? {}"
+		@click="clicked_custom(custom_btn.name)"
+	/>
 	<!-- <span  class="as_input"> | UTD: {{ state.is_bounds_utd }} | EMPTY: {{ state.is_empty }} | </span> -->
 	<input type="button" class="btn save"       @click="e => clicked_save(e.shiftKey).catch(on_error)" v-if="props.saveable" :class="{indicate: props.src.changed.value}">
 </div>
