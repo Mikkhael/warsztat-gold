@@ -379,7 +379,8 @@ legend {
 
   background-color: white;
   color: black;
-  font-family: 'Times New Roman', Times, serif;
+  /* font-family: 'Times New Roman', Times, serif; */
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 4.2mm;
   
   position: relative;
@@ -389,6 +390,10 @@ legend {
   break-after: avoid;
 }
 
+.page .nobreak {
+  break-inside: avoid;
+  break-after:  avoid;
+}
 .page .break{
   break-after: page;
 }
@@ -401,7 +406,7 @@ legend {
 @media print{
   .print_fallback_button,
   .noprint {
-    display: none;
+    display: none !important;
   }
   .over_page {
     padding:      0mm;

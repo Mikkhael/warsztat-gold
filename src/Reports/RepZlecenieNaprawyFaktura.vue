@@ -3,12 +3,12 @@
 
 
 
-import { date_now, format_date_str_local, format_decimal as format_decimal_utils } from '../utils';
+import { date_now, format_date_str_local, format_decimal as format_decimal_utils, number_to_polish_words, parse_decimal_adv } from '../utils';
 import { FormParamProp, param_from_prop, query_parts_to_string, RefChangableValue } from '../components/Dataset';
 import { RepQuerySourceSingle, RepQuerySourceFull } from './RepCommon';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import { useMainSettings } from '../components/Settings/Settings';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     parent_window: {
@@ -58,6 +58,7 @@ const klie_miasto      = src_main.auto_rep_value(COLS_KLIE.MIASTO);
 const klie_ulica       = src_main.auto_rep_value(COLS_KLIE.ULICA);
 const klie_kod         = src_main.auto_rep_value(COLS_KLIE.KOD_POCZT);
 const klie_nip         = src_main.auto_rep_value(COLS_KLIE.NIP);
+const klie_odbiorca    = src_main.auto_rep_value(COLS_KLIE.odbierający_fakturę);
 
 ////////////// Obroty Source /////////////
 
@@ -86,6 +87,12 @@ const src_obro_total_netto    = src_obro_total.auto_rep_value ("total_netto",  {
 const src_obro_total_vat      = src_obro_total.auto_rep_value ("total_vat",    {sql: "decimal_mul(-0.23, decimal_sum(decimal_mul("+COLS_OBRO.ilość.get_full_sql()+","+COLS_OBRO.cena_netto_sprzedaży.get_full_sql()+")))"});
 const src_obro_total_brutto   = src_obro_total.auto_rep_value ("total_brutto", {sql: "decimal_mul(-1.23, decimal_sum(decimal_mul("+COLS_OBRO.ilość.get_full_sql()+","+COLS_OBRO.cena_netto_sprzedaży.get_full_sql()+")))"});
 
+const total_brutto_parts = computed(() => {
+    const formated = format_decimal(src_obro_total_brutto.value ?? '0', false);
+    const [whole, frac, full, sign] = parse_decimal_adv(formated) ?? ['0', '00', '0.00', ''];
+    return [sign + whole, frac];
+});
+
 ////////////////// OTHER /////////////////////////////
 
 const id_zlecenia = RefChangableValue.from_sqlvalue(id_zlecenia_param);
@@ -97,11 +104,11 @@ const CONST_VAT_PROC = (CONST_VAT*100) + '%';
 /**
  * @param {any} string 
  */
-function format_decimal(string) {
+function format_decimal(string, with_zl = false) {
     console.log("FORMATTING", string);
     string = string?.toString();
     if(typeof string != 'string') return '';
-    return format_decimal_utils(string, 2, '', ',') ?? '';
+    return format_decimal_utils(string, 2, with_zl ? ' zł' : '', ',') ?? '';
 }
 
 const date_now_ref = ref('');
@@ -204,6 +211,48 @@ defineExpose({
             </table>
 
         </div>
+        
+        <div class="list_summary">
+
+            <div class="spacer_left"></div>
+            <table>
+                <tr class="theader">
+                    <th>wartość netto:</th>
+                    <th>stawka<br>VAT</th>
+                    <th>VAT</th>
+                    <th>wartość brutto:</th>
+                </tr>
+                <tr
+                    class="tdata"
+                >
+                    <td class="r">{{ format_decimal( src_obro_total_netto, true ) }}</td>
+                    <td class="c">{{ CONST_VAT_PROC }} </td>
+                    <td class="r">{{ format_decimal( src_obro_total_vat, true ) }}</td>
+                    <td class="r">{{ format_decimal( src_obro_total_brutto, true ) }}</td>
+                </tr>
+            </table>
+            <div class="spacer_right"></div>
+
+        </div>
+
+        <div class="summary_footer nobreak">
+            <label>sposób zapłaty:</label> <div class="bold big" >{{ 'gotówka' }}</div>
+            <label>do zapłaty:</label>     <div class="bold vbig">{{ format_decimal( src_obro_total_brutto, true ) }}</div>
+            <label>słownie:</label>        <div></div>
+            <div class="bold big slownie" >{{ number_to_polish_words( total_brutto_parts[0] ) }}</div>
+            <label>groszy:</label>         <div class="bold big" >{{ total_brutto_parts[1] }} / 100</div>
+        </div>
+
+        <div class="signature_footer nobreak">
+            <div class="signature_section">
+                <div class="name">{{ klie_odbiorca }}</div>
+                <div class="info">podpis osoby uprawnionej<br>do odbioru faktury VAT</div>
+            </div>
+            <div class="signature_section">
+                <div class="name">{{ settings_data[`Imię i Nazwisko`] }}</div>
+                <div class="info">podpis osoby uprawnionej<br>do wystawienia faktury VAT</div>
+            </div>
+        </div>
 
     </div>
     </div>
@@ -264,16 +313,64 @@ defineExpose({
         flex-grow: 1;
     }
 
-    
-    .list td {
-        padding: 0px 2px;
+    .list {
+        border-bottom: 1px solid black;
     }
 
-    .list table {
+    .list_summary {
+        display: flex;
+        flex-direction: row;
+    }
+    .list_summary .spacer_left{
+        flex-grow: 3;
+    }
+    .list_summary .spacer_right{
+        flex-grow: 1;
+    }
+    .list_summary table {
+        border-bottom: 1px solid black;
+    }
+    .summary_footer {
+        display: grid;
+        grid-template: auto / auto 1fr;
+        align-items: center;
+        gap: 4px;
+    }
+    .summary_footer label {
+        justify-self: right;
+    }
+    .summary_footer .slownie {
+        grid-column: 1 / -1;
+        border: 1px solid black;
+        border-bottom: none;
+    }
+
+    .signature_footer {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        margin-top: 1cm;
+    }
+    .signature_footer .signature_section .name{
+        font-weight: bold;
+        font-size: 1.2em;
+        border-bottom: 2px dotted black;
+        min-width: 7cm;
+    }
+    .signature_footer .signature_section .info{
+        font-size: 0.8em;
+    }
+
+    table td {
+        padding: 0px 4px;
+    }
+
+    table {
         border-collapse: collapse;
     }
 
-    .theader  {border-bottom: 1px solid black;}
+
+    .list .theader  {border-bottom: 1px solid black;}
     .tdata .l {text-align: left;}
     .tdata .c {text-align: center;}
     .tdata .r {text-align: right;}

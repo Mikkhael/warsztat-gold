@@ -57,25 +57,32 @@ defineExpose({
         
 <div class="printrender" ref="rep_renderer_ref">
 
-    <div class="noprint">
-        <button type="button" onclick="window.print();" class="print_fallback_button"> DRUKUJ </button>
-        Czcionka: <input name="font_size_input" type="number"
-            step="0.2"
-            oninput="document.querySelector('.page').style.fontSize = this.value + 'px'" 
-        />
-        <select onchange="document.querySelector('.page').style.fontFamily = this.value" class="noprint">
-            <option value="Times New Roman"   > Times New Roman   </option>
-            <option value="Arial"             > Arial             </option>
-            <option value="Verdana"           > Verdana           </option>
-            <option value="Tahoma"            > Tahoma            </option>
-            <option value="Trebuchet MS"      > Trebuchet MS      </option>
-            <option value="Georgia"           > Georgia           </option>
-            <option value="Garamond"          > Garamond          </option>
-            <option value="Courier New"       > Courier New       </option>
-            <option value="Brush Script MT"   > Brush Script MT   </option>
-        </select>
-    </div>
+    <button type="button" onclick="window.print();" class="print_fallback_button noprint"> DRUKUJ </button>
     <component ref="rep_ref" :is="props.rep" v-bind="$attrs"/>
+    <div class="noprint options">
+        <h3>Opcje</h3>
+        <div>
+            Rozmiar Czcionki: 
+            <input name="font_size_input" type="number"
+                step="0.2"
+                oninput="document.querySelector('.page').style.fontSize = this.value + 'px'" 
+            />
+        </div>
+        <div>
+            Czcionka: 
+            <select onchange="document.querySelector('.page').style.fontFamily = this.value" class="noprint">
+                <option value="Arial"             > Arial             </option>
+                <option value="Times New Roman"   > Times New Roman   </option>
+                <option value="Verdana"           > Verdana           </option>
+                <option value="Tahoma"            > Tahoma            </option>
+                <option value="Trebuchet MS"      > Trebuchet MS      </option>
+                <option value="Georgia"           > Georgia           </option>
+                <option value="Garamond"          > Garamond          </option>
+                <option value="Courier New"       > Courier New       </option>
+                <option value="Brush Script MT"   > Brush Script MT   </option>
+            </select>
+        </div>
+    </div>
 </div>
 
 
@@ -85,5 +92,14 @@ defineExpose({
 <style scoped>
     .printrender {
         display: none;
+    }
+    .over_page,
+    .options {
+        float: left;
+    }
+    .options {
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
     }
 </style>
