@@ -66,8 +66,12 @@ const kli_kod    = src.auto_rep_value(COLS_K.KOD_POCZT);
 // const pom2       = props.src_zlec.get_ref("pomocnik 2",          );
 // const pom2_p     = props.src_zlec.get_ref("% udziału p2",        );
 
+async function perform_update() {
+    await src.update_complete(true);
+}
+
 defineExpose({
-    src
+    perform_update
 });
 
 </script>
@@ -75,18 +79,6 @@ defineExpose({
 
 <template>
     
-    <button type="button" onclick="window.print();" class="print_fallback_button"> DRUKUJ </button>
-    <select onchange="document.querySelector('.page').style.fontFamily = this.value" class="noprint">
-        <option value="Times New Roman"   > Times New Roman   </option>
-        <option value="Arial"             > Arial             </option>
-        <option value="Verdana"           > Verdana           </option>
-        <option value="Tahoma"            > Tahoma            </option>
-        <option value="Trebuchet MS"      > Trebuchet MS      </option>
-        <option value="Georgia"           > Georgia           </option>
-        <option value="Garamond"          > Garamond          </option>
-        <option value="Courier New"       > Courier New       </option>
-        <option value="Brush Script MT"   > Brush Script MT   </option>
-    </select>
     <div class="over_page">
     <div class="page" ref="page" contenteditable="true">
 

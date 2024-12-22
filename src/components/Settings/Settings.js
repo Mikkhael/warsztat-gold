@@ -1,11 +1,11 @@
 //@ts-check
 
-import { computed, markRaw, onMounted, onUnmounted, ref, shallowRef } from "vue";
+import { computed, markRaw, onMounted, onUnmounted, reactive, readonly, ref, shallowRef } from "vue";
 import { OwningChangableValue } from "../Dataset";
 import { deep_copy, escape_sql_value, object_leaf_map, object_map, query_result_to_object } from "../../utils";
 import ipc from "../../ipc";
 
-const SETTINGS_CATEGORY_NAMES = /**@type {const} */ (['test', 'backup']);
+const SETTINGS_CATEGORY_NAMES = /**@type {const} */ (['test', 'backup', 'data']);
 /**
  * @typedef {SETTINGS_CATEGORY_NAMES[number]} SettingsCategoryNames
  */
@@ -236,7 +236,11 @@ class SettingsManager {
  *  val1: string,
  *  val2: number
  * }} CategoryTestType
+ * 
+ * @typedef {SettingsDataFieldsKeysList[number]} DataFieldsKey
+ * @typedef {{[P in DataFieldsKey]: string}} CategoryDataType
  *  */
+const SettingsDataFieldsKeysList = /**@type {const} */ (['Nazwa', 'Imię i Nazwisko', 'Adres', 'Telefon', 'NIP', 'Email', 'Nazwa Banku', 'Nr Konta']);
 
 
 class Settings {
@@ -245,6 +249,7 @@ class Settings {
         this.categories = {
             test:   SettingsDefaults.test(null),
             backup: SettingsDefaults.backup(null),
+            data:   SettingsDefaults.data(null),
         };
     }
 
@@ -253,6 +258,23 @@ class Settings {
      */
     poke_update(category_name, loaded = false) {
         window.dispatchEvent(new SettingsUpdateEvent(category_name, loaded));
+    }
+
+    /**
+     * @template {SettingsCategoryNames} T
+     * @param {T} category_name 
+     */
+    get_reactive_settings_raw(category_name) {
+        const category = this.categories[category_name];
+        return readonly(reactive(category));
+    }
+    /**
+     * @template {SettingsCategoryNames} T
+     * @param {T} category_name 
+     */
+    get_reactive_settings_raw_editable(category_name) {
+        const category = this.categories[category_name];
+        return reactive(category);
     }
 
     /**
@@ -369,6 +391,17 @@ const SettingsDefaults = {
             val2: validate_number(partial?.val2) ?? 42
         };
     },
+
+    /**@type {(partial: CategoryDataType?) => CategoryDataType} */
+    data: (partial = null) => {
+        /**@type {CategoryDataType} */
+        //@ts-ignore
+        const res = {};
+        for(const key of SettingsDataFieldsKeysList) {
+            res[key] = validate_string(partial?.[key]) ?? `(${key})`;
+        }
+        return res;
+    },
 }
 
 const mainSettings = new Settings();
@@ -397,6 +430,7 @@ export {
     useMainSettings,
     add_settings_update_listener,
     SettingsDefaults,
+    SettingsDataFieldsKeysList,
     Settings,
     SettingsManager,
     ReactiveSetting,

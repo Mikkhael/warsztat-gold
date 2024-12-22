@@ -481,13 +481,14 @@ function parse_decimal_adv(source_string) {
 // 	}
 // }
 
+// TODO foramt thousands seperation
 /**
  * Appends sufix and sets precision, if input is a valid decimal string. Otherwise returns null
  * @param {string} source_string 
  * @param {number} precision 
  * @param {string} sufix 
  */
-function format_decimal(source_string, precision = 2, sufix = " zł") {
+function format_decimal(source_string, precision = 2, sufix = " zł", force_sep = '.') {
 	const parse_res = parse_decimal_adv(source_string);
 	if(!parse_res) return null;
 	let [whole, frac, full, sign, sep, zero] = parse_res;
@@ -500,7 +501,7 @@ function format_decimal(source_string, precision = 2, sufix = " zł") {
 	if(frac.length < precision) {
 		frac += '0'.repeat(precision - frac.length);
 	}
-	return sign + whole + '.' + frac + sufix;
+	return sign + whole + force_sep + frac + sufix;
 }
 
 

@@ -4,6 +4,7 @@ import { computed, nextTick, onMounted, ref, shallowRef } from 'vue';
 import { useMainSettings, Settings } from './Settings';
 import { useMainMsgManager, MsgManager } from '../Msg/MsgManager';
 
+import SettingsWindowAuto from './SettingsWindowAuto.vue';
 import SettingsWindowBackup from './SettingsWindowBackup.vue';
 import SettingsWindowTest from './SettingsWindowTest.vue';
 import { useMainClosePreventionManager } from '../../ClosePrevention';
@@ -41,6 +42,7 @@ const mainClosePreventionManager = useMainClosePreventionManager();
 
 const categories = /**@type {const} */ ([
     ['backup', 'Kopia Zapasowa', SettingsWindowBackup],
+    ['data',   'Informacje',     SettingsWindowAuto],
     ['test',   'Testowe Opcje',  SettingsWindowTest],
 ]);
 

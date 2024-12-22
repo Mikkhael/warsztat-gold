@@ -13,6 +13,7 @@ import Klienci from './Klienci.vue';
 
 import ReportPreparer from '../Reports/ReportPreparer.vue';
 import RepZlecenieNaprawy from '../Reports/RepZlecenieNaprawy.vue';
+import RepZlecenieNaprawyFaktura from '../Reports/RepZlecenieNaprawyFaktura.vue';
 
 import ZleceniaNaprawy_Czesci from './ZleceniaNaprawy_Czesci.vue';
 import ZleceniaNaprawy_Robocizna from './ZleceniaNaprawy_Robocizna.vue';
@@ -86,7 +87,11 @@ function handle_err(/**@type {Error} */ err) {
 
 const RepZlecenieNaprawy_ref = ref(/**@type {ReportPreparer?} */ (null));
 function open_print_window() {
-    RepZlecenieNaprawy_ref.value?.update_and_open(true).catch(handle_err);
+    RepZlecenieNaprawy_ref.value?.update_and_open(false).catch(handle_err);
+}
+const RepZlecenieNaprawyFaktura_ref = ref(/**@type {ReportPreparer?} */ (null));
+function open_print_window_faktura() {
+    RepZlecenieNaprawyFaktura_ref.value?.update_and_open(false).catch(handle_err);
 }
 
 function open_czesci_window() {
@@ -165,6 +170,7 @@ defineExpose({
                     </div>
                     <div class="buttons">
                         <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
+                        <img src="./../assets/icons/document.svg" class="button" @click="open_print_window_faktura"/>
                         <div class="button" @click="open_czesci_window">CZĘŚCI</div>
                         <div class="button" @click="open_robocizna_window">ROBOCIZNA</div>
                     </div>
@@ -189,6 +195,11 @@ defineExpose({
         <ReportPreparer
             ref="RepZlecenieNaprawy_ref"
             :rep="RepZlecenieNaprawy"
+            :id_zlecenia="param_id_zlec"
+        />
+        <ReportPreparer
+            ref="RepZlecenieNaprawyFaktura_ref"
+            :rep="RepZlecenieNaprawyFaktura"
             :id_zlecenia="param_id_zlec"
         />
         

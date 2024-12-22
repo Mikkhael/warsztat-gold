@@ -22,3 +22,5 @@ w obrotach magazynowych ID nie jest ustawione na PRIMARY KEY
 Ceny są nie-zaokrąglane, ale wyświetlane są zaokrąglone
 VAT w podglądzie jest stały 1.23, a w raporcie "rachunek" jest stałe 22%
 JAK SIĘ DODAJE CZĘŚCI ???
+
+do czego są "ujęto rabat autoryzacja zlecenia Przebieg:     km" w fakturze
