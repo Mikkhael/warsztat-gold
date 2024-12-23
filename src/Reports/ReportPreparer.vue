@@ -1,6 +1,5 @@
 <script setup>
 //@ts-check
-import { QuerySource } from '../components/Dataset';
 import { nextTick, ref } from 'vue';
 
 
@@ -9,10 +8,10 @@ const props = defineProps({
         /**@type {import('vue').PropType<import('vue').Component>} */
         type: Object,
         required: true
-    }
+    },
 });
 
-/**@type {import('vue').Ref<{perform_update: () => any}?>} */
+/**@type {import('vue').Ref<{perform_update: () => any, create_options?: () => string}?>} */
 const rep_ref = ref(null);
 /**@type {import('vue').Ref<HTMLElement?>} */
 const rep_renderer_ref = ref(null);
@@ -34,9 +33,13 @@ function open(with_print = true) {
     console.log('REP WIN', win);
     if(!win) {
         throw new Error("Nie można otworzyć okna drukowania");
+    } 
+    win.document.head.innerHTML  = document.head.innerHTML;
+    win.document.body.innerHTML  = rep_renderer_ref.value.innerHTML;
+    if(rep_ref.value?.create_options) {
+        const options_elem = win.document.body.getElementsByClassName('options')[0];
+        options_elem.innerHTML += rep_ref.value.create_options();
     }
-    win.document.head.innerHTML = document.head.innerHTML;
-    win.document.body.innerHTML = rep_renderer_ref.value.innerHTML;
     win.document.getElementsByName('font_size_input').forEach(x => x.setAttribute('value', '16'));
 
     if(with_print) {

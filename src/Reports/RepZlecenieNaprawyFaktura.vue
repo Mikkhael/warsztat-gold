@@ -5,7 +5,7 @@
 
 import { date_now, format_date_str_local, format_decimal as format_decimal_utils, number_to_polish_words, parse_decimal_adv } from '../utils';
 import { FormParamProp, param_from_prop, qparts_db, query_parts_to_string, QueryBuilder, RefChangableValue } from '../components/Dataset';
-import { RepQuerySourceSingle, RepQuerySourceFull } from './RepCommon';
+import { RepQuerySourceSingle, RepQuerySourceFull, create_print_param_input, create_print_param_select } from './RepCommon';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import { useMainSettings } from '../components/Settings/Settings';
 import { computed, ref } from 'vue';
@@ -135,8 +135,22 @@ async function perform_update() {
     date_now_ref.value = format_date_str_local(date_now());
 }
 
+function create_options() {
+    const faktura_nr      = create_print_param_input('option_faktura_nr', 'Numer Faktury:');
+    const payment_method  = create_print_param_select('option_payment_method', 'Sposób płatności:', [
+        'gotówka',
+        'kompensata',
+        'przelew 7 dni',
+        'przelew 14 dni',
+        'gotówka 7 dni',
+        'przelew 21 dni',
+    ]);
+    return faktura_nr + payment_method;
+}
+
 defineExpose({
     perform_update,
+    create_options,
 });
 
 </script>
@@ -149,7 +163,7 @@ defineExpose({
 
         <div class="faktura_header">
             <div class="left">
-                <div class="bold vbig">Faktura VAT nr {{ 1234 }}</div>
+                <div class="bold vbig">Faktura VAT nr <span name="option_faktura_nr">&lt;nr faktury&gt;</span></div>
                 <div> ORYGINAŁ / KOPIA </div>
             </div>
             <div class="right">
@@ -250,7 +264,7 @@ defineExpose({
         </div>
 
         <div class="summary_footer nobreak">
-            <label>sposób zapłaty:</label> <div class="bold big" >{{ 'gotówka' }}</div>
+            <label>sposób zapłaty:</label> <div class="bold big" name="option_payment_method">{{ 'gotówka' }}</div>
             <label>do zapłaty:</label>     <div class="bold vbig">{{ format_decimal( src_total_brutto, true ) }}</div>
             <label>słownie:</label>        <div></div>
             <div class="bold big slownie" >{{ number_to_polish_words( total_brutto_parts[0] ) }}</div>
@@ -280,7 +294,7 @@ defineExpose({
     .center  { text-align: center; }
     .small   { font-size: 0.8em; }
     .big     { font-size: 1.2em; }
-    .vbig    { font-size: 2em; }
+    .vbig    { font-size: 1.6em; }
     
     .faktura_header {
         text-wrap: nowrap;

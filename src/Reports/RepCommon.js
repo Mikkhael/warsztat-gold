@@ -153,7 +153,26 @@ class RepQuerySourceFull extends QuerySource{
 }
 
 
+function param_element_onclick(name) {
+    return `document.getElementsByName('${name}').forEach(e => e.innerText = this.value)`;
+}
+
+function create_print_param_input(name, label = '', type='text') {
+    const html = `<div> ${label}: <input type=${type} oninput="${param_element_onclick(name)}"/></div>`;
+    return html;
+}
+function create_print_param_select(name, label = '', options=[]) {
+    const options_html = options.map(x => {
+        const values = Array.isArray(x) ? x : [x,x];
+        return `<option value="${values[0]}">${values[1]}</option>`;
+    });
+    const html = `<div> ${label}: <select onchange="${param_element_onclick(name)}"><option> </option>${options_html}</select></div>`;
+    return html;
+}
+
 export {
     RepQuerySourceSingle,
-    RepQuerySourceFull
+    RepQuerySourceFull,
+    create_print_param_input,
+    create_print_param_select,
 }
