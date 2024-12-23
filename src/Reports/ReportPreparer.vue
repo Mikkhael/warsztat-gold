@@ -60,7 +60,11 @@ defineExpose({
         
 <div class="printrender" ref="rep_renderer_ref">
 
-    <button type="button" onclick="window.print();" class="print_fallback_button noprint"> DRUKUJ </button>
+    <button type="button"
+     onclick="if(Array.from(document.querySelectorAll('.options input, .options select')).every(x => x.reportValidity())) window.print();" 
+     class="print_fallback_button noprint"> 
+        DRUKUJ 
+    </button>
     <component ref="rep_ref" :is="props.rep" v-bind="$attrs"/>
     <div class="noprint options">
         <h3>Opcje</h3>

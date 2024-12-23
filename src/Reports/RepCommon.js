@@ -157,16 +157,16 @@ function param_element_onclick(name) {
     return `document.getElementsByName('${name}').forEach(e => e.innerText = this.value)`;
 }
 
-function create_print_param_input(name, label = '', type='text') {
-    const html = `<div> ${label}: <input type=${type} oninput="${param_element_onclick(name)}"/></div>`;
+function create_print_param_input(name, label = '', params) {
+    const html = `<div> ${label}: <input ${params} oninput="${param_element_onclick(name)}"/></div>`;
     return html;
 }
-function create_print_param_select(name, label = '', options=[]) {
+function create_print_param_select(name, label = '', options=[], params) {
     const options_html = options.map(x => {
         const values = Array.isArray(x) ? x : [x,x];
         return `<option value="${values[0]}">${values[1]}</option>`;
     });
-    const html = `<div> ${label}: <select onchange="${param_element_onclick(name)}"><option> </option>${options_html}</select></div>`;
+    const html = `<div> ${label}: <select ${params} onchange="${param_element_onclick(name)}"><option> </option>${options_html}</select></div>`;
     return html;
 }
 

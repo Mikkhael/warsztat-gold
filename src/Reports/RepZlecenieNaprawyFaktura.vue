@@ -104,7 +104,7 @@ const src_total_vat    = src_total.auto_rep_value ("total_vat",    {sql: "decima
 const src_total_brutto = src_total.auto_rep_value ("total_brutto", {sql: "decimal_mul(1.23, decimal_sum(decimal_mul(`cnt`,`netto`)))", default: '0.00'});
 
 const total_brutto_parts = computed(() => {
-    const formated = format_decimal(src_total_brutto.value ?? '0', false);
+    const formated = format_decimal(src_total_brutto.value ?? '0', false, false);
     const [whole, frac, full, sign] = parse_decimal_adv(formated) ?? ['0', '00', '0.00', ''];
     return [sign + whole, frac];
 });
@@ -118,11 +118,11 @@ const CONST_VAT_PROC = (CONST_VAT*100) + '%';
 /**
  * @param {any} string 
  */
-function format_decimal(string, with_zl = false) {
-    console.log("FORMATTING", string);
+function format_decimal(string, with_zl = false, with_trip = true) {
+    // console.log("FORMATTING", string);
     string = string?.toString();
     if(typeof string != 'string') return '';
-    return format_decimal_utils(string, 2, with_zl ? ' zł' : '', ',') ?? '';
+    return format_decimal_utils(string, 2, with_zl ? ' zł' : '', ',', with_trip ? ' ' : '') ?? '';
 }
 
 const date_now_ref = ref('');
@@ -136,8 +136,8 @@ async function perform_update() {
 }
 
 function create_options() {
-    const faktura_nr      = create_print_param_input('option_faktura_nr', 'Numer Faktury:');
-    const payment_method  = create_print_param_select('option_payment_method', 'Sposób płatności:', [
+    const faktura_nr      = create_print_param_input('option_faktura_nr', 'Numer Faktury', 'required');
+    const payment_method  = create_print_param_select('option_payment_method', 'Sposób płatności', [
         'gotówka',
         'kompensata',
         'przelew 7 dni',

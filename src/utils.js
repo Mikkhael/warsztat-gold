@@ -440,6 +440,7 @@ function parse_decimal(source_string) {
  * @returns {[whole: string, frac: string, full: string, sign: string, sep: string, is_zero: boolean]?}
  */
 function parse_decimal_adv(source_string) {
+    source_string   = source_string?.replace(/\s+/g, '') ?? null;
     const match_res = source_string?.match(decimal_parse_adv_regex);
     if(!match_res) return null;
     const whole   = match_res[2] === '' ? '0' : match_res[2];
@@ -488,10 +489,18 @@ function parse_decimal_adv(source_string) {
  * @param {number} precision 
  * @param {string} sufix 
  */
-function format_decimal(source_string, precision = 2, sufix = " zł", force_sep = '.') {
+function format_decimal(source_string, precision = 2, sufix = " zł", force_sep = '.', triplets_sep = '') {
     const parse_res = parse_decimal_adv(source_string);
     if(!parse_res) return null;
     let [whole, frac, full, sign, sep, zero] = parse_res;
+    if(triplets_sep !== '') {
+        let triplets = [];
+        while(whole.length > 0) {
+            triplets.push(whole.slice(-3));
+            whole = whole.slice(0, -3);
+        }
+        whole = triplets.reverse().join(' ');
+    }
     if(precision <= 0) {
         return sign + whole + sufix;
     }
