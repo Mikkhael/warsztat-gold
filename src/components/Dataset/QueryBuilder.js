@@ -3,7 +3,7 @@
 //@ts-check
 import { computed, unref, shallowRef, triggerRef } from "vue";
 import { escape_backtick_smart, escape_like_full, escape_sql_value, reasRef } from "../../utils";
-import { Column } from "./Database";
+import { Column, TableNode } from "./Database";
 
 
 /**
@@ -37,7 +37,12 @@ function select_field_definition_to_sql(select_field) {
 
 /**
  * @template [T=never]
- * @typedef {(string | [MaybeRef<SQLValue> | T] | [string, 'l'] | [string, 'b'])[]} QueryParts 
+ * @typedef {string | [MaybeRef<SQLValue> | T] | [string, 'l'] | [string, 'b']} QueryPart
+ * */
+
+/**
+ * @template [T=never]
+ * @typedef {QueryPart<T>[]} QueryParts
  * */
 
 /**
@@ -48,6 +53,20 @@ function select_field_definition_to_sql(select_field) {
 function qparts(...parts) {
     return parts;
 }
+
+/**
+ * @template [T=never]
+ * @param  {(QueryPart<T> | Column | TableNode)[]} parts 
+ * @returns {QueryParts<T>}
+ */
+function qparts_db(...parts) {
+    return parts.map(part => {
+        if(part instanceof Column)    return part.get_full_sql();
+        if(part instanceof TableNode) return part.get_full_sql();
+        return part;
+    });
+}
+
 /**
  * @template T
  * @param {QueryParts<T>} parts 
@@ -340,6 +359,7 @@ export {
     QueryBuilder,
     map_query_parts_params,
     qparts,
+    qparts_db,
     query_ordering_to_string,
     query_parts_is_not_null,
     query_parts_to_string,
