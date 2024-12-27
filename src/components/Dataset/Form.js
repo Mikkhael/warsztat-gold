@@ -75,7 +75,9 @@ class FormQuerySourceBase extends QuerySource {
         }, true);
     }
     report_validity_self(){
+        // console.log("VALIDITY", this.associated_form_element.value, this);
         if(this.associated_form_element.value === null) return true;
+        if(this.form_style.value.empty) return true;
         const res = this.associated_form_element.value.reportValidity();
         return res;
     }

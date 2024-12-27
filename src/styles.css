@@ -177,12 +177,7 @@ legend {
   opacity: 15%;
   background-color: #c0c0c0;
   user-select: none;
-}
-.form_container.disabled > .form_scroller *,
-.form_container.empty    > .form_content  * {
   pointer-events: none;
-  user-select: none;
-  /* visibility: hidden; */ 
 }
 
 /* /////////////////////// FORM SCROLLER //////////////////////////// */

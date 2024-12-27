@@ -100,6 +100,19 @@ function open(){
         last_status_message.value = `Opened Database at '${path}'`;
     }).catch(handle_error);
 }
+function rebuild(){
+    return ipc.db_rebuild().then(() => {
+        last_status_success.value = true;
+        last_status_message.value = `Rebuilt Database`;
+    }).catch(handle_error);
+}
+function create(){
+    return ipc.db_create().then(path => {
+        if(!path) return;
+        last_status_success.value = true;
+        last_status_message.value = `Created Database at '${path}'`;
+    }).catch(handle_error);
+}
 function close(){
     return ipc.db_close().then(() => {
         last_status_success.value = true;
@@ -140,7 +153,9 @@ defineExpose({
         <button type="button" @click="perform_insert()">INSERT</button>
         <button type="button" @click="perform_execute()">EXE1</button>
         <button type="button" @click="perform_execute_batch()">EXECUTE</button>
+        <button type="button" @click="create()">CREATE</button>
         <button type="button" @click="open()">OPEN</button>
+        <button type="button" @click="rebuild()">REBUILD</button>
         <button type="button" @click="save()">SAVE</button>
         <button type="button" @click="export_csv()">EXPORT CSV</button>
         <button type="button" @click="import_csv()">IMPORT CSV</button>

@@ -49,6 +49,7 @@ fn main() {
         file_name,
         sync_close_prevention,
         sqlite_manager::open_database,
+        sqlite_manager::rebuild_database,
         sqlite_manager::close_database,
         sqlite_manager::save_database,
         sqlite_manager::export_csv,

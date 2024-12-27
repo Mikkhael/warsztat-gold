@@ -14,8 +14,8 @@ const state = reactive({
 /**
  * @param {boolean} value 
  */
-function set_state_db_opened(value) {
-    if(state.db_is_open !== value) {
+function set_state_db_opened(value, force = false) {
+    if(force || state.db_is_open !== value) {
         state.db_is_open = value;
         if(value) {
             window.dispatchEvent(new Event('db_opened'));
@@ -80,7 +80,7 @@ function file_name(path) {
 
 //////////// Database //////////////////////
 
-async function db_open() {
+async function db_open(no_state_change = false) {
     let path = await open({
         title: "Wybierz plik bazy danych",
         filters: [{name: "Sqlite Database", extensions: ['db3']}]
@@ -90,10 +90,34 @@ async function db_open() {
     return await invoke("open_database", {path}).then(() => {
         if(path instanceof Array) throw new Error("MULTIPLE PATHS CHOSEN FOR OPEN DATABASE");
         set_state_db_path(path);
-        set_state_db_opened(true);
+        if(!no_state_change) {
+            set_state_db_opened(true);
+        }
         return path;
     });
 }
+function db_rebuild(reemit_opened_database = true, with_vacuum = true) {
+    return invoke("rebuild_database", {withVacuum: with_vacuum}).then(() => {
+        if(reemit_opened_database) {
+            set_state_db_opened(true, true);
+        }
+    });
+}
+async function db_create() {
+    let path = await save({
+        title: "Stwórz plik nowej bazy danych",
+        filters: [{name: "Sqlite Database", extensions: ['db3']}],
+        defaultPath: state.db_path || undefined,
+    });
+    if(!path) return null;
+    await db_close();
+    await invoke("open_database", {path});
+    if(path) {
+        await db_rebuild(true);
+    }
+    return path;
+}
+
 function db_close() {
     return invoke("close_database").then(() => {
         set_state_db_path("");
@@ -243,6 +267,8 @@ export default {
     sync_close_prevention,
 
     db_open,
+    db_rebuild,
+    db_create,
     db_close,
     db_save,
     db_export_csv,

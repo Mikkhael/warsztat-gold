@@ -4,7 +4,7 @@ use tauri::App;
 use tauri::Manager;
 use std::error;
 use std::fs::{self, OpenOptions};
-use std::io::{BufWriter, Write};
+use std::io::{BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use rusqlite::types::ValueRef;
 use std::sync::Mutex;
@@ -16,7 +16,8 @@ use crate::utils;
 pub struct SqliteManager{
     decimal_extension_path: PathBuf,
     vsv_extension_path:     PathBuf,
-    main_tables_path: PathBuf,
+    main_tables_path:       PathBuf,
+    structure_sql_path:     PathBuf,
 
     sqlite_conn: Option<SqliteConn>
 }
@@ -81,11 +82,13 @@ impl SqliteManager{
         state.decimal_extension_path = resolver.resolve_resource("resources/sqlite/decimal").expect("Cannot resolve decimal path");
         state.vsv_extension_path     = resolver.resolve_resource("resources/sqlite/vsv").expect("Cannot resolve vsv path");
         state.main_tables_path       = resolver.resolve_resource("resources/sqlite/main_tables.txt").expect("Cannot resolve main tables path");
+        state.structure_sql_path     = resolver.resolve_resource("resources/sqlite/database_structure.sql").expect("Cannot resolve structure sql path");
 
 
-        println!("decimal:     {}", state.decimal_extension_path.display());
-        println!("vsv:         {}", state.vsv_extension_path.display());
-        println!("main tables: {}", state.main_tables_path.display());
+        println!("decimal:       {}", state.decimal_extension_path.display());
+        println!("vsv:           {}", state.vsv_extension_path.display());
+        println!("main tables:   {}", state.main_tables_path.display());
+        println!("structure sql: {}", state.structure_sql_path.display());
     }
 
     pub fn open(&mut self, path: &Path) -> Result<(), Error>{ 
@@ -108,6 +111,19 @@ impl SqliteManager{
             println!("Failed opening database");
             self.sqlite_conn = None;
             return Err(res.err().unwrap());
+        }
+    }
+    pub fn rebuild(&self, with_vacuum: bool) -> Result<bool, SqliteOrIOError>{
+        if let Some(ref conn) = self.sqlite_conn {
+            let trans = conn.conn.unchecked_transaction()?;
+            conn.execute_file(&self.structure_sql_path)?;
+            trans.commit()?;
+            if with_vacuum {
+                conn.execute("VACUUM", ())?;
+            }
+            return Ok(true);
+        } else {
+            return Ok(false);
         }
     }
     pub fn close(&mut self){ 
@@ -144,6 +160,16 @@ fn write_string_for_csv<W : Write>(w: &mut W, v: &str) -> std::io::Result<()> {
     else                { write!(w, "\"{}\"", v) }
 }
 
+pub enum SqliteOrIOError {
+    Sqlite(Error),
+    IO(std::io::Error)
+}
+impl From<Error> for SqliteOrIOError {
+    fn from(value: Error) -> Self { SqliteOrIOError::Sqlite(value) }
+}
+impl From<std::io::Error> for SqliteOrIOError {
+    fn from(value: std::io::Error) -> Self { SqliteOrIOError::IO(value) }
+}
 impl SqliteConn{
     pub fn execute<P : rusqlite::Params>(&self, query: &str, params: P) -> Result<usize> {
         self.conn.execute(&query, params)
@@ -154,6 +180,12 @@ impl SqliteConn{
     pub fn execute_batch_get_rowid(&self, query: &str) -> Result<i64> {
         self.conn.execute_batch(&query)?;
         Ok(self.conn.last_insert_rowid())
+    }
+    pub fn execute_file(&self, path: &Path) -> Result<(), SqliteOrIOError> {
+        let mut file = std::fs::File::open(path)?;
+        let mut buf  = String::default();
+        file.read_to_string(&mut buf)?;
+        return Ok(self.execute_batch(&buf)?);
     }
     pub fn query<P : rusqlite::Params>(&self, query: &str, params: P, max_rows: Option<usize>) -> Result<(ExtractedRows, rusqlite::Statement)> {
         let mut stmt = self.conn.prepare(&query)?;
@@ -280,6 +312,16 @@ pub fn open_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLo
     Ok(())
 }
 #[tauri::command]
+pub fn rebuild_database(with_vacuum: bool, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
+    println!("[INVOKE] rebuild_database");
+    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let is_opened = db.rebuild(with_vacuum).map_err(|err| match err {
+        SqliteOrIOError::IO(val)     => val.to_string(),
+        SqliteOrIOError::Sqlite(val) => val.to_string()
+    })?;
+    if is_opened {Ok(())} else {Err("Nie otworzono bazy danych".to_string())}
+}
+#[tauri::command]
 pub fn close_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
     println!("[INVOKE] close_database");
     let mut db = sqlite_manager.lock().map_err(|err| err.to_string())?;
@@ -303,7 +345,7 @@ pub fn save_database_impl(path: &Path, sqlite_manager: &SqliteManagerLock, pages
         })).map_err(|err| err.to_string())?;
         Ok(())
     } else {
-       Err("No connection opened".to_string())
+       Err("Nie otworzono bazy danych".to_string())
     }
 }
 
@@ -328,7 +370,7 @@ pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
         }
         Ok(())
     } else {
-        return Err("Database not opened".to_string());
+        return Err("Nie otworzono bazy danych".to_string());
     }
 }
 #[tauri::command]
@@ -348,7 +390,7 @@ pub fn import_csv(import_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
         }
         Ok(())
     } else {
-        return Err("Database not opened".to_string());
+        return Err("Nie otworzono bazy danych".to_string());
     }
 }
 
