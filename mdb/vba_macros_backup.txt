@@ -46,16 +46,16 @@ End Function
 
 Function GetCurrentPath() As String
     Dim db As Database
-    Dim currentPath As String
+    Dim currentpath As String
 
     ' Set a reference to the current database
     Set db = CurrentDb
     
     ' Get the current path of the database
-    currentPath = db.Name
+    currentpath = db.Name
     
     ' Extract the path without the database file name
-    currentPath = Left(currentPath, Len(currentPath) - Len(Dir(currentPath)))
+    currentpath = Left(currentpath, Len(currentpath) - Len(Dir(currentpath)))
     
     ' Display the current path (you can also use it in your code)
     ' MsgBox "Current Path: " & currentPath
@@ -63,14 +63,15 @@ Function GetCurrentPath() As String
     ' Release the database object
     Set db = Nothing
     
-    GetCurrentPath = currentPath
+    GetCurrentPath = currentpath
 End Function
 
 Sub ImportCSVDataAllFromHere(ByVal foldername As String, ByVal tablename As String, Optional ByVal specname As String = "")
 
     Dim fullpath As String
-    fullpath = GetCurrentPath()
-    fullpath = fullpath & foldername & "\"
+    fullpath = foldername & "\"
+    ' fullpath = GetCurrentPath()
+    ' fullpath = fullpath & foldername & "\"
     ' MsgBox fullpath
     ImportCSVData fullpath, tablename, tablename, specname
 End Sub
@@ -78,8 +79,9 @@ End Sub
 Sub ExportCSVDataAllFromHere(ByVal foldername As String, ByVal tablename As String)
 
     Dim fullpath As String
-    fullpath = GetCurrentPath()
-    fullpath = fullpath & foldername & "\"
+    fullpath = foldername & "\"
+    ' fullpath = GetCurrentPath()
+    ' fullpath = fullpath & foldername & "\"
     CreateFolderIfNotExists fullpath
     ' MsgBox fullpath
     ExportCSVData fullpath, tablename, tablename
@@ -194,7 +196,14 @@ End Sub
 
 Private Sub Polecenie11_Click()
     Dim foldername As String
-    foldername = Me!Tekst6.Value
+    Dim currentpath As String
+    Dim SA As Object, f As Object
+    ' foldername = Me!Tekst14.Value
+    
+    currentpath = GetCurrentPath()
+    Set SA = CreateObject("Shell.Application")
+    Set f = SA.BrowseForFolder(0, "Choose a folder", 0, currentpath)
+    foldername = f.Items.Item.path
     
     CreateSpecs False
     
@@ -238,7 +247,15 @@ End Sub
 
 Private Sub Polecenie17_Click()
     Dim foldername As String
-    foldername = Me!Tekst14.Value
+    Dim currentpath As String
+    Dim SA As Object, f As Object
+    ' foldername = Me!Tekst14.Value
+    
+    
+    currentpath = GetCurrentPath()
+    Set SA = CreateObject("Shell.Application")
+    Set f = SA.BrowseForFolder(0, "Choose a folder", 0, currentpath)
+    foldername = f.Items.Item.path
     
     ExportCSVDataAllFromHere foldername, "CENNIK  GM"
     ExportCSVDataAllFromHere foldername, "czynność"
@@ -273,3 +290,5 @@ End Sub
 Private Sub Polecenie19_Click()
     CreateSpecs True
 End Sub
+
+

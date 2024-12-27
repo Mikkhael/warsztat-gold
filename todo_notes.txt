@@ -24,3 +24,30 @@ VAT w podglądzie jest stały 1.23, a w raporcie "rachunek" jest stałe 22%
 JAK SIĘ DODAJE CZĘŚCI ???
 
 do czego są "ujęto rabat autoryzacja zlecenia Przebieg:     km" w fakturze
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+///// Próba naprawy 4.*** , zlecenia naprawy blokuje JET, usuwam rekordy z ID ponad 60000
+
+    DELETE 
+    FROM [zlecenia naprawy]
+    WHERE [zlecenia naprawy]![ID] > 64000 AND [zlecenia naprawy]![ID] < 65001;
+
+    SELECT [zlecenia naprawy].* INTO [zlecenia naprawy 2] FROM [zlecenia naprawy];
+
+
+    SELECT [zlecenia naprawy].* INTO [zlecenia naprawy 2]
+    FROM [zlecenia naprawy] WHERE [zlecenia naprawy]![ID] < 60000;
+
+    SELECT [zlecenia naprawy].* INTO [zlecenia naprawy 2]
+    FROM [zlecenia naprawy]
+    WHERE [zlecenia naprawy]![ID] < 64600; // ostatnie ID które działa
+
+    SELECT [zlecenia naprawy]
+    FROM [zlecenia naprawy]
+    WHERE [zlecenia naprawy]![zgłoszone naprawy] != "#Błąd";
+
+WYNIK ANALIZY:
+    zlecenia ID 64600 i 66120 i 66631 są zbugowane, trzeba je chyba usunąć
+    (za mało dysku??)
