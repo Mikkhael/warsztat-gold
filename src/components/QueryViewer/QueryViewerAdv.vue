@@ -140,6 +140,7 @@ let   current_resize_col_i = -1;
 const col_refs     = ref(/**@type {HTMLElement[]} */ ([]));
 const column_sizes = ref(/**@type {[value: number, as_px_not_ch: boolean][]} */ ([]));
 const disable_table_search = ref(true);
+const is_limit_cropped = computed(() => result_rows.value.length >= scroller_limit.value);
 
 const column_sizes_style = computed(() => column_sizes.value.map(([value, as_px_not_ch]) => {
     return value === undefined ? undefined : value + (as_px_not_ch ? 'px' : 'ch');
@@ -358,6 +359,7 @@ onUnmounted(() => {
                             :class="{
                                 deleted:  row.deleted,
                                 inserted: row.inserted,
+                                last_faded: row_i === result_rows.length-1 && is_limit_cropped
                             }"
                             @pointerleave="e => handle_row_unhover(e, row_i)"
                             @pointerenter="e => handle_row_hover  (e, row_i)" 
@@ -392,22 +394,23 @@ onUnmounted(() => {
                         <div class="col_name">{{ columns_display_props[col_i].name }}</div>
                     </div>
                     <component :is="columns_display_props[col_i].as_enum ? FormEnum : FormInput"
-                            :key="src.dataset.get_unique_key(col_i) + '_' + row_i" 
-                            class="data data_cell" v-for="(row, row_i) in result_rows"
-                            :class="{
-                                deleted:  row.deleted,
-                                inserted: row.inserted,
-                            }"
-                            @pointerleave="e => handle_row_unhover(e, row_i)"
-                            @pointerenter="e => handle_row_hover  (e, row_i)" 
-                            @pointerdown="e => handle_select_down(row_i, false, e)"
-                            @pointerup="e => handle_select_up(row_i, false, e)"
-                            :value="row.get(col_name)"
-                            auto
-                            nospin
-                            v-bind="unref(columns_display_props[col_i].input_props)"
-                            :readonly="!props.saveable || true_selectable || columns_display_props[col_i].readonly"
-                        />
+                        :key="src.dataset.get_unique_key(col_i) + '_' + row_i" 
+                        class="data data_cell" v-for="(row, row_i) in result_rows"
+                        :class="{
+                            deleted:  row.deleted,
+                            inserted: row.inserted,
+                            last_faded: row_i === result_rows.length-1 && is_limit_cropped
+                        }"
+                        @pointerleave="e => handle_row_unhover(e, row_i)"
+                        @pointerenter="e => handle_row_hover  (e, row_i)" 
+                        @pointerdown="e => handle_select_down(row_i, false, e)"
+                        @pointerup="e => handle_select_up(row_i, false, e)"
+                        :value="row.get(col_name)"
+                        auto
+                        nospin
+                        v-bind="unref(columns_display_props[col_i].input_props)"
+                        :readonly="!props.saveable || true_selectable || columns_display_props[col_i].readonly"
+                    />
                 </div>
                 <div class="indicator" ref="indicator_ref"></div>
             </div>
@@ -522,6 +525,10 @@ onUnmounted(() => {
     }
     .col_name_cell :deep(.ordering_btns) {
         flex-shrink: 0;
+    }
+
+    .table_column ::v-deep(.last_faded) {
+        border-bottom: none;
     }
 
     .hidden {
