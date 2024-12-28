@@ -2,7 +2,7 @@
 //@ts-check
 
 import { computed, toRef } from 'vue';
-import useMainFWManager, { FWManager } from '../FloatingWindows/FWManager';
+import useMainFWManager, { FWManager, FWWindow } from '../FloatingWindows/FWManager';
 import QueryViewerAdv from './QueryViewerAdv.vue';
 import { QueryViewerSource } from './QueryViewer';
 import { FormDataSetFull_LocalRow } from '../Dataset';
@@ -27,6 +27,13 @@ const props = defineProps({
     insertable: Boolean,
     saveable:   Boolean,
     deletable:  Boolean,
+
+    parent_window: {
+        /**@type {import('vue').PropType<FWWindow>} */
+        //@ts-ignore
+        type: Object,
+        required: false
+    },
 
 
     text: {
@@ -76,21 +83,25 @@ async function on_click() {
     }
     const src = props.src_factory();
     return fwManager.open_or_reopen_window(title, QueryViewerAdv, {
-        src,
-        selectable: props.selectable,
-        insertable: props.insertable,
-        saveable:   props.saveable,
-        deletable:  props.deletable,
-    }, {
-        /**
-         * @param {string[]} columns 
-         * @param {FormDataSetFull_LocalRow} row 
-         * @param {number} offset
-         */
-        select: async (columns, row, offset) => {
-            emit('select', columns, row, offset, close_self);
+        props: {
+            src,
+            selectable: props.selectable,
+            insertable: props.insertable,
+            saveable:   props.saveable,
+            deletable:  props.deletable,
         },
-        error: on_error,
+        listeners: {
+            /**
+             * @param {string[]} columns 
+             * @param {FormDataSetFull_LocalRow} row 
+             * @param {number} offset
+             */
+            select: async (columns, row, offset) => {
+                emit('select', columns, row, offset, close_self);
+            },
+            error: on_error,
+        },
+        parent: props.parent_window
     });
 }
 

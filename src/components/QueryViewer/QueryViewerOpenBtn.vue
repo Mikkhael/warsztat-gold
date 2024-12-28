@@ -2,7 +2,7 @@
 //@ts-check
 
 import { unref } from 'vue';
-import useMainFWManager from '../FloatingWindows/FWManager';
+import {useMainFWManager, FWManager} from '../FloatingWindows/FWManager';
 import QueryViewer from './QueryViewer.vue';
 import { query_ordering_to_string, QuerySource } from '../Dataset';
 import useMainMsgManager from '../Msg/MsgManager';
@@ -43,6 +43,7 @@ const props = defineProps({
         default: false
     },
     fwManager: {
+        /**@type {import('vue').PropType<FWManager>} */
         type: Object,
         required: false    
     },
@@ -72,22 +73,25 @@ function close_self () {
 
 function on_click_find() {
     fwManager.open_or_reopen_window("Znajdź", QueryViewer, {
-        /**@type {import('./QueryViewer.vue').QueryViwerQueryParams} */
-        query: {
-            select: props.query.select,
-            from:   props.query.from,
-            where_conj:     props.query.where_conj ?? [],
-            where_conj_opt: props.query.where_conj_opt ?? []
+        props: {
+            /**@type {import('./QueryViewer.vue').QueryViwerQueryParams} */
+            query: {
+                select: props.query.select,
+                from:   props.query.from,
+                where_conj:     props.query.where_conj ?? [],
+                where_conj_opt: props.query.where_conj_opt ?? []
+            },
+            selectable: !props.noselect
         },
-        selectable: !props.noselect
-    }, {
-        /**
-         * @param {string[]} columns
-         * @param {(string | number | null)[]} row
-         * @param {number} offset
-         */
-        select: async (columns, row, offset) => {
-            emit('select', columns, row, offset, close_self);
+        listeners: {
+            /**
+             * @param {string[]} columns
+             * @param {(string | number | null)[]} row
+             * @param {number} offset
+             */
+            select: async (columns, row, offset) => {
+                emit('select', columns, row, offset, close_self);
+            }
         }
     });
 }

@@ -69,7 +69,7 @@ function tool_settings() {
 }
 
 function tool_zlecenia(){
-    fwManager.open_or_focus_window("Zlecenia Otwarte", ZleceniaNaprawy, {show_clients: true});
+    fwManager.open_or_focus_window("Zlecenia Otwarte", ZleceniaNaprawy, {props: {show_clients: true}});
 }
 
 function tool_klienci(){

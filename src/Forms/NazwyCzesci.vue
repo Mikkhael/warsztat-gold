@@ -82,6 +82,7 @@ defineExpose({
     <label class="label">Numer                  </label> <FormInput :value="numer" auto />
     <div></div>
     <QueryViewerAdvOpenBtn 
+        :parent_window="props.parent_window"
         text="Znajdź Część"
         selectable
         :src_factory="QVFactory_find"

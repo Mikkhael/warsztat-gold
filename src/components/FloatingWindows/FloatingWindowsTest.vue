@@ -51,8 +51,8 @@ defineExpose({
         <!-- <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1, {text: new_window_name, index: 123}, {x:37.52})">
         <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2, {text: 'jsdiogf', aha: zaha})" >
         <input type="button" value="CLOSE"   @click="fw_manager.close_window         (new_window_name)"> -->
-        <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1, {index: zaha[0]})">
-        <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2, {text: 'elo'+Math.random(), aha: zaha})" >
+        <input type="button" value="OPEN 1"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow1, {props: {index: zaha[0]}})">
+        <input type="button" value="OPEN 2"  @click="fw_manager.open_or_focus_window (new_window_name, TestWindow2, {props: {text: 'elo'+Math.random(), aha: zaha}})" >
         <input type="button" value="CLOSE"   @click="fw_manager.close_window         (new_window_name)">
     </p>
 

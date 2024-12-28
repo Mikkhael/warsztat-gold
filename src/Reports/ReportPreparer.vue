@@ -68,27 +68,30 @@ defineExpose({
     <component ref="rep_ref" :is="props.rep" v-bind="$attrs"/>
     <div class="noprint options">
         <h3>Opcje</h3>
-        <div>
-            Rozmiar Czcionki: 
-            <input name="font_size_input" type="number"
-                step="0.2"
-                oninput="document.querySelector('.page').style.fontSize = this.value + 'px'" 
-            />
-        </div>
-        <div>
-            Czcionka: 
-            <select onchange="document.querySelector('.page').style.fontFamily = this.value" class="noprint">
-                <option value="Arial"             > Arial             </option>
-                <option value="Times New Roman"   > Times New Roman   </option>
-                <option value="Verdana"           > Verdana           </option>
-                <option value="Tahoma"            > Tahoma            </option>
-                <option value="Trebuchet MS"      > Trebuchet MS      </option>
-                <option value="Georgia"           > Georgia           </option>
-                <option value="Garamond"          > Garamond          </option>
-                <option value="Courier New"       > Courier New       </option>
-                <option value="Brush Script MT"   > Brush Script MT   </option>
-            </select>
-        </div>
+        <fieldset>
+            <legend>Opcje czcionki</legend>
+            <div>
+                Rozmiar Czcionki: 
+                <input name="font_size_input" type="number"
+                    step="0.2"
+                    oninput="document.querySelector('.page').style.fontSize = this.value + 'px'" 
+                />
+            </div>
+            <div>
+                Czcionka: 
+                <select onchange="document.querySelector('.page').style.fontFamily = this.value" class="noprint">
+                    <option value="Arial"             > Arial             </option>
+                    <option value="Times New Roman"   > Times New Roman   </option>
+                    <option value="Verdana"           > Verdana           </option>
+                    <option value="Tahoma"            > Tahoma            </option>
+                    <option value="Trebuchet MS"      > Trebuchet MS      </option>
+                    <option value="Georgia"           > Georgia           </option>
+                    <option value="Garamond"          > Garamond          </option>
+                    <option value="Courier New"       > Courier New       </option>
+                    <option value="Brush Script MT"   > Brush Script MT   </option>
+                </select>
+            </div>
+        </fieldset>
     </div>
 </div>
 

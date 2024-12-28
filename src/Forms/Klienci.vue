@@ -168,6 +168,7 @@ defineExpose({
                 
                     <div>
                         <QueryViewerAdvOpenBtn 
+                            :parent_window="props.parent_window"
                             text="Znajdź Klienta"
                             selectable
                             :src_factory="QVFactory_find_client" 
@@ -176,6 +177,7 @@ defineExpose({
                     </div>
                     <div>
                         <QueryViewerAdvOpenBtn 
+                            :parent_window="props.parent_window"
                             text="Znajdź Samochód"
                             selectable
                             :src_factory="QVFactory_find_car" 
@@ -184,6 +186,7 @@ defineExpose({
                     </div>
                     <div>
                         <QueryViewerAdvOpenBtn 
+                            :parent_window="props.parent_window"
                             text="Znajdź Zlecenie"
                             selectable
                             :src_factory="QVFactory_find_zlec" 

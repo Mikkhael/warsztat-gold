@@ -7,19 +7,38 @@ import { generate_UID } from '../../utils';
  * @typedef {import('vue').Component} Component
  */
 
+/**
+ * @typedef {{
+ *  force?:      boolean
+ *  props?:      Object.<string, any>
+ *  listeners?:  Object.<string, Function>
+ *  parent?:     FWWindow
+ * }} WindowOpenOptions
+ */
+
 class FWWindow {
     /**
+     * @param {FWManager} manager 
      * @param {Component} component 
      * @param {WinBox} box
      * @param {Object.<string, any>} props
      * @param {Object.<string, Function>} listeners
      */
-    constructor(component, box, props, listeners) {
+    constructor(manager, component, box, props, listeners) {
+        this.manager = manager;
         this.component = component;
         this.box = box;
         this.props = props;
         this.listeners = listeners;
         this.id = 'window_' + generate_UID();
+        /**@type {string[]} */
+        this.children_ids = [];
+        /**@type {string | null} */
+        this.parent_id    = null;
+
+        this.add_before_close(async (force) => {
+            return await this.try_close_all_children(force);
+        });
     }
 
     /**
@@ -36,6 +55,28 @@ class FWWindow {
 
     get_mount_selector(){
         return '#' + this.box.id + " .wb-body";
+    }
+
+    async try_close_all_children(force = false) {
+        for(const child_id of this.children_ids) {
+            const prevented = await this.manager.close_window_by_id(child_id, force);
+            if(prevented) return true;
+        }
+        return false;
+    }
+
+    /**
+     * @param {string} parent_id 
+     */
+    assign_parent_id(parent_id) {
+        if(this.parent_id) {
+            throw new Error("Reasigning parent for window " + this.id);
+        }
+        const parent_window = this.manager.get_window_by_id(parent_id);
+        if(parent_window) {
+            parent_window[1].children_ids.push(this.id);
+            this.parent_id = parent_id;
+        }
     }
 }
 
@@ -78,6 +119,16 @@ class FWManager {
     }
 
     /**
+     * @param {string} id 
+     */
+    get_window_by_id(id) {
+        for(const title_and_window of this.opened_windows) {
+            if(title_and_window[1].id === id) return title_and_window;
+        }
+        return null;
+    }
+
+    /**
      * @param {string} title
      */
     focus_window(title) {
@@ -99,8 +150,9 @@ class FWManager {
      * @param {Component} component 
      * @param {Object.<string, any>} props
      * @param {Object.<string, Function>} listeners
+     * @param {string} [parent_id]
      */
-    open_window_unchecked(title, component, props = {}, listeners = {}) {
+    open_window_unchecked(title, component, props = {}, listeners = {}, parent_id) {
         const box = new WinBox(title, {
             root: this.cointainer,
             overflow: true,
@@ -116,7 +168,10 @@ class FWManager {
             }
         });
         box.removeControl("wb-full");
-        const window = new FWWindow(component, box, props, listeners);
+        const window = new FWWindow(this, component, box, props, listeners);
+        if(parent_id) {
+            window.assign_parent_id(parent_id);
+        }
         this.opened_windows.set(title, window);
         
         console.log('OPENING WINDOW', title, window);
@@ -126,14 +181,13 @@ class FWManager {
     /**
      * @param {string} title 
      * @param {Component} component 
-     * @param {Object.<string, any>} props
-     * @param {Object.<string, Function>} listeners
+     * @param {WindowOpenOptions} options
      */
-    open_or_focus_window(title, component, props = {}, listeners = {}) {
+    open_or_focus_window(title, component, options = {}) {
         if(this.opened_windows.has(title)) {
             return this.focus_window(title);
         }
-        return this.open_window_unchecked(title, component, props, listeners);
+        return this.open_window_unchecked(title, component, options.props, options.listeners, options.parent?.id);
     }
     is_window_opened(title) {
         return this.opened_windows.has(title);
@@ -142,15 +196,14 @@ class FWManager {
     /**
      * @param {string} title 
      * @param {Component} component 
-     * @param {Object.<string, any>} props
-     * @param {Object.<string, Function>} listeners
+     * @param {WindowOpenOptions} options
      */
-    async open_or_reopen_window(title, component, props = {}, listeners = {}, force = false) {        
-        const prevented_close = await this.close_window(title, force);
+    async open_or_reopen_window(title, component, options = {}) {        
+        const prevented_close = await this.close_window(title, options.force);
         if(prevented_close){
             return null;
         }
-        return this.open_window_unchecked(title, component, props, listeners);
+        return this.open_window_unchecked(title, component, options.props, options.listeners, options.parent?.id);
     }
 
     /**
@@ -163,6 +216,19 @@ class FWManager {
         if(window) {
             console.log('CLOSING WINDOW', title, force);
             return window.box.close(force);
+        }
+        return false;
+    }
+    /**
+     * @param {string} id 
+     * @param {boolean} force 
+     * @returns {Promise<boolean | undefined>}
+     */
+    async close_window_by_id(id, force = false){
+        for(const [title, window] of this.opened_windows) {
+            if(window.id === id) {
+                return this.close_window(title, force);
+            }
         }
         return false;
     }

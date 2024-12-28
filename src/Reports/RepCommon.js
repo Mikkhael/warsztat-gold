@@ -166,7 +166,7 @@ function create_print_param_select(name, label = '', options=[], params) {
         const values = Array.isArray(x) ? x : [x,x];
         return `<option value="${values[0]}">${values[1]}</option>`;
     });
-    const html = `<div> ${label}: <select ${params} onchange="${param_element_onclick(name)}"><option> </option>${options_html}</select></div>`;
+    const html = `<div> ${label}: <select ${params} onchange="${param_element_onclick(name)}">${options_html}</select></div>`;
     return html;
 }
 

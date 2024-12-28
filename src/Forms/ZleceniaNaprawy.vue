@@ -104,13 +104,15 @@ function open_print_window_faktura() {
 function open_czesci_window() {
     const title = "Części - Zlecenie nr " + param_id_zlec.get_value();
     return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Czesci, {
-        id_zlecenia: param_id_zlec
+        props: {id_zlecenia: param_id_zlec},
+        // parent: props.parent_window
     });
 }
 function open_robocizna_window() {
     const title = "Robocizna - Zlecenie nr " + param_id_zlec.get_value();
     return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Robocizna, {
-        id_zlecenia: param_id_zlec
+        props: {id_zlecenia: param_id_zlec},
+        // parent: props.parent_window
     });
 }
 
