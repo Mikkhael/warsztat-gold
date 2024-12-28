@@ -1,9 +1,13 @@
 //@ts-check
 
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, unref, watch } from "vue";
 import { FormQuerySourceFull, Column, QuerySource, FormDataSetFull_LocalRow, FormDataSetFull } from "../Dataset";
 import { deffered_promise, escape_backtick_smart } from "../../utils";
 import { FWWindow } from "../FloatingWindows/FWManager";
+
+/**
+ * @typedef {'decimal' | 'date' | 'datetime' | ''} DisplayFormat
+ */
 
 /**
  * @typedef {import("../Dataset/Form").StandardFormValueRoutineParams & {
@@ -11,6 +15,7 @@ import { FWWindow } from "../FloatingWindows/FWManager";
  *  readonly?: boolean,
  *  as_enum?:  boolean,
  *  width?:    number,
+ *  format?:   DisplayFormat,
  *  input_props?: import('vue').MaybeRef<Object.<string, any>>
  * }} StandardFormValueRoutineParams_WithDisplay
  */
@@ -21,6 +26,7 @@ import { FWWindow } from "../FloatingWindows/FWManager";
  *  readonly: boolean,
  *  as_enum:  boolean,
  *  width:    number | undefined,
+ *  format:   DisplayFormat | undefined
  *  input_props: import('vue').MaybeRef<Object.<string, any>>
  * }} DisplayColProps
  */
@@ -46,8 +52,23 @@ class QueryViewerSource extends FormQuerySourceFull {
         this.order_plugin  = reactive(/**@type {Map<string, number>} */ (new Map()));
         this.search_plugin = reactive(/**@type {Map<string, string>}  */ (new Map()));
 
-        const order_plugin_array  = computed(/**@returns {[string, boolean][]} */ () => Array.from(this.order_plugin).map(x => [escape_backtick_smart(x[0]), x[1] > 0]));
-        const search_plugin_array = computed(/**@returns {[[string, 'b'], [string, 'l']][]} */ () => Array.from(this.search_plugin).map(x => [[x[0], 'b'], [x[1], 'l']]));
+        const order_plugin_array  = computed(/**@returns {[string, boolean, string][]} */ () => Array.from(this.order_plugin).map(x => [
+            escape_backtick_smart(x[0]), 
+            x[1] > 0, 
+            this.display_columns.get(x[0])?.format === 'decimal' ? 'decimal' : ''
+        ]));
+        const search_plugin_array = computed(/**@returns {[string, [string, 'l']][]} */ () => Array.from(this.search_plugin).map(x => {
+            const format = this.display_columns.get(x[0])?.format;
+            const replace_comma = format === 'date' || format === 'datetime';
+            const escaped = escape_backtick_smart(x[0]);
+            /**@type {[string, [string, 'l']]} */
+            const res = [
+                format === 'date'     ? `strftime('%d.%m.%Y',${   escaped})` :
+                format === 'datetime' ? `strftime('%d.%m.%Y %T',${escaped})` : escaped,
+                [replace_comma ? x[1].replaceAll(',','.') : x[1], 'l']
+            ];
+            return res;
+        }));
 
         this.query.add_order_plugin(order_plugin_array);
         this.query.add_where_plugin(search_plugin_array);
@@ -119,12 +140,36 @@ class QueryViewerSource extends FormQuerySourceFull {
     //////// Display Columns /////////////
 
     /**
+     * 
+     * @param {string | Column} [column] 
+     * @param {import('vue').MaybeRef<Object.<string, any>>} [input_props] 
+     * @param {DisplayFormat} [format] 
+     * @returns {DisplayFormat}
+     */
+    static get_display_format(column, input_props, format) {
+        if(format) return format;
+        if(input_props) {
+            const props = unref(input_props);
+            if(props.type === 'decimal')  return 'decimal';
+            if(props.type === 'date')     return 'date';
+            if(props.type === 'datetime') return 'datetime';
+        }
+        if(column instanceof Column) {
+            if(column.type === 'DECIMAL')   return 'decimal';
+            if(column.type === 'DATETIME')  return 'date';
+            if(column.type === 'TIMESTAMP') return 'date';
+        }
+        return '';
+    }
+
+    /**
      * @param {string | Column} column_name 
      * @param {string} display_name 
      * @param {{
      *  readonly?:    boolean,
      *  as_enum?:     boolean,
      *  width?:       number | undefined,
+     *  format?:      'decimal' | 'date' | 'datetime' | ''
      *  input_props?: import('vue').MaybeRef<Object.<string, any>>
      * }} props
      */
@@ -138,6 +183,7 @@ class QueryViewerSource extends FormQuerySourceFull {
             readonly: props.readonly ?? false,
             as_enum:  props.as_enum ?? false,
             width:    props.width,
+            format:   QueryViewerSource.get_display_format(column_name, props.input_props, props.format),
             input_props: props.input_props ?? {},
         });
     }
@@ -153,6 +199,7 @@ class QueryViewerSource extends FormQuerySourceFull {
                 as_enum: params.as_enum,
                 input_props: params.input_props,
                 width: params.width,
+                format: QueryViewerSource.get_display_format(name, params.input_props, params.format),
             });
         }
         super.auto_add_column_impl(name, params);
@@ -168,6 +215,7 @@ class QueryViewerSource extends FormQuerySourceFull {
                 as_enum: params.as_enum,
                 input_props: params.input_props,
                 width: params.width,
+                format: QueryViewerSource.get_display_format(col, params.input_props, params.format),
             });
         }
         this.dataset.add_column_local(col, params.computed, params.assoc_col);
@@ -179,7 +227,8 @@ class QueryViewerSource extends FormQuerySourceFull {
      * @param {StandardFormValueRoutineParams_WithDisplay} params
      */
     auto_add_column(col, params = {}) {
-        super.auto_add_column(col, params);
+        const better_params = Object.assign({}, params, {format: QueryViewerSource.get_display_format(col, params.input_props, params.format)});
+        super.auto_add_column(col, better_params);
     }
     /**
      * Automatically get column name and wheather it is primary, and generate appropiate sync
@@ -187,7 +236,8 @@ class QueryViewerSource extends FormQuerySourceFull {
      * @param {StandardFormValueRoutineParams_WithDisplay} params
      */
     auto_add_column_synced(col, params = {}) {
-        super.auto_add_column_synced(col, params);
+        const better_params = Object.assign({}, params, {format: QueryViewerSource.get_display_format(col, params.input_props, params.format)});
+        super.auto_add_column_synced(col, better_params);
     }
 
     //////////////////////////////// utils ////////////////

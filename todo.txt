@@ -112,7 +112,7 @@
                 + better handle different ValueName and ColName
                 + better handle dot-qualified column definitions (assumed, all values are from Column by default)
                 + change QueryParts to ~printf~ better differenciate literal strings and arguments
-                - collate
+                + collate
             + OffsetScroller
                 + errors via MsgManager
                 + better error/expired indication

@@ -100,11 +100,13 @@ function query_parts_is_not_null(parts) {
 }
 
 
-/**@typedef {[string] | [string, boolean]} QueryOrdering */
+/**@typedef {[string] | [string, boolean] | [string, boolean, collate: string | undefined]} QueryOrdering */
 /**@param {QueryOrdering} ordering */
 function query_ordering_to_string(ordering) {
     if(ordering.length === 1) {
         return escape_backtick_smart(ordering[0]);
+    } else if(ordering.length === 3 && ordering[2]) {
+        return escape_backtick_smart(ordering[0]) + " COLLATE " + ordering[2] + (ordering[1] ? ' ASC' : ' DESC');
     } else {
         return escape_backtick_smart(ordering[0]) + (ordering[1] ? ' ASC' : ' DESC');
     }
