@@ -54,7 +54,11 @@ const msg_manager = useMainMsgManager();
 listen("change_to_test_window", (e) => {
   console.log('Changing to test window ', e);
   current_main_component_index.value = +e.payload;
-})
+});
+window.addEventListener("change_to_test_window", (e) => {
+  console.log('Changing to test window ', e);
+  current_main_component_index.value = +1;
+});
 
 onMounted(() => {
     //@ts-ignore

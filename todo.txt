@@ -88,13 +88,13 @@
         + fix scrolling back to 0, when changing search fields
         + add window and button for ADV
         + add additional params for ADV
-    - Forms API
+    + Forms API
         + Example form (Klienci)
             + adapt for DataGraph interface
             + display
             + search
             + search by car
-            - car reasigment
+            + car reasigment (via table viewer)
             + save
             + inserts
             + restrictions
@@ -174,14 +174,15 @@
         + printer template
         + report QuerySource class
 
-    - create toolbars
+    + create toolbars
 
 
 + WinBox
     + core (open, focus, close)
     + mounting components
     + fix viewport update when resize
-    - cascade
+    + ~~cascade~~ close or minimize all
+    + focus selected
     + automatic sizing
     + parent windows
     + (BUG) Windows remount, when closing a window opened before

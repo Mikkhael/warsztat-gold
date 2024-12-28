@@ -15,6 +15,7 @@ import MainWindow_OptionBtn from "./MainWindow_OptionBtn.vue";
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
 import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
 
+import TableViewer from "./TableViewer/TableViewer.vue";
 
 import SettingsWindow from "./Settings/SettingsWindow.vue";
 
@@ -71,15 +72,28 @@ function tool_create_new() {
         if(path === null) return;
     }).catch(handle_error);
 }
-// function tool_sql() {
-//     fwManager.open_or_focus_window("SQL Debug", SQLDebugConsole);
-// }
+
+function tool_table_viewer() {
+    fwManager.open_or_focus_window("Podgląd Tabeli", TableViewer);
+}
+function tool_open() {
+    ipc.db_open().catch((err) => {
+        msgManager.postError(err);
+    });
+}
+function tool_close() {
+    ipc.db_close().catch((err) => {
+        msgManager.postError(err);
+    });
+}
+
 function tool_import() {
     return ipc.db_import_csv().catch(handle_error);
 }
 function tool_export() {
     return ipc.db_export_csv().catch(handle_error);
 }
+
 function tool_settings() {
     fwManager.open_or_focus_window("Ustawienia", SettingsWindow);
 }
@@ -122,6 +136,8 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
                     name: 'Plik',
                     sub: [
                         {name: 'Nowa Baza', onclick: tool_create_new},
+                        {name: 'Otwórz',    onclick: tool_open},
+                        {name: 'Zamknij',   onclick: tool_close},
                         {name: 'Importuj',  onclick: tool_import},
                         {name: 'Eksportuj', onclick: tool_export},
                     ],
@@ -136,6 +152,12 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
                         {},
                         ...window_focus_subs
                     ],
+                }"
+            />
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Podgląd Tabeli',
+                    onclick: tool_table_viewer,
                 }"
             />
             <MainWindow_OptionBtn
