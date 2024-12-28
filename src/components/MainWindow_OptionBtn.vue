@@ -6,14 +6,14 @@ import {ref} from 'vue';
 /**
  * @typedef {{
  *  name?:    string,
- *  onclick?: (suboption_name: string, option_name: string) => void
+ *  onclick?: (option_name: string, category_name: string, event: MouseEvent) => void
  * }} SubOptionBtnDefinition
  */
 /**
  * @typedef {{
  *  name:     string,
  *  sub?:     SubOptionBtnDefinition[]
- *  onclick?: (option_name: string) => void
+ *  onclick?: (option_name: string, category_name: string, event: MouseEvent) => void
  * }} OptionBtnDefinition
  */
 
@@ -69,7 +69,7 @@ defineExpose({
 <template>
 
     <div class="tool" ref="tool"
-        @click="props.options.onclick ? props.options.onclick(props.options.name) : set_sub_display()"
+        @click="e => props.options.onclick ? props.options.onclick(props.options.name, props.options.name, e) : set_sub_display()"
     >
         {{ props.options.name }}
     </div>
@@ -87,7 +87,7 @@ defineExpose({
             :class="{
                 seperator: !sub.name
             }"
-            @click="sub.onclick?.(sub.name ?? '', props.options.name)"
+            @click="e => sub.onclick?.(sub.name ?? '', props.options.name, e)"
         >
             {{ sub.name }}
         </div>
@@ -122,7 +122,7 @@ defineExpose({
     position: absolute;
     /* height: 200px; */
     /* width: 100px; */
-    z-index: 2;
+    z-index: 999999;
     display: none;
     flex-direction: column;
     justify-content: stretch;

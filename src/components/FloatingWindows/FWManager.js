@@ -144,7 +144,19 @@ class FWManager {
         return null;
         // return false;
     }
-
+    minimize_window(/**@type {string} */ title) {
+        const window = this.opened_windows.get(title);
+        if(window) {
+            window.box.minimize();
+            return window;
+        }
+        return null;
+    }
+    minimize_all() {
+        for(const [title] of this.opened_windows) {
+            this.minimize_window(title);
+        }
+    }
     /**
      * @param {string} title 
      * @param {Component} component 
@@ -231,6 +243,12 @@ class FWManager {
             }
         }
         return false;
+    }
+    async close_all(force = false) {
+        const all_titles = Array.from(this.opened_windows.keys());
+        for(const title of all_titles) {
+            await this.close_window(title, force);
+        }
     }
 }
 

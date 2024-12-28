@@ -1,6 +1,6 @@
 <script setup>
 //@ts-check
-import { onMounted, readonly, ref } from "vue";
+import { onMounted, readonly, ref, computed } from "vue";
 import { listen } from "@tauri-apps/api/event";
 import ipc from "../ipc";
 import FWCollection from "./FloatingWindows/FWCollection.vue";
@@ -49,6 +49,21 @@ mainClosePreventionManager.start_main_guard(async () => {
     await backupManager.perform_backup_on_close();
 });
 
+function focus_on_window(title) {
+    fwManager.focus_window(title);
+}
+
+function create_window_focus_subs() {
+    const titles = Array.from(fwManager.opened_windows.keys()).sort();
+    return titles.map(title => {
+        return {name: title, onclick: focus_on_window}
+    });
+}
+
+const window_focus_subs = computed(() => {
+    return create_window_focus_subs();
+})
+
 //////////// TOOLBAR HANDLERS
 
 function tool_create_new() {
@@ -85,6 +100,13 @@ function tool_czesci(){
 //     fwManager.open_or_focus_window("Test Obroty Zlec", ZleceniaNaprawy_Czesci);
 // }
 
+function minimize_all() {
+    fwManager.minimize_all();
+}
+async function close_all(subname, name, /**@type {MouseEvent} */ event) {
+    const force = event.shiftKey;
+    await fwManager.close_all(force);
+}
 
 
 </script>
@@ -102,6 +124,17 @@ function tool_czesci(){
                         {name: 'Nowa Baza', onclick: tool_create_new},
                         {name: 'Importuj',  onclick: tool_import},
                         {name: 'Eksportuj', onclick: tool_export},
+                    ],
+                }"
+            />
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Okna',
+                    sub: [
+                        {name: 'Minimalizuj wszystkie', onclick: minimize_all},
+                        {name: 'Zamknij wszystkie',     onclick: close_all},
+                        {},
+                        ...window_focus_subs
                     ],
                 }"
             />
