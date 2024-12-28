@@ -1,6 +1,7 @@
 <script setup>
 //@ts-check
 import { onMounted, readonly, ref } from "vue";
+import { listen } from "@tauri-apps/api/event";
 import ipc from "../ipc";
 import FWCollection from "./FloatingWindows/FWCollection.vue";
 import useMainFWManager from "./FloatingWindows/FWManager";
@@ -18,10 +19,10 @@ import SettingsWindow from "./Settings/SettingsWindow.vue";
 
 
 import Klienci from "../Forms/Klienci.vue";
-import SamochodyKlientow from "../Forms/SamochodyKlientow.vue";
+// import SamochodyKlientow from "../Forms/SamochodyKlientow.vue";
 import ZleceniaNaprawy from "../Forms/ZleceniaNaprawy.vue";
 import NazwyCzesci from "../Forms/NazwyCzesci.vue";
-import ZleceniaNaprawy_Czesci from "../Forms/ZleceniaNaprawy_Czesci.vue";
+// import ZleceniaNaprawy_Czesci from "../Forms/ZleceniaNaprawy_Czesci.vue";
 
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 
@@ -29,6 +30,9 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 const fwManager  = useMainFWManager();
 const msgManager = useMainMsgManager();
 
+listen('open_sql_console_window', () => {
+    fwManager.open_or_focus_window("Konsola SQL", SQLDebugConsole);
+});
 fwManager.set_viewport({top: '24px'});
 
 function handle_error(msg) {
@@ -46,13 +50,19 @@ mainClosePreventionManager.start_main_guard(async () => {
 
 //////////// TOOLBAR HANDLERS
 
-function tool_open() {
-    return ipc.db_open().then(path => {
+function tool_create_new() {
+    return ipc.db_create().then(path => {
         if(path === null) return;
     }).catch(handle_error);
 }
-function tool_sql() {
-    fwManager.open_or_focus_window("SQL Debug", SQLDebugConsole);
+// function tool_sql() {
+//     fwManager.open_or_focus_window("SQL Debug", SQLDebugConsole);
+// }
+function tool_import() {
+    return ipc.db_import_csv().catch(handle_error);
+}
+function tool_export() {
+    return ipc.db_export_csv().catch(handle_error);
 }
 function tool_settings() {
     fwManager.open_or_focus_window("Ustawienia", SettingsWindow);
@@ -70,9 +80,9 @@ function tool_czesci(){
     fwManager.open_or_focus_window("Części", NazwyCzesci);
 }
 
-function tool_obroty_zlec(){
-    fwManager.open_or_focus_window("Test Obroty Zlec", ZleceniaNaprawy_Czesci);
-}
+// function tool_obroty_zlec(){
+//     fwManager.open_or_focus_window("Test Obroty Zlec", ZleceniaNaprawy_Czesci);
+// }
 
 </script>
 
@@ -82,8 +92,10 @@ function tool_obroty_zlec(){
 
         <section class="toolbar">
             <div class="toolgroup">
-                <div class="tool" @click="tool_open();">Otwórz</div>
-                <div class="tool" @click="tool_sql();" >SQL</div>
+                <div class="tool" @click="tool_create_new();">Nowa Baza</div>
+                <div class="tool" @click="tool_import();">Importuj</div>
+                <div class="tool" @click="tool_export();">Eksportuj</div>
+                <!-- <div class="tool" @click="tool_sql();" >SQL</div> -->
                 <div class="tool" @click="tool_settings();" >Ustawienia</div>
             </div>
             <div class="toolgroup grow"></div>
@@ -91,7 +103,7 @@ function tool_obroty_zlec(){
                 <div class="tool" @click="tool_zlecenia();">Zlecenia Otwarte</div>
                 <div class="tool" @click="tool_klienci();" >Klienci</div>
                 <div class="tool" @click="tool_czesci();" >Części</div>
-                <div class="tool" @click="tool_obroty_zlec();" >Test Obroty Zlec</div>
+                <!-- <div class="tool" @click="tool_obroty_zlec();" >Test Obroty Zlec</div> -->
             </div>
             <div class="toolgroup grow"></div>
         </section>

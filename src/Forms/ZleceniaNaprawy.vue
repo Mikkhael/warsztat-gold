@@ -81,8 +81,15 @@ const param_force_klient_id = src.get(COLS.ID_klienta);
 const param_force_car_id    = src.get(COLS.ID_samochodu);
 
 
+// const readonly = computed(() => data_zamk.get_cached() !== null);
+const readonly = false;
+
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
+}
+
+function close_current_zlecenie() {
+    data_zamk.set_local(date_now());
 }
 
 const RepZlecenieNaprawy_ref = ref(/**@type {ReportPreparer?} */ (null));
@@ -121,16 +128,6 @@ defineExpose({
         <form onsubmit="return false" class="form form_content" :ref="e => src.assoc_form(e)">
             
             <div class="sidebar" v-if="props.show_clients">
-                <div>
-                    <div
-                        class="button"
-                        @click="e => {
-                            src.try_perform_and_update_confirmed(() => show_only_open = !show_only_open);
-                        }"
-                    >
-                        {{ show_only_open ? "Pokarz wszystkie zlecenia" : "Pokarz tylko otwarte zlecenia" }}
-                    </div>
-                </div>
                 <fieldset>
                     <legend>Klient</legend>
                     <Klienci 
@@ -151,25 +148,26 @@ defineExpose({
                     </div>
                     <div>
                         <label>data otwarcia</label>
-                        <FormInput :value="data_otw"  auto />
+                        <FormInput :value="data_otw"  auto :readonly="readonly" />
                     </div>
                     <div v-if="data_zamk.get_local() !== null">
                         <label>data zamknięcia</label>
-                        <FormInput :value="data_zamk" auto readonly />
+                        <FormInput :value="data_zamk" auto :readonly="readonly" />
                     </div>
                     <div class="big" v-else>
                         OTWARTE
+                        <input type="button" value="Zamknij" @click="close_current_zlecenie()"/>
                     </div>
                 </div>
 
                 <div class="subheader flex_auto">
                     <div class="udzialy grid">
-                        <div>Adres e-mail</div> <FormInput :value="prow" auto/> <FormInput auto :value="prow_p" nospin min="0" max="100"/> <span>%</span>
-                        <div>pomocnik 1</div>   <FormInput :value="pom1" auto/> <FormInput auto :value="pom1_p" nospin min="0" max="100"/> <span>%</span>
-                        <div>pomocnik 2</div>   <FormInput :value="pom2" auto/> <FormInput auto :value="pom2_p" nospin min="0" max="100"/> <span>%</span>
+                        <div>Adres e-mail</div> <FormInput :value="prow" auto :readonly="readonly"/> <FormInput auto :value="prow_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
+                        <div>pomocnik 1</div>   <FormInput :value="pom1" auto :readonly="readonly"/> <FormInput auto :value="pom1_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
+                        <div>pomocnik 2</div>   <FormInput :value="pom2" auto :readonly="readonly"/> <FormInput auto :value="pom2_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
                     </div>
                     <div class="buttons">
-                        <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/>
+                        <!-- <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/> -->
                         <img src="./../assets/icons/document.svg" class="button" @click="open_print_window_faktura"/>
                         <div class="button" @click="open_czesci_window">CZĘŚCI</div>
                         <div class="button" @click="open_robocizna_window">ROBOCIZNA</div>
@@ -177,12 +175,22 @@ defineExpose({
                 </div>
 
                 <label>Zgłoszenie do naprawy</label>
-                <FormInput :value="zgloszenie" auto class="grow" textarea/>
+                <FormInput :value="zgloszenie" :readonly="readonly" auto class="grow" textarea/>
                 
                 <label>Uwagi</label>
-                <FormInput :value="uwagi" auto class="grow" textarea/>
+                <FormInput :value="uwagi" :readonly="readonly" auto class="grow" textarea/>
             </div>
         </form>
+        
+        <div
+            v-if="props.show_clients"
+            class="button"
+            @click="e => {
+                src.try_perform_and_update_confirmed(() => show_only_open = !show_only_open);
+            }"
+        >
+            {{ show_only_open ? "Pokarz wszystkie zlecenia" : "Pokarz tylko otwarte zlecenia" }}
+        </div>
 
         <QuerySourceOffsetScroller
             :src="src"
@@ -226,6 +234,7 @@ defineExpose({
         align-items: flex-end;
     }
     .button {
+        text-align: center;
         padding: 3px;
         margin: 0px 3px;
     }
@@ -263,7 +272,7 @@ defineExpose({
     }
 
     .big {
-        font-size: 2em;
+        font-size: 1.5em;
 
     }
 
