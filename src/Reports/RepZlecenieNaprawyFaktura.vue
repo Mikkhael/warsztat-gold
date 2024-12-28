@@ -195,7 +195,7 @@ defineExpose({
             <div class="sub_left big">
                 <div class="poke">ul. {{ klie_ulica }} </div>
                 <div class="poke">{{ klie_kod }} {{ klie_miasto }} </div>
-                <div class="poke">NIP: {{ klie_nip }} </div>
+                <div class="poke">{{ !klie_nip ? '\xa0' : ('NIP: ' + klie_nip) }} </div>
                 <div class="poke bold">{{ samo_marka }} {{ samo_model }} {{ samo_nrrej }}</div>
             </div>
             <div class="sub_right">
@@ -273,7 +273,7 @@ defineExpose({
 
         <div class="signature_footer nobreak">
             <div class="signature_section">
-                <div class="name">{{ klie_odbiorca }}</div>
+                <div class="name">{{ klie_odbiorca ?? '\xa0' }}</div>
                 <div class="info">podpis osoby uprawnionej<br>do odbioru faktury VAT</div>
             </div>
             <div class="signature_section">
@@ -295,6 +295,7 @@ defineExpose({
     .small   { font-size: 0.8em; }
     .big     { font-size: 1.2em; }
     .vbig    { font-size: 1.6em; }
+    .hide    { visibility: hidden; }
     
     .faktura_header {
         text-wrap: nowrap;
