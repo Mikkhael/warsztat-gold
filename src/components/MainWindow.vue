@@ -10,6 +10,7 @@ import useMainMsgManager from "./Msg/MsgManager";
 import { useMainBackupManager } from "./Backup";
 import { useMainClosePreventionManager } from "../ClosePrevention";
 
+import MainWindow_OptionBtn from "./MainWindow_OptionBtn.vue";
 
 import TestWindow1 from "./FloatingWindows/TestWindow1.vue"
 import TestWindow2 from "./FloatingWindows/TestWindow2.vue"
@@ -84,6 +85,8 @@ function tool_czesci(){
 //     fwManager.open_or_focus_window("Test Obroty Zlec", ZleceniaNaprawy_Czesci);
 // }
 
+
+
 </script>
 
 <template>
@@ -91,21 +94,43 @@ function tool_czesci(){
     <section class="container">
 
         <section class="toolbar">
-            <div class="toolgroup">
-                <div class="tool" @click="tool_create_new();">Nowa Baza</div>
-                <div class="tool" @click="tool_import();">Importuj</div>
-                <div class="tool" @click="tool_export();">Eksportuj</div>
-                <!-- <div class="tool" @click="tool_sql();" >SQL</div> -->
-                <div class="tool" @click="tool_settings();" >Ustawienia</div>
-            </div>
-            <div class="toolgroup grow"></div>
-            <div class="toolgroup">
-                <div class="tool" @click="tool_zlecenia();">Zlecenia Otwarte</div>
-                <div class="tool" @click="tool_klienci();" >Klienci</div>
-                <div class="tool" @click="tool_czesci();" >Części</div>
-                <!-- <div class="tool" @click="tool_obroty_zlec();" >Test Obroty Zlec</div> -->
-            </div>
-            <div class="toolgroup grow"></div>
+
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Plik',
+                    sub: [
+                        {name: 'Nowa Baza', onclick: tool_create_new},
+                        {name: 'Importuj',  onclick: tool_import},
+                        {name: 'Eksportuj', onclick: tool_export},
+                    ],
+                }"
+            />
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Ustawienia',
+                    onclick: tool_settings
+                }"
+            />
+            <div class="spacer"></div>
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Zlecenia Otwarte',
+                    onclick: tool_zlecenia
+                }"
+            />
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Klienci',
+                    onclick: tool_klienci
+                }"
+            />
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Części',
+                    onclick: tool_czesci
+                }"
+            />
+            <div class="spacer"></div>
         </section>
         <main class="main">
             <FWCollection :manager="fwManager" @error="handle_error" />
@@ -144,6 +169,7 @@ function tool_czesci(){
 
 
 .toolbar {
+    position: relative;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -151,21 +177,8 @@ function tool_czesci(){
     height: 28px;
     background-color: #d8d8d8;
 }
-.toolgroup {
-    display: flex;
-    flex-direction: row;
-}
-.tool{
-    border: 2px solid black;
-    display: flex;
-    align-items: center;
-    padding: 0ch 1ch;
-    cursor: pointer;
-    transition: 0.2s;
-    user-select: none;
-}
-.tool:hover {
-    background-color: #fff;
+.toolbar .spacer {
+    flex-grow: 1;
 }
 
 .footer {
@@ -187,6 +200,7 @@ function tool_czesci(){
     text-align: center;
     position: relative;
     background-color: rgb(231, 231, 231);
+    z-index: 0;
 }
 
 .main .mainWindowsContainer{
