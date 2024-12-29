@@ -55,7 +55,6 @@ src.auto_add_column        ("brutto",                       {
         type: 'decimal'
     }
 });
-// TODO add decimal COLLATE
 
 //////////////// TOTAL ///////////////
 

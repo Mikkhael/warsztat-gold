@@ -89,17 +89,28 @@ pub fn perform_backup_lists(dirpath: String, prefix: String, ext: String, varian
     Ok(lists)
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct BackupNewFormat {
     path: String,
     variant: String,
     date: String
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct BackupResult {
+    good: Vec<BackupNewFormat>,
+    bad:  Vec<(BackupNewFormat, String)>,
+}
+
+
 #[tauri::command]
-pub fn perform_backup(prefix: &str, ext: &str, filepaths_to_delete: Vec<PathBuf>, copies_to_create: Vec<BackupNewFormat>, nodelete: bool, sqlite_manager: tauri::State<sqlite_manager::SqliteManagerLock>) -> Result<(), String> {
+pub fn perform_backup(prefix: &str, ext: &str, filepaths_to_delete: Vec<PathBuf>, copies_to_create: Vec<BackupNewFormat>, nodelete: bool, sqlite_manager: tauri::State<sqlite_manager::SqliteManagerLock>) -> Result<BackupResult, String> {
     println!("[INVOKE] perform_backup: {:?}, {:?}", filepaths_to_delete, copies_to_create);
+    let mut good_paths : Vec<BackupNewFormat>           = Default::default();
+    let mut bad_paths  : Vec<(BackupNewFormat, String)> = Default::default();
+
     if let Some(first_copy_format) = copies_to_create.first() {
+        // TEMP file
         let mut temp_filename = OsString::new();
         temp_filename.push("warsztat_backup_temp_");
         temp_filename.push(&first_copy_format.date);
@@ -108,21 +119,42 @@ pub fn perform_backup(prefix: &str, ext: &str, filepaths_to_delete: Vec<PathBuf>
         temp_filepath.push(temp_filename);
         println!("Starting temp backup {:?}", temp_filepath);
         sqlite_manager::save_database_impl(&temp_filepath, &sqlite_manager, 100, std::time::Duration::from_millis(1))?;
+
+        // Creating folder tree structure
         for copy_format in copies_to_create {
+            let filepath = PathBuf::from(&copy_format.path);
+            // filepath.push(&copy_format.variant);
+            println!("Creating folder tree {:?}", filepath);
+            if !filepath.exists() {
+                let result = fs::create_dir_all(&filepath);
+                if let Err(err) = result {
+                    bad_paths.push((copy_format, err.to_string()));
+                    continue;
+                }
+            }
+            if !filepath.is_dir() {
+                bad_paths.push((copy_format, "Ścierzka nie jest folderem".into()));
+                continue;
+            }
+            good_paths.push(copy_format);
+        }
+
+        // Creating copies
+        for copy_format in &good_paths {
             let mut filename = OsString::new();
             filename.push(prefix);
             filename.push("_");
-            filename.push(copy_format.date);
+            filename.push(&copy_format.date);
             filename.push(ext);
-            let mut filepath = PathBuf::from(copy_format.path);
-            filepath.push(copy_format.variant);
+            let mut filepath = PathBuf::from(&copy_format.path);
+            filepath.push(&copy_format.variant);
+            fs::create_dir_all(&filepath).map_err(|err| err.to_string())?;
             filepath.push(filename);
             println!("Creating dest backup {:?}", filepath);
-            if let Some(dirpath) = filepath.parent() {
-                fs::create_dir_all(dirpath).map_err(|err| err.to_string())?;
-            }
             fs::copy(&temp_filepath, &filepath).map_err(|err| err.to_string())?;
         }
+
+        // Removing TEMP
         println!("Removing temp backup {:?}", temp_filepath);
         fs::remove_file(temp_filepath).map_err(|err| err.to_string())?;
     }
@@ -136,5 +168,10 @@ pub fn perform_backup(prefix: &str, ext: &str, filepaths_to_delete: Vec<PathBuf>
             fs::remove_file(filepath).map_err(|err| err.to_string())?;
         }
     }
-    Ok(())
+
+    let result = BackupResult {
+        good: good_paths,
+        bad:  bad_paths
+    };
+    Ok(result)
 }

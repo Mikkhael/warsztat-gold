@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 import { onMounted, readonly, ref, computed } from "vue";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import ipc from "../ipc";
 import FWCollection from "./FloatingWindows/FWCollection.vue";
 import useMainFWManager from "./FloatingWindows/FWManager";
@@ -33,7 +33,7 @@ const fwManager  = useMainFWManager();
 const msgManager = useMainMsgManager();
 
 listen('open_sql_console_window', () => {
-    fwManager.open_or_focus_window("Konsola SQL", SQLDebugConsole);
+    tool_sql();
 });
 fwManager.set_viewport({top: '24px'});
 
@@ -86,12 +86,29 @@ function tool_close() {
         msgManager.postError(err);
     });
 }
+function tool_rebuild() {
+    ipc.db_rebuild().catch((err) => {
+        msgManager.postError(err);
+    });
+}
 
 function tool_import() {
     return ipc.db_import_csv().catch(handle_error);
 }
 function tool_export() {
     return ipc.db_export_csv().catch(handle_error);
+}
+
+function tool_sql() {
+    fwManager.open_or_focus_window("Konsola SQL", SQLDebugConsole);
+}
+
+function tool_testview() {
+    window.dispatchEvent(new Event('testview_request'));
+}
+
+function tool_devtools() {
+    emit('open_devtools');
 }
 
 function tool_settings() {
@@ -135,11 +152,16 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
                 :options="{
                     name: 'Plik',
                     sub: [
-                        {name: 'Nowa Baza', onclick: tool_create_new},
-                        {name: 'Otwórz',    onclick: tool_open},
-                        {name: 'Zamknij',   onclick: tool_close},
-                        {name: 'Importuj',  onclick: tool_import},
-                        {name: 'Eksportuj', onclick: tool_export},
+                        {name: 'Nowa Baza',        onclick: tool_create_new},
+                        {name: 'Otwórz',           onclick: tool_open},
+                        {name: 'Zamknij',          onclick: tool_close},
+                        {name: 'Importuj',         onclick: tool_import},
+                        {name: 'Eksportuj',        onclick: tool_export},
+                        {name: 'Napraw Strukturę', onclick: tool_rebuild},
+                        {},
+                        {name: 'Konsola SQL',      onclick: tool_sql},
+                        {name: 'Tryp Testowy',     onclick: tool_testview, dev: true},
+                        {name: 'Narzędzia Dev',    onclick: tool_devtools, dev: true},
                     ],
                 }"
             />

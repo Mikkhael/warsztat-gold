@@ -55,8 +55,8 @@ listen("change_to_test_window", (e) => {
   console.log('Changing to test window ', e);
   current_main_component_index.value = +e.payload;
 });
-window.addEventListener("change_to_test_window", (e) => {
-  console.log('Changing to test window ', e);
+window.addEventListener("testview_request", (e) => {
+  console.log('Changing to test view ', e);
   current_main_component_index.value = +1;
 });
 

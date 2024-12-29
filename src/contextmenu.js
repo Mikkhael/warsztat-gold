@@ -92,9 +92,9 @@ function handle_context_menu_event(event) {
         // {label: "Otwórz Bazę Danych",  event: "request_db_open"},
         // {label: "Zamknij Bazę Danych", event: "request_db_close"},
         // {is_separator: true},
-        {label: 'Konsola SQL',  event: "open_sql_console_window"},
-        {label: 'Okno Testowe', event: "change_to_test_window", payload: '2'},
-        {label: 'Dev Tools', event: (e) => {emit('open_devtools');}},
+        // {label: 'Konsola SQL',  event: "open_sql_console_window"},
+        // {label: 'Okno Testowe', event: "change_to_test_window", payload: '2'},
+        // {label: 'Dev Tools', event: (e) => {emit('open_devtools');}},
     ]});
 }
 

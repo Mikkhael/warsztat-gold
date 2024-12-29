@@ -482,7 +482,6 @@ function parse_decimal_adv(source_string) {
 // 	}
 // }
 
-// TODO foramt thousands seperation
 /**
  * Appends sufix and sets precision, if input is a valid decimal string. Otherwise returns null
  * @param {string} source_string 

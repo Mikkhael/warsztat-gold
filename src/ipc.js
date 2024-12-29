@@ -215,12 +215,16 @@ async function backup_list(dirpath, variantNames, prefix="kopia_warsztat", ext= 
 }
 
 /**
+ * @typedef {{path: string, variant: string, date: string}} BackupNewFormat
+ */
+
+/**
  * @param {string[]} filepathsToDelete 
- * @param {{path: string, variant: string, date: string}[]} copiesToCreate 
+ * @param {BackupNewFormat[]} copiesToCreate 
  * @param {string}   prefix
  * @param {string}   ext
  * @param {boolean}  nodelete
- * @returns {Promise<void>}
+ * @returns {Promise<{good: BackupNewFormat[], bad: [BackupNewFormat, string][]}>}
  */
 async function backup(filepathsToDelete, copiesToCreate, prefix, ext, nodelete) {
     const res = await invoke('perform_backup', {
@@ -230,6 +234,7 @@ async function backup(filepathsToDelete, copiesToCreate, prefix, ext, nodelete) 
         ext,
         nodelete
     });
+    console.log("BACKUP RES", res);
     return res;
 }
 

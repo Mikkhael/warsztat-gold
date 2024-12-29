@@ -6,14 +6,15 @@ import {ref} from 'vue';
 /**
  * @typedef {{
  *  name?:    string,
- *  onclick?: (option_name: string, category_name: string, event: MouseEvent) => void
+ *  onclick?: (option_name: string, category_name: string, event: MouseEvent) => void,
+ *  dev?:     boolean,
  * }} SubOptionBtnDefinition
  */
 /**
  * @typedef {{
  *  name:     string,
- *  sub?:     SubOptionBtnDefinition[]
- *  onclick?: (option_name: string, category_name: string, event: MouseEvent) => void
+ *  sub?:     SubOptionBtnDefinition[],
+ *  onclick?: (option_name: string, category_name: string, event: MouseEvent) => void,
  * }} OptionBtnDefinition
  */
 
@@ -35,13 +36,14 @@ const tool     = ref();
 const subtools = ref();
 
 const displayed = ref(false);
+const show_dev  = ref(false);
 const top  = ref(0);
 const left = ref(0);
 
 /**
  * @param {boolean} [display] 
  */
-function set_sub_display(display) {
+function set_sub_display(display, with_dev = false) {
     if(display === undefined) {
         display = !displayed.value;
     }
@@ -51,9 +53,11 @@ function set_sub_display(display) {
         top.value  = rect.top + rect.height;
         left.value = rect.left;
         displayed.value = true;
+        show_dev.value  = with_dev;
         // console.log("SETTING SUB DISPLAY", display, props.options, top.value, left.value);
     } else {
         displayed.value = false;
+        show_dev.value  = false;
         // console.log("SETTING SUB DISPLAY", display, props.options, top.value, left.value);
     }
 }
@@ -69,7 +73,7 @@ defineExpose({
 <template>
 
     <div class="tool" ref="tool"
-        @click="e => props.options.onclick ? props.options.onclick(props.options.name, props.options.name, e) : set_sub_display()"
+        @click="e => props.options.onclick ? props.options.onclick(props.options.name, props.options.name, e) : set_sub_display(undefined, e.shiftKey)"
     >
         {{ props.options.name }}
     </div>
@@ -85,6 +89,7 @@ defineExpose({
         <div class="sub"
             v-for="sub in props.options.sub"
             :class="{
+                hidden:    !show_dev && sub.dev,
                 seperator: !sub.name
             }"
             @click="e => sub.onclick?.(sub.name ?? '', props.options.name, e)"
@@ -142,6 +147,9 @@ defineExpose({
     margin: 2px;
     border: 1px dashed black;
     cursor: unset;
+}
+.sub.hidden {
+    display: none;
 }
 
 </style>

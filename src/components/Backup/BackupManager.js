@@ -3,6 +3,7 @@ import { useMainSettings, Settings, SettingsManager } from "../Settings/Settings
 import ipc from "../../ipc";
 import useMainMsgManager, { MsgManager } from "../Msg/MsgManager";
 import { date, deep_copy, pad } from "../../utils";
+import { path } from "@tauri-apps/api";
 
 /**
  * @typedef {typeof Settings.prototype.categories.backup} BackupSettings
@@ -77,6 +78,8 @@ class BackupManager extends SettingsManager {
      */
     async perform_backup(nodelete = false, mock = false, mock_date) {
         const self_settings = this.get_settings();
+        const main_msg = "Tworzenie kopii zapasowej..."
+        this.msgManager.post('info', main_msg);
         try {
             const res = await BackupManager.do_backup_routine(
                 self_settings.list,
@@ -86,11 +89,25 @@ class BackupManager extends SettingsManager {
                 mock,
                 mock_date
             );
-            if(res.copies_to_create.length > 0 || res.filepaths_to_delete.length > 0) {
-                this.msgManager.post('info', 'Wykonano kopię zapasową. Stworzono ' 
-                    + res.copies_to_create.length + ' nowych kopii. Usunięto '
-                    + res.filepaths_to_delete.length + ' przedawnionych kopii.',
-                10000);
+            const {good, bad, deleted} = res;
+            // if(res.copies_to_create.length > 0 || res.filepaths_to_delete.length > 0) {
+            //     this.msgManager.post('info', 'Wykonano kopię zapasową. Stworzono ' 
+            //         + res.copies_to_create.length + ' nowych kopii. Usunięto '
+            //         + res.filepaths_to_delete.length + ' przedawnionych kopii.',
+            //     10000);
+            // }
+            this.msgManager.close_all_with_content(main_msg);
+            const timeout = 10000;
+            if(good.length > 0) {
+                this.msgManager.post('info', 'Stworzono ' + good.length + ' nowych kopii zapasowych', timeout);
+            }
+            if(deleted.length > 0) {
+                this.msgManager.post('info', 'Usunięto ' + deleted.length + ' przedawnionych kopii zapasowych', timeout);
+            }
+            if(bad.length > 0) {
+                const paths_and_reasons = bad.map(([fmt, reason]) => `"${fmt.path}" (${reason})`);
+                const unique_paths_and_reasons = Array.from( new Set(paths_and_reasons) );
+                this.msgManager.post('warn', 'Nie udało się stworzyć kopii zapasowych dla ścierzek: ' + unique_paths_and_reasons.join(', '), timeout);
             }
             return res;
         } catch (err) {
@@ -119,6 +136,7 @@ class BackupManager extends SettingsManager {
      * @param {string}  ext 
      * @param {boolean} nodelete 
      * @param {string}  [mock_date]
+     * @returns {Promise<Awaited<ReturnType<ipc['backup']>> & {deleted: string[]}>}
      */
     static async do_backup_routine(rules_list, prefix, ext, nodelete, mock = false, mock_date) {
         const processed = await Promise.all( rules_list.map(async rules => {
@@ -135,15 +153,20 @@ class BackupManager extends SettingsManager {
 
         console.log('BACKUP RESULT', processed_flat);
         if(!mock) {
-            await ipc.backup(
+            const res = await ipc.backup(
                 processed_flat.filepaths_to_delete,
                 processed_flat.copies_to_create,
                 prefix,
                 ext,
                 nodelete
             )
+            return Object.assign({}, res, {deleted: processed_flat.filepaths_to_delete});
         }
-        return processed_flat;
+        return {
+            good:    processed_flat.copies_to_create,
+            deleted: processed_flat.filepaths_to_delete,
+            bad: [],
+        };
     }
 
     /**
