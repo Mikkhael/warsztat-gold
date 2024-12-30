@@ -169,8 +169,8 @@ defineExpose({
                         <div>pomocnik 2</div>   <FormInput :value="pom2" auto :readonly="readonly"/> <FormInput auto :value="pom2_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
                     </div>
                     <div class="buttons">
-                        <!-- <img src="./../assets/icons/document.svg" class="button" @click="open_print_window"/> -->
-                        <img src="./../assets/icons/document.svg" class="button" @click="open_print_window_faktura"/>
+                        <!-- <img src="/assets/icons/document.svg" class="button" @click="open_print_window"/> -->
+                        <img src="/assets/icons/document.svg" class="button" @click="open_print_window_faktura"/>
                         <div class="button" @click="open_czesci_window">CZĘŚCI</div>
                         <div class="button" @click="open_robocizna_window">ROBOCIZNA</div>
                     </div>

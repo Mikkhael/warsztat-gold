@@ -93,7 +93,7 @@ defineExpose({
                 <slot :elem="/**@type {any}*/ (elem)" :index="index" ></slot>
                 <div class="EditableArray_erase_button_container">
                     <img class="button" 
-                    src="./../../assets/icons/trashx.svg" 
+                    src="/assets/icons/trashx.svg" 
                     @click="perform_delete(index)" 
                     v-if="!props.nodelete"/>
                 </div>

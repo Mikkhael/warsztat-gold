@@ -366,7 +366,7 @@ onUnmounted(() => {
                             @pointerdown="e => handle_select_down(row_i, true, e)"
                             @pointerup="e => handle_select_up(row_i, true, e)">
                         <img class="delete_button button" 
-                            src="./../../assets/icons/trashx.svg" 
+                            src="/assets/icons/trashx.svg" 
                             @click="src.dataset.flip_row_deleted(row_i)" 
                             v-if="props.deletable"
                         />

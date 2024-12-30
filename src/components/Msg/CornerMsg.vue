@@ -26,7 +26,7 @@ function perform_close() {
         <span class="content" @click="perform_click">
             {{ props.content }}
         </span>
-        <img class="close_btn" src="src/assets/icons/close.svg" @click="perform_close">
+        <img class="close_btn" src="/assets/icons/close.svg" @click="perform_close">
     </div>
 
 </template>

@@ -50,7 +50,7 @@ function toggle(new_value) {
         height: 50%;
         /* flex-grow: 1; */
         cursor: pointer;
-        background-image: url('./../../assets/icons/sort_off.svg');
+        background-image: url('/assets/icons/sort_off.svg');
         background-size: contain;
         background-repeat: no-repeat;
     }
@@ -58,7 +58,7 @@ function toggle(new_value) {
         transform: scaleY(-1);
     }
     .sort_btn.selected {
-        background-image: url('./../../assets/icons/sort_on.svg');
+        background-image: url('/assets/icons/sort_on.svg');
     }
     .sort_btn:hover{
         background-color: rgba(0, 0, 255, 0.185);

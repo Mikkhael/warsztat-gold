@@ -35,7 +35,7 @@ async function onclick() {
 
 <template>
 
-<img src="./../../assets/icons/folder_open.svg" class="button" @click="onclick">
+<img src="/assets/icons/folder_open.svg" class="button" @click="onclick">
 
 </template>
 

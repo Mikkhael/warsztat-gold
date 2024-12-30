@@ -189,22 +189,22 @@ legend {
 }
 
 .form_scroller .btn.bound{
-	background-image: url("src/assets/icons/arrow_rb.svg");
+	background-image: url("/assets/icons/arrow_rb.svg");
 } 
 .form_scroller .btn.step{
-	background-image: url("src/assets/icons/arrow_r.svg");
+	background-image: url("/assets/icons/arrow_r.svg");
 }
 .form_scroller .btn.step2{
-	background-image: url("src/assets/icons/arrow_r2.svg");
+	background-image: url("/assets/icons/arrow_r2.svg");
 }
 .form_scroller .btn.refresh{
-	background-image: url("src/assets/icons/refresh.svg");
+	background-image: url("/assets/icons/refresh.svg");
 }
 .form_scroller .btn.insert{
-	background-image: url("src/assets/icons/plus.svg");
+	background-image: url("/assets/icons/plus.svg");
 }
 .form_scroller .btn.save{
-	background-image: url("src/assets/icons/disk.svg");
+	background-image: url("/assets/icons/disk.svg");
 }
 
 .form_scroller .btn {

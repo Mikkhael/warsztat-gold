@@ -154,7 +154,7 @@ function clicked_custom(/**@type {string} */ name) {
 	<div class="spacer"></div>
 	<input type="button" class="btn custom" 
 		v-for="custom_btn in props.custom_buttons"
-		:style="{'background-image': custom_btn.icon ? `url('src/assets/icons/${custom_btn.icon}.svg')` : 'none', ...(custom_btn.style ?? {})}"
+		:style="{'background-image': custom_btn.icon ? `url('/assets/icons/${custom_btn.icon}.svg')` : 'none', ...(custom_btn.style ?? {})}"
 		:value="custom_btn.value ?? ''"
 		:class="custom_btn.class ?? {}"
 		@click="clicked_custom(custom_btn.name)"

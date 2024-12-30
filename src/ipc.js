@@ -80,10 +80,10 @@ function file_name(path) {
 
 //////////// Database //////////////////////
 
-async function db_open(no_state_change = false) {
-    let path = await open({
+async function db_open(no_state_change = false, /**@type {string?} */ force_path = null) {
+    let path = force_path ?? await open({
         title: "Wybierz plik bazy danych",
-        filters: [{name: "Sqlite Database", extensions: ['db3']}]
+        filters: [{name: "Baza Danych Warsztat Gold", extensions: ['autogold']}, {name: "Sqlite Database", extensions: ['db3']}]
     });
     if(!path) return path;
     await db_close();
@@ -106,7 +106,7 @@ function db_rebuild(reemit_opened_database = true, with_vacuum = true) {
 async function db_create() {
     let path = await save({
         title: "Stwórz plik nowej bazy danych",
-        filters: [{name: "Sqlite Database", extensions: ['db3']}],
+        filters: [{name: "Baza Danych Warsztat Gold", extensions: ['autogold']}, {name: "Sqlite Database", extensions: ['db3']}],
         defaultPath: state.db_path || undefined,
     });
     if(!path) return null;
@@ -204,7 +204,7 @@ async function db_as_transaction(callback) {
  * @param {string[]} variantNames
  * @returns {Promise<BackupVariantList[]>}
  */
-async function backup_list(dirpath, variantNames, prefix="kopia_warsztat", ext= '.db3') {
+async function backup_list(dirpath, variantNames, prefix="kopia_warsztat", ext= '.autogold') {
     const res = await invoke('perform_backup_lists', {
         dirpath,
         variantNames,
@@ -253,15 +253,31 @@ async function db_query(query) {
     return res;
 }
 
+/**
+ * @typedef {{
+ *  is_open: boolean,
+ *  path:    string,
+ *  argv:    string[]
+ * }} CurrentDbState
+ */
+
 function refresh_state(){
     console.log("Refreshing IPC state");
-    return invoke("get_current_db_state").then(init_state => {
+    return invoke("get_current_db_state").then(/**@param {CurrentDbState} init_state*/ init_state => {
         set_state_db_path  (init_state.path);
         set_state_db_opened(init_state.is_open);
+        console.log("ARGV", init_state.argv);
+        return init_state;
     });
 }
 
-refresh_state().catch(err => {
+refresh_state()
+.then(init_state => {
+    if(init_state.argv.length >= 2) {
+        db_open(undefined, init_state.argv[1]);
+    }
+})
+.catch(err => {
     console.error("Error refreshing state", err);
 });
 

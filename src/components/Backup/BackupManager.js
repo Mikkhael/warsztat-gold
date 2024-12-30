@@ -26,7 +26,7 @@ class BackupManager extends SettingsManager {
      * @param {Settings} settings 
      * @param {MsgManager} msgManager
      */
-    constructor(settings, msgManager, prefix = 'kopia_warsztat', ext = '.db3') {
+    constructor(settings, msgManager, prefix = 'kopia_warsztat', ext = '.autogold') {
         super(settings, 'backup');
         this.msgManager = msgManager;
         this.prefix = prefix;
@@ -121,7 +121,7 @@ class BackupManager extends SettingsManager {
      * @param {string} [mock_date]
      * @param {BackupSettings['list']?} rules_list 
      */
-    async trigger_test(mock_date, nomock = false, allow_delete = false, prefix = 'kopia_warsztat', ext = ".db3", rules_list = null) {
+    async trigger_test(mock_date, nomock = false, allow_delete = false, prefix = 'kopia_warsztat', ext = ".autogold", rules_list = null) {
         if(!rules_list) {
             rules_list = this.get_settings().list;
         }

@@ -101,7 +101,7 @@ function on_click_find() {
 <template>
 
 <div class="button container" @click="on_click_find">
-    <img src="./../../assets/icons/search.svg"/>
+    <img src="/assets/icons/search.svg"/>
     <div class="text">
         {{ props.text }}
     </div>

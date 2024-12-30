@@ -16,7 +16,7 @@ const props = defineProps({
 });
 
 
-const icon_src = computed(() => `src/assets/icons/${props.icon}.svg`);
+const icon_src = computed(() => `/assets/icons/${props.icon}.svg`);
 
 const emit = defineEmits({
     click: (/**@type {MouseEvent} */ event) => true,

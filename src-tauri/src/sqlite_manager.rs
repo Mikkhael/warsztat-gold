@@ -19,6 +19,8 @@ pub struct SqliteManager{
     main_tables_path:       PathBuf,
     structure_sql_path:     PathBuf,
 
+    argv: Vec<String>,
+
     sqlite_conn: Option<SqliteConn>
 }
 
@@ -78,6 +80,8 @@ impl SqliteManager{
         let resolver = app.path_resolver();
         let state_lock = app.state::<SqliteManagerLock>();
         let mut state = state_lock.lock().expect("Unable to lock sqlite manager");
+
+        state.argv = std::env::args().collect();
 
         state.decimal_extension_path = resolver.resolve_resource("resources/sqlite/decimal").expect("Cannot resolve decimal path");
         state.vsv_extension_path     = resolver.resolve_resource("resources/sqlite/vsv").expect("Cannot resolve vsv path");
@@ -287,7 +291,8 @@ impl SqliteConn{
 #[derive(serde::Serialize)]
 pub struct CurrentDbState {
     is_open: bool,
-    path: PathBuf
+    path: PathBuf,
+    argv: Vec<String>,
 }
 #[tauri::command]
 pub fn get_current_db_state(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<CurrentDbState, String>{
@@ -295,10 +300,15 @@ pub fn get_current_db_state(sqlite_manager: tauri::State<SqliteManagerLock>) -> 
     if let Some(sqlite_conn) = &db.sqlite_conn {
         Ok(CurrentDbState {
             is_open: true,
-            path: sqlite_conn.path.clone()
+            path: sqlite_conn.path.clone(),
+            argv: db.argv.clone()
         })
     }else{
-        Ok(CurrentDbState {is_open: false, path: "".into()})
+        Ok(CurrentDbState {
+            is_open: false,
+            path: "".into(),
+            argv: db.argv.clone()
+        })
     }
 }
 
