@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { resolve } from "path";
 import vue from "@vitejs/plugin-vue";
 
 // https://vitejs.dev/config/
@@ -17,4 +18,13 @@ export default defineConfig(async () => ({
   // 3. to make use of `TAURI_DEBUG` and other env variables
   // https://tauri.studio/v1/api/config#buildconfig.beforedevcommand
   envPrefix: ["VITE_", "TAURI_"],
+
+  build: {
+    rollupOptions: {
+      input: {
+        main:      resolve(__dirname, 'index.html'),
+        printView: resolve(__dirname, 'printview.html'),
+      }
+    }
+  }
 }));

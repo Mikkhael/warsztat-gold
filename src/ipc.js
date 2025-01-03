@@ -167,6 +167,7 @@ async function db_import_csv() {
  * @returns {Promise<number>}
  */
 async function db_execute(query, asBatch = false, getLastRowid = false) {
+    console.log("QUERY EXECUTE: ", query);
     return await invoke("perform_execute", {query, asBatch, getLastRowid});
 }
 
@@ -249,6 +250,7 @@ async function backup(filepathsToDelete, copiesToCreate, prefix, ext, nodelete) 
  * @returns {Promise<IPCQueryResult>}
  */
 async function db_query(query) {
+    console.log("QUERY: ", query);
     const res = await invoke("perform_query", {query});
     return res;
 }
@@ -273,7 +275,7 @@ function refresh_state(){
 
 refresh_state()
 .then(init_state => {
-    if(init_state.argv.length >= 2) {
+    if(!init_state.is_open && init_state.argv.length >= 2){
         db_open(undefined, init_state.argv[1]);
     }
 })

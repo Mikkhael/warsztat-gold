@@ -27,6 +27,16 @@ do czego są "ujęto rabat autoryzacja zlecenia Przebieg:     km" w fakturze
 
 
 
+
+////////////////////////////////////////////////////////////////////////////////////////////
+///// WINDOWS 7 //////
+
+Na windowsie 7 trzeba zainstalować VCR oraz jakąś tam aktualizację
+https://www.microsoft.com/pl-pl/download/details.aspx?id=48636 KB3080149
+https://www.microsoft.com/pl-pl/download/details.aspx?id=49093 KB2999226
+https://github.com/westinyang/WebView2RuntimeArchive/releases/tag/109.0.1518.78 WebView2-109
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 ///// Próba naprawy 4.*** , zlecenia naprawy blokuje JET, usuwam rekordy z ID ponad 60000
 

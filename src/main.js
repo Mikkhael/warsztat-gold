@@ -25,6 +25,20 @@ listen("request_db_close", async (e) => {
     });
 });
 
+function disable_refresh() {
+    document.addEventListener('keydown', async event => {
+        // Prevent F5 or Ctrl+R (Windows/Linux) and Command+R (Mac) from refreshing the page
+        if ( event.key === 'F5' ||
+            (event.key === 'r'  && event.ctrlKey) ||
+            (event.key === 'r'  && event.metaKey) ) {
+                if(!event.shiftKey) {
+                    event.preventDefault();
+                }
+        }
+    });
+};
+disable_refresh();
+
 window.addEventListener('db_opened', () => {
     msgManager.post('info', 'Otworzono bazę danych', 3000);
     msgManager.close_all_with_content('Nie otworzono bazy danych');

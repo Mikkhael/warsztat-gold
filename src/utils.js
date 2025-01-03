@@ -498,7 +498,7 @@ function format_decimal(source_string, precision = 2, sufix = " zł", force_sep 
             triplets.push(whole.slice(-3));
             whole = whole.slice(0, -3);
         }
-        whole = triplets.reverse().join(' ');
+        whole = triplets.reverse().join(triplets_sep);
     }
     if(precision <= 0) {
         return sign + whole + sufix;

@@ -795,7 +795,7 @@ class FormDataSetFull extends FormDataSetBase {
      * @param {boolean} no_cached
      */
     create_form_value(column_def, row_index, no_cached = false) {
-        console.log("Creating Form Value", row_index, column_def);
+        // console.log("Creating Form Value", row_index, column_def);
         const computed_def = column_def.computed_def;
         let value;
         if(computed_def) {

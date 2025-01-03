@@ -73,26 +73,23 @@ src_total.set_from_with_deps(OBR_TAB);
 const total_zlec     = src_total.auto_add_value (OBR_COLS.rodzaj_dokumentu, {param: "zlec"});
 const total_zlec_id  = src_total.auto_add_value (OBR_COLS.numer_dokumentu,  {param: param_id_zlecenia});
 // const total_netto_pr = src_total.auto_add_value ("total_netto_profit",  {sql: "decimal_mul(-1,    decimal_sum(decimal_mul(`ilość`, decimal_sub(`cena netto sprzedaży`, `cena netto`))))"})
-const total_netto    = src_total.auto_add_value ("total_netto",         {sql: "decimal_mul(-1,    decimal_sum(decimal_mul(`ilość`,`cena netto sprzedaży`)))"})
-const total_brutto   = src_total.auto_add_value ("total_brutto",        {sql: "decimal_mul(-1.23, decimal_sum(decimal_mul(`ilość`,`cena netto sprzedaży`)))"})
+const total_netto    = src_total.auto_add_value ("total_netto",         {sql: "decimal_mul(-1,    decimal_sum(decimal_mul(`ilość`,`cena netto sprzedaży`)))", default: "0"})
+const total_brutto   = src_total.auto_add_value ("total_brutto",        {sql: "decimal_mul(-1.23, decimal_sum(decimal_mul(`ilość`,`cena netto sprzedaży`)))", default: "0"})
 
 const id_zlecenia = RefChangableValue.from_sqlvalue(param_id_zlecenia);
 
 ////////////////// FIND (DODAJ CZĘŚCI) ///////////////////
 
-// const QVFactory_parts_add = () => {
-    const src_list = new QueryViewerSource();
-    src_list.set_from_with_deps(CZ_TAB);
-    src_list.add_join(CZ_COLS.numer_części, OBR_COLS.numer_cz, "LEFT");
-    src_list.query.add_groupby_column(OBR_COLS.numer_cz);
-    src_list.auto_add_column("max rowid", {sql: "max("+OBR_TAB.rowid.get_full_sql()+")"});
-    src_list.auto_add_column(CZ_COLS.numer_części, {display: "Numer"});
-    src_list.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa", width: 10});
-    // TODO allow for assoc_col on non-local columns
-    src_list.auto_add_column("last_cena_netto_sprz",  {display: "Netto Ostatnia Sprzedaży", sql:"ifnull("+OBR_COLS.cena_netto_sprzedaży.get_full_sql()+",'0.00')", input_props: {type: 'decimal'} });
-    src_list.auto_add_column("last_cena_netto",       {display: "Netto Ostatnia",           sql:"ifnull("+OBR_COLS.cena_netto.get_full_sql()          +",'0.00')", input_props: {type: 'decimal'} });
-//     return src_list;
-// }
+const src_list = new QueryViewerSource();
+src_list.set_from_with_deps(CZ_TAB);
+src_list.add_join(CZ_COLS.numer_części, OBR_COLS.numer_cz, "LEFT");
+src_list.query.add_groupby_column(CZ_COLS.numer_części);
+src_list.auto_add_column("max rowid", {sql: "max("+OBR_TAB.rowid.get_full_sql()+")"});
+src_list.auto_add_column(CZ_COLS.numer_części, {display: "Numer"});
+src_list.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa", width: 10});
+// TODO allow for assoc_col on non-local columns
+src_list.auto_add_column("last_cena_netto_sprz",  {display: "Netto Ostatnia Sprzedaży", sql:"ifnull("+OBR_COLS.cena_netto_sprzedaży.get_full_sql()+",'0.00')", input_props: {type: 'decimal'} });
+src_list.auto_add_column("last_cena_netto",       {display: "Netto Ostatnia",           sql:"ifnull("+OBR_COLS.cena_netto.get_full_sql()          +",'0.00')", input_props: {type: 'decimal'} });
 src.add_aux_query(src_list);
 
 /**
