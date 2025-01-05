@@ -189,12 +189,20 @@ table {
     margin-left: 14mm;
 }
   
-  
-.over_page,
-.print_options {
-    float: left;
+
+/********** PARAMS LAYOUT ************/
+
+body {
+    display: grid;
+    grid-template: auto auto / auto auto 1fr;
+    justify-content: left;
+    overflow: scroll;
+}
+.print_fallback_button {
+    grid-column: 1 / -1;
 }
 .print_options {
+    text-wrap: nowrap;
     display: flex;
     flex-direction: column;
     padding: 10px;
