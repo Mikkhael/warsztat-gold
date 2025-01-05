@@ -147,7 +147,8 @@ function create_options() {
     ]);
     return faktura_nr + payment_method;
 }
-const title_getter = "'Faktura nr ' + document.getElementsByName('option_faktura_nr')[0].innerText";
+// const title_getter = "'Faktura nr ' + document.getElementsByName('option_faktura_nr')[0].innerText";
+const title_getter = "Faktura nr {{option_faktura_nr}}";
 
 defineExpose({
     perform_update,

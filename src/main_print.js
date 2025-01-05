@@ -11,20 +11,22 @@ function set_title(value) {
     console.log('Setting title: ', value);
     document.title = value;
 }
-function refresh_title() {
-    try{
-        console.log("GETTER: ", _titleGetter);
-        const new_title = eval(_titleGetter);
-        if(typeof new_title === 'string') {
-            set_title(new_title);
-        } else {
-            throw new Error('Not a string: ' + typeof(new_title));
-        }
-        return true;
-    } catch(err) {
-        console.error(err);
+function parse_title(titleGetter = '') {
+    let res = titleGetter;
+    const embed_strings = titleGetter.match(/{{[a-zA-Z0-9_]+}}/g);
+    console.log(embed_strings);
+    if(!embed_strings) return titleGetter;
+    for(const embed_string of embed_strings) {
+        const name = embed_string.slice(2, -2);
+        const value = document.getElementsByName(name)[0]?.innerText ?? '';
+        res = res.replaceAll(embed_string, value);
     }
-    return false;
+    return res;
+}
+
+function refresh_title() {
+    const new_title = parse_title(_titleGetter);
+    set_title(new_title);
 }
 
 function perform_print() {
