@@ -147,10 +147,12 @@ function create_options() {
     ]);
     return faktura_nr + payment_method;
 }
+const title_getter = "'Faktura nr ' + document.getElementsByName('option_faktura_nr')[0].innerText";
 
 defineExpose({
     perform_update,
     create_options,
+    title_getter,
 });
 
 </script>

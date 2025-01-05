@@ -13,7 +13,7 @@ const props = defineProps({
     },
 });
 
-/**@type {import('vue').Ref<{perform_update: () => any, create_options?: () => string}?>} */
+/**@type {import('vue').Ref<{perform_update: () => any, create_options?: () => string, title_getter?: string}?>} */
 const rep_ref = ref(null);
 /**@type {import('vue').Ref<HTMLElement?>} */
 const rep_renderer_ref = ref(null);
@@ -75,8 +75,9 @@ async function open(withPrint = false) {
             console.log("WINDOW READY");
             const innerHTML   = rep_renderer_ref?.value?.innerHTML;
             const optionsHTML = rep_ref.value?.create_options?.();
+            const titleGetter = rep_ref.value?.title_getter ?? "";
             if(innerHTML) {
-                win.emit('set_innerHTML', {innerHTML, optionsHTML, withPrint});
+                win.emit('set_innerHTML', {innerHTML, optionsHTML, withPrint, titleGetter});
             }
         })
         opened_win_deffered.resolve(win);
@@ -102,7 +103,7 @@ defineExpose({
 <div class="printrender" ref="rep_renderer_ref">
 
     <button type="button"
-     onclick="if(Array.from(document.querySelectorAll('.print_options input, .print_options select')).every(x => x.reportValidity())) window.print();" 
+     onclick="if(Array.from(document.querySelectorAll('.print_options input, .print_options select')).every(x => x.reportValidity())) window.perform_print();" 
      class="print_fallback_button noprint"> 
         DRUKUJ 
     </button>
