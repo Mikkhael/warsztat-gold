@@ -129,6 +129,7 @@ defineExpose({
         <div class="obroty_list">
             <QueryViewerAdv 
                 :src="src"
+                name="list_czesci_main"
                 inbeded
                 saveable
                 deletable
@@ -171,6 +172,7 @@ defineExpose({
         <legend>Dopisywanie Części</legend>
         <QueryViewerAdv
             :src="src_list"
+            name="list_czesci_sub"
             inbeded
             selectable
             @error="handle_err"

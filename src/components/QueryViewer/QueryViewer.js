@@ -279,14 +279,84 @@ class QueryViewerSource extends FormQuerySourceFull {
  * 
  */
 
+/**
+ * @typedef {Object.<string, {
+ *  col_sizes: Object.<string, number>,
+ * }>} LocalStoreage_QueryViewerCaches
+ */
+
+const QueryViewerCache_LocalStorageName = 'query_viewer_cache';
+
+class QueryViewerCache {
+    static fetch() {
+        const cache_string = localStorage.getItem(QueryViewerCache_LocalStorageName);
+        if(!cache_string) {
+            return null
+        }
+        try{
+            /**@type {LocalStoreage_QueryViewerCaches} */
+            const cache_json = JSON.parse(cache_string);
+            console.log("FETCHED CACHE", cache_json);
+            return cache_json;
+        }catch(err) {
+            console.error("Invalid JSON", cache_string, err);
+            return null;
+        }
+    }
+    static fetch_name(/**@type {string|undefined} */ cache_name) {
+        if(!cache_name) return null;
+        const cache = this.fetch()?.[cache_name] ?? null;
+        return cache;
+    }
+    /**
+     * @param {LocalStoreage_QueryViewerCaches} cache 
+     */
+    static save(cache) {
+        try{
+            const cache_json = JSON.stringify(cache);
+            localStorage.setItem(QueryViewerCache_LocalStorageName, cache_json);
+            // console.log("SAVED CACHE", cache);
+        }catch(err) {
+            console.error("Failed stringify on Query Viewer cache", cache, err);
+        }
+    }
+
+    /**
+     * @param {string|undefined} cache_name
+     * @param {import('vue').Ref<[value: number, as_px_not_ch: boolean][]>} column_sizes_ref 
+     * @param {string[]} column_names 
+     */
+    static load_and_apply_column_size(cache_name, column_sizes_ref, column_names) {
+        const cache = this.fetch_name(cache_name);
+        if(!cache) return;
+        for(const [col_name, col_size] of Object.entries(cache.col_sizes)) {
+            const col_index = column_names.indexOf(col_name);
+            if(col_index < 0) continue;
+            column_sizes_ref.value[col_index] = [col_size, true];
+        }
+    }
+
+    /**
+     * @param {string|undefined} cache_name 
+     * @param {string}  column_name 
+     * @param {number}  column_size 
+     */
+    static update_and_save_column_size(cache_name, column_name, column_size) {
+        if(!cache_name) return;
+        const cache = this.fetch() ?? {};
+        if(!cache[cache_name]) {cache[cache_name] = {col_sizes: {}};}
+        cache[cache_name].col_sizes[column_name] = column_size;
+        this.save(cache);
+    }
 
 
-
+}
 
 
 
 
 
 export {
-    QueryViewerSource
+    QueryViewerSource,
+    QueryViewerCache
 }

@@ -74,7 +74,7 @@ const src_list = new QueryViewerSource();
 src_list.set_from_with_deps(CZYN_TAB);
 src_list.auto_add_column_synced(CZYN_COLS.ID_cynności);
 src_list.auto_add_column_synced(CZYN_COLS.czynność, {display: "Nazwa Czynności"});
-src_list.set_order(CZYN_COLS.czynność, 1);
+// src_list.set_order(CZYN_COLS.czynność, 1);
 src.add_aux_query(src_list);
 
 /**
@@ -111,6 +111,7 @@ defineExpose({
         <div class="obroty_list">
             <QueryViewerAdv 
                 :src="src"
+                name="list_robocizna_main"
                 inbeded
                 saveable
                 deletable
@@ -140,6 +141,7 @@ defineExpose({
         <legend>Dopisywanie Czynności</legend>
         <QueryViewerAdv
             :src="src_list"
+            name="list_robocizna_sub"
             inbeded
             insertable
             saveable

@@ -55,8 +55,6 @@
     + settings update
 
 
-- Dynamic Forms API
-
 - Core
     + context menu
     + create main UI layout
@@ -74,6 +72,7 @@
                 + error
                 + critical error
     + Query Viewer
+        + remember default col and filters width
         + adapt for DataGraph interface
             + fix searches in unexisting QueryParts
         + basic view
@@ -88,6 +87,7 @@
         + fix scrolling back to 0, when changing search fields
         + add window and button for ADV
         + add additional params for ADV
+        - printing
     + Forms API
         + Example form (Klienci)
             + adapt for DataGraph interface

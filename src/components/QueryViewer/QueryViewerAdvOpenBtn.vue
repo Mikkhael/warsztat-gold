@@ -44,6 +44,10 @@ const props = defineProps({
         type: String,
         required: false
     },
+    name: {
+        type: String,
+        required: false
+    },
     fwManager: {
         /**@type {import('vue').PropType<FWManager>} */
         type: Object,
@@ -89,6 +93,7 @@ async function on_click() {
             insertable: props.insertable,
             saveable:   props.saveable,
             deletable:  props.deletable,
+            name: props.name ?? title,
         },
         listeners: {
             /**

@@ -1276,8 +1276,8 @@ WinBox.prototype.resize_true = function(w, h, bound_factor = 0.9, _skip_update){
  * @param {HTMLElement} body 
  */
 function get_dimensions_to_fit_content(body) {
-    const w1 = body.scrollWidth;
-    const h1 = body.scrollHeight;
+    let w_res = body.scrollWidth;
+    let h_res = body.scrollHeight;
     const inner = body.children[0];
     if(inner && inner.classList.contains('form_container') && inner.children.length >= 1) {
         let content  = /**@type {Element?} */ (null);
@@ -1289,13 +1289,18 @@ function get_dimensions_to_fit_content(body) {
         const w2 = (content?.scrollWidth  ?? 0);
         const h2 = (content?.scrollHeight ?? 0) + (scroller?.scrollHeight ?? 0);
         // console.log('DIMS2', w1, h1, w2, h2);
-        return [
-            Math.max(w1, w2),
-            Math.max(h1, h2),
-        ]
+        w_res = Math.max(w_res, w2);
+        h_res = Math.max(h_res, h2);
     }
-    console.log('DIMS1', w1, h1);
-    return [w1, h1];
+    const inner_enable_scroll_elems = inner?.querySelectorAll('.enable_scroll') ?? [];
+    for(const elem of inner_enable_scroll_elems) {
+        const w2 = (elem.scrollWidth  ?? 0) - (elem.clientWidth  ?? 0);
+        const h2 = (elem.scrollHeight ?? 0) - (elem.clientHeight ?? 0);
+        w_res += w2;
+        h_res += h2;
+    }
+    console.log('DIMS1', w_res, h_res);
+    return [w_res, h_res];
 }
 
 function is_scroller_visible(body) {

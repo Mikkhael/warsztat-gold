@@ -4,7 +4,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick, unref, compile, computed, reactive } from "vue";
 
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from "../../Forms/FormCommon";
-import { QueryViewerSource } from "./QueryViewer";
+import { QueryViewerSource, QueryViewerCache } from "./QueryViewer";
 import { FormDataSetFull, FormDataSetFull_LocalRow } from "../Dataset";
 import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 import QuerySourceOffsetScroller from "../Scroller/QuerySourceOffsetScroller.vue";
@@ -19,6 +19,11 @@ const props = defineProps({
         type: Object,
         required: true
     },
+    name: {
+        type: String,
+        required: false
+    },
+
     selectable: Boolean,
     editable:   Boolean,
     insertable: Boolean,
@@ -154,7 +159,9 @@ function handle_mouse_move(/**@type {MouseEvent} */ event) {
         if(!column_sizes.value[current_resize_col_i]?.[1]) {
             return;
         }
-        column_sizes.value[current_resize_col_i][0] += delta;
+        const new_size = (column_sizes.value[current_resize_col_i][0] += delta);
+        const col_name = columns_names[current_resize_col_i];
+        QueryViewerCache.update_and_save_column_size(props.name, col_name, new_size);
     }
 }
 function handle_mouse_up() {
@@ -205,6 +212,7 @@ function init_columns_sizes() {
         for(let col_i in col_refs.value) {
             column_sizes.value[col_i] = [col_refs.value[col_i].getBoundingClientRect().width, true];
         }
+        QueryViewerCache.load_and_apply_column_size(props.name, column_sizes, columns_names);
         disable_table_search.value = false;
         src.set_columns_fixed();
     });
