@@ -518,6 +518,9 @@ onUnmounted(() => {
         background-color: black;
     }
 
+    .col_name {
+        white-space: nowrap;
+    }
     .col_name_cell {
         display: flex;
         flex-direction: row;

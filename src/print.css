@@ -189,6 +189,44 @@ table {
     margin-left: 14mm;
 }
   
+/********** ZLECENIE ************/
+
+.pre { white-space: pre-wrap; }
+.bordered { border: 1px solid grey; }
+
+.rodo {
+    border-top:    1px dashed black;
+    border-bottom: 1px dashed black;
+    margin: 3mm;
+    font-size: o.8em;
+}
+
+.info{
+    display: flex;
+    flex-direction: column;
+}
+.info header {
+    text-decoration: underline;
+    margin-left: 2mm;
+}
+
+.fake_list {
+    margin-top: 1cm;
+    display: grid;
+    grid-template: auto / 1fr 3fr 1fr 2fr 2fr;
+    font-size: 0.8em;
+}
+.fake_list > * {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    border-top:   1px solid black;
+    border-right: 1px solid black;
+    min-height: 2cm;
+}
+.fake_list > *:last-child {
+    border-right: none;
+}
 
 /********** PARAMS LAYOUT ************/
 

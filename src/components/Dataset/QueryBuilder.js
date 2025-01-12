@@ -292,7 +292,7 @@ class QueryBuilder {
      * @param {MaybeRef<SQLValue>} value
      */
     add_where_eq(name, value, optional = false) {
-        const parts = qparts([name,'b'],'=',[value]);
+        const parts = qparts([name,'b'],' IS ',[value]);
         this.add_where(parts, optional);
     }
     

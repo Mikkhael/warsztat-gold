@@ -139,6 +139,7 @@ function create_options() {
     const faktura_nr      = create_print_param_input('option_faktura_nr', 'Numer Faktury', 'required');
     const payment_method  = create_print_param_select('option_payment_method', 'Sposób płatności', [
         'gotówka',
+        'blik',
         'kompensata',
         'przelew 7 dni',
         'przelew 14 dni',
@@ -202,11 +203,7 @@ defineExpose({
                 <div class="poke bold">{{ samo_marka }} {{ samo_model }} {{ samo_nrrej }}</div>
             </div>
             <div class="sub_right">
-                <div> ujęto rabat  </div>
-                <div> autoryzacja  </div>
-                <div> zlecenia     </div>
                 <div class="spacer"></div>
-                <div> Przebieg: &nbsp;&nbsp;&nbsp; km </div>
             </div>
         </div>
 

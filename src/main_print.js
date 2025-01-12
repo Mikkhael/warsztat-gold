@@ -43,7 +43,7 @@ listen('set_innerHTML', event => {
     _titleGetter = titleGetter ?? '';
     
     const options_elem = document.body.getElementsByClassName('print_options')[0];
-    if(options_elem) {
+    if(options_elem && optionsHTML) {
         options_elem.innerHTML += optionsHTML;
     }
     document.getElementsByName('font_size_input').forEach(x => x.setAttribute('value', '16'));

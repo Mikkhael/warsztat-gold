@@ -8,6 +8,8 @@ import useMainFWManager from '../components/FloatingWindows/FWManager';
 
 import { FormDefaultProps, FormQuerySourceSingle } from '../components/Dataset';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
+import QueryViewerAdvOpenBtn from '../components/QueryViewer/QueryViewerAdvOpenBtn.vue';
+import IconButton from '../components/Controls/IconButton.vue';
 
 import Klienci from './Klienci.vue';
 
@@ -23,13 +25,14 @@ import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { date_now, use_datetime_now } from '../utils';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
+import { QueryViewerSource } from '../components/QueryViewer/QueryViewer';
 
 
 const props = defineProps({
     ...FormDefaultProps,
     id_klienta:   FormParamProp,
     id_samochodu: FormParamProp,
-    show_clients: Boolean
+    show_clients: Boolean,
 });
 
 // console.log("START_PROPS",typeof props.id_klienta, typeof props.id_samochodu,  props.id_klienta, props.id_samochodu, props);
@@ -84,6 +87,37 @@ const param_force_car_id    = src.get(COLS.ID_samochodu);
 // const readonly = computed(() => data_zamk.get_cached() !== null);
 const readonly = false;
 
+/// FIND /////
+
+const QVFactory_find_zlec_open = () => {
+    const KLIE_TAB  = db.TABS.klienci;
+    const KLIE_COLS = db.TABS.klienci.cols;
+    const ZLEC_TAB  = db.TABS.zlecenia_naprawy;
+    const ZLEC_COLS = db.TABS.zlecenia_naprawy.cols;
+    const CAR_TAB   = db.TABS.samochody_klientów;
+    const CAR_COLS  = db.TABS.samochody_klientów.cols;
+    const src = new QueryViewerSource();
+    src.set_from_with_deps(ZLEC_TAB);
+    src.add_join(ZLEC_COLS.ID_klienta,   KLIE_COLS.ID, 'LEFT');
+    src.add_join(ZLEC_COLS.ID_samochodu, CAR_COLS.ID,  'LEFT');
+    // src.auto_add_column(ZLEC_COLS.ID),
+    // src.auto_add_column(CAR_COLS.ID),
+    src.auto_add_column(ZLEC_COLS.ID,                 {display: 'ID'});
+    src.auto_add_column(KLIE_COLS.NAZWA,              {display: 'Klient'});
+    src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
+    src.auto_add_column(ZLEC_COLS.data_otwarcia,      {display: 'Otwarcie'});
+
+    src.auto_add_column(ZLEC_COLS.zgłoszone_naprawy,  {display: 'Zgłoszenie'});
+    src.auto_add_column(ZLEC_COLS.uwagi_o_naprawie,   {display: 'Uwagi'});
+    src.add_where_eq(ZLEC_COLS.data_zamknięcia.get_full_sql(), null, false);
+    return src;
+}
+const QVFactory_find_zlec_open_select = QueryViewerSource.create_default_select_handler([[src, 0]], handle_err, true);
+
+
+//////////////
+
+
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
@@ -136,7 +170,6 @@ defineExpose({
                         no_zlec
                         :force_klient_id="param_force_klient_id"
                         :force_car_id="param_force_car_id"
-                        readonly
                     />
                 </fieldset>
             </div>
@@ -160,6 +193,16 @@ defineExpose({
                         OTWARTE
                         <input type="button" value="Zamknij" @click="close_current_zlecenie()"/>
                     </div>
+                    <div v-if="props.show_clients">
+                        <QueryViewerAdvOpenBtn 
+                            :parent_window="props.parent_window"
+                            text="Znajdź"
+                            title="Znajdź Zlecenie Otwarte"
+                            selectable
+                            :src_factory="QVFactory_find_zlec_open" 
+                                @select="QVFactory_find_zlec_open_select"
+                                @error="handle_err" />
+                    </div>
                 </div>
 
                 <div class="subheader flex_auto">
@@ -170,9 +213,13 @@ defineExpose({
                     </div>
                     <div class="buttons">
                         <!-- <img src="/assets/icons/document.svg" class="button" @click="open_print_window"/> -->
-                        <img src="/assets/icons/document.svg" class="button" @click="open_print_window_faktura"/>
-                        <div class="button" @click="open_czesci_window">CZĘŚCI</div>
-                        <div class="button" @click="open_robocizna_window">ROBOCIZNA</div>
+                        <!-- <img src="/assets/icons/document.svg" class="button" @click="open_print_window_faktura"/> -->
+                        <!-- <div class="button" @click="open_czesci_window">CZĘŚCI</div> -->
+                        <!-- <div class="button" @click="open_robocizna_window">ROBOCIZNA</div> -->
+                        <IconButton icon="document" text="Faktura"   @click="open_print_window_faktura" />
+                        <IconButton icon="document" text="Zlecenie"  @click="open_print_window" />
+                        <IconButton icon="edit"     text="CZĘŚCI"    @click="open_czesci_window" />
+                        <IconButton icon="edit"     text="ROBOCIZNA" @click="open_robocizna_window" />
                     </div>
                 </div>
 
@@ -184,7 +231,7 @@ defineExpose({
             </div>
         </form>
         
-        <div
+        <!-- <div
             v-if="props.show_clients"
             class="button"
             @click="e => {
@@ -192,7 +239,7 @@ defineExpose({
             }"
         >
             {{ show_only_open ? "Pokarz wszystkie zlecenia" : "Pokarz tylko otwarte zlecenia" }}
-        </div>
+        </div> -->
 
         <QuerySourceOffsetScroller
             :src="src"
@@ -249,9 +296,11 @@ defineExpose({
     }
 
     .buttons{
-        display: flex;
-        flex-direction: row;
-        justify-content: space-around;
+        display: grid;
+        /* flex-direction: row; */
+        justify-content: start;
+        grid-template-rows: auto auto;
+        grid-auto-flow: column;
     }
     .buttons > * {
         display: flex;

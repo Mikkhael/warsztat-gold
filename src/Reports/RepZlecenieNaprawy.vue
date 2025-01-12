@@ -7,10 +7,12 @@ import useMainMsgManager from '../components/Msg/MsgManager';
 
 
 
-import { format_date_str_local } from '../utils';
+import { date_now, format_date_str_local } from '../utils';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
 import { RepQuerySourceSingle } from './RepCommon';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
+import { useMainSettings } from '../components/Settings/Settings';
+import { ref } from 'vue';
 
 const props = defineProps({
     parent_window: {
@@ -20,6 +22,9 @@ const props = defineProps({
     },
     id_zlecenia: FormParamProp
 });
+
+const mainSettings = useMainSettings();
+const settings_data = mainSettings.get_reactive_settings_raw('data');
 
 const db = useWarsztatDatabase();
 const TAB_Z = db.TABS.zlecenia_naprawy;
@@ -43,14 +48,19 @@ const data_otw   = src.auto_rep_value(COLS_Z.data_otwarcia);
 const zgloszenie = src.auto_rep_value(COLS_Z.zgłoszone_naprawy);
 const uwagi      = src.auto_rep_value(COLS_Z.uwagi_o_naprawie);
 
-const car_marka  = src.auto_rep_value(COLS_S.marka);
-const car_model  = src.auto_rep_value(COLS_S.model);
-const car_nrrej  = src.auto_rep_value(COLS_S.nr_rej);
+const samo_marka  = src.auto_rep_value(COLS_S.marka);
+const samo_model  = src.auto_rep_value(COLS_S.model);
+const samo_nrrej  = src.auto_rep_value(COLS_S.nr_rej);
+const samo_nrsil  = src.auto_rep_value(COLS_S.nr_silnika);
+const samo_nrnad  = src.auto_rep_value(COLS_S.nr_nadwozia);
 
-const kli_nazwa  = src.auto_rep_value(COLS_K.NAZWA);
-const kli_miasto = src.auto_rep_value(COLS_K.MIASTO);
-const kli_ulica  = src.auto_rep_value(COLS_K.ULICA);
-const kli_kod    = src.auto_rep_value(COLS_K.KOD_POCZT);
+const klie_nazwa  = src.auto_rep_value(COLS_K.NAZWA);
+const klie_miasto = src.auto_rep_value(COLS_K.MIASTO);
+const klie_ulica  = src.auto_rep_value(COLS_K.ULICA);
+const klie_kod    = src.auto_rep_value(COLS_K.KOD_POCZT);
+const klie_nip    = src.auto_rep_value(COLS_K.NIP);
+const klie_tele1  = src.auto_rep_value(COLS_K.TELEFON1);
+const klie_tele2  = src.auto_rep_value(COLS_K.TELEFON2);
 
 
 // const id_klienta = props.src_zlec.get_ref("ID klienta",          );
@@ -66,12 +76,16 @@ const kli_kod    = src.auto_rep_value(COLS_K.KOD_POCZT);
 // const pom2       = props.src_zlec.get_ref("pomocnik 2",          );
 // const pom2_p     = props.src_zlec.get_ref("% udziału p2",        );
 
+const date_now_ref = ref('');
 async function perform_update() {
     await src.update_complete(true);
+    date_now_ref.value = format_date_str_local(date_now());
 }
+const title_getter = "Zlecenie nr {{zlecenie_id}}";
 
 defineExpose({
-    perform_update
+    perform_update,
+    title_getter
 });
 
 </script>
@@ -82,138 +96,74 @@ defineExpose({
     <div class="over_page">
     <div class="page" ref="page" contenteditable="true">
 
-        <div class="header">
-            <div class="bold">AUTO-GOLD</div>
-            <div class="bold">Piotr Gold</div>
-            <div class="poke">ul. Bł Czesława 11</div>
-            <div class="poke">44-100 Gliwice</div>
-            <div class="poke">kom. 501-210-604</div>
-            <div class="poke">email piotr.gold@wp.pl</div>
-            <div class="poke bold">Credit Agrikole nr 11 1111 1111 2222 3333 4444 0000 0000</div>
-        </div>
         
-        <div class="header_right">
-            <div class="data">
-                Gliwice dn. : {{ format_date_str_local(data_otw?.toString() ?? '') }}
+        <div class="faktura_header">
+            <div class="left">
+                <div class="bold vbig">Zlecenie nr <span name="zlecenie_id">{{ id }}</span></div>
+                <!-- <div> ORYGINAŁ / KOPIA </div> -->
             </div>
-            <div class="nr_zlec">
-                <span>
-                    zlecenie naprawy nr. :
-                </span>
-                <span class="id_zlecenia">
-                    {{ id }}
-                </span>
+            <div class="right">
+                <div>Gliwice dnia:   {{ date_now_ref }}</div>
             </div>
         </div>
 
-        <div class="big_fields">
-            <div>
-                <div class="label">samochód: </div>
-                <div class="value car"> 
-                    <div>{{ car_marka }}</div>
-                    <div>{{ car_model }}</div>
-                    <div>{{ car_nrrej }}</div>
-                </div>
+        <div class="sprzedajacy_header">
+            <div class="left">
+                <!-- <div class="small">Sprzedający:</div> -->
+                <div class="center bold italic underline big">{{settings_data.Nazwa}}</div>
+                <div class="center bold italic">{{ settings_data['Imię i Nazwisko'] }}</div>
+                <div class="center">{{ settings_data.Adres }}</div>
+                <div class="center small">kom. {{ settings_data.Telefon }}</div>
+                <div class="center bold small">e-mail {{ settings_data.Email }}</div>
             </div>
-            <div>
-                <div class="label">klient: </div>
-                <div class="value klient"> 
-                    <div class="klient_name">{{ kli_nazwa }}</div>
-                    <div class="klient_addr">{{ kli_kod }}</div>
-                    <div class="klient_addr">{{ kli_miasto }}</div>
-                    <div class="klient_addr">{{ kli_ulica }}</div>
-                </div>
+            <div class="right">
+                <div class="small">Konto bankowe:</div>
+                <div>{{ settings_data['Nazwa Banku'] }}</div>
+                <div>{{ settings_data['Nr Konta'] }}</div>
             </div>
+        </div>
+        
+
+        <div class="klient_header">
+            <div class="small wide">Klient: </div>
+            <div class="poke bold big wide"> {{ klie_nazwa }} </div>
+            <div class="sub_left big">
+                <div class="poke">ul. {{ klie_ulica }} </div>
+                <div class="poke">{{ klie_kod }} {{ klie_miasto }} </div>
+                <!-- <div class="poke">{{ !klie_nip ? '\xa0' : ('NIP: ' + klie_nip) }} </div> -->
+                <div class="poke bold">{{ samo_marka }} {{ samo_model }} {{ samo_nrrej }}</div>
+                <div class="poke bold small">Silnik:   {{ samo_nrsil }}</div>
+                <div class="poke bold small">Nadwozie: {{ samo_nrnad }}</div>
+            </div>
+            <div class="sub_right">
+                <div> Telefon 1: {{ klie_tele1 }} </div>
+                <div> Telefon 2: {{ klie_tele2 }} </div>
+                <div class="spacer"></div>
+            </div>
+        </div>
+
+        <div class="rodo italics bold">
+            Wraz z wystawieniem zlecenia, zgadzam się na przechowywanie moich danych osobowych przez firmę AUTO-GOLD Piotr Gold
         </div>
 
         <div class="info">
             <header>zakres naprawy:</header>
-            <div class="bordered">{{ zgloszenie }}</div>
+            <div class="pre bordered">{{ zgloszenie }}</div>
         </div>
         <div class="info">
             <header>uwagi:</header>
-            <div class="bordered">{{ uwagi }}</div>
+            <div class="pre bordered">{{ uwagi }}</div>
+        </div>
+
+        <div class="fake_list" contenteditable="false">
+            <div contenteditable="true"><div>&nbsp;</div><div>&nbsp;</div></div>
+            <div contenteditable="true"><div>Nazwa części lub prace wykonane</div><div>&nbsp;</div></div>
+            <div contenteditable="true"><div>ilość</div><div>&nbsp;</div></div>
+            <div contenteditable="true"><div>cena jednostkowa</div><div>&nbsp;</div></div>
+            <div contenteditable="true"><div>razem do zapłaty</div><div>&nbsp;</div></div>
         </div>
 
     </div>
     </div>
 
 </template>
-
-<style scoped>
-
-    .bold {
-        font-weight: bold;
-    }
-
-    .header_right {
-        position: absolute;
-        right: 0mm;
-        top: 0mm;
-        text-align: right;
-    }
-    .header_right .nr_zlec {
-        font-size: 2em;
-        text-decoration: underline;
-    }
-    .header_right .nr_zlec .id_zlecenia {
-        margin-left: 4mm;
-    }
-
-    .header > .poke{
-        position: relative;
-        left: 1mm;
-    }
-
-
-    .header {
-        margin-bottom: 3mm;
-        font-size: 1em;
-    }
-
-    .big_fields > *{
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-    }
-
-    .big_fields .label {
-        margin-right: 5mm;
-    }
-    .big_fields .value {
-        flex-grow: 1;
-        flex-direction: row;
-        flex-wrap: wrap;
-        display: flex;
-    }
-    
-    .big_fields .value.car {
-        font-size: 2em;
-    }
-    .big_fields .value.car > *{
-        width: 50%;
-        text-align: center;
-    }
-
-    .big_fields .value.klient{
-        justify-content: start;
-    }
-    .big_fields .value.klient > .klient_name {
-        width: 100%;
-        font-size: 1.5em;
-        font-weight: bold;
-    }
-    .big_fields .value.klient > .klient_addr {
-        margin-right: 2mm;
-    }
-
-    .info header {
-        text-decoration: underline;
-        margin-left: 2mm;
-    }
-    .info .bordered {
-        border: 1px solid gray;
-        white-space: pre-wrap;
-    }
-
-</style>

@@ -128,9 +128,11 @@ const QVFactory_find_zlec = () => {
     src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
     src.auto_add_column(ZLEC_COLS.data_otwarcia,      {display: 'Otwarcie'});
     src.auto_add_column(ZLEC_COLS.data_zamknięcia,    {display: 'Zamknięcie'});
+    src.auto_add_column('is_zlec_open',               {display: 'Czy Otwarte?', sql: `iif(${ZLEC_COLS.data_zamknięcia.get_full_sql()} IS NULL, 'Otwarte', 'Zamknięte')`});
 
     src.auto_add_column(ZLEC_COLS.zgłoszone_naprawy,  {display: 'Zgłoszenie'});
     src.auto_add_column(ZLEC_COLS.uwagi_o_naprawie,   {display: 'Uwagi'});
+    src.set_order('is_zlec_open', 1);
     return src;
 }
 const QVFactory_find_zlec_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1],[src_zlecenia,2]], handle_err, true);
@@ -197,7 +199,7 @@ defineExpose({
                     <!-- <button type="button" @click.prevent="click_zlecenia">ZLECENIA</button> -->
                 </div>
 
-                <label>Nazwa              </label>  <FormInput :readonly="props.readonly" :value="nazwa " auto class="main_input_field" pattern="[^ś]*" />
+                <label>Nazwa              </label>  <FormInput :readonly="props.readonly" :value="nazwa " auto class="main_input_field" />
                 <label>Odbierający Fakturę</label>  <FormInput :readonly="props.readonly" :value="odbier" auto class="main_input_field" />
                 <label>Ulica i Nr Domu    </label>  <FormInput :readonly="props.readonly" :value="ulica " auto class="main_input_field" />
                 <label>Kod i Miejscowość  </label>  
