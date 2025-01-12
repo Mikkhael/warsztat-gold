@@ -91,7 +91,7 @@ const QVFactory_find_client = () => {
     src.auto_add_column(COLS.KIEDY,               {display: 'dnia'});
     return src;
 }
-const QVFactory_find_client_select = QueryViewerSource.create_default_select_handler([[src, COLS.ID]], handle_err, true);
+const QVFactory_find_client_select = QueryViewerSource.create_default_select_handler([[src, COLS.ID]], handle_err, {focus_window: props.parent_window});
 
 
 const QVFactory_find_car = () => {
@@ -110,7 +110,7 @@ const QVFactory_find_car = () => {
     src.auto_add_column(CAR_COLS.nr_nadwozia,         {display: 'Nr Nadwozia'});
     return src;
 }
-const QVFactory_find_car_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1]], handle_err, true);
+const QVFactory_find_car_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1]], handle_err, {focus_window: props.parent_window});
 
 
 const QVFactory_find_zlec = () => {
@@ -135,7 +135,7 @@ const QVFactory_find_zlec = () => {
     src.set_order('is_zlec_open', 1);
     return src;
 }
-const QVFactory_find_zlec_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1],[src_zlecenia,2]], handle_err, true);
+const QVFactory_find_zlec_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1],[src_zlecenia,2]], handle_err, {focus_window: props.parent_window});
 
 const show_zlecenia = ref(true);
 // function click_zlecenia(){

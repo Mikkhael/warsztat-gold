@@ -246,8 +246,12 @@ class QueryViewerSource extends FormQuerySourceFull {
      * 
      * @param {QueryViewerSelectHandlerStanderdStep[]} steps 
      * @param {(err: any) => void} handle_error
+     * @param {{
+     *  close?: boolean,
+     *  focus_window?: FWWindow,
+     * }} [options]
      */
-    static create_default_select_handler(steps, handle_error, no_close = false) {
+    static create_default_select_handler(steps, handle_error, options) {
         const first_src = steps[0][0];
     
         /**
@@ -263,7 +267,10 @@ class QueryViewerSource extends FormQuerySourceFull {
                     src.request_offset_rownum(row.get_cached(idx) ?? null, colname);
                 }
             }).then(succ => {
-                if(succ && !no_close) close();
+                if(succ && options?.close) close();
+                if(succ && options?.focus_window) {
+                    options.focus_window.box.focus();
+                }
                 return succ;
             }).catch(err => {
                 handle_error(err);

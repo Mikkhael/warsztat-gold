@@ -112,7 +112,7 @@ const QVFactory_find_zlec_open = () => {
     src.add_where_eq(ZLEC_COLS.data_zamknięcia.get_full_sql(), null, false);
     return src;
 }
-const QVFactory_find_zlec_open_select = QueryViewerSource.create_default_select_handler([[src, 0]], handle_err, true);
+const QVFactory_find_zlec_open_select = QueryViewerSource.create_default_select_handler([[src, 0]], handle_err, {focus_window: props.parent_window});
 
 
 //////////////

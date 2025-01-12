@@ -59,7 +59,7 @@ const QVFactory_find = () => {
     src.auto_add_column(COLS.grupa,                        {display: "Grupa"});
     return src;
 }
-const QVFactory_find_select = QueryViewerSource.create_default_select_handler([[src, 0]], handle_err, true);
+const QVFactory_find_select = QueryViewerSource.create_default_select_handler([[src, 0]], handle_err, {focus_window: props.parent_window});
 
 
 function handle_err(/**@type {Error} */ err) {
