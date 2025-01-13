@@ -93,10 +93,18 @@ function tool_rebuild() {
 }
 
 function tool_import() {
-    return ipc.db_import_csv().catch(handle_error);
+    return ipc.db_import_csv().then((path) => {
+        if(path) {
+            msgManager.post("info", `Zaimportowano z: ${path}`);
+        }
+    }).catch(handle_error);
 }
 function tool_export() {
-    return ipc.db_export_csv().catch(handle_error);
+    return ipc.db_export_csv().then((path) => {
+        if(path) {
+            msgManager.post("info", `Wyeksportowano do: ${path}`);
+        }
+    }).catch(handle_error);
 }
 
 function tool_sql() {

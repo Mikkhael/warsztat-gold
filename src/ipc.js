@@ -144,7 +144,7 @@ async function db_export_csv() {
     if(!path) return path;
     let name = await file_name(state.db_path);
     console.log("name", name);
-    name = name + '_' + (new Date()).toString().replace(/:/g, '_');
+    name = name + '_kopia_zapasowa_' + (new Date()).toString().replace(/:/g, '_');
     let exportPath = await join_path(path, name);
     console.log("export csv path", exportPath);
     return await invoke("export_csv", {exportPath}).then(() => exportPath);

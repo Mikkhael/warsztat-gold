@@ -408,6 +408,11 @@ function format_date_str_local(/**@type {string} */ date_str) {
     return res;
 }
 
+const date_format_with_dot = new Date("2000-11-22").toLocaleDateString().indexOf('.') !== -1;
+function get_date_format_with_dot() {
+    return date_format_with_dot;
+}
+
 ///////////////// DECIMAL //////////////
 
 // list of non-digits, non minus
@@ -703,6 +708,7 @@ export {
 
     str_to_date,
     format_date_str_local,
+    get_date_format_with_dot,
 
     is_decimal,
     parse_decimal_adv,

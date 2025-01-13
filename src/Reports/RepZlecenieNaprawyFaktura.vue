@@ -269,16 +269,16 @@ defineExpose({
             <label>słownie:</label>        <div></div>
             <div class="bold big slownie" >{{ number_to_polish_words( total_brutto_parts[0] ) }}</div>
             <label>groszy:</label>         <div class="bold big" >{{ total_brutto_parts[1] }} / 100</div>
-        </div>
 
-        <div class="signature_footer nobreak">
-            <div class="signature_section">
-                <div class="name">{{ klie_odbiorca ?? '\xa0' }}</div>
-                <div class="info">podpis osoby uprawnionej<br>do odbioru faktury VAT</div>
-            </div>
-            <div class="signature_section">
-                <div class="name">{{ settings_data[`Imię i Nazwisko`] }}</div>
-                <div class="info">podpis osoby uprawnionej<br>do wystawienia faktury VAT</div>
+            <div class="signature_footer nobreak wide">
+                <div class="signature_section">
+                    <div class="name">{{ klie_odbiorca ?? '\xa0' }}</div>
+                    <div class="info">podpis osoby uprawnionej<br>do odbioru faktury VAT</div>
+                </div>
+                <div class="signature_section">
+                    <div class="name">{{ settings_data[`Imię i Nazwisko`] }}</div>
+                    <div class="info">podpis osoby uprawnionej<br>do wystawienia faktury VAT</div>
+                </div>
             </div>
         </div>
 

@@ -2,7 +2,7 @@
 
 import { computed, nextTick, reactive, ref, unref, watch } from "vue";
 import { FormQuerySourceFull, Column, QuerySource, FormDataSetFull_LocalRow, FormDataSetFull } from "../Dataset";
-import { deffered_promise, escape_backtick_smart } from "../../utils";
+import { deffered_promise, escape_backtick_smart, get_date_format_with_dot } from "../../utils";
 import { FWWindow } from "../FloatingWindows/FWManager";
 
 /**
@@ -61,11 +61,15 @@ class QueryViewerSource extends FormQuerySourceFull {
             const format = this.display_columns.get(x[0])?.format;
             const replace_comma = format === 'date' || format === 'datetime';
             const escaped = escape_backtick_smart(x[0]);
+            const compared_value = replace_comma ? x[1].replaceAll(',','.') : x[1];
+            const with_dot = compared_value.indexOf(".") >= 0;
+            console.log("WITH DOT: ", with_dot, escaped);
             /**@type {[string, [string, 'l']]} */
             const res = [
-                format === 'date'     ? `strftime('%d.%m.%Y',${   escaped})` :
-                format === 'datetime' ? `strftime('%d.%m.%Y %T',${escaped})` : escaped,
-                [replace_comma ? x[1].replaceAll(',','.') : x[1], 'l']
+                (format === 'date'     && with_dot) ? `strftime('%d.%m.%Y',${   escaped})` :
+                (format === 'datetime' && with_dot) ? `strftime('%d.%m.%Y %T',${escaped})` : 
+                                                       escaped,
+                [compared_value, 'l']
             ];
             return res;
         }));
