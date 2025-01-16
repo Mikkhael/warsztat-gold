@@ -142,8 +142,8 @@ defineExpose({
             </div>
         </div>
 
-        <div class="rodo italics bold">
-            Wraz z wystawieniem zlecenia, zgadzam się na przechowywanie moich danych osobowych przez firmę AUTO-GOLD Piotr Gold
+        <div class="rodo">
+             {{ settings_data.RODO }}
         </div>
 
         <div class="info">
@@ -156,7 +156,7 @@ defineExpose({
         </div>
 
         <div class="fake_list" contenteditable="false">
-            <div contenteditable="true"><div>&nbsp;</div><div>&nbsp;</div></div>
+            <!-- <div contenteditable="true"><div>&nbsp;</div><div>&nbsp;</div></div> -->
             <div contenteditable="true"><div>Nazwa części lub prace wykonane</div><div>&nbsp;</div></div>
             <div contenteditable="true"><div>ilość</div><div>&nbsp;</div></div>
             <div contenteditable="true"><div>cena jednostkowa</div><div>&nbsp;</div></div>

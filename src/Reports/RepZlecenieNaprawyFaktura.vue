@@ -3,7 +3,7 @@
 
 
 
-import { date_now, format_date_str_local, format_decimal as format_decimal_utils, number_to_polish_words, parse_decimal_adv } from '../utils';
+import { date_now, format_date_str_local, format_decimal as format_decimal_utils, format_first_line, number_to_polish_words, parse_decimal_adv } from '../utils';
 import { FormParamProp, param_from_prop, qparts_db, query_parts_to_string, QueryBuilder, RefChangableValue } from '../components/Dataset';
 import { RepQuerySourceSingle, RepQuerySourceFull, create_print_param_input, create_print_param_select } from './RepCommon';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
@@ -226,7 +226,7 @@ defineExpose({
                     class="tdata"
                 >
                     <td class="r">{{ row_i + 1 }}</td>
-                    <td class="l">{{ row.get('name') }}</td>
+                    <td class="l">{{ format_first_line( row.get('name') ) }}</td>
                     <td class="r">{{ row.get('unit') }}</td>
                     <td class="r">{{ row.get('cnt') }}</td>
                     <td class="r">{{ format_decimal( row.get('netto') ) }}</td>

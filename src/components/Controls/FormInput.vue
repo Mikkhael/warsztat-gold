@@ -106,7 +106,7 @@ const all_raactive_class = computed(() => {
 
 <template>
         <input v-if="!props.textarea" ref="elem"
-                 v-model="impl.local_proxy" 
+                 v-model="impl.local_proxy_single_line" 
                  class="FormControl FormControlInput" 
                  :class="all_raactive_class"
                  :placeholder="impl.local === null ? '~' : ''"

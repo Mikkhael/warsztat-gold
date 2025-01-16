@@ -240,7 +240,7 @@ class SettingsManager {
  * @typedef {SettingsDataFieldsKeysList[number]} DataFieldsKey
  * @typedef {{[P in DataFieldsKey]: string}} CategoryDataType
  *  */
-const SettingsDataFieldsKeysList = /**@type {const} */ (['Nazwa', 'Imię i Nazwisko', 'Adres', 'Telefon', 'NIP', 'Email', 'Nazwa Banku', 'Nr Konta']);
+const SettingsDataFieldsKeysList = /**@type {const} */ (['Nazwa', 'Imię i Nazwisko', 'Adres', 'Telefon', 'NIP', 'Email', 'Nazwa Banku', 'Nr Konta', 'RODO']);
 
 
 class Settings {
@@ -400,6 +400,7 @@ const SettingsDefaults = {
         for(const key of SettingsDataFieldsKeysList) {
             res[key] = validate_string(partial?.[key]) ?? `(${key})`;
         }
+        res['RODO'] = 'Wraz z wystawieniem zlecenia, zgadzam się na przechowywanie moich danych osobowych przez firmę AUTO-GOLD Piotr Gold';
         return res;
     },
 }

@@ -517,6 +517,16 @@ function format_decimal(source_string, precision = 2, sufix = " zł", force_sep 
     return sign + whole + force_sep + frac + sufix;
 }
 
+/**
+ * @param {any} string 
+ */
+function format_first_line(string) {
+    if(typeof string !== 'string') {return string;}
+    const index = string.search(/\n|\r/);
+    if(index < 0) return string;
+    return string.slice(0, index);
+}
+
 
 //////////////// Słownie ////////////////////////
 
@@ -714,6 +724,8 @@ export {
     parse_decimal_adv,
     parse_decimal,
     format_decimal,
+
+    format_first_line,
 
     number_to_polish_words,
 

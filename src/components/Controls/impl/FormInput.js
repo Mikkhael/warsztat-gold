@@ -123,6 +123,11 @@ function use_FormInput(props) {
         set(x) {proxy_type.set && value.set_local(proxy_type.set(x));}
     });
 
+    const local_proxy_single_line = computed({
+        get()  {return get_first_line(local_proxy.value);},
+        set(x) {local_proxy.value = set_first_line(local_proxy.value, x);}
+    });
+
     const res = reactive({
         local: value.get_local_ref(),
         cached: value.get_cached_ref(),
@@ -130,10 +135,28 @@ function use_FormInput(props) {
         attributes,
         listeners,
         local_proxy,
+        local_proxy_single_line,
         custom_validity_message
     });
 
     return res;
+}
+
+function get_first_line(value) {
+    if(typeof value !== 'string') return value;
+    const index = value.search(/\n|\r/);
+    if(index > 0) {
+        // console.log("GETTING FIRST LINE VALUE ", index, value.slice(0, index));
+        return value.slice(0, index);
+    }
+    return value;
+}
+function set_first_line(old_value, new_value) {
+    if(typeof old_value !== 'string' || typeof new_value !== 'string') return new_value;
+    const old_index = old_value.search(/\n|\r/);
+    if(old_index < 0) return new_value;
+    // console.log("SETTING FIRST LINE VALUE ", old_index, new_value, old_value.slice(0, old_index));
+    return new_value + old_value.slice(old_index);
 }
 
 /**

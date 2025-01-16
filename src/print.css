@@ -195,10 +195,12 @@ table {
 .bordered { border: 1px solid grey; }
 
 .rodo {
-    border-top:    1px dashed black;
-    border-bottom: 1px dashed black;
-    margin: 3mm;
-    font-size: o.8em;
+    /* border-top:    1px dashed black; */
+    /* border-bottom: 1px dashed black; */
+    font-style: italic;
+    text-align: center;
+    margin: 1mm;
+    font-size: 0.6em;
 }
 
 .info{
@@ -213,7 +215,7 @@ table {
 .fake_list {
     margin-top: 1cm;
     display: grid;
-    grid-template: auto / 1fr 3fr 1fr 2fr 2fr;
+    grid-template: auto / 6fr 1fr 2fr 2fr;
     font-size: 0.8em;
 }
 .fake_list > * {
