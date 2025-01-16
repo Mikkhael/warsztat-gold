@@ -2,6 +2,7 @@
 //@ts-check
 import { onMounted, readonly, ref, computed } from "vue";
 import { emit, listen } from "@tauri-apps/api/event";
+import { onUpdaterEvent } from "@tauri-apps/api/updater";
 import ipc from "../ipc";
 import FWCollection from "./FloatingWindows/FWCollection.vue";
 import useMainFWManager from "./FloatingWindows/FWManager";
@@ -31,6 +32,13 @@ import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
 
 const fwManager  = useMainFWManager();
 const msgManager = useMainMsgManager();
+
+onUpdaterEvent(({ status, error }) => {
+    console.log('Updater event', status, error);
+    if(status === 'ERROR') {
+        msgManager.postError("Błąd podczas pobierania aktualizacji: " + error);
+    }
+});
 
 listen('open_sql_console_window', () => {
     tool_sql();

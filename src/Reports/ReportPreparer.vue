@@ -62,15 +62,21 @@ async function open(withPrint = false) {
     if(old_win) {
         await old_win.close();
     }
+    const main_win = WebviewWindow.getByLabel("main");
+    if(!main_win) {
+        throw new Error("No main window");
+    }
+    const main_size = await main_win.outerSize()
     const win = new WebviewWindow(print_window_label, {
         url: '/printview.html',
         title: 'Podgląd Wydruku',
-        width: 1600,
-        height: 900,
+        width:  main_size.width,
+        height: main_size.height,
     });
     const opened_win_deffered = deffered_promise();
     win.once('tauri://created', function () {
         console.log('WINDOW OPENED', win);
+        win.center();
         win.once('ready', () => {
             console.log("WINDOW READY");
             const innerHTML   = rep_renderer_ref?.value?.innerHTML;

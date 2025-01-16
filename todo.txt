@@ -53,6 +53,12 @@
     + auto trigger std on db close
     - online
     + settings update
+    - !dont backup, if file is already a backup
+
+
+- relayout Zlecenie report
+- add quick zlecenia summary
+- show only first line of części name
 
 
 - Core

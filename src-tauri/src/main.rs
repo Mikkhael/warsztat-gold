@@ -10,6 +10,7 @@ mod utils;
 mod sqlite_manager;
 mod encoding;
 mod backup;
+// mod update;
 
 #[tauri::command]
 fn join_path(a: &Path, b: &Path) -> PathBuf {
@@ -42,6 +43,14 @@ fn main() {
             println!("Opening Devtools");
             app_handle.get_window("main").unwrap().open_devtools();
         });
+        // let app_handle = app.app_handle();
+        // tauri::async_runtime::spawn(async move {
+        //     let result = app_handle.updater().endpoints(&["http://127.0.0.1/test_tauri_updater.json".to_owned()]).check().await;
+        //     match result {
+        //         Ok(respnse)  => println!("Updater Resp  {:?}, {:?}", respnse.is_update_available(), respnse.body()),
+        //         Err(err)     => println!("Updater Error {:?}", err),
+        //     };
+        // });
         Ok(())
     })
     .invoke_handler(tauri::generate_handler![
