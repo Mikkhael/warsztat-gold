@@ -12,6 +12,7 @@ import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import useMainMsgManager from '../components/Msg/MsgManager';
 
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
+import { nextTick, ref } from 'vue';
 
 
 
@@ -22,6 +23,9 @@ const props = defineProps({
 });
 
 const msgManager = useMainMsgManager();
+
+/**@type {import('vue').Ref<QueryViewerAdv?>} */
+const main_list_ref = ref(null);
 
 //      ID	    numer cz	ilość	cena netto	data przyjęcia	        rodzaj dokumentu	numer dokumentu	    cena netto sprzedaży
 // 0:	124336	p4	        -1	    0.00	    2020-10-14 00:00:00	    zlec	            64434	            26.00
@@ -104,6 +108,13 @@ function QVFactory_parts_add_select(columns, row) {
     new_row.set_local(OBR_COLS.cena_netto,           row.get_local("last_cena_netto"));
     new_row.set_local(OBR_COLS.numer_cz,             row.get_local(CZ_COLS.numer_części));
     new_row.set_local(CZ_COLS.nazwa_części,          row.get_local(CZ_COLS.nazwa_części));
+    
+    const row_index = src.dataset.local_rows.value.indexOf(new_row);
+    if(row_index >= 0) {
+        nextTick(() => {
+            main_list_ref.value?.focus_on_row(row_index);
+        });
+    }
 };
 
 ///////////////////////////////////////////////////////
@@ -129,6 +140,7 @@ defineExpose({
         <div class="obroty_list">
             <QueryViewerAdv 
                 :src="src"
+                ref="main_list_ref"
                 name="list_czesci_main"
                 inbeded
                 saveable

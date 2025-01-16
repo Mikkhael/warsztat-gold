@@ -10,6 +10,7 @@ import QueryOrderingBtn from "./QueryOrderingBtn.vue";
 import QuerySourceOffsetScroller from "../Scroller/QuerySourceOffsetScroller.vue";
 import FormInput from "../Controls/FormInput.vue";
 import FormEnum from "../Controls/FormEnum.vue";
+import { smart_focus_next } from "../Controls";
 
 
 
@@ -257,6 +258,30 @@ function handle_row_unhover(event, row_i) {
     }
 }
 
+/////////////////// FOCUS ///////////////////////////////
+
+function get_elements_from_row(/**@type {number} */ row) {
+    return col_refs.value.map(x => x.children[2 + (row % (x.children.length - 2))]);
+}
+
+/**
+ * @param {number} row_index
+ */
+function focus_on_row(row_index) {
+    const row = get_elements_from_row(row_index);
+    smart_focus_next(row);
+}
+
+/**
+ * @param {number} row 
+ */
+function get_preffered_focus_list(row) {
+    const curr_row = get_elements_from_row(row);
+    const next_row = get_elements_from_row(row + 1);
+    const res = [...curr_row, ...next_row];
+    return res;
+}
+
 /////////////////// EVENT HANDLERS ///////////////////////////////
 
 
@@ -339,6 +364,10 @@ onUnmounted(() => {
     window.removeEventListener('pointermove', handle_mouse_move);
 });
 
+defineExpose({
+    focus_on_row
+});
+
 // {{row.get_local(col_name) ?? '~'}}
 
 </script>
@@ -413,6 +442,7 @@ onUnmounted(() => {
                         @pointerenter="e => handle_row_hover  (e, row_i)" 
                         @pointerdown="e => handle_select_down(row_i, false, e)"
                         @pointerup="e => handle_select_up(row_i, false, e)"
+                        :preffered_focus="() => get_preffered_focus_list(row_i)"
                         :value="row.get(col_name)"
                         auto
                         nospin

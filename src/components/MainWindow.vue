@@ -177,7 +177,7 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
                         {},
                         {name: 'Konsola SQL',      onclick: tool_sql},
                         {name: 'Tryp Testowy',     onclick: tool_testview, dev: true},
-                        {name: 'Narzędzia Dev',    onclick: tool_devtools, dev: true},
+                        {name: 'Narzędzia Dev',    onclick: tool_devtools, dev: false},
                     ],
                 }"
             />
