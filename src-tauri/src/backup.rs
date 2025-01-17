@@ -1,4 +1,5 @@
 
+use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::fs;
 use std::io;
@@ -78,11 +79,32 @@ pub fn get_backup_lists<T: AsRef<str>>(dirpath: &Path, prefix: &str, ext: &str, 
     Ok(res)
 }
 
+pub fn check_if_path_is_in_backup_dir (current_path: &Path, backup_dir: &Path) -> Result<(), String> {
+    println!("CHECKING {} | backup: {}", current_path.display(), backup_dir.display());
+    if !backup_dir.exists() { return Ok(()); };
+    let canon_current = current_path.canonicalize().map_err(|err| "\"Niepoprawna ścierzka\": ".to_owned() + (&err.to_string()) )?;
+    let canon_backup  = backup_dir  .canonicalize().map_err(|err| "\"Niepoprawna ścierzka\": ".to_owned() + (&err.to_string()) )?;
+    println!("CANON    {} | backup: {}", canon_current.display(), canon_backup.display());
+    let is_in_backup_dir = canon_current.starts_with(canon_backup);
+    if !is_in_backup_dir { return Ok(()); };
+    return Err("Nie można wykonać kopi zapasowej. Aktualnie otwarta jest kopia zapasowa.".into());
+}
+
 
 
 #[tauri::command]
-pub fn perform_backup_lists(dirpath: String, prefix: String, ext: String, variant_names: Vec<String>) -> Result<BackupLists, String> {
+pub fn perform_backup_lists(dirpath: String, prefix: String, ext: String, variant_names: Vec<String>, sqlite_manager: tauri::State<sqlite_manager::SqliteManagerLock>) -> Result<BackupLists, String> {
     println!("[INVOKE] perform_backup_lists: {}, {}, {}", dirpath, prefix, ext);
+
+    // Ensuring, backup isn't performed, if currently opened database is in the backup folder
+    let sqlite_manager_quard = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    if let Some(current_path) = sqlite_manager_quard.get_path() {
+        let backup_dir : PathBuf = AsRef::<OsStr>::as_ref(&dirpath).into();
+        check_if_path_is_in_backup_dir(current_path, &backup_dir)?;
+    }
+    drop(sqlite_manager_quard);
+    
+
     let dirpath = Path::new(&dirpath);
     let lists = get_backup_lists(dirpath, &prefix, &ext, &variant_names).map_err(|err| err.to_string())?;
     println!("RESULT: {:?}", lists);
@@ -102,12 +124,32 @@ pub struct BackupResult {
     bad:  Vec<(BackupNewFormat, String)>,
 }
 
+fn get_backup_dir_from_backup_path(backup_path: &Path) -> &Path{
+    let variant_dir = backup_path.parent().unwrap_or(backup_path);
+    let backup_dir  = variant_dir.parent().unwrap_or(variant_dir);
+    return backup_dir;
+}
+
 
 #[tauri::command]
 pub fn perform_backup(prefix: &str, ext: &str, filepaths_to_delete: Vec<PathBuf>, copies_to_create: Vec<BackupNewFormat>, nodelete: bool, sqlite_manager: tauri::State<sqlite_manager::SqliteManagerLock>) -> Result<BackupResult, String> {
     println!("[INVOKE] perform_backup: {:?}, {:?}", filepaths_to_delete, copies_to_create);
     let mut good_paths : Vec<BackupNewFormat>           = Default::default();
     let mut bad_paths  : Vec<(BackupNewFormat, String)> = Default::default();
+    
+    // Ensuring, backup isn't performed, if currently opened database is in the backup folder
+    let sqlite_manager_quard = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    if let Some(current_path) = sqlite_manager_quard.get_path() {
+        for filepath_to_delete in &filepaths_to_delete {
+            let backup_dir = get_backup_dir_from_backup_path(&filepath_to_delete);
+            check_if_path_is_in_backup_dir(current_path, backup_dir)?;
+        }
+        for copy_to_create in &copies_to_create {
+            let backup_dir : PathBuf = AsRef::<OsStr>::as_ref(&copy_to_create.path).into();
+            check_if_path_is_in_backup_dir(current_path, &backup_dir)?;
+        }
+    }
+    drop(sqlite_manager_quard);
 
     if let Some(first_copy_format) = copies_to_create.first() {
         // TEMP file

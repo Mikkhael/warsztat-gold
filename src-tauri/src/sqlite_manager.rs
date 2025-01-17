@@ -138,6 +138,10 @@ impl SqliteManager{
         let file = fs::read_to_string(&self.main_tables_path)?;
         Ok(file.lines().map(String::from).collect())
     }
+
+    pub fn get_path(&self) -> Option<&Path> {
+        return self.sqlite_conn.as_ref().map(|conn| conn.path.as_path());
+    }
 }
 
 fn write_value_for_csv<W : Write>(w: &mut W, value: ValueRef) -> std::io::Result<()> {

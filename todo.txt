@@ -53,7 +53,7 @@
     + auto trigger std on db close
     - online
     + settings update
-    - !dont backup, if file is already a backup
+    + !dont backup, if file is already a backup
 
 
 + relayout Zlecenie report
