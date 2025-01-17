@@ -1,5 +1,5 @@
 //@ts-check
-import { reactive, markRaw, shallowReactive, nextTick } from 'vue';
+import { reactive, markRaw, shallowReactive, nextTick, ref, shallowRef, triggerRef, computed, watch } from 'vue';
 import WinBox from '../WinBox/winbox';
 import { generate_UID } from '../../utils';
 
@@ -8,13 +8,20 @@ import { generate_UID } from '../../utils';
  */
 
 /**
+ * @typedef {"zlecenia_otwarte" | "zlecenia_wszystkie" | "zlecenia_filtered" | "klienci" | "czesci"} FWCategory
+ */
+
+/**
  * @typedef {{
- *  force?:      boolean
+ *  force?:      boolean,
+ *  category?:   FWCategory, 
  *  props?:      Object.<string, any>
  *  listeners?:  Object.<string, Function>
  *  parent?:     FWWindow
  * }} WindowOpenOptions
  */
+
+
 
 class FWWindow {
     /**
@@ -23,24 +30,48 @@ class FWWindow {
      * @param {WinBox} box
      * @param {Object.<string, any>} props
      * @param {Object.<string, Function>} listeners
+     * @param {FWCategory} [category]
      */
-    constructor(manager, component, box, props, listeners) {
+    constructor(manager, component, box, props, listeners, category) {
         this.manager = manager;
         this.component = component;
         this.box = box;
         this.props = props;
         this.listeners = listeners;
+        this.category = category;
         this.id = 'window_' + generate_UID();
         /**@type {string[]} */
         this.children_ids = [];
         /**@type {string | null} */
         this.parent_id    = null;
 
+        /**@type {import('vue').ShallowRef<import('vue').Ref<boolean>[]>} */
+        this.changed_identifiers = shallowRef([]);
+
+        this.changed_identifier_computed = computed(() => {
+            return this.changed_identifiers.value.some(x => x.value);
+        });
+
+        this.unwatch_box_style = watch(
+            [this.changed_identifier_computed], 
+            ([new_changed_identifier]) => {
+                this.box.dom.setAttribute('changed', new_changed_identifier ? "1" : "0");
+        }, {immediate: true});
+
         this.add_before_close(async (force) => {
+            this.unwatch_box_style();
             return await this.try_close_all_children(force);
         });
     }
 
+    /**
+     * @param {import('vue').Ref<boolean>} changed_ref 
+     */
+    add_changed_identifier(changed_ref) {
+        this.changed_identifiers.value.push(changed_ref);
+        triggerRef(this.changed_identifiers);
+    }
+    
     /**
      * 
      * @param {(force: boolean) => Promise<boolean>} onclose 
@@ -160,17 +191,26 @@ class FWManager {
     /**
      * @param {string} title 
      * @param {Component} component 
-     * @param {Object.<string, any>} props
-     * @param {Object.<string, Function>} listeners
-     * @param {string} [parent_id]
+     * @param {WindowOpenOptions} options
      */
-    open_window_unchecked(title, component, props = {}, listeners = {}, parent_id) {
+    open_window_unchecked(title, component, options) {
+        const props     = options.props ?? {};
+        const listeners = options.listeners ?? {};
+        const parent_id = options.parent?.id;
+        const category  = options.category ?? options.parent?.category;
+        /**@type {string[]} */
+        const category_list = category ? ["cat_" + category] : [];
+        if(!options.category && options.parent) {
+            category_list.push('subcategory');
+        }
         const box = new WinBox(title, {
             root: this.cointainer,
             overflow: true,
+            class: category_list,
             x: "center",
             y: "center",
-            minheight: 35 + 10,
+            header: 25,
+            minheight: 25 + 10,
             top:    this.viewport.top,
             bottom: this.viewport.bottom,
             left:   this.viewport.left,
@@ -180,11 +220,12 @@ class FWManager {
             }
         });
         box.removeControl("wb-full");
-        const window = new FWWindow(this, component, box, props, listeners);
+        const window = new FWWindow(this, component, box, props, listeners, category);
         if(parent_id) {
             window.assign_parent_id(parent_id);
         }
         this.opened_windows.set(title, window);
+
         
         console.log('OPENING WINDOW', title, window);
         return window;
@@ -199,7 +240,7 @@ class FWManager {
         if(this.opened_windows.has(title)) {
             return this.focus_window(title);
         }
-        return this.open_window_unchecked(title, component, options.props, options.listeners, options.parent?.id);
+        return this.open_window_unchecked(title, component, options);
     }
     is_window_opened(title) {
         return this.opened_windows.has(title);
@@ -215,7 +256,7 @@ class FWManager {
         if(prevented_close){
             return null;
         }
-        return this.open_window_unchecked(title, component, options.props, options.listeners, options.parent?.id);
+        return this.open_window_unchecked(title, component, options);
     }
 
     /**

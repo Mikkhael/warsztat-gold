@@ -169,6 +169,7 @@ function open_print_window_faktura() {
 function open_czesci_window() {
     const title = "Części - Zlecenie nr " + param_id_zlec.get_value();
     return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Czesci, {
+        category: 'czesci',
         props: {id_zlecenia: param_id_zlec},
         // parent: props.parent_window
     });
@@ -176,6 +177,7 @@ function open_czesci_window() {
 function open_robocizna_window() {
     const title = "Robocizna - Zlecenie nr " + param_id_zlec.get_value();
     return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Robocizna, {
+        category: 'czesci',
         props: {id_zlecenia: param_id_zlec},
         // parent: props.parent_window
     });
@@ -207,7 +209,7 @@ defineExpose({
                     <label>data zamknięcia</label>
                     <FormInput :value="data_zamk" auto :readonly="readonly" />
                 </div>
-                <div class="big" v-else>
+                <div class="big" v-else :class="{changed: data_zamk.changed.value}">
                     OTWARTE
                     <input type="button" value="Zamknij" @click="close_current_zlecenie()"/>
                 </div>

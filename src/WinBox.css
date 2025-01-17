@@ -13,6 +13,13 @@
     text-align: left;
     /* workaround for using passive listeners */
     touch-action: none;
+
+    box-sizing: border-box;
+    border: 2px solid transparent;
+    border-top-width: 0px;
+  }
+  .winbox[changed="1"] {
+    border-color: yellow;
   }
   .wb-header {
     position: absolute;
@@ -41,6 +48,11 @@
     margin-top: 0 !important;
     contain: strict;
     z-index: 0;
+
+    /* Custom borders */
+    /* margin-left:   1px; */
+    /* margin-right:  1px; */
+    /* margin-bottom: 1px; */
   }
   /*
   body > .wb-body{
@@ -309,3 +321,21 @@
     display: revert;
   }
   
+
+  /***************** CATEGORIES ********************/
+
+/**
+ * @typedef {"zlecenia_otwarte" | "zlecenia_wszystkie" | "zlecenia_filtered" | "klienci" | "czesci"} FWCategory
+ */
+
+  .winbox.cat_zlecenia_otwarte   {background: #d84f00; }
+  .winbox.cat_zlecenia_wszystkie {background: #d17d00; }
+  .winbox.cat_zlecenia_filtered  {background: #7300d1; }
+  .winbox.cat_klienci            {background: #46be00; }
+  .winbox.cat_czesci             {background: #0038d1; }
+
+  .winbox.subcategory.cat_zlecenia_otwarte   {background: #b94400; }
+  .winbox.subcategory.cat_zlecenia_wszystkie {background: #bd7100; }
+  .winbox.subcategory.cat_zlecenia_filtered  {background: #6000af; }
+  .winbox.subcategory.cat_klienci            {background: #3ca500; }
+  .winbox.subcategory.cat_czesci             {background: #002faf; }

@@ -152,6 +152,7 @@ function handle_zlec_for_kli() {
     const klient_nazwa = nazwa.get_cached();
     const title = `Zlecenia dla Klienta '${klient_nazwa}'`;
     fwManager.open_or_focus_window(title, ZleceniaNaprawyAdv, {
+        category: "zlecenia_filtered",
         props: {
             only_for_klient_id: klient_id
         }
@@ -162,6 +163,7 @@ function handle_zlec_for_car() {
     const car_nrrej = src_car.get(db.TABS.samochody_klientów.cols.nr_rej).get_value();
     const title = `Zlecenia dla Samochodu '${car_nrrej}'`;
     fwManager.open_or_focus_window(title, ZleceniaNaprawyAdv, {
+        category: "zlecenia_filtered",
         props: {
             only_for_car_id: car_id
         }

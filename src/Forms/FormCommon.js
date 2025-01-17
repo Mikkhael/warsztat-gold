@@ -49,7 +49,7 @@ function CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, options) {
     }
 
     onMounted(() => {
-        props.parent_window?.box.resize_to_content(true).recenter();
+        props.parent_window?.box.resize_to_content(false).recenter();
         window.addEventListener   ('db_opened', db_opened_listener);
         if(!options.no_update_on_mounted){
             _src.update_complete().catch(_on_error);

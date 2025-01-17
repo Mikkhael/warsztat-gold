@@ -49,6 +49,7 @@ class ClosePreventionManager{
             this.preventors.add(preventor);
             if(parent_window) {
                 ClosePreventionManager.prevent_fwwindow_close(preventor, parent_window);
+                parent_window.add_changed_identifier(preventor);
             }
         });
         onUnmounted(() => {

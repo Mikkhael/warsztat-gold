@@ -6,7 +6,6 @@
  * https://github.com/nextapps-de/winbox
  */
 
-
 import template from "./template.js";
 import { addListener, removeListener, setStyle, setText, getByClass, addClass, removeClass, hasClass, preventEvent } from "./helper.js";
 
@@ -164,10 +163,11 @@ function WinBox(params, _title){
     this.dom = template(tpl);
     this.dom.id = this.id = id || ("winbox-" + (++id_counter));
     this.dom.className = "winbox" + (classname ? " " + (typeof classname === "string" ? classname : classname.join(" ")) : "") + (modal ? " modal" : "");
+    console.log("CLASSNAME:", this.dom.className);
     this.dom["winbox"] = this;
     this.window = this.dom;
     this.body = getByClass(this.dom, "wb-body");
-    this.header = header || 35;
+    this.header = Number(header) || 35;
     //this.plugins = [];
 
     stack_win.push(this);
@@ -1266,10 +1266,10 @@ WinBox.prototype.resize_true = function(w, h, bound_factor = 0.9, _skip_update){
     // console.log("REsizing to ", w, h);
     if(bound_factor > 0) {
         w = Math.min(w, bound_factor * (this.maxwidth  ?? Infinity));
-        h = Math.min(h, bound_factor * (this.maxheight ?? Infinity - 35));
+        h = Math.min(h, bound_factor * (this.maxheight ?? Infinity - this.header));
     }
     console.log("RESIZING", w, h, this.maxwidth, this.maxheight, bound_factor);
-    return this.resize(w, h + 35, _skip_update);
+    return this.resize(w, h + this.header, _skip_update);
 }
 
 /**

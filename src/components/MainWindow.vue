@@ -133,19 +133,19 @@ function tool_settings() {
 }
 
 function tool_zlecenia_all(){
-    fwManager.open_or_focus_window("Wszystkie Zlecenia", ZleceniaNaprawyAdv);
+    fwManager.open_or_focus_window("Wszystkie Zlecenia", ZleceniaNaprawyAdv, {category: "zlecenia_wszystkie"});
 }
 
 function tool_zlecenia(){
-    fwManager.open_or_focus_window("Zlecenia Otwarte", ZleceniaNaprawyAdv, {props: {show_only_open: true}});
+    fwManager.open_or_focus_window("Zlecenia Otwarte", ZleceniaNaprawyAdv, {category: "zlecenia_otwarte", props: {show_only_open: true}});
 }
 
 function tool_klienci(){
-    fwManager.open_or_focus_window("Klienci", Klienci);
+    fwManager.open_or_focus_window("Klienci", Klienci, {category: "klienci"});
 }
 
 function tool_czesci(){
-    fwManager.open_or_focus_window("Części", NazwyCzesci);
+    fwManager.open_or_focus_window("Części", NazwyCzesci,{category: "czesci"});
 }
 
 // function tool_obroty_zlec(){
@@ -303,7 +303,7 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
     flex-grow: 1;
     text-align: center;
     position: relative;
-    background-color: rgb(231, 231, 231);
+    background-color: #a8a8a8;
     z-index: 0;
 }
 
