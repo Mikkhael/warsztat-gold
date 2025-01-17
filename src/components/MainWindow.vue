@@ -28,6 +28,7 @@ import NazwyCzesci from "../Forms/NazwyCzesci.vue";
 // import ZleceniaNaprawy_Czesci from "../Forms/ZleceniaNaprawy_Czesci.vue";
 
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
+import ZleceniaNaprawyAdv from "../Forms/ZleceniaNaprawyAdv.vue";
 
 
 const fwManager  = useMainFWManager();
@@ -131,8 +132,12 @@ function tool_settings() {
     fwManager.open_or_focus_window("Ustawienia", SettingsWindow);
 }
 
+function tool_zlecenia_all(){
+    fwManager.open_or_focus_window("Wszystkie Zlecenia", ZleceniaNaprawyAdv);
+}
+
 function tool_zlecenia(){
-    fwManager.open_or_focus_window("Zlecenia Otwarte", ZleceniaNaprawy, {props: {show_clients: true}});
+    fwManager.open_or_focus_window("Zlecenia Otwarte", ZleceniaNaprawyAdv, {props: {show_only_open: true}});
 }
 
 function tool_klienci(){
@@ -205,6 +210,12 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
                 }"
             />
             <div class="spacer"></div>
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Wszystkie Zlecenia',
+                    onclick: tool_zlecenia_all
+                }"
+            />
             <MainWindow_OptionBtn
                 :options="{
                     name: 'Zlecenia Otwarte',

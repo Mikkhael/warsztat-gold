@@ -2,6 +2,7 @@
 //@ts-check
 
 import {FormInput, FormEnum} from '../components/Controls';
+import IconButton from '../components/Controls/IconButton.vue';
 
 import useMainMsgManager from '../components/Msg/MsgManager';
 
@@ -19,6 +20,7 @@ import { FormParamProp, FormDefaultProps, FormQuerySourceSingle, param_from_prop
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 import useMainFWManager from '../components/FloatingWindows/FWManager';
+import ZleceniaNaprawyAdv from './ZleceniaNaprawyAdv.vue';
 
 
 const props = defineProps({
@@ -145,6 +147,27 @@ const show_zlecenia = ref(true);
 //     });
 // }
 
+function handle_zlec_for_kli() {
+    const klient_id    = id.get_cached();
+    const klient_nazwa = nazwa.get_cached();
+    const title = `Zlecenia dla Klienta '${klient_nazwa}'`;
+    fwManager.open_or_focus_window(title, ZleceniaNaprawyAdv, {
+        props: {
+            only_for_klient_id: klient_id
+        }
+    });
+}
+function handle_zlec_for_car() {
+    const car_id    = src_car.get(db.TABS.samochody_klientów.cols.ID).get_value();
+    const car_nrrej = src_car.get(db.TABS.samochody_klientów.cols.nr_rej).get_value();
+    const title = `Zlecenia dla Samochodu '${car_nrrej}'`;
+    fwManager.open_or_focus_window(title, ZleceniaNaprawyAdv, {
+        props: {
+            only_for_car_id: car_id
+        }
+    });
+}
+
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
@@ -213,7 +236,7 @@ defineExpose({
                 <label>dnia               </label>  <FormInput :readonly="props.readonly" :value="kiedy " auto />
                 <label>Drugi Telefon      </label>  <FormInput :readonly="props.readonly" :value="tele2 " auto />
                 <label>ID                 </label>  <FormInput readonly                   :value="id    " auto />
-                <label>stały upust        </label>  <FormInput :readonly="props.readonly" :value="upust " auto />
+                <!-- <label>stały upust        </label>  <FormInput :readonly="props.readonly" :value="upust " auto /> -->
 
                 <fieldset class="subform_cars_field">
                     <legend>{{props.force_car_id !== undefined ? "Samochód" : "Samochody Klienta"}}</legend>
@@ -224,12 +247,18 @@ defineExpose({
                         :force_car_id="props.force_car_id"
                     />
                 </fieldset>
+                
+                <div></div>
+                <div></div>
+                <IconButton text="zlecenia klienta"   icon="filter" @click="handle_zlec_for_kli"/>
+                <IconButton text="zlecenia samochodu" icon="filter" @click="handle_zlec_for_car"/>
             </div>
             
 
             <fieldset class="zlecenia" :style="{display: show_zlecenia ? 'unset' : 'none'}" v-if="!props.no_zlec">
                 <legend>Zlecenia Naprawy</legend>
                 <ZleceniaNaprawy
+                    :window="props.parent_window"
                     ref="zlecenia_form"
                     :use_src="src_zlecenia"
                     :id_klienta="param_id_klienta"

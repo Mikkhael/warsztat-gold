@@ -56,9 +56,9 @@
     - !dont backup, if file is already a backup
 
 
-- relayout Zlecenie report
-- add quick zlecenia summary
-- show only first line of części name
++ relayout Zlecenie report
++ add quick zlecenia summary
++ show only first line of części name
 
 
 - Core

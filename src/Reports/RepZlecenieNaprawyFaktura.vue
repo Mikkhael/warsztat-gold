@@ -10,6 +10,8 @@ import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import { useMainSettings } from '../components/Settings/Settings';
 import { computed, ref } from 'vue';
 
+import {set_from_for_summary_for_zlec_id} from '../Forms/CommonSql';
+
 const props = defineProps({
     parent_window: {
         /**@type {import('vue').PropType<import('../components/FloatingWindows/FWManager').FWWindow>} */
@@ -65,28 +67,8 @@ const klie_odbiorca    = src_main.auto_rep_value(COLS_KLIE.odbierający_fakturę
 
 ////////////// List Source /////////////
 
-const LIST_CZESCI_SQL = qparts_db(
-    "SELECT",   "ifnull(",  COLS_CZES.nazwa_części,      ", '')",  "AS name,", 
-                "ifnull(",  COLS_CZES.jednostka,         ", '')",  "AS unit,",
-                "ifnull(",  COLS_OBRO.ilość,        "* (-1), 0)",  "AS cnt,",
-                            COLS_OBRO.cena_netto_sprzedaży,        "AS netto",
-    "FROM",     TAB_OBRO, "LEFT JOIN", TAB_CZES, "ON", COLS_OBRO.numer_cz, "=", COLS_CZES.numer_części,
-    "WHERE",    COLS_OBRO.rodzaj_dokumentu, "IS 'zlec'", "AND", COLS_OBRO.numer_dokumentu, "IS", [id_zlecenia.get_local_ref()]);
-    
-const LIST_ROBOCIZNA_SQL = qparts_db(
-    "SELECT",   "ifnull(",  COLS_CZYN.czynność,          ", '')",  "AS name,", 
-                "''",                                              "AS unit,",
-                "ifnull(",  COLS_ROBO.krotność_wykonania,",  0)",  "AS cnt,",
-                            COLS_ROBO.cena_netto,                  "AS netto",
-    "FROM",     TAB_ROBO, "LEFT JOIN", TAB_CZYN, "ON", COLS_ROBO.ID_czynności, "=", COLS_CZYN.ID_cynności,
-    "WHERE",    COLS_ROBO.ID_zlecenia, "IS", [id_zlecenia.get_local_ref()]);
-
-    
-const LIST_SQL = computed(() => `(${query_parts_to_string(LIST_CZESCI_SQL)} UNION ALL ${query_parts_to_string(LIST_ROBOCIZNA_SQL)})`);
-// const LIST_SQL = computed(() => `( (${query_parts_to_string(LIST_ROBOCIZNA_SQL)}))`);
-
 const src_list = new RepQuerySourceFull();
-src_list.query.from.reas(LIST_SQL);
+set_from_for_summary_for_zlec_id(src_list, id_zlecenia.get_local_ref());
 
 src_list.auto_rep_column ('name', {default: ''});
 src_list.auto_rep_column ('unit', {default: ''});
@@ -98,7 +80,7 @@ src_list.auto_rep_column ("mul_brutto", {sql: "decimal_mul(1.23, decimal_mul(`cn
 
 
 const src_total = new RepQuerySourceSingle();
-src_total.query.from.reas(LIST_SQL);
+set_from_for_summary_for_zlec_id(src_total, id_zlecenia.get_local_ref());
 const src_total_netto  = src_total.auto_rep_value ("total_netto",  {sql: "decimal_mul(1,    decimal_sum(decimal_mul(`cnt`,`netto`)))", default: '0.00'});
 const src_total_vat    = src_total.auto_rep_value ("total_vat",    {sql: "decimal_mul(0.23, decimal_sum(decimal_mul(`cnt`,`netto`)))", default: '0.00'});
 const src_total_brutto = src_total.auto_rep_value ("total_brutto", {sql: "decimal_mul(1.23, decimal_sum(decimal_mul(`cnt`,`netto`)))", default: '0.00'});

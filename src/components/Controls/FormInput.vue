@@ -140,6 +140,9 @@ const all_raactive_class = computed(() => {
 *[right] {
     text-align: right;
 }
+textarea {
+    text-wrap-mode: nowrap;
+}
 
 
 /* .FormControlInput.null {

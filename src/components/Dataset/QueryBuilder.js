@@ -37,7 +37,7 @@ function select_field_definition_to_sql(select_field) {
 
 /**
  * @template [T=never]
- * @typedef {string | [MaybeRef<SQLValue> | T] | [string, 'l'] | [string, 'b']} QueryPart
+ * @typedef {string | [MaybeRef<SQLValue | boolean> | T] | [string, 'l'] | [string, 'b']} QueryPart
  * */
 
 /**
@@ -70,7 +70,7 @@ function qparts_db(...parts) {
 /**
  * @template T
  * @param {QueryParts<T>} parts 
- * @param {(param: MaybeRef<SQLValue> | T) => MaybeRef<SQLValue>} callback 
+ * @param {(param: MaybeRef<SQLValue | boolean> | T) => MaybeRef<SQLValue | boolean>} callback 
  * @returns {QueryParts}
  */
 function map_query_parts_params(parts, callback) {

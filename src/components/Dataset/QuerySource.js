@@ -116,6 +116,7 @@ class QuerySource extends DataGraphNodeBase {
         this.no_disable_on_empty = false;
 
         this.is_marked_update_in_progress = false;
+        this.self_disabled = ref(false);
     }
 
     /**@param {number | string} name */
@@ -193,6 +194,9 @@ class QuerySource extends DataGraphNodeBase {
     check_should_disable_dists_impl() {
         return !this.no_disable_on_empty && this.is_empty.value;
     }
+    check_disabled_impl() {
+        return this.self_disabled.value;
+    }
 
     async update__count_impl() {
         if(this.count_expired.value || this.query._expired_count.value) {
@@ -231,6 +235,9 @@ class QuerySource extends DataGraphNodeBase {
     }
     ///////////////////////////////////////
 
+    set_self_disabled(value = true) {
+        this.self_disabled.value = value;
+    }
     disable_offset() {
         this.offset.value = 0;
         this.offset_disabled = true;
@@ -405,7 +412,7 @@ class QuerySource extends DataGraphNodeBase {
         this.query.add_where_eq(field, ref, optional);
     }
 
-    /**@typedef {import("./QueryBuilder").QueryParts<DataGraphDependable<SQLValue>>} QueryPartsDependable */
+    /**@typedef {import("./QueryBuilder").QueryParts<DataGraphDependable<SQLValue | boolean>>} QueryPartsDependable */
 
     /**
      * @param {boolean} optional
@@ -423,6 +430,17 @@ class QuerySource extends DataGraphNodeBase {
     add_where(...parts) {
         this.#add_where_impl(false, ...parts);
     }
+
+    /**
+     * 
+     * @param {MaybeDependable<boolean>} is_enabled 
+     * @param {string} field 
+     * @param {MaybeDependable} value 
+     */
+    add_where_eq_dynamic(is_enabled, field, value) {
+        this.#add_where_impl(false, '(', [is_enabled], `IS 0 ) OR`, field, 'IS', [value]);
+    }
+
     /**
      * @param  {QueryPartsDependable} parts 
      */

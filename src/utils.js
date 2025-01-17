@@ -24,7 +24,7 @@ function typeofpl(value){
 }
 
 /**
- * @param {number | bigint | string | null} value 
+ * @param {number | bigint | string | null | boolean} value 
  * @returns 
  */
 function escape_sql_value(value){
@@ -38,6 +38,8 @@ function escape_sql_value(value){
     } else if(typeof value === 'object') {
         console.error(`ESCAPING AN OBJECT VALUE `, value);
         return 'NULL';
+    } else if(typeof value === 'boolean'){
+        return value ? '1' : '0';
     } else {
         return "'" + value.toString().replace(/'/g, "''") + "'";
     }
