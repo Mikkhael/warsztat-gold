@@ -109,13 +109,13 @@ defineExpose({
         
 <div class="printrender" ref="rep_renderer_ref">
 
-    <div class="print_overlay noprint">
+    <div class="print_overlay noprint" style="pointer-events: none;">
         <button type="button"
             onclick="if(Array.from(document.querySelectorAll('.print_options input, .print_options select')).every(x => x.reportValidity())) window.perform_print();" 
             class="print_fallback_button noprint offset_top"> 
                 DRUKUJ 
         </button>
-        <div class="noprint"> &nbsp; </div>
+        <div class="noprint" style="pointer-events: none; user-select: none;"> &nbsp; </div>
         <div class="print_options noprint offset_right" ref="print_options_ref">
             <input type="button" value=">" onclick="toggle_print_options(this)" style="position: absolute">
             <h3>Opcje</h3>
@@ -146,7 +146,7 @@ defineExpose({
         </div>
     </div>
     <div class="offset_top noprint"></div>
-    <component ref="rep_ref" :is="props.rep" v-bind="$attrs"/>
+    <component ref="rep_ref" :is="props.rep" v-bind="$attrs" style="z-index: 1;"/>
     <div class="offset_right noprint"></div>
      
     
