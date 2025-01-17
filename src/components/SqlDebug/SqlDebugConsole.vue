@@ -56,9 +56,9 @@ function save_query_to_history(query){
     localStorage.setItem("sql_debug_query_history", JSON.stringify(query_history.value));
 }
 
-function perform_select(){
+function perform_select(event){
     save_query_to_history(query_string.value);
-    return ipc.db_query(query_string.value).then(handle_success_query).catch(handle_error);
+    return ipc.db_query(query_string.value, event.shiftKey ? 0 : undefined).then(handle_success_query).catch(handle_error);
 }
 function perform_insert(){
     save_query_to_history(query_string.value);
@@ -149,7 +149,7 @@ defineExpose({
         <option value="-1"></option>
     </select>
     <div class="control">
-        <button type="button" @click="perform_select()">SELECT</button>
+        <button type="button" @click="e => perform_select(e)">SELECT</button>
         <button type="button" @click="perform_insert()">INSERT</button>
         <button type="button" @click="perform_execute()">EXE1</button>
         <button type="button" @click="perform_execute_batch()">EXECUTE</button>

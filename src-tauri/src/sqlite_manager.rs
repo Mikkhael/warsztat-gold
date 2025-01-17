@@ -409,11 +409,14 @@ pub fn import_csv(import_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
 }
 
 #[tauri::command]
-pub fn perform_query(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(ExtractedRows, Vec<String>), String> {
+pub fn perform_query(query: String, hard_limit: Option<usize>, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(ExtractedRows, Vec<String>), String> {
     println!("[INVOKE] perform_query:   {}", query);
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
-        let (extracted_rows, stmt) = sqlite_conn.query(&query, (), Some(100)).map_err(|err| err.to_string())?;
+        let hard_limit_value = hard_limit.unwrap_or(100);
+        let hard_limit_value_param = if hard_limit_value == 0 {None} else {Some(hard_limit_value)};
+        println!("HARD LIMIT ({:?}) : {} - {:?}", hard_limit, hard_limit_value, hard_limit_value_param);
+        let (extracted_rows, stmt) = sqlite_conn.query(&query, (), hard_limit_value_param).map_err(|err| err.to_string())?;
         let col_names : Vec<String> = stmt.column_names().into_iter().map(|s| s.to_owned()).collect();
         Ok((extracted_rows, col_names))
     }else{

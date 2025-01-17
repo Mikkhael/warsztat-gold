@@ -247,11 +247,12 @@ async function backup(filepathsToDelete, copiesToCreate, prefix, ext, nodelete) 
 
 /**
  * @param {string} query 
+ * @param {number} [hardLimit]
  * @returns {Promise<IPCQueryResult>}
  */
-async function db_query(query) {
+async function db_query(query, hardLimit) {
     console.log("QUERY: ", query);
-    const res = await invoke("perform_query", {query});
+    const res = await invoke("perform_query", {query, hardLimit});
     return res;
 }
 

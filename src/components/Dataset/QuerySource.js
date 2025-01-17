@@ -116,6 +116,7 @@ class QuerySource extends DataGraphNodeBase {
         this.no_disable_on_empty = false;
 
         this.is_marked_update_in_progress = false;
+        this.is_no_limit = false;
         this.self_disabled = ref(false);
     }
 
@@ -244,6 +245,7 @@ class QuerySource extends DataGraphNodeBase {
     }
     set_no_limit() {
         this.disable_offset();
+        this.is_no_limit = true;
         this.query.limit.value = -1;
     }
     set_no_disable_on_empty(value = true) {
@@ -278,7 +280,8 @@ class QuerySource extends DataGraphNodeBase {
         const result = await ipc.db_query(
             this.offset_disabled ?
                 this.query.full_sql_base.value :
-                this.query.full_sql_offset.value
+                this.query.full_sql_offset.value,
+            this.is_no_limit ? 0 : undefined,
         );
         if(result[0].length === 0) {
             this.count.value = 0;
