@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Faktura</title>
     <script type="module" src="/src/main_print.js"></script>
+    <script>
+      function toggle_print_options(target) {
+        const elem = document.querySelector('.print_options');
+        if(!elem) return;
+        const is_hidden = elem.getAttribute('hidden') === '1';
+        elem.setAttribute('hidden', is_hidden ? '0' : '1');
+        if(target) {
+          target.setAttribute('value', is_hidden ? '>' : '<');
+        }
+        console.log(elem, target);
+      }
+    </script>
   </head>
 
   <body>
