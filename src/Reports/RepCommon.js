@@ -153,20 +153,89 @@ class RepQuerySourceFull extends QuerySource{
 }
 
 
-function param_element_onclick(name) {
-    return `document.getElementsByName('${name}').forEach(e => e.innerText = this.value)`;
+
+function strip_quotes(str, relaxed = false) {
+    const res1 = str.replaceAll('"','');
+    if(relaxed) return res1;
+    return res1.replaceAll("'",'\'');
 }
 
-function create_print_param_input(name, label = '', params) {
-    const html = `<div> ${label}: <input ${params} oninput="${param_element_onclick(name)}"/></div>`;
+/**
+ * @typedef {{
+*      name:  string,
+*      val:   string,
+*      type?: "text" | "class_set" | "class_remove" | "battr_set" | "battr_unset",
+*      dynamic?: boolean
+*  }} PrintParamAction
+*/
+
+/**
+ * @param {PrintParamAction} action 
+ */
+function get_action_handler(action) {
+    const name = strip_quotes(action.name);
+    const val = action.dynamic ? action.val : `'${strip_quotes(action.val)}'`;
+    switch(action.type ?? 'text') {
+        case "text":            return `set_text_by_name('${name}', ${val})`;
+        case "class_set":       return `set_class_by_name('${name}', ${val}, 'set')`;
+        case "class_remove":    return `set_class_by_name('${name}', ${val}, 'remove')`;
+        case "battr_set":       return `set_battr_by_name('${name}', ${val}, 'set')`;
+        case "battr_unset":     return `set_battr_by_name('${name}', ${val}, 'remove')`;
+    }
+    return '';
+}
+
+/**
+ * @typedef {{
+ *  name: string, 
+ *  attrbs?: string,
+ *  values?: ([display: string, val: string] | string)[],
+ * }} PrintParamControlOptions
+ */
+
+/**
+ * @param {string} label 
+ * @param {PrintParamControlOptions} options 
+ */
+function create_print_param_input(label, options) {
+    const attrbs = options.attrbs ?? '';
+
+    const action = get_action_handler({name: options.name, val: 'this.value', dynamic: true});
+    const html = `<div> ${label}: <input ${attrbs} oninput="${action}"/></div>`;
     return html;
 }
-function create_print_param_select(name, label = '', options=[], params) {
-    const options_html = options.map(x => {
-        const values = Array.isArray(x) ? x : [x,x];
-        return `<option value="${values[0]}">${values[1]}</option>`;
-    });
-    const html = `<div> ${label}: <select ${params} onchange="${param_element_onclick(name)}">${options_html}</select></div>`;
+/**
+ * @param {string} label 
+ * @param {PrintParamControlOptions} options 
+ */
+function create_print_param_select(label = '', options) {
+    const attrbs = options.attrbs ?? '';
+    const values = options.values?.map(x => Array.isArray(x) ?
+        [x[0],                  strip_quotes(x[1], true)] :
+        [strip_quotes(x, true), strip_quotes(x,    true)] ) ?? [];
+
+    const values_str = values.map( x => `<option value="${x[1]}">${x[0]}</option>`).join('');
+    const action = get_action_handler({name: options.name, val: 'this.value', dynamic: true});
+    const html = `<div> ${label}: <select ${attrbs} onchange="${action}">${values_str}</select></div>`;
+    return html;
+}
+
+/**
+ * @typedef {{
+ *  attrbs?: string,
+ *  actions: PrintParamAction[],
+* }} PrintParamButtonOptions
+*/
+
+/**
+ * @param {string} label 
+ * @param {PrintParamButtonOptions} options 
+ */
+function create_print_param_button(label, options) {
+    const attrbs = options.attrbs ?? '';
+    const actions = options.actions.map(get_action_handler).join(';');
+
+    const html = `<input type="button" value="${strip_quotes(label,true)}" ${attrbs} onclick="${actions}"/>`;
     return html;
 }
 
@@ -175,4 +244,5 @@ export {
     RepQuerySourceFull,
     create_print_param_input,
     create_print_param_select,
+    create_print_param_button,
 }

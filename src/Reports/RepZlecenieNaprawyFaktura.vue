@@ -5,7 +5,7 @@
 
 import { date_now, format_date_str_local, format_decimal as format_decimal_utils, format_first_line, number_to_polish_words, parse_decimal_adv } from '../utils';
 import { FormParamProp, param_from_prop, qparts_db, query_parts_to_string, QueryBuilder, RefChangableValue } from '../components/Dataset';
-import { RepQuerySourceSingle, RepQuerySourceFull, create_print_param_input, create_print_param_select } from './RepCommon';
+import { RepQuerySourceSingle, RepQuerySourceFull, create_print_param_input, create_print_param_select, create_print_param_button } from './RepCommon';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import { useMainSettings } from '../components/Settings/Settings';
 import { computed, ref } from 'vue';
@@ -118,17 +118,36 @@ async function perform_update() {
 }
 
 function create_options() {
-    const faktura_nr      = create_print_param_input('option_faktura_nr', 'Numer Faktury', 'required');
-    const payment_method  = create_print_param_select('option_payment_method', 'Sposób płatności', [
-        'gotówka',
-        'blik',
-        'kompensata',
-        'przelew 7 dni',
-        'przelew 14 dni',
-        'gotówka 7 dni',
-        'przelew 21 dni',
-    ]);
-    return faktura_nr + payment_method;
+    const faktura_nr      = create_print_param_input('Numer Faktury', {
+        name: 'option_faktura_nr',
+        attrbs: 'name="faktura_nr_input"'
+    });
+    // const payment_method  = create_print_param_select('option_payment_method', 'Sposób płatności', [
+    const payment_method  = create_print_param_select('Sposób płatności', {
+        name: 'option_payment_method',
+        values: [
+            'gotówka',
+            'blik',
+            'kompensata',
+            'przelew 7 dni',
+            'przelew 14 dni',
+            'gotówka 7 dni',
+            'przelew 21 dni',
+        ]
+    });
+    const btn_type_faktura = create_print_param_button('Ustaw Fakturę', {
+        actions: [
+            {name: 'page', val: 'is_spec', type: 'class_remove'},
+            {name: 'faktura_nr_input', val: 'required', type: 'battr_set'}
+        ]
+    });
+    const btn_type_specs   = create_print_param_button('Ustaw Specyfikację', {
+        actions: [
+            {name: 'page', val: 'is_spec', type: 'class_set'},
+            {name: 'faktura_nr_input', val: 'required', type: 'battr_unset'}
+        ]
+    });
+    return payment_method + faktura_nr + btn_type_faktura + btn_type_specs;
 }
 // const title_getter = "'Faktura nr ' + document.getElementsByName('option_faktura_nr')[0].innerText";
 const title_getter = "Faktura nr {{option_faktura_nr}}";
@@ -145,11 +164,16 @@ defineExpose({
 <template>
     
     <div class="over_page">
-    <div class="page" ref="page" contenteditable="true">
+    <div class="page is_spec" ref="page" name="page" contenteditable="true">
 
         <div class="faktura_header">
             <div class="left">
-                <div class="bold vbig">Faktura VAT nr <span name="option_faktura_nr">&lt;nr faktury&gt;</span></div>
+                <div class="bold vbig not_in_spec">
+                    Faktura VAT nr <span name="option_faktura_nr">&lt;nr faktury&gt;</span>
+                </div>
+                <div class="bold vbig only_in_spec">
+                    Specyfikacja części / robocizna
+                </div>
                 <div> ORYGINAŁ / KOPIA </div>
             </div>
             <div class="right">
@@ -205,7 +229,7 @@ defineExpose({
                 </tr>
                 <tr
                     v-for="(row, row_i) in src_list.local_rows.value"
-                    class="tdata"
+                    class="tdata only_in_spec"
                 >
                     <td class="r">{{ row_i + 1 }}</td>
                     <td class="l">{{ format_first_line( row.get('name') ) }}</td>
@@ -216,6 +240,19 @@ defineExpose({
                     <td class="c">{{ CONST_VAT_PROC }} </td>
                     <td class="r">{{ format_decimal( row.get('mul_vat') ) }}</td>
                     <td class="r">{{ format_decimal( row.get('mul_brutto') ) }}</td>
+                </tr>
+                <tr
+                    class="tdata not_in_spec"
+                >
+                    <td class="r">{{ 1 }}</td>
+                    <td class="l">{{ settings_data['Nazwa Spec.'] }}</td>
+                    <td class="r">{{  }}</td>
+                    <td class="r">{{  }}</td>
+                    <td class="r">{{ format_decimal( src_total_netto, false ) }}</td>
+                    <td class="r">{{ format_decimal( src_total_netto, false ) }}</td>
+                    <td class="c">{{ CONST_VAT_PROC }} </td>
+                    <td class="r">{{ format_decimal( src_total_vat, false ) }}</td>
+                    <td class="r">{{ format_decimal( src_total_brutto, false ) }}</td>
                 </tr>
 
             </table>

@@ -35,7 +35,87 @@ function perform_print() {
     }
     window.print();
 }
+//@ts-ignore
+window.perform_print = perform_print;
 
+
+function try_print() {
+    const all_elements_in_print_options = document.querySelectorAll('.print_options *');
+    for(const elem of all_elements_in_print_options) {
+        //@ts-ignore
+        if(elem.reportValidity && !elem.reportValidity()) {
+            return;
+        }
+    }
+    perform_print();
+}
+//@ts-ignore
+window.try_print = try_print;
+
+
+//////// INTERACTIVE REP ////////////////
+
+function toggle_print_options(target) {
+    const elem = document.querySelector('.print_options');
+    if(!elem) return;
+    const is_hidden = elem.getAttribute('hidden') === '1';
+    elem.setAttribute('hidden', is_hidden ? '0' : '1');
+    if(target) {
+        target.setAttribute('value', is_hidden ? '>' : '<');
+    }
+    console.log(elem, target);
+}
+//@ts-ignore
+window.toggle_print_options = toggle_print_options;
+
+
+function set_text_by_name(name, value) {
+    const elems = document.getElementsByName(name);
+    for(const elem of elems) {
+        elem.innerText = value;
+    }
+}
+//@ts-ignore
+window.set_text_by_name = set_text_by_name;
+
+
+/**
+ * @param {string} name 
+ * @param {string} value 
+ * @param {"set" | "remove"} type 
+ */
+function set_class_by_name(name, value, type) {
+    const elems = document.getElementsByName(name);
+    for(const elem of elems) {
+        switch(type) {
+            case "set":    elem.classList.add(value); break;
+            case "remove": elem.classList.remove(value); break;
+        }
+    }
+}
+//@ts-ignore
+window.set_class_by_name = set_class_by_name;
+
+
+/**
+ * @param {string} name 
+ * @param {string} value 
+ * @param {"set" | "remove"} type 
+ */
+function set_battr_by_name(name, value, type) {
+    const elems = document.getElementsByName(name);
+    for(const elem of elems) {
+        switch(type) {
+            case "set":    elem.setAttribute(value,''); break;
+            case "remove": elem.removeAttribute(value); break;
+        }
+    }
+}
+//@ts-ignore
+window.set_battr_by_name = set_battr_by_name;
+
+
+/////////////////////////////////////////
 
 listen('set_innerHTML', event => {
     const {innerHTML, optionsHTML, withPrint, titleGetter} = event.payload;
@@ -54,8 +134,9 @@ listen('set_innerHTML', event => {
 
 });
 
-//@ts-ignore
-window.perform_print = perform_print;
+
+
+
 
 emit('ready');
 

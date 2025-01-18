@@ -109,9 +109,9 @@ defineExpose({
         
 <div class="printrender" ref="rep_renderer_ref">
 
-    <div class="print_overlay noprint" style="pointer-events: none;">
+    <div class="print_overlay noprint">
         <button type="button"
-            onclick="if(Array.from(document.querySelectorAll('.print_options input, .print_options select')).every(x => x.reportValidity())) window.perform_print();" 
+            onclick="try_print()" 
             class="print_fallback_button noprint offset_top"> 
                 DRUKUJ 
         </button>
