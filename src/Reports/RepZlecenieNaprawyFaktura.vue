@@ -138,19 +138,22 @@ function create_options() {
     const btn_type_faktura = create_print_param_button('Ustaw Fakturę', {
         actions: [
             {name: 'page', val: 'is_spec', type: 'class_remove'},
-            {name: 'faktura_nr_input', val: 'required', type: 'battr_set'}
+            {name: 'faktura_nr_input', val: 'required', type: 'battr_set'},
+            {name: 'title', val: 'faktura', type: 'text'},
         ]
     });
     const btn_type_specs   = create_print_param_button('Ustaw Specyfikację', {
         actions: [
             {name: 'page', val: 'is_spec', type: 'class_set'},
-            {name: 'faktura_nr_input', val: 'required', type: 'battr_unset'}
+            {name: 'faktura_nr_input', val: 'required', type: 'battr_unset'},
+            {name: 'title', val: 'specyfikacja', type: 'text'},
         ]
     });
     return payment_method + faktura_nr + btn_type_faktura + btn_type_specs;
 }
 // const title_getter = "'Faktura nr ' + document.getElementsByName('option_faktura_nr')[0].innerText";
-const title_getter = "Faktura nr {{option_faktura_nr}}";
+// const title_getter = "Faktura nr {{option_faktura_nr}}";
+const title_getter = "{{title}}";
 
 defineExpose({
     perform_update,
@@ -165,6 +168,10 @@ defineExpose({
     
     <div class="over_page">
     <div class="page is_spec" ref="page" name="page" contenteditable="true">
+
+        <div style="display: none;">
+            <div name="title">specyfikacja</div>
+        </div>
 
         <div class="faktura_header">
             <div class="left">

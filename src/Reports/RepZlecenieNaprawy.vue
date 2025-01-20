@@ -81,7 +81,8 @@ async function perform_update() {
     await src.update_complete(true);
     date_now_ref.value = format_date_str_local(date_now());
 }
-const title_getter = "Zlecenie nr {{zlecenie_id}}";
+// const title_getter = "Zlecenie nr {{zlecenie_id}}";
+const title_getter = 'zlecenie';
 
 defineExpose({
     perform_update,

@@ -272,13 +272,26 @@ impl SqliteConn{
         let opened_file = OpenOptions::new().read(true).open(accual_file_path);
         drop(opened_file);
 
+        let transaction = self.conn.unchecked_transaction()?;
+
         let vtab_sql   = format!("CREATE VIRTUAL TABLE temp.`{}` USING vsv(filename=\"{}\", header=yes, fsep=';', nulls=yes)", temp_table_name, file_path_str);
         self.conn.execute(&vtab_sql, ())?;
 
+        let col_names_sql = format!("SELECT name FROM pragma_table_info('{}','temp')", temp_table_name);
+        let col_names_full_result = self.query(&col_names_sql, (), None)?.0;
+        println!();
+        println!("[{}] COL NAMES: {:?}", temp_table_name, col_names_full_result);
+        let col_names_sql = col_names_full_result.iter()
+            .map(|val| val.first().map(|x| x.to_string()).unwrap_or("".to_string()))
+            .collect::<Vec<String>>()
+            .join(", ");
+
         let delete_sql = format!("DELETE FROM `{}`", table_name);
+        println!("[import] {}", delete_sql);
         let deleted_rows = self.conn.execute(&delete_sql, ())?;
 
-        let insert_sql = format!("INSERT INTO `{}` SELECT * FROM temp.`{}`", table_name, temp_table_name);
+        let insert_sql = format!("INSERT INTO `{}` ({}) SELECT * FROM temp.`{}`", table_name, col_names_sql, temp_table_name);
+        println!("[import] {}", insert_sql);
         let inserted_rows = self.conn.execute(&insert_sql, ())?;
 
         println!(" DELETED {}, INSERTED {}", deleted_rows, inserted_rows);
@@ -286,6 +299,7 @@ impl SqliteConn{
         let drop_sql = format!("DROP TABLE temp.`{}`", temp_table_name);
         self.conn.execute(&drop_sql, ())?;
 
+        transaction.commit()?;
         Ok(())
     }
 
