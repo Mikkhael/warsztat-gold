@@ -305,6 +305,11 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
     position: relative;
     background-color: #a8a8a8;
     z-index: 0;
+
+    background-image: url('/wallpaper.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: bottom;
 }
 
 .main .mainWindowsContainer{
