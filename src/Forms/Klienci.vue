@@ -21,6 +21,7 @@ import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 import useMainFWManager from '../components/FloatingWindows/FWManager';
 import ZleceniaNaprawyAdv from './ZleceniaNaprawyAdv.vue';
+import ipc from '../ipc';
 
 
 const props = defineProps({
@@ -70,6 +71,10 @@ const kto    = src.auto_add_value_synced(COLS.KTO,                 {default: "Go
 const kiedy  = src.auto_add_value_synced(COLS.KIEDY,               {default: use_datetime_now()});
 const upust  = src.auto_add_value_synced(COLS.UPUST,               {default: 0});
 const list   = src.auto_add_value_synced(COLS.list                 );
+
+const aux_info = ipc.GET_DB_INFO.supports_klient_custom_info() ?
+    src.auto_add_value_synced(COLS.aux_info) :
+    null;
 
 
 const param_id_klienta   = src.get(COLS.ID);
@@ -253,6 +258,11 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
                 <label class="lid">ID                 </label>  <FormInput class="vid" readonly                   :value="id    " auto />
                 <!-- <label>stały upust        </label>  <FormInput :readonly="props.readonly" :value="upust " auto /> -->
 
+                <label v-if="aux_info !== null" class="aux_info">
+                    <div>Dodatkowe notatki</div>
+                    <FormInput :readonly="props.readonly" :value="aux_info" auto textarea />
+                </label>
+
                 <fieldset class="a_car">
                     <legend>{{props.force_car_id !== undefined ? "Samochód" : "Samochody Klienta"}}</legend>
                     <SamochodyKlientow 
@@ -312,6 +322,7 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
 .a_find {grid-area: a_find;}
 .a_car  {grid-area: a_car;}
 .sub_buttons {grid-area: a_sub;}
+.aux_info {grid-area: a_aux;}
 .l1 {grid-area: l1;}   .grid > :deep(.v1 ) {grid-area: v1;}
 .l2 {grid-area: l2;}   .grid > :deep(.v2 ) {grid-area: v2;}
 .l3 {grid-area: l3;}   .grid > :deep(.v3 ) {grid-area: v3;}
@@ -359,7 +370,7 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
         align-content: stretch;
         align-items: stretch;
 
-        grid-template: auto / auto auto auto 1fr;
+        grid-template: repeat(8, auto) 1fr repeat(2, auto) / auto auto auto 1fr;
         grid-template-areas: 
             "a_find a_find a_find a_find"
             "l1  v1 v1 v1"
@@ -369,6 +380,7 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
             "l5 v5   l6 v6"
             "l7 v7   l8 v8"
             "l9 v9   lid vid"
+            "a_aux a_aux a_aux a_aux"
             "a_car a_car a_car a_car"
             "a_sub a_sub a_sub a_sub"
             ;
@@ -389,6 +401,22 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
 
     fieldset {
         padding: 0px;
+    }
+
+    .aux_info {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        width: 100%;
+        height: 100%;
+    }
+    .aux_info :deep(textarea){
+        resize: none;
+        flex-grow: 1;
+    }
+    .form.compact > .aux_info {
+        display: none;
     }
 
     .sub_buttons {

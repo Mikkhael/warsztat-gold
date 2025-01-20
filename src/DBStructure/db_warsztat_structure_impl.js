@@ -10,7 +10,7 @@ import {DatabaseNode, TableNode, Column} from '../components/Dataset';
     "inwentaryzacja": TableNode<"numer_cz"|"ilość"|"data_zapisu"|"rodzaj_dokumentu"|"numer_dokumentu">,
     "inwentaryzacja_nr_3": TableNode<"numer_cz"|"ilość"|"data_zapisu"|"rodzaj_dokumentu"|"numer_dokumentu">,
     "jamar": TableNode<"nazwa_części_lub_czynności"|"jednostka"|"ilość"|"cena_netto"|"numer">,
-    "klienci": TableNode<"ID"|"NAZWA"|"MIASTO"|"ULICA"|"KOD_POCZT"|"TELEFON1"|"TELEFON2"|"NIP"|"KTO"|"KIEDY"|"UPUST"|"odbierający_fakturę"|"list">,
+    "klienci": TableNode<"ID"|"NAZWA"|"MIASTO"|"ULICA"|"KOD_POCZT"|"TELEFON1"|"TELEFON2"|"NIP"|"KTO"|"KIEDY"|"UPUST"|"odbierający_fakturę"|"list"|"aux_info">,
     "liczby_słownie": TableNode<"liczba"|"słownie">,
     "modele_sam": TableNode<"ID_modelu"|"Model:"|"Typ:"|"Nadw:"|"Rok_produkcji:"|"Silnik:"|"Kod:">,
     "nazwy_części": TableNode<"numer_części"|"nazwa_części"|"jednostka"|"grupa"|"VAT"|"ilość_w_opakowaniu_zbiorczym"|"lokalizacja_w_magazynie"|"odpowiedniki">,
@@ -121,6 +121,7 @@ const DB = new DatabaseNode([
         {"name":"UPUST","type":"TINYINT","targ":"3","def":"0","attr":"u"},
         {"name":"odbierający fakturę","type":"VARCHAR","targ":"50","attr":""},
         {"name":"list","type":"TINYINT","targ":"1","attr":""},
+        {"name":"aux_info","type":"LONGTEXT","def":"NULL","attr":""},
     ]},
     {name: "liczby słownie", cols: [
         {"name":"liczba","type":"DOUBLE","attr":"pn"},

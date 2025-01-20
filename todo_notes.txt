@@ -26,6 +26,25 @@ JAK SIĘ DODAJE CZĘŚCI ???
 do czego są "ujęto rabat autoryzacja zlecenia Przebieg:     km" w fakturze
 
 
+BŁĘDNE POWIĄZANIA klienta Z samochodem PRZY POMOCY zleceń naprawy
+Są zlecenia dla nieistniejących par klient - samochód: 
+    88  -   123
+    57  -   56
+#	ZN_KL	SK_KL	ZN_SM	SK_SM
+0:	57  	308 	56	    56
+1:	57  	308 	56	    56
+2:	57  	308 	56	    56
+3:	88  	287 	123	    123
+4:	57  	308 	56	    56
+5:	88  	287 	123	    123
+6:	57  	308 	56	    56
+7:	88  	287 	123	    123
+8:	57  	308 	56	    56
+9:	88  	287 	123	    123
+10:	57  	308 	56	    56
+11:	57  	308 	56	    56
+12:	57  	308 	56	    56
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////

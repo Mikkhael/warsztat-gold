@@ -40,6 +40,7 @@ function disable_refresh() {
 disable_refresh();
 
 window.addEventListener('db_opened', () => {
+    console.log("DB_STRUCTURE_INFO: version_int = ", ipc.GET_DB_INFO.version_int());
     msgManager.post('info', 'Otworzono bazę danych', 3000);
     msgManager.close_all_with_content('Nie otworzono bazy danych');
     mainSettings.load_from_db_all().then(has_settings_table => {

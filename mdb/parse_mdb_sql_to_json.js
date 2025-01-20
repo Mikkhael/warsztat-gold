@@ -17,6 +17,13 @@ function main() {
     obroty_id.primary = true;
     obroty_id.notnull = true;
     console.log(obroty_id);
+
+    const klienci = res.tables.find(x => x.name === 'klienci');
+    const klienci_aux_info = new ColNode('aux_info');
+    klienci_aux_info.notnull = false;
+    klienci_aux_info.default = 'NULL';
+    klienci_aux_info.type = 'LONGTEXT';
+    klienci?.cols.push(klienci_aux_info);
     /////////////////////
 
     // console.log(res.tables[4]);

@@ -9,15 +9,29 @@ import { exists } from "@tauri-apps/api/fs";
 const state = reactive({
     db_is_open: false,
     db_path: "",
+    db_info_version_int: 0,
 });
+
+const GET_DB_INFO = {
+    version_int() {return state.db_info_version_int;},
+    supports_klient_custom_info() {return state.db_info_version_int >= 1;},
+}
 
 /**
  * @param {boolean} value 
  */
-function set_state_db_opened(value, force = false) {
+async function set_state_db_opened(value, force = false) {
     if(force || state.db_is_open !== value) {
         state.db_is_open = value;
         if(value) {
+            try {
+                const db_info = await db_query("SELECT \"version_int\" FROM `DB_STRUCTURE_INFO`");
+                const version_int_str = db_info[0]?.[0]?.[0] ?? '';
+                const version_int = typeof version_int_str === 'number' ? Number(version_int_str) : 0;
+                state.db_info_version_int = version_int;
+            } catch(err) {
+                state.db_info_version_int = 0;
+            }
             window.dispatchEvent(new Event('db_opened'));
         } else {
             window.dispatchEvent(new Event('db_closed'));
@@ -286,6 +300,7 @@ refresh_state()
 
 export default {
     state,
+    GET_DB_INFO,
     set_state_db_opened,
     set_state_db_path,
     sync_close_prevention,

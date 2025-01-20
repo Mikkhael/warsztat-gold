@@ -51,12 +51,19 @@ function convert_table_def(tab, noview = false){
                                        .map(x => '  ' + x)
                                        .join(',\n');
     
+    const MIGRATION_SELECT_rows = tab.cols.map(x => {
+        return `\n    iif('${x.name}' IN \`migration_cols\`, "${x.name}", NULL) as '${x.name}'`;
+    }).join(',');
+    const MIGRATION_SELECT = 
+` WITH \`migration_cols\` AS (SELECT name FROM pragma_table_info('${tab.name}')) INSERT INTO ${name_migration} SELECT` 
++ MIGRATION_SELECT_rows + `\n  FROM ${name_original}`;
+
     const create_table_header = `DROP TABLE IF EXISTS ${name_migration}; CREATE TABLE ${name_migration} (`;
     const create_table_footer = 
 `) STRICT;
 DROP VIEW IF EXISTS ${name_csv_view};
 CREATE TABlE IF NOT EXISTS ${name_original} AS SELECT * FROM ${name_migration};
-INSERT INTO ${name_migration} SELECT * FROM ${name_original};
+${MIGRATION_SELECT};
 DROP TABLE ${name_original};
 ALTER TABLE ${name_migration} RENAME TO ${name_original};`
 
@@ -238,6 +245,16 @@ const settings_tab_def = {
     inds: []
 };
 
+function create_db_info_sql() {
+    const db_info_sql = 
+`
+DROP VIEW IF EXISTS \`DB_STRUCTURE_INFO\`;
+CREATE VIEW \`DB_STRUCTURE_INFO\` (\`version_int\`) AS SELECT ${DB_INFO__version} AS 'version_int';
+
+`;
+    return db_info_sql;
+}
+
 
 //////////////////// Utils ///////////////////
 
@@ -252,8 +269,10 @@ function escape(val) {
 //////////////////// MAIN ///////////////////
 
 
-const IN_FILE_JSON    = 'mdb_structure.json';
-const OUT_FILE_SQLITE = 'mdb_structure_sqlite_v2.sql';
+const IN_FILE_JSON     = 'mdb_structure.json';
+const OUT_FILE_SQLITES = ['mdb_structure_sqlite_v2.sql', '..\\src-tauri\\resources\\sqlite\\database_structure.sql'];
+
+const DB_INFO__version = 1;
 
 function main() {
     const str = fs.readFileSync(IN_FILE_JSON).toString();
@@ -261,19 +280,23 @@ function main() {
     const json = JSON.parse(str);
     // console.log(json);
 
+    ///////// EXTRA /////////////
+    const setting_tab = convert_table_def(settings_tab_def, true);
+    /////////////////////////////  
     const tabs = json.tabs.map(x => convert_table_def(x));
     // console.log(tabs);
-
-    const setting_tab = convert_table_def(settings_tab_def, true);
 
     /**@type {string[]} */
     const all_tabs = [
         ...tabs,
         setting_tab
     ];
+    const db_info_sql = create_db_info_sql();
 
     const res  = all_tabs.join('\n');
-    fs.writeFileSync(OUT_FILE_SQLITE, res);
+    for(const OUT_FILE_SQLITE of OUT_FILE_SQLITES) {
+        fs.writeFileSync(OUT_FILE_SQLITE, db_info_sql + res);
+    }
 }
 
 main();

@@ -1,3 +1,7 @@
+
+DROP VIEW IF EXISTS `DB_STRUCTURE_INFO`;
+CREATE VIEW `DB_STRUCTURE_INFO` (`version_int`) AS SELECT 1 AS 'version_int';
+
 DROP TABLE IF EXISTS `CENNIK  GM_migration`; CREATE TABLE `CENNIK  GM_migration` (
   `ID cennin GM` INTEGER NOT NULL PRIMARY KEY,
   `CATALOG_NO` TEXT CHECK (length(`CATALOG_NO`) <= 7) NOT NULL UNIQUE,
@@ -7,7 +11,13 @@ DROP TABLE IF EXISTS `CENNIK  GM_migration`; CREATE TABLE `CENNIK  GM_migration`
 ) STRICT;
 DROP VIEW IF EXISTS `CENNIK  GM_csv_view`;
 CREATE TABlE IF NOT EXISTS `CENNIK  GM` AS SELECT * FROM `CENNIK  GM_migration`;
-INSERT INTO `CENNIK  GM_migration` SELECT * FROM `CENNIK  GM`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('CENNIK  GM')) INSERT INTO `CENNIK  GM_migration` SELECT
+    iif('ID cennin GM' IN `migration_cols`, "ID cennin GM", NULL) as 'ID cennin GM',
+    iif('CATALOG_NO' IN `migration_cols`, "CATALOG_NO", NULL) as 'CATALOG_NO',
+    iif('DESC_GER1' IN `migration_cols`, "DESC_GER1", NULL) as 'DESC_GER1',
+    iif('DESC_GER2' IN `migration_cols`, "DESC_GER2", NULL) as 'DESC_GER2',
+    iif('PRICE' IN `migration_cols`, "PRICE", NULL) as 'PRICE'
+  FROM `CENNIK  GM`;
 DROP TABLE `CENNIK  GM`;
 ALTER TABLE `CENNIK  GM_migration` RENAME TO `CENNIK  GM`;
 
@@ -28,7 +38,10 @@ DROP TABLE IF EXISTS `czynność_migration`; CREATE TABLE `czynność_migration`
 ) STRICT;
 DROP VIEW IF EXISTS `czynność_csv_view`;
 CREATE TABlE IF NOT EXISTS `czynność` AS SELECT * FROM `czynność_migration`;
-INSERT INTO `czynność_migration` SELECT * FROM `czynność`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('czynność')) INSERT INTO `czynność_migration` SELECT
+    iif('ID cynności' IN `migration_cols`, "ID cynności", NULL) as 'ID cynności',
+    iif('czynność' IN `migration_cols`, "czynność", NULL) as 'czynność'
+  FROM `czynność`;
 DROP TABLE `czynność`;
 ALTER TABLE `czynność_migration` RENAME TO `czynność`;
 
@@ -51,7 +64,15 @@ DROP TABLE IF EXISTS `dane do zaświadczenie o sprawności inst_migration`; CREA
 ) STRICT;
 DROP VIEW IF EXISTS `dane do zaświadczenie o sprawności inst_csv_view`;
 CREATE TABlE IF NOT EXISTS `dane do zaświadczenie o sprawności inst` AS SELECT * FROM `dane do zaświadczenie o sprawności inst_migration`;
-INSERT INTO `dane do zaświadczenie o sprawności inst_migration` SELECT * FROM `dane do zaświadczenie o sprawności inst`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('dane do zaświadczenie o sprawności inst')) INSERT INTO `dane do zaświadczenie o sprawności inst_migration` SELECT
+    iif('ID typów' IN `migration_cols`, "ID typów", NULL) as 'ID typów',
+    iif('Producent' IN `migration_cols`, "Producent", NULL) as 'Producent',
+    iif('Typ/Nr' IN `migration_cols`, "Typ/Nr", NULL) as 'Typ/Nr',
+    iif('E-_' IN `migration_cols`, "E-_", NULL) as 'E-_',
+    iif('67R-_' IN `migration_cols`, "67R-_", NULL) as '67R-_',
+    iif('Ważność legalizacji zbiornika do' IN `migration_cols`, "Ważność legalizacji zbiornika do", NULL) as 'Ważność legalizacji zbiornika do',
+    iif('ID obrotów mag' IN `migration_cols`, "ID obrotów mag", NULL) as 'ID obrotów mag'
+  FROM `dane do zaświadczenie o sprawności inst`;
 DROP TABLE `dane do zaświadczenie o sprawności inst`;
 ALTER TABLE `dane do zaświadczenie o sprawności inst_migration` RENAME TO `dane do zaświadczenie o sprawności inst`;
 
@@ -78,7 +99,13 @@ DROP TABLE IF EXISTS `dokumenty sprzedaży_migration`; CREATE TABLE `dokumenty s
 ) STRICT;
 DROP VIEW IF EXISTS `dokumenty sprzedaży_csv_view`;
 CREATE TABlE IF NOT EXISTS `dokumenty sprzedaży` AS SELECT * FROM `dokumenty sprzedaży_migration`;
-INSERT INTO `dokumenty sprzedaży_migration` SELECT * FROM `dokumenty sprzedaży`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('dokumenty sprzedaży')) INSERT INTO `dokumenty sprzedaży_migration` SELECT
+    iif('ID dokumentu' IN `migration_cols`, "ID dokumentu", NULL) as 'ID dokumentu',
+    iif('nazwa dokumentu' IN `migration_cols`, "nazwa dokumentu", NULL) as 'nazwa dokumentu',
+    iif('nr dokumentu' IN `migration_cols`, "nr dokumentu", NULL) as 'nr dokumentu',
+    iif('ID zlecenia' IN `migration_cols`, "ID zlecenia", NULL) as 'ID zlecenia',
+    iif('data wystawienia' IN `migration_cols`, "data wystawienia", NULL) as 'data wystawienia'
+  FROM `dokumenty sprzedaży`;
 DROP TABLE `dokumenty sprzedaży`;
 ALTER TABLE `dokumenty sprzedaży_migration` RENAME TO `dokumenty sprzedaży`;
 
@@ -102,7 +129,12 @@ DROP TABLE IF EXISTS `dokumenty sprzedaży chwilówk_migration`; CREATE TABLE `d
 ) STRICT;
 DROP VIEW IF EXISTS `dokumenty sprzedaży chwilówk_csv_view`;
 CREATE TABlE IF NOT EXISTS `dokumenty sprzedaży chwilówk` AS SELECT * FROM `dokumenty sprzedaży chwilówk_migration`;
-INSERT INTO `dokumenty sprzedaży chwilówk_migration` SELECT * FROM `dokumenty sprzedaży chwilówk`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('dokumenty sprzedaży chwilówk')) INSERT INTO `dokumenty sprzedaży chwilówk_migration` SELECT
+    iif('nazwa dokumentu' IN `migration_cols`, "nazwa dokumentu", NULL) as 'nazwa dokumentu',
+    iif('nr dokumentu' IN `migration_cols`, "nr dokumentu", NULL) as 'nr dokumentu',
+    iif('ID zlecenia' IN `migration_cols`, "ID zlecenia", NULL) as 'ID zlecenia',
+    iif('data wystawienia' IN `migration_cols`, "data wystawienia", NULL) as 'data wystawienia'
+  FROM `dokumenty sprzedaży chwilówk`;
 DROP TABLE `dokumenty sprzedaży chwilówk`;
 ALTER TABLE `dokumenty sprzedaży chwilówk_migration` RENAME TO `dokumenty sprzedaży chwilówk`;
 
@@ -134,7 +166,22 @@ DROP TABLE IF EXISTS `dostawcy_migration`; CREATE TABLE `dostawcy_migration` (
 ) STRICT;
 DROP VIEW IF EXISTS `dostawcy_csv_view`;
 CREATE TABlE IF NOT EXISTS `dostawcy` AS SELECT * FROM `dostawcy_migration`;
-INSERT INTO `dostawcy_migration` SELECT * FROM `dostawcy`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('dostawcy')) INSERT INTO `dostawcy_migration` SELECT
+    iif('ID dostawcy - producenta' IN `migration_cols`, "ID dostawcy - producenta", NULL) as 'ID dostawcy - producenta',
+    iif('Nazwa' IN `migration_cols`, "Nazwa", NULL) as 'Nazwa',
+    iif('kod pocztowy' IN `migration_cols`, "kod pocztowy", NULL) as 'kod pocztowy',
+    iif('miejscowość' IN `migration_cols`, "miejscowość", NULL) as 'miejscowość',
+    iif('ulica nr domu' IN `migration_cols`, "ulica nr domu", NULL) as 'ulica nr domu',
+    iif('tel 1' IN `migration_cols`, "tel 1", NULL) as 'tel 1',
+    iif('tel 2' IN `migration_cols`, "tel 2", NULL) as 'tel 2',
+    iif('fax' IN `migration_cols`, "fax", NULL) as 'fax',
+    iif('konto bank' IN `migration_cols`, "konto bank", NULL) as 'konto bank',
+    iif('nr konta' IN `migration_cols`, "nr konta", NULL) as 'nr konta',
+    iif('przedstawiciel' IN `migration_cols`, "przedstawiciel", NULL) as 'przedstawiciel',
+    iif('@-maill' IN `migration_cols`, "@-maill", NULL) as '@-maill',
+    iif('NIP' IN `migration_cols`, "NIP", NULL) as 'NIP',
+    iif('otrzymany rabat %' IN `migration_cols`, "otrzymany rabat %", NULL) as 'otrzymany rabat %'
+  FROM `dostawcy`;
 DROP TABLE `dostawcy`;
 ALTER TABLE `dostawcy_migration` RENAME TO `dostawcy`;
 
@@ -168,7 +215,13 @@ DROP TABLE IF EXISTS `faktura szczegóły chwilówka_migration`; CREATE TABLE `f
 ) STRICT;
 DROP VIEW IF EXISTS `faktura szczegóły chwilówka_csv_view`;
 CREATE TABlE IF NOT EXISTS `faktura szczegóły chwilówka` AS SELECT * FROM `faktura szczegóły chwilówka_migration`;
-INSERT INTO `faktura szczegóły chwilówka_migration` SELECT * FROM `faktura szczegóły chwilówka`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('faktura szczegóły chwilówka')) INSERT INTO `faktura szczegóły chwilówka_migration` SELECT
+    iif('nazwa części lub czynności' IN `migration_cols`, "nazwa części lub czynności", NULL) as 'nazwa części lub czynności',
+    iif('jednostka' IN `migration_cols`, "jednostka", NULL) as 'jednostka',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('cena netto' IN `migration_cols`, "cena netto", NULL) as 'cena netto',
+    iif('numer' IN `migration_cols`, "numer", NULL) as 'numer'
+  FROM `faktura szczegóły chwilówka`;
 DROP TABLE `faktura szczegóły chwilówka`;
 ALTER TABLE `faktura szczegóły chwilówka_migration` RENAME TO `faktura szczegóły chwilówka`;
 
@@ -195,7 +248,13 @@ DROP TABLE IF EXISTS `inwentaryzacja_migration`; CREATE TABLE `inwentaryzacja_mi
 ) STRICT;
 DROP VIEW IF EXISTS `inwentaryzacja_csv_view`;
 CREATE TABlE IF NOT EXISTS `inwentaryzacja` AS SELECT * FROM `inwentaryzacja_migration`;
-INSERT INTO `inwentaryzacja_migration` SELECT * FROM `inwentaryzacja`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('inwentaryzacja')) INSERT INTO `inwentaryzacja_migration` SELECT
+    iif('numer cz' IN `migration_cols`, "numer cz", NULL) as 'numer cz',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('data zapisu' IN `migration_cols`, "data zapisu", NULL) as 'data zapisu',
+    iif('rodzaj dokumentu' IN `migration_cols`, "rodzaj dokumentu", NULL) as 'rodzaj dokumentu',
+    iif('numer dokumentu' IN `migration_cols`, "numer dokumentu", NULL) as 'numer dokumentu'
+  FROM `inwentaryzacja`;
 DROP TABLE `inwentaryzacja`;
 ALTER TABLE `inwentaryzacja_migration` RENAME TO `inwentaryzacja`;
 
@@ -220,7 +279,13 @@ DROP TABLE IF EXISTS `inwentaryzacja nr 3_migration`; CREATE TABLE `inwentaryzac
 ) STRICT;
 DROP VIEW IF EXISTS `inwentaryzacja nr 3_csv_view`;
 CREATE TABlE IF NOT EXISTS `inwentaryzacja nr 3` AS SELECT * FROM `inwentaryzacja nr 3_migration`;
-INSERT INTO `inwentaryzacja nr 3_migration` SELECT * FROM `inwentaryzacja nr 3`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('inwentaryzacja nr 3')) INSERT INTO `inwentaryzacja nr 3_migration` SELECT
+    iif('numer cz' IN `migration_cols`, "numer cz", NULL) as 'numer cz',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('data zapisu' IN `migration_cols`, "data zapisu", NULL) as 'data zapisu',
+    iif('rodzaj dokumentu' IN `migration_cols`, "rodzaj dokumentu", NULL) as 'rodzaj dokumentu',
+    iif('numer dokumentu' IN `migration_cols`, "numer dokumentu", NULL) as 'numer dokumentu'
+  FROM `inwentaryzacja nr 3`;
 DROP TABLE `inwentaryzacja nr 3`;
 ALTER TABLE `inwentaryzacja nr 3_migration` RENAME TO `inwentaryzacja nr 3`;
 
@@ -245,7 +310,13 @@ DROP TABLE IF EXISTS `jamar_migration`; CREATE TABLE `jamar_migration` (
 ) STRICT;
 DROP VIEW IF EXISTS `jamar_csv_view`;
 CREATE TABlE IF NOT EXISTS `jamar` AS SELECT * FROM `jamar_migration`;
-INSERT INTO `jamar_migration` SELECT * FROM `jamar`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('jamar')) INSERT INTO `jamar_migration` SELECT
+    iif('nazwa części lub czynności' IN `migration_cols`, "nazwa części lub czynności", NULL) as 'nazwa części lub czynności',
+    iif('jednostka' IN `migration_cols`, "jednostka", NULL) as 'jednostka',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('cena netto' IN `migration_cols`, "cena netto", NULL) as 'cena netto',
+    iif('numer' IN `migration_cols`, "numer", NULL) as 'numer'
+  FROM `jamar`;
 DROP TABLE `jamar`;
 ALTER TABLE `jamar_migration` RENAME TO `jamar`;
 
@@ -276,17 +347,33 @@ DROP TABLE IF EXISTS `klienci_migration`; CREATE TABLE `klienci_migration` (
   `KIEDY` TEXT CHECK (`KIEDY` IS NULL OR datetime(`KIEDY`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `UPUST` INTEGER CHECK (`UPUST` <= 255 AND `UPUST` >= 0) DEFAULT 0,
   `odbierający fakturę` TEXT CHECK (length(`odbierający fakturę`) <= 50),
-  `list` INTEGER CHECK (`list` <= 1 AND `list` >= 0)
+  `list` INTEGER CHECK (`list` <= 1 AND `list` >= 0),
+  `aux_info` TEXT DEFAULT NULL
 ) STRICT;
 DROP VIEW IF EXISTS `klienci_csv_view`;
 CREATE TABlE IF NOT EXISTS `klienci` AS SELECT * FROM `klienci_migration`;
-INSERT INTO `klienci_migration` SELECT * FROM `klienci`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('klienci')) INSERT INTO `klienci_migration` SELECT
+    iif('ID' IN `migration_cols`, "ID", NULL) as 'ID',
+    iif('NAZWA' IN `migration_cols`, "NAZWA", NULL) as 'NAZWA',
+    iif('MIASTO' IN `migration_cols`, "MIASTO", NULL) as 'MIASTO',
+    iif('ULICA' IN `migration_cols`, "ULICA", NULL) as 'ULICA',
+    iif('KOD_POCZT' IN `migration_cols`, "KOD_POCZT", NULL) as 'KOD_POCZT',
+    iif('TELEFON1' IN `migration_cols`, "TELEFON1", NULL) as 'TELEFON1',
+    iif('TELEFON2' IN `migration_cols`, "TELEFON2", NULL) as 'TELEFON2',
+    iif('NIP' IN `migration_cols`, "NIP", NULL) as 'NIP',
+    iif('KTO' IN `migration_cols`, "KTO", NULL) as 'KTO',
+    iif('KIEDY' IN `migration_cols`, "KIEDY", NULL) as 'KIEDY',
+    iif('UPUST' IN `migration_cols`, "UPUST", NULL) as 'UPUST',
+    iif('odbierający fakturę' IN `migration_cols`, "odbierający fakturę", NULL) as 'odbierający fakturę',
+    iif('list' IN `migration_cols`, "list", NULL) as 'list',
+    iif('aux_info' IN `migration_cols`, "aux_info", NULL) as 'aux_info'
+  FROM `klienci`;
 DROP TABLE `klienci`;
 ALTER TABLE `klienci_migration` RENAME TO `klienci`;
 
 DROP INDEX IF EXISTS `klienci IDX ID`; CREATE INDEX `klienci IDX ID` ON `klienci` (`ID`);
 DROP INDEX IF EXISTS `klienci IDX KOD_POCZT`; CREATE INDEX `klienci IDX KOD_POCZT` ON `klienci` (`KOD_POCZT`);
-CREATE VIEW `klienci_csv_view` (`ID`, `NAZWA`, `MIASTO`, `ULICA`, `KOD_POCZT`, `TELEFON1`, `TELEFON2`, `NIP`, `KTO`, `KIEDY`, `UPUST`, `odbierający fakturę`, `list`) AS SELECT 
+CREATE VIEW `klienci_csv_view` (`ID`, `NAZWA`, `MIASTO`, `ULICA`, `KOD_POCZT`, `TELEFON1`, `TELEFON2`, `NIP`, `KTO`, `KIEDY`, `UPUST`, `odbierający fakturę`, `list`, `aux_info`) AS SELECT 
   CAST(`ID` AS TEXT),
   `NAZWA`,
   `MIASTO`,
@@ -299,7 +386,8 @@ CREATE VIEW `klienci_csv_view` (`ID`, `NAZWA`, `MIASTO`, `ULICA`, `KOD_POCZT`, `
   DATETIME(`KIEDY`),
   CAST(`UPUST` AS TEXT),
   `odbierający fakturę`,
-  CAST(`list` AS TEXT)
+  CAST(`list` AS TEXT),
+  `aux_info`
 FROM `klienci`;
 
 
@@ -310,7 +398,10 @@ DROP TABLE IF EXISTS `liczby słownie_migration`; CREATE TABLE `liczby słownie_
 ) STRICT;
 DROP VIEW IF EXISTS `liczby słownie_csv_view`;
 CREATE TABlE IF NOT EXISTS `liczby słownie` AS SELECT * FROM `liczby słownie_migration`;
-INSERT INTO `liczby słownie_migration` SELECT * FROM `liczby słownie`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('liczby słownie')) INSERT INTO `liczby słownie_migration` SELECT
+    iif('liczba' IN `migration_cols`, "liczba", NULL) as 'liczba',
+    iif('słownie' IN `migration_cols`, "słownie", NULL) as 'słownie'
+  FROM `liczby słownie`;
 DROP TABLE `liczby słownie`;
 ALTER TABLE `liczby słownie_migration` RENAME TO `liczby słownie`;
 
@@ -332,7 +423,15 @@ DROP TABLE IF EXISTS `modele sam_migration`; CREATE TABLE `modele sam_migration`
 ) STRICT;
 DROP VIEW IF EXISTS `modele sam_csv_view`;
 CREATE TABlE IF NOT EXISTS `modele sam` AS SELECT * FROM `modele sam_migration`;
-INSERT INTO `modele sam_migration` SELECT * FROM `modele sam`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('modele sam')) INSERT INTO `modele sam_migration` SELECT
+    iif('ID modelu' IN `migration_cols`, "ID modelu", NULL) as 'ID modelu',
+    iif('Model:' IN `migration_cols`, "Model:", NULL) as 'Model:',
+    iif('Typ:' IN `migration_cols`, "Typ:", NULL) as 'Typ:',
+    iif('Nadw:' IN `migration_cols`, "Nadw:", NULL) as 'Nadw:',
+    iif('Rok produkcji:' IN `migration_cols`, "Rok produkcji:", NULL) as 'Rok produkcji:',
+    iif('Silnik:' IN `migration_cols`, "Silnik:", NULL) as 'Silnik:',
+    iif('Kod:' IN `migration_cols`, "Kod:", NULL) as 'Kod:'
+  FROM `modele sam`;
 DROP TABLE `modele sam`;
 ALTER TABLE `modele sam_migration` RENAME TO `modele sam`;
 
@@ -362,7 +461,16 @@ DROP TABLE IF EXISTS `nazwy części_migration`; CREATE TABLE `nazwy części_mi
 ) STRICT;
 DROP VIEW IF EXISTS `nazwy części_csv_view`;
 CREATE TABlE IF NOT EXISTS `nazwy części` AS SELECT * FROM `nazwy części_migration`;
-INSERT INTO `nazwy części_migration` SELECT * FROM `nazwy części`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('nazwy części')) INSERT INTO `nazwy części_migration` SELECT
+    iif('numer części' IN `migration_cols`, "numer części", NULL) as 'numer części',
+    iif('nazwa części' IN `migration_cols`, "nazwa części", NULL) as 'nazwa części',
+    iif('jednostka' IN `migration_cols`, "jednostka", NULL) as 'jednostka',
+    iif('grupa' IN `migration_cols`, "grupa", NULL) as 'grupa',
+    iif('VAT' IN `migration_cols`, "VAT", NULL) as 'VAT',
+    iif('ilość w opakowaniu zbiorczym' IN `migration_cols`, "ilość w opakowaniu zbiorczym", NULL) as 'ilość w opakowaniu zbiorczym',
+    iif('lokalizacja w magazynie' IN `migration_cols`, "lokalizacja w magazynie", NULL) as 'lokalizacja w magazynie',
+    iif('odpowiedniki' IN `migration_cols`, "odpowiedniki", NULL) as 'odpowiedniki'
+  FROM `nazwy części`;
 DROP TABLE `nazwy części`;
 ALTER TABLE `nazwy części_migration` RENAME TO `nazwy części`;
 
@@ -391,7 +499,16 @@ DROP TABLE IF EXISTS `obroty magazynowe_migration`; CREATE TABLE `obroty magazyn
 ) STRICT;
 DROP VIEW IF EXISTS `obroty magazynowe_csv_view`;
 CREATE TABlE IF NOT EXISTS `obroty magazynowe` AS SELECT * FROM `obroty magazynowe_migration`;
-INSERT INTO `obroty magazynowe_migration` SELECT * FROM `obroty magazynowe`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('obroty magazynowe')) INSERT INTO `obroty magazynowe_migration` SELECT
+    iif('ID' IN `migration_cols`, "ID", NULL) as 'ID',
+    iif('numer cz' IN `migration_cols`, "numer cz", NULL) as 'numer cz',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('cena netto' IN `migration_cols`, "cena netto", NULL) as 'cena netto',
+    iif('data przyjęcia' IN `migration_cols`, "data przyjęcia", NULL) as 'data przyjęcia',
+    iif('rodzaj dokumentu' IN `migration_cols`, "rodzaj dokumentu", NULL) as 'rodzaj dokumentu',
+    iif('numer dokumentu' IN `migration_cols`, "numer dokumentu", NULL) as 'numer dokumentu',
+    iif('cena netto sprzedaży' IN `migration_cols`, "cena netto sprzedaży", NULL) as 'cena netto sprzedaży'
+  FROM `obroty magazynowe`;
 DROP TABLE `obroty magazynowe`;
 ALTER TABLE `obroty magazynowe_migration` RENAME TO `obroty magazynowe`;
 
@@ -427,7 +544,14 @@ DROP TABLE IF EXISTS `płace_migration`; CREATE TABLE `płace_migration` (
 ) STRICT;
 DROP VIEW IF EXISTS `płace_csv_view`;
 CREATE TABlE IF NOT EXISTS `płace` AS SELECT * FROM `płace_migration`;
-INSERT INTO `płace_migration` SELECT * FROM `płace`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('płace')) INSERT INTO `płace_migration` SELECT
+    iif('ID płac' IN `migration_cols`, "ID płac", NULL) as 'ID płac',
+    iif('ID pracownika' IN `migration_cols`, "ID pracownika", NULL) as 'ID pracownika',
+    iif('data' IN `migration_cols`, "data", NULL) as 'data',
+    iif('kwota' IN `migration_cols`, "kwota", NULL) as 'kwota',
+    iif('podstawa' IN `migration_cols`, "podstawa", NULL) as 'podstawa',
+    iif('miesiąc płacenia' IN `migration_cols`, "miesiąc płacenia", NULL) as 'miesiąc płacenia'
+  FROM `płace`;
 DROP TABLE `płace`;
 ALTER TABLE `płace_migration` RENAME TO `płace`;
 
@@ -469,7 +593,29 @@ DROP TABLE IF EXISTS `pracownicy_migration`; CREATE TABLE `pracownicy_migration`
 ) STRICT;
 DROP VIEW IF EXISTS `pracownicy_csv_view`;
 CREATE TABlE IF NOT EXISTS `pracownicy` AS SELECT * FROM `pracownicy_migration`;
-INSERT INTO `pracownicy_migration` SELECT * FROM `pracownicy`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('pracownicy')) INSERT INTO `pracownicy_migration` SELECT
+    iif('ID pracownika' IN `migration_cols`, "ID pracownika", NULL) as 'ID pracownika',
+    iif('nazwisko' IN `migration_cols`, "nazwisko", NULL) as 'nazwisko',
+    iif('imię' IN `migration_cols`, "imię", NULL) as 'imię',
+    iif('inię II' IN `migration_cols`, "inię II", NULL) as 'inię II',
+    iif('nazwisko rodowe' IN `migration_cols`, "nazwisko rodowe", NULL) as 'nazwisko rodowe',
+    iif('imię ojca' IN `migration_cols`, "imię ojca", NULL) as 'imię ojca',
+    iif('imię matki' IN `migration_cols`, "imię matki", NULL) as 'imię matki',
+    iif('nazwisko rodowe matki' IN `migration_cols`, "nazwisko rodowe matki", NULL) as 'nazwisko rodowe matki',
+    iif('data urodzenia' IN `migration_cols`, "data urodzenia", NULL) as 'data urodzenia',
+    iif('miejsce urodzenia' IN `migration_cols`, "miejsce urodzenia", NULL) as 'miejsce urodzenia',
+    iif('obywatelstwo' IN `migration_cols`, "obywatelstwo", NULL) as 'obywatelstwo',
+    iif('nr PESEL' IN `migration_cols`, "nr PESEL", NULL) as 'nr PESEL',
+    iif('nr NIP' IN `migration_cols`, "nr NIP", NULL) as 'nr NIP',
+    iif('ul i nr domu' IN `migration_cols`, "ul i nr domu", NULL) as 'ul i nr domu',
+    iif('kod' IN `migration_cols`, "kod", NULL) as 'kod',
+    iif('miejscowość' IN `migration_cols`, "miejscowość", NULL) as 'miejscowość',
+    iif('tel domowy' IN `migration_cols`, "tel domowy", NULL) as 'tel domowy',
+    iif('wykształcenie' IN `migration_cols`, "wykształcenie", NULL) as 'wykształcenie',
+    iif('wykształcenie uzupełniające' IN `migration_cols`, "wykształcenie uzupełniające", NULL) as 'wykształcenie uzupełniające',
+    iif('dodatkowe uprawnienia' IN `migration_cols`, "dodatkowe uprawnienia", NULL) as 'dodatkowe uprawnienia',
+    iif('stanowisko' IN `migration_cols`, "stanowisko", NULL) as 'stanowisko'
+  FROM `pracownicy`;
 DROP TABLE `pracownicy`;
 ALTER TABLE `pracownicy_migration` RENAME TO `pracownicy`;
 
@@ -512,7 +658,14 @@ DROP TABLE IF EXISTS `przyjęcia PZ_migration`; CREATE TABLE `przyjęcia PZ_migr
 ) STRICT;
 DROP VIEW IF EXISTS `przyjęcia PZ_csv_view`;
 CREATE TABlE IF NOT EXISTS `przyjęcia PZ` AS SELECT * FROM `przyjęcia PZ_migration`;
-INSERT INTO `przyjęcia PZ_migration` SELECT * FROM `przyjęcia PZ`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('przyjęcia PZ')) INSERT INTO `przyjęcia PZ_migration` SELECT
+    iif('numer cz' IN `migration_cols`, "numer cz", NULL) as 'numer cz',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('cena netto' IN `migration_cols`, "cena netto", NULL) as 'cena netto',
+    iif('data przyjęcia' IN `migration_cols`, "data przyjęcia", NULL) as 'data przyjęcia',
+    iif('rodzaj dokumentu' IN `migration_cols`, "rodzaj dokumentu", NULL) as 'rodzaj dokumentu',
+    iif('numer dokumentu' IN `migration_cols`, "numer dokumentu", NULL) as 'numer dokumentu'
+  FROM `przyjęcia PZ`;
 DROP TABLE `przyjęcia PZ`;
 ALTER TABLE `przyjęcia PZ_migration` RENAME TO `przyjęcia PZ`;
 
@@ -537,7 +690,9 @@ DROP TABLE IF EXISTS `rodzaje dokumentów_migration`; CREATE TABLE `rodzaje doku
 ) STRICT;
 DROP VIEW IF EXISTS `rodzaje dokumentów_csv_view`;
 CREATE TABlE IF NOT EXISTS `rodzaje dokumentów` AS SELECT * FROM `rodzaje dokumentów_migration`;
-INSERT INTO `rodzaje dokumentów_migration` SELECT * FROM `rodzaje dokumentów`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('rodzaje dokumentów')) INSERT INTO `rodzaje dokumentów_migration` SELECT
+    iif('rodzaj dokumentu' IN `migration_cols`, "rodzaj dokumentu", NULL) as 'rodzaj dokumentu'
+  FROM `rodzaje dokumentów`;
 DROP TABLE `rodzaje dokumentów`;
 ALTER TABLE `rodzaje dokumentów_migration` RENAME TO `rodzaje dokumentów`;
 
@@ -560,7 +715,16 @@ DROP TABLE IF EXISTS `samochody klientów_migration`; CREATE TABLE `samochody kl
 ) STRICT;
 DROP VIEW IF EXISTS `samochody klientów_csv_view`;
 CREATE TABlE IF NOT EXISTS `samochody klientów` AS SELECT * FROM `samochody klientów_migration`;
-INSERT INTO `samochody klientów_migration` SELECT * FROM `samochody klientów`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('samochody klientów')) INSERT INTO `samochody klientów_migration` SELECT
+    iif('ID' IN `migration_cols`, "ID", NULL) as 'ID',
+    iif('kalkulacja' IN `migration_cols`, "kalkulacja", NULL) as 'kalkulacja',
+    iif('marka' IN `migration_cols`, "marka", NULL) as 'marka',
+    iif('model' IN `migration_cols`, "model", NULL) as 'model',
+    iif('nr rej' IN `migration_cols`, "nr rej", NULL) as 'nr rej',
+    iif('ID klienta' IN `migration_cols`, "ID klienta", NULL) as 'ID klienta',
+    iif('nr silnika' IN `migration_cols`, "nr silnika", NULL) as 'nr silnika',
+    iif('nr nadwozia' IN `migration_cols`, "nr nadwozia", NULL) as 'nr nadwozia'
+  FROM `samochody klientów`;
 DROP TABLE `samochody klientów`;
 ALTER TABLE `samochody klientów_migration` RENAME TO `samochody klientów`;
 
@@ -585,7 +749,9 @@ DROP TABLE IF EXISTS `sposób zapłaty_migration`; CREATE TABLE `sposób zapłat
 ) STRICT;
 DROP VIEW IF EXISTS `sposób zapłaty_csv_view`;
 CREATE TABlE IF NOT EXISTS `sposób zapłaty` AS SELECT * FROM `sposób zapłaty_migration`;
-INSERT INTO `sposób zapłaty_migration` SELECT * FROM `sposób zapłaty`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('sposób zapłaty')) INSERT INTO `sposób zapłaty_migration` SELECT
+    iif('sposób zapłaty' IN `migration_cols`, "sposób zapłaty", NULL) as 'sposób zapłaty'
+  FROM `sposób zapłaty`;
 DROP TABLE `sposób zapłaty`;
 ALTER TABLE `sposób zapłaty_migration` RENAME TO `sposób zapłaty`;
 
@@ -606,7 +772,15 @@ DROP TABLE IF EXISTS `sprzedaż_migration`; CREATE TABLE `sprzedaż_migration` (
 ) STRICT;
 DROP VIEW IF EXISTS `sprzedaż_csv_view`;
 CREATE TABlE IF NOT EXISTS `sprzedaż` AS SELECT * FROM `sprzedaż_migration`;
-INSERT INTO `sprzedaż_migration` SELECT * FROM `sprzedaż`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('sprzedaż')) INSERT INTO `sprzedaż_migration` SELECT
+    iif('numer cz' IN `migration_cols`, "numer cz", NULL) as 'numer cz',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('cena netto sprzedaży' IN `migration_cols`, "cena netto sprzedaży", NULL) as 'cena netto sprzedaży',
+    iif('cena netto' IN `migration_cols`, "cena netto", NULL) as 'cena netto',
+    iif('rodzaj dokumentu' IN `migration_cols`, "rodzaj dokumentu", NULL) as 'rodzaj dokumentu',
+    iif('numer dokumentu' IN `migration_cols`, "numer dokumentu", NULL) as 'numer dokumentu',
+    iif('data przyjęcia' IN `migration_cols`, "data przyjęcia", NULL) as 'data przyjęcia'
+  FROM `sprzedaż`;
 DROP TABLE `sprzedaż`;
 ALTER TABLE `sprzedaż_migration` RENAME TO `sprzedaż`;
 
@@ -635,7 +809,12 @@ DROP TABLE IF EXISTS `zamówienia części_migration`; CREATE TABLE `zamówienia
 ) STRICT;
 DROP VIEW IF EXISTS `zamówienia części_csv_view`;
 CREATE TABlE IF NOT EXISTS `zamówienia części` AS SELECT * FROM `zamówienia części_migration`;
-INSERT INTO `zamówienia części_migration` SELECT * FROM `zamówienia części`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('zamówienia części')) INSERT INTO `zamówienia części_migration` SELECT
+    iif('numer części' IN `migration_cols`, "numer części", NULL) as 'numer części',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('data zamówienia' IN `migration_cols`, "data zamówienia", NULL) as 'data zamówienia',
+    iif('uwagi / przeznaczenie' IN `migration_cols`, "uwagi / przeznaczenie", NULL) as 'uwagi / przeznaczenie'
+  FROM `zamówienia części`;
 DROP TABLE `zamówienia części`;
 ALTER TABLE `zamówienia części_migration` RENAME TO `zamówienia części`;
 
@@ -659,7 +838,14 @@ DROP TABLE IF EXISTS `zamówienia części archiwum_migration`; CREATE TABLE `za
 ) STRICT;
 DROP VIEW IF EXISTS `zamówienia części archiwum_csv_view`;
 CREATE TABlE IF NOT EXISTS `zamówienia części archiwum` AS SELECT * FROM `zamówienia części archiwum_migration`;
-INSERT INTO `zamówienia części archiwum_migration` SELECT * FROM `zamówienia części archiwum`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('zamówienia części archiwum')) INSERT INTO `zamówienia części archiwum_migration` SELECT
+    iif('numer części' IN `migration_cols`, "numer części", NULL) as 'numer części',
+    iif('ilość' IN `migration_cols`, "ilość", NULL) as 'ilość',
+    iif('data zamówienia' IN `migration_cols`, "data zamówienia", NULL) as 'data zamówienia',
+    iif('data realizacji' IN `migration_cols`, "data realizacji", NULL) as 'data realizacji',
+    iif('uwagi / przeznaczenie' IN `migration_cols`, "uwagi / przeznaczenie", NULL) as 'uwagi / przeznaczenie',
+    iif('zlealizowane' IN `migration_cols`, "zlealizowane", NULL) as 'zlealizowane'
+  FROM `zamówienia części archiwum`;
 DROP TABLE `zamówienia części archiwum`;
 ALTER TABLE `zamówienia części archiwum_migration` RENAME TO `zamówienia części archiwum`;
 
@@ -685,7 +871,12 @@ DROP TABLE IF EXISTS `zlecenia czynności_migration`; CREATE TABLE `zlecenia czy
 ) STRICT;
 DROP VIEW IF EXISTS `zlecenia czynności_csv_view`;
 CREATE TABlE IF NOT EXISTS `zlecenia czynności` AS SELECT * FROM `zlecenia czynności_migration`;
-INSERT INTO `zlecenia czynności_migration` SELECT * FROM `zlecenia czynności`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('zlecenia czynności')) INSERT INTO `zlecenia czynności_migration` SELECT
+    iif('ID zlecenia' IN `migration_cols`, "ID zlecenia", NULL) as 'ID zlecenia',
+    iif('ID czynności' IN `migration_cols`, "ID czynności", NULL) as 'ID czynności',
+    iif('krotność wykonania' IN `migration_cols`, "krotność wykonania", NULL) as 'krotność wykonania',
+    iif('cena netto' IN `migration_cols`, "cena netto", NULL) as 'cena netto'
+  FROM `zlecenia czynności`;
 DROP TABLE `zlecenia czynności`;
 ALTER TABLE `zlecenia czynności_migration` RENAME TO `zlecenia czynności`;
 
@@ -711,7 +902,12 @@ DROP TABLE IF EXISTS `zlecenia gaz_migration`; CREATE TABLE `zlecenia gaz_migrat
 ) STRICT;
 DROP VIEW IF EXISTS `zlecenia gaz_csv_view`;
 CREATE TABlE IF NOT EXISTS `zlecenia gaz` AS SELECT * FROM `zlecenia gaz_migration`;
-INSERT INTO `zlecenia gaz_migration` SELECT * FROM `zlecenia gaz`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('zlecenia gaz')) INSERT INTO `zlecenia gaz_migration` SELECT
+    iif('ID zlecenia' IN `migration_cols`, "ID zlecenia", NULL) as 'ID zlecenia',
+    iif('ID czynności' IN `migration_cols`, "ID czynności", NULL) as 'ID czynności',
+    iif('krotność wykonania' IN `migration_cols`, "krotność wykonania", NULL) as 'krotność wykonania',
+    iif('cena netto' IN `migration_cols`, "cena netto", NULL) as 'cena netto'
+  FROM `zlecenia gaz`;
 DROP TABLE `zlecenia gaz`;
 ALTER TABLE `zlecenia gaz_migration` RENAME TO `zlecenia gaz`;
 
@@ -748,7 +944,23 @@ DROP TABLE IF EXISTS `zlecenia instalacji gazowej_migration`; CREATE TABLE `zlec
 ) STRICT;
 DROP VIEW IF EXISTS `zlecenia instalacji gazowej_csv_view`;
 CREATE TABlE IF NOT EXISTS `zlecenia instalacji gazowej` AS SELECT * FROM `zlecenia instalacji gazowej_migration`;
-INSERT INTO `zlecenia instalacji gazowej_migration` SELECT * FROM `zlecenia instalacji gazowej`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('zlecenia instalacji gazowej')) INSERT INTO `zlecenia instalacji gazowej_migration` SELECT
+    iif('ID' IN `migration_cols`, "ID", NULL) as 'ID',
+    iif('ID klienta' IN `migration_cols`, "ID klienta", NULL) as 'ID klienta',
+    iif('ID samochodu' IN `migration_cols`, "ID samochodu", NULL) as 'ID samochodu',
+    iif('data otwarcia' IN `migration_cols`, "data otwarcia", NULL) as 'data otwarcia',
+    iif('data zamknięcia' IN `migration_cols`, "data zamknięcia", NULL) as 'data zamknięcia',
+    iif('zysk z części' IN `migration_cols`, "zysk z części", NULL) as 'zysk z części',
+    iif('zysk z robocizny' IN `migration_cols`, "zysk z robocizny", NULL) as 'zysk z robocizny',
+    iif('mechanik prowadzący' IN `migration_cols`, "mechanik prowadzący", NULL) as 'mechanik prowadzący',
+    iif('% udziału' IN `migration_cols`, "% udziału", NULL) as '% udziału',
+    iif('pomocnik 1' IN `migration_cols`, "pomocnik 1", NULL) as 'pomocnik 1',
+    iif('% udziału p1' IN `migration_cols`, "% udziału p1", NULL) as '% udziału p1',
+    iif('pomocnik 2' IN `migration_cols`, "pomocnik 2", NULL) as 'pomocnik 2',
+    iif('% udziału p2' IN `migration_cols`, "% udziału p2", NULL) as '% udziału p2',
+    iif('zgłoszone naprawy' IN `migration_cols`, "zgłoszone naprawy", NULL) as 'zgłoszone naprawy',
+    iif('uwagi o naprawie' IN `migration_cols`, "uwagi o naprawie", NULL) as 'uwagi o naprawie'
+  FROM `zlecenia instalacji gazowej`;
 DROP TABLE `zlecenia instalacji gazowej`;
 ALTER TABLE `zlecenia instalacji gazowej_migration` RENAME TO `zlecenia instalacji gazowej`;
 
@@ -798,7 +1010,23 @@ DROP TABLE IF EXISTS `zlecenia naprawy_migration`; CREATE TABLE `zlecenia napraw
 ) STRICT;
 DROP VIEW IF EXISTS `zlecenia naprawy_csv_view`;
 CREATE TABlE IF NOT EXISTS `zlecenia naprawy` AS SELECT * FROM `zlecenia naprawy_migration`;
-INSERT INTO `zlecenia naprawy_migration` SELECT * FROM `zlecenia naprawy`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('zlecenia naprawy')) INSERT INTO `zlecenia naprawy_migration` SELECT
+    iif('ID' IN `migration_cols`, "ID", NULL) as 'ID',
+    iif('ID klienta' IN `migration_cols`, "ID klienta", NULL) as 'ID klienta',
+    iif('ID samochodu' IN `migration_cols`, "ID samochodu", NULL) as 'ID samochodu',
+    iif('data otwarcia' IN `migration_cols`, "data otwarcia", NULL) as 'data otwarcia',
+    iif('data zamknięcia' IN `migration_cols`, "data zamknięcia", NULL) as 'data zamknięcia',
+    iif('zysk z części' IN `migration_cols`, "zysk z części", NULL) as 'zysk z części',
+    iif('zysk z robocizny' IN `migration_cols`, "zysk z robocizny", NULL) as 'zysk z robocizny',
+    iif('mechanik prowadzący' IN `migration_cols`, "mechanik prowadzący", NULL) as 'mechanik prowadzący',
+    iif('% udziału' IN `migration_cols`, "% udziału", NULL) as '% udziału',
+    iif('pomocnik 1' IN `migration_cols`, "pomocnik 1", NULL) as 'pomocnik 1',
+    iif('% udziału p1' IN `migration_cols`, "% udziału p1", NULL) as '% udziału p1',
+    iif('pomocnik 2' IN `migration_cols`, "pomocnik 2", NULL) as 'pomocnik 2',
+    iif('% udziału p2' IN `migration_cols`, "% udziału p2", NULL) as '% udziału p2',
+    iif('zgłoszone naprawy' IN `migration_cols`, "zgłoszone naprawy", NULL) as 'zgłoszone naprawy',
+    iif('uwagi o naprawie' IN `migration_cols`, "uwagi o naprawie", NULL) as 'uwagi o naprawie'
+  FROM `zlecenia naprawy`;
 DROP TABLE `zlecenia naprawy`;
 ALTER TABLE `zlecenia naprawy_migration` RENAME TO `zlecenia naprawy`;
 
@@ -835,7 +1063,10 @@ DROP TABLE IF EXISTS `_meta_setting_json_migration`; CREATE TABLE `_meta_setting
 ) STRICT;
 DROP VIEW IF EXISTS `_meta_setting_json_csv_view`;
 CREATE TABlE IF NOT EXISTS `_meta_setting_json` AS SELECT * FROM `_meta_setting_json_migration`;
-INSERT INTO `_meta_setting_json_migration` SELECT * FROM `_meta_setting_json`;
+ WITH `migration_cols` AS (SELECT name FROM pragma_table_info('_meta_setting_json')) INSERT INTO `_meta_setting_json_migration` SELECT
+    iif('key' IN `migration_cols`, "key", NULL) as 'key',
+    iif('value' IN `migration_cols`, "value", NULL) as 'value'
+  FROM `_meta_setting_json`;
 DROP TABLE `_meta_setting_json`;
 ALTER TABLE `_meta_setting_json_migration` RENAME TO `_meta_setting_json`;
 
