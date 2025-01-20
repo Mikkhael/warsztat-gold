@@ -10,7 +10,7 @@ import FloatingWindowsTest from "./components/FloatingWindows/FloatingWindowsTes
 import AlertsDebug from "./components/SqlDebug/AlertsDebug.vue";
 // import QueryViewerDebug from "./components/SqlDebug/QueryViewerDebug.vue";
 import DataGraphDebug from "./components/SqlDebug/DataGraphDebug.vue";
-import QuerySourceDebug from "./components/SqlDebug/QuerySourceDebug.vue";
+// import QuerySourceDebug from "./components/SqlDebug/QuerySourceDebug.vue";
 import RevisedFormQueryDebug from "./components/SqlDebug/RevisedFormQueryDebug.vue";
 import MainWindow from "./components/MainWindow.vue";
 import { onMounted, reactive, readonly, ref } from "vue";
@@ -30,7 +30,7 @@ const main_components = [
   // QueryViewerDebug,
   AlertsDebug,
   DataGraphDebug,
-  QuerySourceDebug,
+  // QuerySourceDebug,
   RevisedFormQueryDebug,
 ];
 const main_components_names = readonly([

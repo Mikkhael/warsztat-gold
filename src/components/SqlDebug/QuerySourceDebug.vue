@@ -6,7 +6,7 @@ import {computed, ref,shallowRef} from 'vue';
 import useWarsztatDatabase from '../../DBStructure/db_warsztat_structure';
 import {FormQuerySourceSingle} from '../Dataset';
 
-import QueryViewerOpenBtn from '../QueryViewer/QueryViewerOpenBtn.vue';
+// import QueryViewerOpenBtn from '../QueryViewer/QueryViewerOpenBtn.vue';
 
 import FormInput from '../Controls/FormInput.vue';
 import FormEnum from '../Controls/FormEnum.vue';
@@ -57,9 +57,9 @@ const kto_ref = computed(() => kto_ref_raw.value === "" ? null : kto_ref_raw.val
 
 //////////////// QUERY VIEWERS ////////////////////
 
-/**@typedef {import('../QueryViewer/QueryViewerOpenBtn.vue').QueryViwerQueryParams} QueryViewerQueryParams*/
+// /**@typedef {import('../QueryViewer/QueryViewerOpenBtn.vue').QueryViwerQueryParams} QueryViewerQueryParams*/
 
-/**@type {QueryViewerQueryParams} */
+// /**@type {QueryViewerQueryParams} */
 const QV_KLIENCI_MAIN = {
     from: "`klienci`",
     select: [
@@ -70,7 +70,7 @@ const QV_KLIENCI_MAIN = {
     ],
     where_conj: [[ '`KTO`=', [kto_ref] ]]
 }
-/**@type {QueryViewerQueryParams} */
+// /**@type {QueryViewerQueryParams} */
 const QV_KLIENCI_BYCAR = {
     from: "`samochody klientów` JOIN `klienci` ON `klienci`.`ID` = `samochody klientów`.`ID klienta`",
     select: [
@@ -239,10 +239,10 @@ defineExpose({
                         handle_error(err);
                     })
                 }"/> -->
-                <QueryViewerOpenBtn :query="QV_KLIENCI_MAIN"  @error="handle_error" :fwManager="fwManager"
-                    @select="QV_KLIENCI_MAIN_handler"/>
-                <QueryViewerOpenBtn :query="QV_KLIENCI_BYCAR"  @error="handle_error" :fwManager="fwManager"
-                    @select="QV_KLIENCI_BYCAR_handler"/>
+                <!-- <QueryViewerOpenBtn :query="QV_KLIENCI_MAIN"  @error="handle_error" :fwManager="fwManager"
+                    @select="QV_KLIENCI_MAIN_handler"/> -->
+                <!-- <QueryViewerOpenBtn :query="QV_KLIENCI_BYCAR"  @error="handle_error" :fwManager="fwManager"
+                    @select="QV_KLIENCI_BYCAR_handler"/> -->
                 <br>
 
                 <label>ID  <FormInput type="number"          :value="data.get(db.TABS.klienci.cols.ID)"        readonly />    </label> <br>
