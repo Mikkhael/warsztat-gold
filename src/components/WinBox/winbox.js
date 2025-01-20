@@ -1272,6 +1272,14 @@ WinBox.prototype.resize_true = function(w, h, bound_factor = 0.9, _skip_update){
     return this.resize(w, h + this.header, _skip_update);
 }
 
+WinBox.prototype.streach_vertical = function(bound_factor = 0.9, _skip_update) {
+    return this.resize_true(this.width, Infinity, bound_factor, _skip_update);
+}
+
+WinBox.prototype.slam_left_top = function(_skip_update) {
+    return this.move(0, this.top, _skip_update);
+}
+
 /**
  * @param {HTMLElement} body 
  */

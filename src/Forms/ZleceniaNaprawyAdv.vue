@@ -40,6 +40,9 @@ const props = defineProps({
     show_only_open: Boolean,
     only_for_car_id:    FormParamProp,
     only_for_klient_id: FormParamProp,
+
+    summary_at_start: Boolean,
+    minimal: Boolean,
 });
 
 
@@ -65,9 +68,9 @@ const param_zlecenie_id      = src_zlec.get(ZLEC_COLS.ID);
 
 const src_list =CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {src: new QueryViewerSource()});
 src_list.add_dep(src_zlec);
-src_list.set_self_disabled(true);
-set_from_for_summary_for_zlec_id(src_list, param_zlecenie_id.get_ref());
+set_from_for_summary_for_zlec_id(src_list, param_zlecenie_id.get_ref(), true);
 
+src_list.auto_add_column ('part',       {display: "Numer", default: '-'});
 src_list.auto_add_column ('name',       {display: "Nazwa", default: ''});
 src_list.auto_add_column ('unit',       {display: "Jednostka", default: ''});
 src_list.auto_add_column ('cnt',        {display: "Ilość", default:  0});
@@ -78,7 +81,8 @@ src_list.auto_add_column ("mul_brutto", {display: "Łącznie Brutto", sql: "deci
 
 //////////////////////////////////////////////////////////////
 
-const show_summary = ref(false);
+const show_summary = ref(props.summary_at_start);
+src_list.set_self_disabled(!show_summary.value);
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
@@ -90,9 +94,14 @@ function handle_toggle_summary() {
     if(show_summary.value) {
         src_list.request_refresh();
         src_list.update_complete();
+    } else {
+        setTimeout(() => {
+            props.parent_window?.box.resize_to_content();
+        }, 100);
     }
 }
 
+const display_compact = computed(() => show_summary.value);
 
 defineExpose({
     src_klient,
@@ -106,28 +115,22 @@ defineExpose({
 
     <div class="form_container" :class="src_zlec.form_style.value">
 
-        <form onsubmit="return false" class="form form_content" :ref="e => src_zlec.assoc_form(e)"
-            :style="{gridTemplateRows: show_summary ? 'auto 1fr' : 'auto'}"
+        <form onsubmit="return false" class="form form_content" :class="{compact: display_compact}" :ref="e => src_zlec.assoc_form(e)"
         >
             
-            <div class="sidebar">
-                <fieldset style="flex-grow: 1">
-                    <legend>Klient</legend>
-                    <Klienci 
-                        no_zlec
-                        :use_src="src_klient"
-                        :force_klient_id="param_klient_klient_id"
-                        :force_car_id="param_klient_car_id"
-                    />
-                </fieldset>
-                <IconButton 
-                    :text="show_summary ? 'Ukryj podsumowanie' : 'Pokaż podsumowanie'"
-                    noicon
-                    @click="handle_toggle_summary"
+            <fieldset class="klients_container">
+                <legend>Klient</legend>
+                <Klienci 
+                    no_zlec
+                    :use_src="src_klient"
+                    :force_klient_id="param_klient_klient_id"
+                    :force_car_id="param_klient_car_id"
+                    :minimal="display_compact"
                 />
-            </div>
+            </fieldset>
 
-            <div class="zlecenia_container">
+            <fieldset class="zlecenia_container">
+                <legend>Zlecenie</legend>
                 <ZleceniaNaprawy 
                     :window="props.parent_window"
                     :use_src="src_zlec"
@@ -136,8 +139,11 @@ defineExpose({
                     :show_only_open="props.show_only_open"
                     :id_klienta="props.only_for_klient_id"
                     :id_samochodu="props.only_for_car_id"
+                    :minimal="display_compact"
+                    :aux_button_1="show_summary ? 'Ukryj podsumowanie' : 'Pokaż podsumowanie'"
+                    @clicked_aux_1="handle_toggle_summary"
                 />
-            </div>
+            </fieldset>
 
             <div class="summary" v-if="show_summary">
                 <QueryViewerAdv
@@ -161,20 +167,34 @@ defineExpose({
 
 <style scoped>
 
+.form.compact fieldset {
+    border: none;
+    padding: 0px 3px;
+}
+.form.compact fieldset legend {
+    display: none;
+}
+
+
+
 form {
     display: grid;
-    grid-template: auto 1fr / auto 1fr;
+    grid-template: auto / auto 1fr;
 }
-.sidebar {
+.form.compact {
+    /* grid-template-rows: auto auto 1fr;
+    grid-template-columns: auto; */
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    justify-content: space-between;
+    align-items: stretch;
+    overflow-x: hidden;
 }
 .summary {
-    grid-column: 1 / length-1;
-    padding: 3px 20px;
-    min-height: 4px;
+    grid-column: 1 / -1;
+    margin: 0px 10px;
+    min-height: 100px;
+    overflow-y: hidden;
+    flex-grow: 1;
 }
 .summary > * {
     border: 1px dotted black;

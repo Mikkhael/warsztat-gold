@@ -103,10 +103,13 @@ class QueryViewerSource extends FormQuerySourceFull {
      * @param {QueryViewerSource[]} srcs 
      * @param {FWWindow | undefined} window
      */
-    static async window_resize_on_columns_fixed(srcs, window) {
+    static async window_resize_on_columns_fixed(srcs, window, with_streach = false) {
         if(!window) return;
         await Promise.all(srcs.map(x => x.get_columns_fixed_promise()));
         window.box.resize_to_content().recenter(); // TODO fix to big resize
+        if(with_streach) {
+            window.box.streach_vertical().recenter();
+        }
     }
 
     /////// Ordering //////////////////////

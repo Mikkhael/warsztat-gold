@@ -86,7 +86,7 @@ async function on_click() {
         return null;
     }
     const src = props.src_factory();
-    return fwManager.open_or_reopen_window(title, QueryViewerAdv, {
+    const window = await fwManager.open_or_reopen_window(title, QueryViewerAdv, {
         props: {
             src,
             selectable: props.selectable,
@@ -94,6 +94,7 @@ async function on_click() {
             saveable:   props.saveable,
             deletable:  props.deletable,
             name: props.name ?? title,
+            streach: true,
         },
         listeners: {
             /**
@@ -108,6 +109,7 @@ async function on_click() {
         },
         parent: props.parent_window
     });
+    return window;
 }
 
 </script>

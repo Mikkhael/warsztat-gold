@@ -16,7 +16,10 @@ function smart_focus_next(target_list, self) {
         return true;
     }
 
-    const focusable_list = Array.from(target_list).filter(elem => elem?.classList?.contains?.('enter_focusable'));
+    const focusable_list = Array.from(target_list).filter(elem => 
+        //@ts-ignore
+        (elem.offsetParent !== null) &&
+        (elem?.classList?.contains?.('enter_focusable')));
     if(focusable_list.length === 0) {return false;}
     const self_index = self ? focusable_list.indexOf(self) : -1;
 

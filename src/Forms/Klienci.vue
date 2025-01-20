@@ -13,7 +13,7 @@ import QueryViewerAdvOpenBtn from '../components/QueryViewer/QueryViewerAdvOpenB
 import SamochodyKlientow from './SamochodyKlientow.vue';
 import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 
-import {onMounted, onUnmounted, ref, nextTick} from 'vue';
+import {onMounted, onUnmounted, ref, nextTick, computed} from 'vue';
 import { standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { use_datetime_now } from '../utils';
 import { FormParamProp, FormDefaultProps, FormQuerySourceSingle, param_from_prop } from '../components/Dataset';
@@ -28,10 +28,8 @@ const props = defineProps({
     force_klient_id: FormParamProp,
     force_car_id:    FormParamProp,
     no_zlec: Boolean,
-    readonly: {
-        type: Boolean,
-        default: false,
-    },
+    readonly:Boolean,
+    minimal: Boolean,
 });
 
 const msgManager = useMainMsgManager();
@@ -151,34 +149,49 @@ function handle_zlec_for_kli() {
     const klient_id    = id.get_cached();
     const klient_nazwa = nazwa.get_cached();
     const title = `Zlecenia dla Klienta '${klient_nazwa}'`;
-    fwManager.open_or_focus_window(title, ZleceniaNaprawyAdv, {
+    const window = fwManager.open_or_focus_window(title, ZleceniaNaprawyAdv, {
         category: "zlecenia_filtered",
         props: {
-            only_for_klient_id: klient_id
+            only_for_klient_id: klient_id,
+            summary_at_start: true,
+            minimal: true,
         }
     });
+    if(window) {
+        nextTick(() => {
+            window.box.slam_left_top().streach_vertical(0.95);
+        });
+    }
 }
 function handle_zlec_for_car() {
     const car_id    = src_car.get(db.TABS.samochody_klientów.cols.ID).get_value();
     const car_nrrej = src_car.get(db.TABS.samochody_klientów.cols.nr_rej).get_value();
     const title = `Zlecenia dla Samochodu '${car_nrrej}'`;
-    fwManager.open_or_focus_window(title, ZleceniaNaprawyAdv, {
+    const window = fwManager.open_or_focus_window(title, ZleceniaNaprawyAdv, {
         category: "zlecenia_filtered",
         props: {
-            only_for_car_id: car_id
+            only_for_car_id: car_id,
+            summary_at_start: true,
+            minimal: true,
         }
     });
+    if(window) {
+        nextTick(() => {
+            window.box.slam_left_top().streach_vertical(0.95);
+        });
+    }
 }
 
 function handle_err(/**@type {Error} */ err) {
     msgManager.postError(err);
 }
 
-const test_ref = ref(88);
-
 defineExpose({
     src
 });
+
+
+const display_compact = computed(() => props.minimal && props.no_zlec);
 
 </script>
 
@@ -187,11 +200,11 @@ defineExpose({
 
     <div class="form_container" :class="src.form_style.value">
 
-        <form onsubmit="return false" class="form form_content flex_auto" :ref="e => src.assoc_form(e)">
+        <form onsubmit="return false" class="form form_content" :ref="e => src.assoc_form(e)" :class="{compact: display_compact}">
             
             <div class="grid">
                 
-                <div class="row flex_auto" v-if="!props.no_zlec">
+                <div class="flex_auto a_find" v-if="!props.no_zlec">
                 
                     <div>
                         <QueryViewerAdvOpenBtn 
@@ -224,40 +237,42 @@ defineExpose({
                     <!-- <button type="button" @click.prevent="click_zlecenia">ZLECENIA</button> -->
                 </div>
 
-                <label>Nazwa              </label>  <FormInput :readonly="props.readonly" :value="nazwa " auto class="main_input_field" />
-                <label>Odbierający Fakturę</label>  <FormInput :readonly="props.readonly" :value="odbier" auto class="main_input_field" />
-                <label>Ulica i Nr Domu    </label>  <FormInput :readonly="props.readonly" :value="ulica " auto class="main_input_field" />
-                <label>Kod i Miejscowość  </label>  
-                <div class="flex_auto main_input_field" > 
+                <label class="l1">Nazwa              </label>  <FormInput :readonly="props.readonly" :value="nazwa " auto class="v1 main_input_field" />
+                <label class="l2">Odbierający Fakturę</label>  <FormInput :readonly="props.readonly" :value="odbier" auto class="v2 main_input_field" />
+                <label class="l3">Ulica i Nr Domu    </label>  <FormInput :readonly="props.readonly" :value="ulica " auto class="v3 main_input_field" />
+                <label class="l4">Kod i Miejscowość  </label>  
+                <div class="flex_auto v4 main_input_field" > 
                     <FormInput :readonly="props.readonly" :value="kod   " auto style="width: 7ch" class="nogrow" /> 
                     <FormInput :readonly="props.readonly" :value="miasto" auto /> 
                 </div>
-                <label>NIP                </label>  <FormInput :readonly="props.readonly" :value="nip   " auto />
-                <label>wpisał             </label>  <FormInput :readonly="props.readonly" :value="kto   " auto />
-                <label>Telefon            </label>  <FormInput :readonly="props.readonly" :value="tele1 " auto />
-                <label>dnia               </label>  <FormInput :readonly="props.readonly" :value="kiedy " auto />
-                <label>Drugi Telefon      </label>  <FormInput :readonly="props.readonly" :value="tele2 " auto />
-                <label>ID                 </label>  <FormInput readonly                   :value="id    " auto />
+                <label class="l5" >NIP                </label>  <FormInput class="v5"  :readonly="props.readonly" :value="nip   " auto />
+                <label class="l6" >wpisał             </label>  <FormInput class="v6"  :readonly="props.readonly" :value="kto   " auto />
+                <label class="l7" >Telefon            </label>  <FormInput class="v7"  :readonly="props.readonly" :value="tele1 " auto />
+                <label class="l8" >dnia               </label>  <FormInput class="v8"  :readonly="props.readonly" :value="kiedy " auto />
+                <label class="l9" >Drugi Telefon      </label>  <FormInput class="v9"  :readonly="props.readonly" :value="tele2 " auto />
+                <label class="lid">ID                 </label>  <FormInput class="vid" readonly                   :value="id    " auto />
                 <!-- <label>stały upust        </label>  <FormInput :readonly="props.readonly" :value="upust " auto /> -->
 
-                <fieldset class="subform_cars_field">
+                <fieldset class="a_car">
                     <legend>{{props.force_car_id !== undefined ? "Samochód" : "Samochody Klienta"}}</legend>
                     <SamochodyKlientow 
                         :use_src="src_car"
                         :id_klienta="props.force_car_id ? undefined : param_id_klienta"
                         :readonly="props.readonly"
                         :force_car_id="props.force_car_id"
+                        :minimal="display_compact"
                     />
                 </fieldset>
                 
-                <div></div>
-                <div></div>
-                <IconButton text="zlecenia klienta"   icon="filter" @click="handle_zlec_for_kli"/>
-                <IconButton text="zlecenia samochodu" icon="filter" @click="handle_zlec_for_car"/>
+                <div class="sub_buttons">
+                    <div></div>
+                    <IconButton text="zlecenia klienta"   icon="filter" @click="handle_zlec_for_kli"/>
+                    <IconButton text="zlecenia samochodu" icon="filter" @click="handle_zlec_for_car"/>
+                </div>
             </div>
             
 
-            <fieldset class="zlecenia" :style="{display: show_zlecenia ? 'unset' : 'none'}" v-if="!props.no_zlec">
+            <fieldset class="zlecenia" v-if="!props.no_zlec">
                 <legend>Zlecenia Naprawy</legend>
                 <ZleceniaNaprawy
                     :window="props.parent_window"
@@ -286,39 +301,110 @@ defineExpose({
 
 <style scoped>
 
-    .print_render {
-        display: none;
+.form.compact fieldset {
+    border: none;
+    padding: 0px 3px;
+}
+.form.compact fieldset legend {
+    display: none;
+}
+
+.a_find {grid-area: a_find;}
+.a_car  {grid-area: a_car;}
+.sub_buttons {grid-area: a_sub;}
+.l1 {grid-area: l1;}   .grid > :deep(.v1 ) {grid-area: v1;}
+.l2 {grid-area: l2;}   .grid > :deep(.v2 ) {grid-area: v2;}
+.l3 {grid-area: l3;}   .grid > :deep(.v3 ) {grid-area: v3;}
+.l4 {grid-area: l4;}   .grid > :deep(.v4 ) {grid-area: v4;}
+.l5 {grid-area: l5;}   .grid > :deep(.v5 ) {grid-area: v5;}
+.l6 {grid-area: l6;}   .grid > :deep(.v6 ) {grid-area: v6;}
+.l7 {grid-area: l7;}   .grid > :deep(.v7 ) {grid-area: v7;}
+.l8 {grid-area: l8;}   .grid > :deep(.v8 ) {grid-area: v8;}
+.l9 {grid-area: l9;}   .grid > :deep(.v9 ) {grid-area: v9;}
+.l9 {grid-area: l9;}   .grid > :deep(.v9 ) {grid-area: v9;}
+.lid {grid-area: lid;} .grid > :deep(.vid) {grid-area: vid;}
+
+.form.compact > .grid > .sub_buttons,
+.form.compact > .grid > label,
+.form.compact > .grid > :deep(.v2),
+.form.compact > .grid > :deep(.v6),
+.form.compact > .grid > :deep(.v7),
+.form.compact > .grid > :deep(.v8),
+.form.compact > .grid > :deep(.v9),
+.form.compact > .grid > :deep(.vid) {
+    display: none;
+}
+.form.compact > .grid > label.l5 {
+    display: block;
+}
+
+    .form {
+        display: grid;
+        grid-template: auto / auto 1fr;
+        /* display: flex;
+        flex-direction: row;
+        align-items: stretch; */
+    }
+    .form.compact {
+        display: block;
     }
 
-    .grid {
+    .form > .grid {
+        flex-grow: 1;
+
         padding: 1px 10px;
-        grid: repeat(8, auto) auto / auto [fields-start] 1fr auto 1fr  [fields-end];
         gap: 1px 2px;
-        align-items: stretch;
         text-wrap: nowrap;
-        justify-content: start;
+        justify-content: stretch;
+        align-content: stretch;
+        align-items: stretch;
+
+        grid-template: auto / auto auto auto 1fr;
+        grid-template-areas: 
+            "a_find a_find a_find a_find"
+            "l1  v1 v1 v1"
+            "l2  v2 v2 v2"
+            "l3  v3 v3 v3"
+            "l4  v4 v4 v4"
+            "l5 v5   l6 v6"
+            "l7 v7   l8 v8"
+            "l9 v9   lid vid"
+            "a_car a_car a_car a_car"
+            "a_sub a_sub a_sub a_sub"
+            ;
     }
-    .grid > :deep(label) {
+    .form > .grid > label {
         align-self: center;
     }
 
-    .grid > :deep(.main_input_field){
-        grid-column: fields-start / fields-end;
-    }
 
-    .grid > :deep(.subform_cars_field) {
-        grid-column: 1 / -1;
-        align-self: center;
+    .form.compact > .grid {
+        align-content: start;
+        grid-template: auto / 1fr auto auto;
+        grid-template-areas: 
+            "v1 v1 v1 v1"
+            "v3 v4 l5 v5"
+            "a_car a_car a_car a_car";
     }
 
     fieldset {
         padding: 0px;
     }
 
+    .sub_buttons {
+        display: flex;
+        flex-direction: row;
+        justify-content: end;
+    }
+
     .zlecenia {
-        flex-grow: 30;
+        flex-grow: 20;
     }
     
+    .form.compact {
+        flex-direction: column;
+    }
+
 
 </style>
 

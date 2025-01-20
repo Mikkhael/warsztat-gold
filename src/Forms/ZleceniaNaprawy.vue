@@ -43,6 +43,15 @@ const props = defineProps({
     show_find_button: Boolean,
     show_only_open:   Boolean,
     hide_scroller:    Boolean,
+
+    aux_button_1: {type: String, required: false},
+
+    minimal:          Boolean,
+    readonly_dates:   Boolean,
+});
+
+const emit = defineEmits({
+    clicked_aux_1() {return true;}
 });
 
 // console.log("START_PROPS",typeof props.id_klienta, typeof props.id_samochodu,  props.id_klienta, props.id_samochodu, props);
@@ -183,6 +192,13 @@ function open_robocizna_window() {
     });
 }
 
+function handle_aux_button_1() {
+    emit('clicked_aux_1');
+}
+
+const display_compact = computed(() => props.minimal);
+const editable_dates  = computed(() => !props.readonly_dates);
+
 defineExpose({
     src
 });
@@ -194,25 +210,25 @@ defineExpose({
 
     <div class="form_container" :class="src.form_style.value">
 
-        <form onsubmit="return false" class="form form_content" :ref="e => src.assoc_form(e)">
+        <form onsubmit="return false" class="form form_content" :ref="e => src.assoc_form(e)" :class="{compact: display_compact}">
 
-            <div class="flex_auto vert">
-                <div>
-                    <label>nr zlecenia</label>
+            <div class="header auto_labels">
+                <label>
+                    <div>nr zlecenia</div>
                     <FormInput :value="id"        auto readonly style="width: 10ch" />
-                </div>
-                <div>
-                    <label>data otwarcia</label>
-                    <FormInput :value="data_otw"  auto :readonly="readonly" />
-                </div>
-                <div v-if="data_zamk.get_local() !== null">
-                    <label>data zamknięcia</label>
-                    <FormInput :value="data_zamk" auto :readonly="readonly" />
-                </div>
-                <div class="big" v-else :class="{changed: data_zamk.changed.value}">
-                    OTWARTE
-                    <input type="button" value="Zamknij" @click="close_current_zlecenie()"/>
-                </div>
+                </label>
+                <label>
+                    <div>data otwarcia</div>
+                    <FormInput :value="data_otw"  auto :readonly="readonly || !editable_dates" />
+                </label>
+                <label v-if="data_zamk.get_local() !== null">
+                    <div>data zamknięcia</div>
+                    <FormInput :value="data_zamk" auto :readonly="readonly || !editable_dates" />
+                </label>
+                <label v-else :class="{changed: data_zamk.changed.value}">
+                    <div class="emph" >OTWARTE</div>
+                    <IconButton text="Zamknij" noicon @click="close_current_zlecenie()" v-if="editable_dates"/>
+                </label>
                 <div v-if="props.show_find_button">
                     <QueryViewerAdvOpenBtn 
                         :parent_window="props.window"
@@ -225,7 +241,7 @@ defineExpose({
                 </div>
             </div>
 
-            <div class="subheader flex_auto">
+            <div class="subheader flex_auto" :class="{hidden: display_compact}">
                 <div class="udzialy grid">
                     <div>Adres e-mail</div> <FormInput :value="prow" auto :readonly="readonly"/> <FormInput auto :value="prow_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
                     <div>pomocnik 1</div>   <FormInput :value="pom1" auto :readonly="readonly"/> <FormInput auto :value="pom1_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
@@ -243,28 +259,37 @@ defineExpose({
                 </div>
             </div>
 
-            <label>Zgłoszenie do naprawy</label>
-            <FormInput :value="zgloszenie" :readonly="readonly" auto class="grow" textarea/>
-            
-            <label>Uwagi</label>
-            <FormInput :value="uwagi" :readonly="readonly" auto class="grow" textarea/>
-            
-            <div class="totals">
+            <div class="textarea_section auto_labels">
                 <label>
-                    <div>Suma Netto</div>
-                    <FormInput type="decimal" :value="total_netto"  readonly />
-                </label>
-                <label>
-                    <div>Suma VAT</div>
-                    <FormInput type="decimal" :value="total_vat"    readonly />
-                </label>
-                <label>
-                    <div>Suma Brutto</div>
-                    <FormInput type="decimal" :value="total_brutto" readonly />
+                    <div>Zgłoszenie do naprawy</div>
+                    <FormInput :value="zgloszenie" :readonly="readonly" auto class="grow" textarea rows="2"/>
                 </label>
             </div>
             
-            <div class="totals">
+            <div class="textarea_section auto_labels">
+                <label>
+                    <div>Uwagi</div>
+                    <FormInput :value="uwagi" :readonly="readonly" auto class="grow" textarea rows="2"/>
+                </label>
+            </div>
+            
+            
+            <div class="totals auto_labels">
+                <label>
+                    <div>Netto</div>
+                    <FormInput type="decimal" :value="total_netto"  readonly />
+                </label>
+                <label>
+                    <div>VAT</div>
+                    <FormInput type="decimal" :value="total_vat"    readonly />
+                </label>
+                <label>
+                    <div>Brutto</div>
+                    <FormInput type="decimal" :value="total_brutto" readonly />
+                </label>
+            </div>
+
+            <div class="totals auto_labels">
                 <label>
                     <div>Zysk Części</div>
                     <FormInput auto :value="zysk_cz" />
@@ -273,8 +298,15 @@ defineExpose({
                     <div>Zysk Robocizna</div>
                     <FormInput auto :value="zysk_rob" />
                 </label>
+                <label v-if="props.aux_button_1 !== undefined">
+                    <IconButton 
+                        :text="props.aux_button_1"
+                        noicon
+                        @click="handle_aux_button_1"
+                    />
+                </label>
             </div>
-
+            
         </form>
         
         <QuerySourceOffsetScroller
@@ -303,6 +335,9 @@ defineExpose({
 
 <style scoped>
 
+    .hidden {display: none;}
+    .emph {font-weight: bold; text-align: center;}
+
     /* .form_container {
         width: 100%;
     } */
@@ -311,72 +346,50 @@ defineExpose({
         display: flex;
         flex-direction: column;
         flex-wrap: nowrap;
-        align-items: stretch;
-        justify-content: stretch;
     }
 
-    .button {
-        text-align: center;
-        padding: 3px;
-        margin: 0px 3px;
+    .auto_labels {
+        display: flex;
+        flex-direction: row;
+    }
+    .auto_labels > label {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        justify-content: center;
+    }
+    .form.compact > .auto_labels > label {
+        flex-direction: row;
+        align-items: center;
+        word-wrap: normal;
     }
 
     .buttons{
         display: grid;
-        /* flex-direction: row; */
         justify-content: start;
         grid-template-rows: auto auto;
         grid-auto-flow: column;
     }
-    .buttons > * {
-        display: flex;
-        text-align: center;
-        justify-content: center;
-        align-items: center;
-    }
 
-    :deep(textarea) {
-        resize: none;
-    }
-
-    .vert > * {
-        display: flex;
-        flex-direction: column;
-    }
-    .vert .big {
-        display: block;
-        text-align: center;
-    }
-
-    .big {
-        font-size: 1.5em;
-
-    }
-
-    :deep(.grow) {
+    .textarea_section {
         flex-grow: 1;
     }
-
-    .subheader {
-        align-items: center;
+    .textarea_section :deep(textarea) {
+        flex-grow: 1;
+        align-self: stretch;
+        resize: none;
     }
+    /* .form.compact > .textarea_section {
+        flex-grow: 0;
+    } */
+
     .udzialy {
         grid-template-columns: auto auto 4ch auto ;
     }
 
-    .totals {
-        padding: 5px;
-        display: flex;
-        flex-direction: row;
-        justify-content: flex-end;
-        align-items: center;
-    }
-    .totals > label {
-        flex-grow: 1;
-    }
     .totals > label :deep(input) {
-        width: 95%;
-        min-width: 3ch;
+        margin-right: 1%;
+        flex-grow: 1;
     }
 
 </style>

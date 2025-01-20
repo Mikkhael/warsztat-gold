@@ -37,6 +37,8 @@ const props = defineProps({
         type: Object,
         required: false
     },
+
+    streach: Boolean,
 });
 
 // const emit = defineEmits(['select', 'error']);
@@ -224,6 +226,9 @@ function init_columns_sizes() {
 /**@type {import('vue').Ref<HTMLElement | undefined>} */
 const indicator_ref = ref();
 
+/**
+ * @param {any} element 
+ */
 function move_indicator(element) {
     const indicator_elem = indicator_ref.value;
     if(!indicator_elem) return;
@@ -234,8 +239,11 @@ function move_indicator(element) {
     }
     const top    = element.offsetTop;
     const height = element.clientHeight;
+    // const scrollLeft = container_ref.value?.scrollLeft;
+    // console.log(scrollLeft);
     indicator_elem.style.top    = top+'px';
     indicator_elem.style.height = height+'px';
+    // indicator_elem.style.left   = scrollLeft + 'px';
 }
 
 let current_hovered_row_i = -1;
@@ -346,7 +354,7 @@ async function handle_order(new_order, col_name) {
     src.set_order(col_name, new_order);
 }
 
-QueryViewerSource.window_resize_on_columns_fixed([src], props.parent_window);
+QueryViewerSource.window_resize_on_columns_fixed([src], props.parent_window, props.streach);
 src.start_plugin_watcher();
 
 onMounted(() => {
@@ -462,6 +470,7 @@ defineExpose({
     .form_container {
         justify-content: start;
         align-items: stretch;
+        position: relative;
     }
     .form_content {
         overflow-y: hidden;
@@ -474,7 +483,6 @@ defineExpose({
     }
 
     .table_container {
-        position: relative;
         display: flex;
         flex-direction: row;
         align-items: stretch;
@@ -484,7 +492,7 @@ defineExpose({
         pointer-events: none;
         position: absolute;
         left: 0px;
-        right: 0px;
+        width: 100%;
         height: 0ch;
         background-color: #00fff2;
         opacity: 10%;

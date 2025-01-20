@@ -46,11 +46,12 @@ export const decimal_sql = {
  * 
  * @param {import("vue").MaybeRef<import("../components/Dataset").SQLValue>} id_zlecenia 
  */
-export function get_summary_for_zlec_id(id_zlecenia) {
+export function get_summary_for_zlec_id(id_zlecenia, with_part = false) {
     const res = computed(() => {
         const LIST_CZESCI_SQL = qparts_db(
             "SELECT",   "ifnull(",  COLS_CZES.nazwa_części,      ", '')",  "AS name,", 
                         "ifnull(",  COLS_CZES.jednostka,         ", '')",  "AS unit,",
+       ...(with_part ? ["ifnull(",  COLS_CZES.numer_części,      ",'-')",  "AS part,"] : []),
                         "ifnull(",  COLS_OBRO.ilość,        "* (-1), 0)",  "AS cnt,",
                                     COLS_OBRO.cena_netto_sprzedaży,        "AS netto",
             "FROM",     TAB_OBRO, "LEFT JOIN", TAB_CZES, "ON", COLS_OBRO.numer_cz, "=", COLS_CZES.numer_części,
@@ -59,6 +60,7 @@ export function get_summary_for_zlec_id(id_zlecenia) {
         const LIST_ROBOCIZNA_SQL = qparts_db(
             "SELECT",   "ifnull(",  COLS_CZYN.czynność,          ", '')",  "AS name,", 
                         "''",                                              "AS unit,",
+                                                      ...(with_part ? ["'-' AS part,"] : []),
                         "ifnull(",  COLS_ROBO.krotność_wykonania,",  0)",  "AS cnt,",
                                     COLS_ROBO.cena_netto,                  "AS netto",
             "FROM",     TAB_ROBO, "LEFT JOIN", TAB_CZYN, "ON", COLS_ROBO.ID_czynności, "=", COLS_CZYN.ID_cynności,
@@ -73,8 +75,8 @@ export function get_summary_for_zlec_id(id_zlecenia) {
  * @param {QuerySource} src 
  * @param {import("vue").MaybeRef<import("../components/Dataset").SQLValue>} id_zlecenia 
  */
-export function set_from_for_summary_for_zlec_id(src, id_zlecenia) {
-    const LIST_SQL = get_summary_for_zlec_id(id_zlecenia);
+export function set_from_for_summary_for_zlec_id(src, id_zlecenia, with_part = false) {
+    const LIST_SQL = get_summary_for_zlec_id(id_zlecenia, with_part);
     src.query.from.reas(LIST_SQL);
     src.add_table_dep(TAB_ZLEC);
     src.add_table_dep(TAB_OBRO);
