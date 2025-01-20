@@ -6,7 +6,7 @@ import { DataGraphDependable, DataGraphNodeBase } from "./DataGraph";
 import ipc from "../../ipc";
 import { Column, TableNode } from "./Database";
 import { map_query_parts_params, QueryBuilder } from "./QueryBuilder";
-import { escape_backtick_smart } from "../../utils";
+import { escape_backtick_smart, escape_sql_value } from "../../utils";
 
 
 /**

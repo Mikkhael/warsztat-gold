@@ -97,8 +97,6 @@ const zysk_cz    = src.auto_add_value_synced(COLS.zysk_z_części,        {defau
 
 src.add_where_eq_dynamic(show_only_open_ref, COLS.data_zamknięcia.get_full_sql(), null);
 
-const param_id_zlec = src.get(COLS.ID);
-
 const param_out_klient_id   = src.get(COLS.ID_klienta);
 const param_out_car_id      = src.get(COLS.ID_samochodu);
 const param_out_zlecenie_id = src.get(COLS.ID);
@@ -176,18 +174,21 @@ function open_print_window_faktura() {
 }
 
 function open_czesci_window() {
-    const title = "Części - Zlecenie nr " + param_id_zlec.get_value();
+    const title = "Części - Zlecenie nr " + param_out_zlecenie_id.get_value();
     return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Czesci, {
         category: 'czesci',
-        props: {id_zlecenia: param_id_zlec},
+        props: {
+            id_zlecenia: param_out_zlecenie_id.get_value(),
+            id_samochodu: param_out_car_id.get_value(),
+        },
         // parent: props.parent_window
     });
 }
 function open_robocizna_window() {
-    const title = "Robocizna - Zlecenie nr " + param_id_zlec.get_value();
+    const title = "Robocizna - Zlecenie nr " + param_out_zlecenie_id.get_value();
     return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Robocizna, {
         category: 'czesci',
-        props: {id_zlecenia: param_id_zlec},
+        props: {id_zlecenia: param_out_zlecenie_id.get_value()},
         // parent: props.parent_window
     });
 }
@@ -321,12 +322,12 @@ defineExpose({
         <ReportPreparer
             ref="RepZlecenieNaprawy_ref"
             :rep="RepZlecenieNaprawy"
-            :id_zlecenia="param_id_zlec"
+            :id_zlecenia="param_out_zlecenie_id"
         />
         <ReportPreparer
             ref="RepZlecenieNaprawyFaktura_ref"
             :rep="RepZlecenieNaprawyFaktura"
-            :id_zlecenia="param_id_zlec"
+            :id_zlecenia="param_out_zlecenie_id"
         />
         
     </div>

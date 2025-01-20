@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
-import { FormDataSetFull, FormDataSetFull_LocalRow, FormDataSetSingle, FormDefaultProps, FormParamProp, FormQuerySourceSingle, param_from_prop, RefChangableValue } from '../components/Dataset';
+import { DataGraphDependable, FormDataSetFull, FormDataSetFull_LocalRow, FormDataSetSingle, FormDefaultProps, FormParamProp, FormQuerySourceSingle, param_from_prop, RefChangableValue } from '../components/Dataset';
 import { QueryViewerSource } from '../components/QueryViewer/QueryViewer';
 import QueryViewerAdv from '../components/QueryViewer/QueryViewerAdv.vue';
 import QueryViewerAdvOpenBtn from '../components/QueryViewer/QueryViewerAdvOpenBtn.vue';
@@ -13,6 +13,7 @@ import useMainMsgManager from '../components/Msg/MsgManager';
 
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { nextTick, ref } from 'vue';
+import { escape_sql_value } from '../utils';
 
 
 
@@ -20,6 +21,7 @@ import { nextTick, ref } from 'vue';
 const props = defineProps({
     ...FormDefaultProps,
     id_zlecenia: FormParamProp,
+    id_samochodu: FormParamProp,
 });
 
 const msgManager = useMainMsgManager();
@@ -38,7 +40,9 @@ const CZ_COLS    = db.TABS.nazwy_części.cols;
 const ZLEC_TAB   = db.TABS.zlecenia_naprawy;
 const ZLEC_COLS  = db.TABS.zlecenia_naprawy.cols;
 
-const param_id_zlecenia = param_from_prop(props, 'id_zlecenia');
+const param_id_zlecenia  = param_from_prop(props, 'id_zlecenia');
+const param_id_samochodu = param_from_prop(props, 'id_samochodu');
+const param_id_samochodu_val = props.id_samochodu instanceof DataGraphDependable ? props.id_samochodu.get_value() : props.id_samochodu ?? null;
 
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {src: new QueryViewerSource(), no_update_on_mounted: true, on_error: handle_err});
 src.set_from_with_deps(OBR_TAB);
@@ -84,16 +88,22 @@ const id_zlecenia = RefChangableValue.from_sqlvalue(param_id_zlecenia);
 
 ////////////////// FIND (DODAJ CZĘŚCI) ///////////////////
 
+const LAST_CENA_FROM = 
+`(SELECT 
+  ${OBR_COLS.numer_cz.get_full_sql()} as nr,
+  ${OBR_COLS.cena_netto_sprzedaży.get_full_sql()} as cena_sprz,
+  ${OBR_COLS.cena_netto.get_full_sql()} as cena,
+  max(${OBR_COLS.data_przyjęcia.get_full_sql()}) as list_data
+FROM ${ZLEC_TAB.get_full_sql()} JOIN ${OBR_TAB.get_full_sql()} ON ${ZLEC_COLS.ID.get_full_sql()} IS ${OBR_COLS.numer_dokumentu.get_full_sql()}
+WHERE ${ZLEC_COLS.ID_samochodu.get_full_sql()} IS ${ escape_sql_value(param_id_samochodu_val) } AND ${OBR_COLS.rodzaj_dokumentu.get_full_sql()} IS 'zlec'
+GROUP BY nr)`;
+
 const src_list = new QueryViewerSource();
-src_list.set_from_with_deps(CZ_TAB);
-src_list.add_join(CZ_COLS.numer_części, OBR_COLS.numer_cz, "LEFT");
-src_list.query.add_groupby_column(CZ_COLS.numer_części);
-src_list.auto_add_column("max rowid", {sql: "max("+OBR_TAB.rowid.get_full_sql()+")"});
+src_list.set_from_with_deps(CZ_TAB, "LEFT JOIN " + LAST_CENA_FROM + " AS last ON ", CZ_COLS.numer_części, 'IS last.nr');
 src_list.auto_add_column(CZ_COLS.numer_części, {display: "Numer"});
 src_list.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa", width: 10});
-// TODO allow for assoc_col on non-local columns
-src_list.auto_add_column("last_cena_netto_sprz",  {display: "Netto Ostatnia Sprzedaży", sql:"ifnull("+OBR_COLS.cena_netto_sprzedaży.get_full_sql()+",'0.00')", input_props: {type: 'decimal'} });
-src_list.auto_add_column("last_cena_netto",       {display: "Netto Ostatnia",           sql:"ifnull("+OBR_COLS.cena_netto.get_full_sql()          +",'0.00')", input_props: {type: 'decimal'} });
+src_list.auto_add_column("last_cena_netto_sprz",  {display: "Netto Ostatnia Sprzedaży", sql:"ifnull(last.cena_sprz,'0.00')", input_props: {type: 'decimal'} });
+src_list.auto_add_column("last_cena_netto",       {sql:"ifnull(last.cena,     '0.00')", input_props: {type: 'decimal'} });
 src.add_aux_query(src_list);
 
 /**
