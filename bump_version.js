@@ -16,7 +16,7 @@ function swap(input, regex) {
     const new_str = `"version": "${regex_res[1]}${Number(regex_res[2]) + 1}"`;
 
     const index_start = regex_res.index;
-    const index_end   = index_start + new_str.length;
+    const index_end   = index_start + regex_res[0].length;
     return input.slice(0, index_start) + new_str + input.slice(index_end);
 }
 

@@ -1,1 +1,1 @@
-cmd.exe /c "(.\prepare.bat) && (npm run tauri build)"
+npm run tauri build

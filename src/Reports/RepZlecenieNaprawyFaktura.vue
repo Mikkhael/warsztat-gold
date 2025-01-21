@@ -196,6 +196,7 @@ defineExpose({
                 <div class="center bold italic">{{ settings_data['Imię i Nazwisko'] }}</div>
                 <div class="center">{{ settings_data.Adres }}</div>
                 <div class="center small">kom. {{ settings_data.Telefon }}</div>
+                <div class="center small">NIP: {{ settings_data.NIP }}</div>
                 <div class="center bold small">e-mail {{ settings_data.Email }}</div>
             </div>
             <div class="right">
