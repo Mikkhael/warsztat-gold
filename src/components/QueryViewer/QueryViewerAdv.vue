@@ -92,7 +92,8 @@ async function handle_scroller_custom_button(name) {
 const true_selectable = computed(() => props.selectable && !editable_state.value);
 const true_insertable = computed(() => !true_selectable.value && props.insertable);
 
-const row_ref        = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
+const first_row_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
+const common_row_ref = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const container_ref  = /**@type {import('vue').Ref<HTMLElement>} */ (ref());
 const scroller_limit = src.query.limit;
 scroller_limit.value = 0;
@@ -120,9 +121,10 @@ watch(props.src.changed, (new_changed) => {
 
 function recalculate_limit() {
     if(src.changed.value) return;
-    const container_height = container_ref.value?.clientHeight;
-    const scroller_height  = row_ref      .value?.getBoundingClientRect().height;
-    if(!container_height || !scroller_height) {
+    const container_height  = container_ref. value?.clientHeight;
+    const first_row_height  = first_row_ref. value?.getBoundingClientRect().height;
+    const common_row_height = common_row_ref.value?.getBoundingClientRect().height;
+    if(!container_height || !first_row_height || !common_row_height) {
         if(scroller_limit.value !== 1) {
             scroller_limit.value = 1;
             // src.request_refresh();
@@ -131,8 +133,8 @@ function recalculate_limit() {
         }
         return;
     }
-    const rows_to_fit = Math.floor(container_height / scroller_height);
-    const result = Math.max(rows_to_fit - 2, 1);
+    const rows_to_fit = Math.floor((container_height - first_row_height) / common_row_height);
+    const result = Math.max(rows_to_fit - 1, 1);
     // console.log("RESIZE", result);
     if(scroller_limit.value !== result) {
         scroller_limit.value = result;
@@ -147,7 +149,8 @@ const resizeObserver = new ResizeObserver(recalculate_limit);
 let   current_resize_col_i = -1;
 const col_refs     = ref(/**@type {HTMLElement[]} */ ([]));
 const column_sizes = ref(/**@type {[value: number, as_px_not_ch: boolean][]} */ ([]));
-const disable_table_search = ref(true);
+const disable_table_search  = ref(true);
+const advanced_table_search = ref(false);
 const is_limit_cropped = computed(() => result_rows.value.length >= scroller_limit.value);
 
 const column_sizes_style = computed(() => column_sizes.value.map(([value, as_px_not_ch]) => {
@@ -331,6 +334,27 @@ async function handle_scroll(event) {
 }
 
 /**
+ * 
+ * @param {Event} event 
+ * @param {string} col_name 
+ * @param {0 | 1} which_value 
+ * @param {boolean} is_delete 
+ */
+function handle_interval(event, col_name, which_value, is_delete = false) {
+    if(src.changed.value) return;
+    /**@type {string | null} */
+    //@ts-ignore
+    const value = event.target?.value ?? null;
+    const interval = src.interval_plugin.get(col_name) ?? [null, null];
+    interval[which_value] = is_delete ? null : value;
+    if(interval[0] === null && interval[1] === null) {
+        src.interval_plugin.delete(col_name);
+    } else {
+        src.interval_plugin.set(col_name, interval);
+    }
+}
+
+/**
  * @param {Event} event 
  * @param {string} col_name 
  */
@@ -368,6 +392,8 @@ function get_context_menu_custom_data(col_name) {
         {label: "Pozycja: początek", checked: search_type === 1, payload: {type: 'set_type', val: search_type === 1 ? 0 : 1}},
         {label: "Pozycja: koniec",   checked: search_type === 2, payload: {type: 'set_type', val: search_type === 2 ? 0 : 2}},
         {label: "Pozycja: pełny",    checked: search_type === 3, payload: {type: 'set_type', val: search_type === 3 ? 0 : 3}},
+        {label: ''},
+        {label: "Filtrowanie zaawansowane", checked: advanced_table_search.value, payload: {type: 'toggle_adv'}},
     ];
     return JSON.stringify(custom_data);
 }
@@ -388,6 +414,10 @@ function handle_context_menu_custom_event(event, col_name){
             src.set_search_type(col_name, payload?.val ?? 0);
             break;
         }
+        case 'toggle_adv': {
+            advanced_table_search.value = !advanced_table_search.value;
+            break;
+        }
     }
 }
 
@@ -398,6 +428,12 @@ function handle_context_menu_custom_event(event, col_name){
 async function handle_order(new_order, col_name) {
     if(src.changed.value) return;
     src.set_order(col_name, new_order);
+}
+
+function get_input_type_for_col(col_name) {
+    return src.display_columns.get(col_name)?.format === 'date' ? 'date' :
+           src.display_columns.get(col_name)?.format === 'datetime' ? 'datetime' :
+           'text';
 }
 
 QueryViewerSource.window_resize_on_columns_fixed([src], props.parent_window, props.streach);
@@ -442,10 +478,10 @@ defineExpose({
         />
 
         <component onsubmit="return false" :is="props.inbeded ? 'div' : 'form'" class="form_content" ref="container_ref" @wheel.capture="handle_scroll" :class="{enable_scroll: src.changed, selectable: true_selectable}">
-            <div class="table_container" :class="{disable_table_search}">
+            <div class="table_container" :class="{disable_table_search, advanced_table_search}">
                 <div class="table_column iterators">
-                    <div class="header" ref="row_ref"> </div>
-                    <div class="header">#</div>
+                    <div class="header" ref="first_row_ref"></div>
+                    <div class="header" ref="common_row_ref">#</div>
                     <div class="data" v-for="(row, row_i) in result_rows"
                             :class="{
                                 deleted:  row.deleted,
@@ -481,6 +517,24 @@ defineExpose({
                         >
                             {{ ['...', '|..', '..|', '|.|'][src.search_type_plugin.get(col_name) ?? 0] }}
                         </div> -->
+
+                        <div class="col_search_adv">
+                            <span>Od:</span>
+                            <span>Do:</span>
+                            <input 
+                                :type="get_input_type_for_col(col_name)"
+                                :class="{changed: !!src.interval_plugin.get(col_name)?.[0]}" 
+                                :value="src.interval_plugin.get(col_name)?.[0] ?? ''" 
+                                        @input="e => handle_interval(e, col_name, 0, false)"
+                                @reset_changes="e => handle_interval(e, col_name, 0, true)">
+                            <input 
+                                :type="get_input_type_for_col(col_name)"
+                                :class="{changed: !!src.interval_plugin.get(col_name)?.[1]}" 
+                                :value="src.interval_plugin.get(col_name)?.[1] ?? ''" 
+                                        @input="e => handle_interval(e, col_name, 1, false)"
+                                @reset_changes="e => handle_interval(e, col_name, 1, true)">
+                        </div>
+
                         <input type="text" class="col_search"
                             :context_menu_custom_data="get_context_menu_custom_data(col_name)"
                             @contextmenucustom="e => handle_context_menu_custom_event(e, col_name)"
@@ -602,7 +656,7 @@ defineExpose({
         position: relative;
         display: grid;
         /* grid-template-columns: auto 1fr auto; */
-        grid-template-columns: 1fr auto;
+        grid-template: auto / 1fr;
         align-items: center;
         justify-content: left;
         padding-left: 2px;
@@ -626,13 +680,29 @@ defineExpose({
     .col_search_cell[search_type="3"] .col_search {
         border-right-width: 5px;
     }
+
+    .col_search_cell .col_search_adv {
+        display: none;
+        grid-template: auto auto / auto 1fr;
+        grid-auto-flow: column;
+    }
+    .col_search_cell .col_search_adv > * {
+        min-width: 0.5ch;
+    }
+    .advanced_table_search .col_search_cell .col_search_adv {
+        display: grid;
+    }
+    .advanced_table_search .table_column > *:first-child {
+        height: 8.5ch;
+    }
+
     .disable_table_search .col_search {
         display: none;
     }
     .col_search_cell .col_search_type.changed {
         background-color: #fff67d;
     }
-    .col_search_cell .col_search.changed {
+    .col_search_cell .changed {
         background-color: #fffaaa;
     }
     .col_search_cell .resizer{

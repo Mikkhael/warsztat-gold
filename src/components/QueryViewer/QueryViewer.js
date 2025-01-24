@@ -2,7 +2,7 @@
 
 import { computed, nextTick, reactive, ref, unref, watch } from "vue";
 import { FormQuerySourceFull, Column, QuerySource, FormDataSetFull_LocalRow, FormDataSetFull } from "../Dataset";
-import { deffered_promise, escape_backtick_smart, get_date_format_with_dot } from "../../utils";
+import { deffered_promise, escape_backtick_smart, escape_sql_value, get_date_format_with_dot } from "../../utils";
 import { FWWindow } from "../FloatingWindows/FWManager";
 
 /**
@@ -40,6 +40,30 @@ import { FWWindow } from "../FloatingWindows/FWManager";
  * ) => void} QueryViewerSelectHandler
  */
 
+/**
+ * 
+ * @param {string} col_search 
+ * @param {string} col_name 
+ * @param {DisplayFormat} format 
+ */
+function apply_format(col_search, col_name, format) {
+    const replace_comma = format === 'date' || format === 'datetime';
+    const escaped = escape_backtick_smart(col_name);
+    const true_search = replace_comma ? col_search.replaceAll(',','.') : col_search;
+    const with_dot = true_search.indexOf(".") >= 0;
+
+    const true_name = 
+        "ifnull(" + (
+        (format === 'date'     && with_dot) ? `strftime('%d.%m.%Y',${   escaped})` :
+        (format === 'datetime' && with_dot) ? `strftime('%d.%m.%Y %T',${escaped})` : 
+                                                escaped) + ",'')";
+
+    return [
+        true_name,
+        true_search
+    ]
+}
+
 class QueryViewerSource extends FormQuerySourceFull {
     /**
      * @param {boolean} implicit_order_rowid 
@@ -51,6 +75,7 @@ class QueryViewerSource extends FormQuerySourceFull {
         this.order_plugin       = reactive(/**@type {Map<string, number>} */ (new Map()));
         this.search_plugin      = reactive(/**@type {Map<string, string>} */ (new Map()));
         this.search_type_plugin = reactive(/**@type {Map<string, number>} */ (new Map())); // STOPS:  0 - none, 1 - left, 2 - right, 3 - both
+        this.interval_plugin    = reactive(/**@type {Map<string, [string|null, string|null]>} */ (new Map()));
 
         const order_plugin_array  = computed(/**@returns {[string, boolean, string][]} */ () => Array.from(this.order_plugin).map(x => [
             escape_backtick_smart(x[0]), 
@@ -61,36 +86,52 @@ class QueryViewerSource extends FormQuerySourceFull {
             const col_name   = x[0];
             const col_search = x[1];
             const col_type   = this.search_type_plugin.get(col_name) ?? 0;
-            const format = this.display_columns.get(col_name)?.format;
-            const replace_comma = format === 'date' || format === 'datetime';
-            const escaped = escape_backtick_smart(col_name);
-            const compared_value = replace_comma ? col_search.replaceAll(',','.') : col_search;
-            const with_dot = compared_value.indexOf(".") >= 0;
+            const format = this.display_columns.get(col_name)?.format ?? '';
+            const [true_name, true_search] = apply_format(col_search, col_name, format);
             /**@type {string | [string, 'l', number]} */
-            const compared_expresion = compared_value === "~"  ? "IS ''" :
-                                       compared_value === "!~" ? "IS NOT ''" :
-                                       [compared_value, 'l', col_type];
+            const compared_expresion = true_search === "~"  ? "IS ''" :
+                                       true_search === "!~" ? "IS NOT ''" :
+                                       [true_search, 'l', col_type];
             // console.log("WITH DOT: ", with_dot, escaped);
             /**@type {[string, string | [string, 'l', number]]} */
             const res = [
-                "ifnull(" + (
-                (format === 'date'     && with_dot) ? `strftime('%d.%m.%Y',${   escaped})` :
-                (format === 'datetime' && with_dot) ? `strftime('%d.%m.%Y %T',${escaped})` : 
-                                                       escaped) + ",'')",
+                true_name,
                 compared_expresion
             ];
             return res;
         }));
+        const interval_plugin_array = computed(() => Array.from(this.interval_plugin).map(/**@returns {[string] | null} */ x => {
+            const col_name  = x[0];
+            const col_from  = x[1][0] ?? null;
+            const col_to    = x[1][1] ?? null;
+            const format  = this.display_columns.get(col_name)?.format ?? '';
+            const collate = format === 'decimal' ? ' COLLATE decimal' : '';
+            const [true_name1, true_val1] = col_from === null ? [] : apply_format(col_from, col_name, format);
+            const [true_name2, true_val2] = col_to   === null ? [] : apply_format(col_to,   col_name, format);
+            const escaped1 = escape_sql_value(true_val1 ?? null);
+            const escaped2 = escape_sql_value(true_val2 ?? null);
+            if( true_val1 &&  true_val2) {
+                return [`${true_name1} BETWEEN ${escaped1}${collate} AND ${escaped2}${collate}`];
+            }
+            if( true_val1 && !true_val2) {
+                return [`${true_name1} >= ${escaped1}${collate}`];
+            }
+            if(!true_val1 &&  true_val2) {
+                return [`${true_name2} <= ${escaped2}${collate}`];
+            }
+            return null;
+        }).filter(x => x !== null));
 
         this.query.add_order_plugin(order_plugin_array);
         this.query.add_where_plugin(search_plugin_array);
+        this.query.add_where_plugin(interval_plugin_array);
 
         this.columns_fixed = ref(false);
         this.columns_fixed_promise = deffered_promise();
     }
 
     start_plugin_watcher() {
-        return watch([this.order_plugin, this.search_plugin, this.search_type_plugin], () => {
+        return watch([this.order_plugin, this.search_plugin, this.search_type_plugin, this.interval_plugin], () => {
             this.request_offset_goto(0, false);
             this.mark_for_update();
         });
