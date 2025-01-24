@@ -8,6 +8,7 @@ const exec = promisify(exec_raw);
 const LOCAL_BUNDLES_PATH  = import.meta.dirname + "\\src-tauri\\target\\release\\bundle\\msi";
 
 const REMOTE_SCP_TARGET = "mikrusgold";
+const REMOTE_INSTALLERS_PATH     = "/var/goldwww/warsztatgold/public/installers/";
 const REMOTE_UPDATE_BUNDLES_PATH = "/var/goldwww/warsztatgold/public/update_bundles/";
 const REMOTE_UPDATE_SIGS_PATH    = "/var/goldwww/warsztatgold/public/update_sigs/";
 
@@ -37,7 +38,8 @@ function get_files_to_upload() {
     if(name === '') return null;
     const updater = name + BUNDLE_UPDATER_EXT;
     const sig     = name + BUNDLE_SIG_EXT;
-    return {updater, sig};
+    const base    = name;
+    return {updater, sig, base};
 }
 
 async function upload_file(/**@type {string}*/ name, /**@type {string}*/ remote_dir) {
@@ -61,6 +63,7 @@ async function main() {
     }
     await upload_file(to_upload_names.updater, REMOTE_UPDATE_BUNDLES_PATH);
     await upload_file(to_upload_names.sig    , REMOTE_UPDATE_SIGS_PATH);
+    await upload_file(to_upload_names.base   , REMOTE_INSTALLERS_PATH);
 }
 
 main().catch(err => {

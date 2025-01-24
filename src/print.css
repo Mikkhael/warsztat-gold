@@ -120,6 +120,10 @@ table {
 .page:not(.is_spec) .only_in_spec {
     display: none;
 }
+.page.title_spec .not_title_spec,
+.page:not(.title_spec) .only_title_spec {
+    display: none;
+}
 
 
 

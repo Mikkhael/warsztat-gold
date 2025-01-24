@@ -229,6 +229,13 @@ class QueryBuilder {
             limit:   this._sections2.value.limit,
         }));
 
+        this.full_sql_summary = computed(() => concat_query({
+            select:  this._sections1.value.select,
+            from:    this._sections1.value.from,
+            where:   this._sections1.value.where,
+            groupby: this._sections1.value.groupby,
+        }));
+
         this.full_sql_for_rownumber_window = computed(() => concat_query({
             order:   this._sections2.value.order,
         }))
@@ -262,7 +269,6 @@ class QueryBuilder {
             offset:  this._sections2.value.offset, 
         }));
     }
-
     /**
      * @param {SQLValue} value 
      */

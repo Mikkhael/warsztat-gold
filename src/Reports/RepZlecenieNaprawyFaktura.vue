@@ -135,9 +135,18 @@ function create_options() {
             'przelew 21 dni',
         ]
     });
-    const btn_type_faktura = create_print_param_button('Ustaw Fakturę', {
+    const btn_type_faktura_spec = create_print_param_button('Ustaw Fakturę (wg. specyfikacji)', {
         actions: [
             {name: 'page', val: 'is_spec', type: 'class_remove'},
+            {name: 'page',  val: 'title_spec', type: 'class_remove'},
+            {name: 'faktura_nr_input', val: 'required', type: 'battr_set'},
+            {name: 'title', val: 'faktura', type: 'text'},
+        ]
+    });
+    const btn_type_faktura_raw = create_print_param_button('Ustaw Fakturę (z pełną listą)', {
+        actions: [
+            {name: 'page', val: 'is_spec', type: 'class_set'},
+            {name: 'page',  val: 'title_spec', type: 'class_remove'},
             {name: 'faktura_nr_input', val: 'required', type: 'battr_set'},
             {name: 'title', val: 'faktura', type: 'text'},
         ]
@@ -145,11 +154,12 @@ function create_options() {
     const btn_type_specs   = create_print_param_button('Ustaw Specyfikację', {
         actions: [
             {name: 'page', val: 'is_spec', type: 'class_set'},
+            {name: 'page',  val: 'title_spec', type: 'class_set'},
             {name: 'faktura_nr_input', val: 'required', type: 'battr_unset'},
             {name: 'title', val: 'specyfikacja', type: 'text'},
         ]
     });
-    return payment_method + faktura_nr + btn_type_faktura + btn_type_specs;
+    return payment_method + faktura_nr + btn_type_faktura_spec + btn_type_faktura_raw + btn_type_specs;
 }
 // const title_getter = "'Faktura nr ' + document.getElementsByName('option_faktura_nr')[0].innerText";
 // const title_getter = "Faktura nr {{option_faktura_nr}}";
@@ -175,10 +185,10 @@ defineExpose({
 
         <div class="faktura_header">
             <div class="left">
-                <div class="bold vbig not_in_spec">
+                <div class="bold vbig not_title_spec">
                     Faktura VAT nr <span name="option_faktura_nr">&lt;nr faktury&gt;</span>
                 </div>
-                <div class="bold vbig only_in_spec">
+                <div class="bold vbig only_title_spec">
                     Specyfikacja części / robocizna
                 </div>
                 <div> ORYGINAŁ / KOPIA </div>
