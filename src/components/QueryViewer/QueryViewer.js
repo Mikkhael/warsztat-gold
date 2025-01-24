@@ -108,8 +108,9 @@ class QueryViewerSource extends FormQuerySourceFull {
             const collate = format === 'decimal' ? ' COLLATE decimal' : '';
             const [true_name1, true_val1] = col_from === null ? [] : apply_format(col_from, col_name, format);
             const [true_name2, true_val2] = col_to   === null ? [] : apply_format(col_to,   col_name, format);
+            const extended2 = format === 'date' ? true_val2 + 'Z' : true_val2;
             const escaped1 = escape_sql_value(true_val1 ?? null);
-            const escaped2 = escape_sql_value(true_val2 ?? null);
+            const escaped2 = escape_sql_value(extended2 ?? null);
             if( true_val1 &&  true_val2) {
                 return [`${true_name1} BETWEEN ${escaped1}${collate} AND ${escaped2}${collate}`];
             }
@@ -212,6 +213,26 @@ class QueryViewerSource extends FormQuerySourceFull {
         const old_type = this.search_type_plugin.get(name) ?? 0;
         return this.set_search_type(name, old_type + 1);
     }
+
+    /////// Intervals //////////////////////
+
+    /**
+     * @param {Column | string} column 
+     * @param {string?} [from]
+     * @param {string?} [to]
+     */
+    set_interval(column, from, to) {
+        const name = column instanceof Column ? column.get_full_sql() : column;
+        const interval = this.interval_plugin.get(name) ?? [null, null];
+        if(from !== undefined) interval[0] = from;
+        if(to   !== undefined) interval[1] = to;
+        if(interval[0] === null && interval[1] === null) {
+            this.interval_plugin.delete(name);
+        } else {
+            this.interval_plugin.set(name, interval);
+        }
+    }
+
 
     //////// Display Columns /////////////
 

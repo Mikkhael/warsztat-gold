@@ -60,13 +60,14 @@
 + add quick zlecenia summary
 + show only first line of części name
 
-- raport z zysku z przedziału
++ raport z zysku z przedziału
 + better QueryViewer filtering
     + context menu LIKE and NULL's
     + adv search
     + intervals
 + kompaktowy layout zleceń i klientów
 + automatyczne rozszerzanie podsumowania
+- printing query views
 
 - Core
     + context menu

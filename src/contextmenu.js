@@ -85,13 +85,13 @@ function handle_context_menu_event(event) {
         try {
             /**@type {ContextMenuCustomData} */
             const custom_data = JSON.parse(custom_data_str);
-            const res = custom_data.map(({label, checked, disabled, payload}) => {
+            const res = custom_data?.map(({label, checked, disabled, payload}) => {
                 if(!label) {
                     return {is_separator: true};
                 }
                 return {label, checked, disabled, event: (e) => {console.log("DISPATCHING"); target.dispatchEvent(new ContextMenuCustomEvent(payload))}};
                 // return {label, checked, disabled, event: (e) => {console.log("DISPATCHING"); target.dispatchEvent(new Event("contextmenucustom"))}};
-            });
+            }) ?? [];
             custom_data_items.push(res);
         } catch (err) {
             console.error("Error conetxt menu aux parsing: ", err);

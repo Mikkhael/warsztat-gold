@@ -25,6 +25,7 @@ import Klienci from "../Forms/Klienci.vue";
 // import SamochodyKlientow from "../Forms/SamochodyKlientow.vue";
 import ZleceniaNaprawy from "../Forms/ZleceniaNaprawy.vue";
 import NazwyCzesci from "../Forms/NazwyCzesci.vue";
+import ZyskSummary from "../Forms/ZyskSummary.vue";
 // import ZleceniaNaprawy_Czesci from "../Forms/ZleceniaNaprawy_Czesci.vue";
 
 import SQLDebugConsole from "./SqlDebug/SqlDebugConsole.vue";
@@ -148,6 +149,10 @@ function tool_czesci(){
     fwManager.open_or_focus_window("Części", NazwyCzesci,{category: "czesci"});
 }
 
+function tool_zysk_summary(){
+    fwManager.open_or_focus_window("Podsumowanie zysków", ZyskSummary);
+}
+
 // function tool_obroty_zlec(){
 //     fwManager.open_or_focus_window("Test Obroty Zlec", ZleceniaNaprawy_Czesci);
 // }
@@ -232,6 +237,12 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
                 :options="{
                     name: 'Części',
                     onclick: tool_czesci
+                }"
+            />
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Podsumowanie Zysków',
+                    onclick: tool_zysk_summary
                 }"
             />
             <div class="spacer"></div>

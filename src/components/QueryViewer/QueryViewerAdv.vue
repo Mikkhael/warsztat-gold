@@ -166,8 +166,9 @@ function handle_mouse_move(/**@type {MouseEvent} */ event) {
             return;
         }
         const new_size = (column_sizes.value[current_resize_col_i][0] += delta);
+        const new_size_clumped = Math.max(new_size, 0);
         const col_name = columns_names[current_resize_col_i];
-        QueryViewerCache.update_and_save_column_size(props.name, col_name, new_size);
+        QueryViewerCache.update_and_save_column_size(props.name, col_name, new_size_clumped);
     }
 }
 function handle_mouse_up() {
@@ -344,14 +345,10 @@ function handle_interval(event, col_name, which_value, is_delete = false) {
     if(src.changed.value) return;
     /**@type {string | null} */
     //@ts-ignore
-    const value = event.target?.value ?? null;
-    const interval = src.interval_plugin.get(col_name) ?? [null, null];
-    interval[which_value] = is_delete ? null : value;
-    if(interval[0] === null && interval[1] === null) {
-        src.interval_plugin.delete(col_name);
-    } else {
-        src.interval_plugin.set(col_name, interval);
-    }
+    const value = is_delete ? null : (event.target?.value ?? null);
+    const new_from = which_value === 0 ? value : undefined;
+    const new_to   = which_value === 1 ? value : undefined;
+    src.set_interval(col_name, new_from, new_to);
 }
 
 /**
@@ -431,8 +428,8 @@ async function handle_order(new_order, col_name) {
 }
 
 function get_input_type_for_col(col_name) {
-    return src.display_columns.get(col_name)?.format === 'date' ? 'date' :
-           src.display_columns.get(col_name)?.format === 'datetime' ? 'datetime' :
+    return src.display_columns.get(col_name)?.format === 'date'     ? 'date' :
+           src.display_columns.get(col_name)?.format === 'datetime' ? 'datetime-local' :
            'text';
 }
 
