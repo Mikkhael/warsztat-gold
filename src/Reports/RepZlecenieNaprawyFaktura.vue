@@ -177,7 +177,7 @@ defineExpose({
 <template>
     
     <div class="over_page">
-    <div class="page is_spec" ref="page" name="page" contenteditable="true">
+    <div class="page is_spec title_spec" ref="page" name="page" contenteditable="true">
 
         <div style="display: none;">
             <div name="title">specyfikacja</div>
