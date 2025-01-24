@@ -346,6 +346,52 @@ async function handle_search(event, col_name, is_delete = false) {
     src.set_search(col_name, value);
 }
 /**
+ * @param {Event} event 
+ * @param {string} col_name 
+ */
+async function handle_search_type(event, col_name) {
+    if(src.changed.value) return;
+    src.set_search_type_cycle(col_name);
+}
+
+function get_context_menu_custom_data(col_name) {
+    const search_type = src.search_type_plugin.get(col_name) ?? 0;
+    const search_val  = src.search_plugin.get(col_name);
+    const is_only_empty     = search_val === '~';
+    const is_only_non_empty = search_val === '!~';
+    /**@type {import('../../contextmenu').ContextMenuCustomData} */
+    const custom_data = [
+        {label: "Szukaj pustych",     checked: is_only_empty,     payload: {type: 'set_search', val: is_only_empty     ? null : '~' }},
+        {label: "Szukaj nie-pustych", checked: is_only_non_empty, payload: {type: 'set_search', val: is_only_non_empty ? null : '!~'}},
+        {label: ''},
+        {label: "Pozycja: dowolnie", checked: search_type === 0, payload: {type: 'set_type', val: 0}},
+        {label: "Pozycja: początek", checked: search_type === 1, payload: {type: 'set_type', val: search_type === 1 ? 0 : 1}},
+        {label: "Pozycja: koniec",   checked: search_type === 2, payload: {type: 'set_type', val: search_type === 2 ? 0 : 2}},
+        {label: "Pozycja: pełny",    checked: search_type === 3, payload: {type: 'set_type', val: search_type === 3 ? 0 : 3}},
+    ];
+    return JSON.stringify(custom_data);
+}
+
+/**
+ * @param {import('../../contextmenu').ContextMenuCustomEvent} event
+ * @param {string} col_name
+ * */
+function handle_context_menu_custom_event(event, col_name){
+    const payload = event.payload;
+    const target  = event.target;
+    switch(payload?.type) {
+        case 'set_search': {
+            src.set_search(col_name, payload?.val ?? null);
+            break;
+        }
+        case 'set_type': {
+            src.set_search_type(col_name, payload?.val ?? 0);
+            break;
+        }
+    }
+}
+
+/**
  * @param {number} new_order 
  * @param {string} col_name 
  */
@@ -426,10 +472,20 @@ defineExpose({
                     }"
                     :style="{width: column_sizes_style[col_i] }"
                 >
-                    <div class="header col_search_cell">
+                    <div class="header col_search_cell"
+                        :search_type="src.search_type_plugin.get(col_name)??0"
+                    >
+                        <!-- <div class="col_search_type"
+                             @click="e => handle_search_type(e, col_name)"
+                            :class="{changed: (src.search_type_plugin.get(col_name)??0) !== 0}" 
+                        >
+                            {{ ['...', '|..', '..|', '|.|'][src.search_type_plugin.get(col_name) ?? 0] }}
+                        </div> -->
                         <input type="text" class="col_search"
+                            :context_menu_custom_data="get_context_menu_custom_data(col_name)"
+                            @contextmenucustom="e => handle_context_menu_custom_event(e, col_name)"
                             :class="{changed: !!src.search_plugin.get(col_name)}" 
-                            :value="src.search_plugin.get(col_name)" 
+                            :value="src.search_plugin.get(col_name) ?? ''" 
                                     @input="e => handle_search(e, col_name, false)"
                             @reset_changes="e => handle_search(e, col_name, true)">
                         <div class="resizer" @pointerdown="e => handle_mouse_down_on_resizer(e, col_i)"></div>
@@ -544,12 +600,37 @@ defineExpose({
 
     .col_search_cell{
         position: relative;
+        display: grid;
+        /* grid-template-columns: auto 1fr auto; */
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        justify-content: left;
+        padding-left: 2px;
+    }
+    .col_search_cell .col_search_type {
+        font-family: monospace;
+        font-size: 0.9em;
+        cursor: pointer;
+        user-select: none;
+        font-weight: bolder;
     }
     .col_search_cell .col_search {
-        width: calc(100% - 10px);
+        width: calc(100% - 4px);
+        box-sizing: border-box;
+    }
+    .col_search_cell[search_type="1"] .col_search,
+    .col_search_cell[search_type="3"] .col_search {
+        border-left-width: 5px;
+    }
+    .col_search_cell[search_type="2"] .col_search,
+    .col_search_cell[search_type="3"] .col_search {
+        border-right-width: 5px;
     }
     .disable_table_search .col_search {
         display: none;
+    }
+    .col_search_cell .col_search_type.changed {
+        background-color: #fff67d;
     }
     .col_search_cell .col_search.changed {
         background-color: #fffaaa;

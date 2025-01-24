@@ -54,6 +54,23 @@ function insert_separators(items) {
     return filtered.flatMap((x, index) => index === 0 ? x : [{is_separator: true}, ...x]);
 }
 
+
+export class ContextMenuCustomEvent extends Event {
+    constructor(payload) {
+        super("contextmenucustom");
+        this.payload = payload;
+    }
+}
+/**
+ * @typedef {{
+ *  label: string,
+ *  checked?:  boolean,
+ *  disabled?: boolean,
+ *  payload?: any,
+ * }} ContextMenuCustomDataEntry
+ * @typedef {ContextMenuCustomDataEntry[]} ContextMenuCustomData
+ */
+
 /**
  * @param {Event} event
  */
@@ -62,6 +79,24 @@ function handle_context_menu_event(event) {
     console.log('Opening context menu', target.tagName, target, event);
     event.preventDefault();
     if( is_target_an_input_field(target) ) {
+
+        const custom_data_str = target.getAttribute('context_menu_custom_data') ?? '{}';
+        const custom_data_items = [];
+        try {
+            /**@type {ContextMenuCustomData} */
+            const custom_data = JSON.parse(custom_data_str);
+            const res = custom_data.map(({label, checked, disabled, payload}) => {
+                if(!label) {
+                    return {is_separator: true};
+                }
+                return {label, checked, disabled, event: (e) => {console.log("DISPATCHING"); target.dispatchEvent(new ContextMenuCustomEvent(payload))}};
+                // return {label, checked, disabled, event: (e) => {console.log("DISPATCHING"); target.dispatchEvent(new Event("contextmenucustom"))}};
+            });
+            custom_data_items.push(res);
+        } catch (err) {
+            console.error("Error conetxt menu aux parsing: ", err);
+        }
+
         const text     = is_target_a_text_field(target);
         const selected = is_selected_nonempty();
         const editable = is_target_editable(target);
@@ -80,9 +115,10 @@ function handle_context_menu_event(event) {
             {label: "Zaznacz wszystko",  event: (e) => {target.select()}},
         ] : [];
         showMenu({items: insert_separators([
+            ...custom_data_items,
             [
                 ...nullable_items,
-                ...resetable_items
+                ...resetable_items,
             ],
             text_items
         ])});

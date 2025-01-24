@@ -40,7 +40,6 @@ import { FWWindow } from "../FloatingWindows/FWManager";
  * ) => void} QueryViewerSelectHandler
  */
 
-
 class QueryViewerSource extends FormQuerySourceFull {
     /**
      * @param {boolean} implicit_order_rowid 
@@ -49,27 +48,36 @@ class QueryViewerSource extends FormQuerySourceFull {
         super(implicit_order_rowid, 0);
         this.display_columns = reactive(/**@type {Map<string, DisplayColProps>} */ (new Map()));
 
-        this.order_plugin  = reactive(/**@type {Map<string, number>} */ (new Map()));
-        this.search_plugin = reactive(/**@type {Map<string, string>}  */ (new Map()));
+        this.order_plugin       = reactive(/**@type {Map<string, number>} */ (new Map()));
+        this.search_plugin      = reactive(/**@type {Map<string, string>} */ (new Map()));
+        this.search_type_plugin = reactive(/**@type {Map<string, number>} */ (new Map())); // STOPS:  0 - none, 1 - left, 2 - right, 3 - both
 
         const order_plugin_array  = computed(/**@returns {[string, boolean, string][]} */ () => Array.from(this.order_plugin).map(x => [
             escape_backtick_smart(x[0]), 
             x[1] > 0, 
             this.display_columns.get(x[0])?.format === 'decimal' ? 'decimal' : ''
         ]));
-        const search_plugin_array = computed(/**@returns {[string, [string, 'l']][]} */ () => Array.from(this.search_plugin).map(x => {
-            const format = this.display_columns.get(x[0])?.format;
+        const search_plugin_array = computed(/**@returns {[string, string | [string, 'l', number]][]} */ () => Array.from(this.search_plugin).map(x => {
+            const col_name   = x[0];
+            const col_search = x[1];
+            const col_type   = this.search_type_plugin.get(col_name) ?? 0;
+            const format = this.display_columns.get(col_name)?.format;
             const replace_comma = format === 'date' || format === 'datetime';
-            const escaped = escape_backtick_smart(x[0]);
-            const compared_value = replace_comma ? x[1].replaceAll(',','.') : x[1];
+            const escaped = escape_backtick_smart(col_name);
+            const compared_value = replace_comma ? col_search.replaceAll(',','.') : col_search;
             const with_dot = compared_value.indexOf(".") >= 0;
-            console.log("WITH DOT: ", with_dot, escaped);
-            /**@type {[string, [string, 'l']]} */
+            /**@type {string | [string, 'l', number]} */
+            const compared_expresion = compared_value === "~"  ? "IS ''" :
+                                       compared_value === "!~" ? "IS NOT ''" :
+                                       [compared_value, 'l', col_type];
+            // console.log("WITH DOT: ", with_dot, escaped);
+            /**@type {[string, string | [string, 'l', number]]} */
             const res = [
+                "ifnull(" + (
                 (format === 'date'     && with_dot) ? `strftime('%d.%m.%Y',${   escaped})` :
                 (format === 'datetime' && with_dot) ? `strftime('%d.%m.%Y %T',${escaped})` : 
-                                                       escaped,
-                [compared_value, 'l']
+                                                       escaped) + ",'')",
+                compared_expresion
             ];
             return res;
         }));
@@ -82,7 +90,7 @@ class QueryViewerSource extends FormQuerySourceFull {
     }
 
     start_plugin_watcher() {
-        return watch([this.order_plugin, this.search_plugin], () => {
+        return watch([this.order_plugin, this.search_plugin, this.search_type_plugin], () => {
             this.request_offset_goto(0, false);
             this.mark_for_update();
         });
@@ -134,14 +142,34 @@ class QueryViewerSource extends FormQuerySourceFull {
     /**
      * @param {Column | string} column 
      * @param {string?} value 
+     * @param {number} [type]
      */
-    set_search(column, value) {
+    set_search(column, value, type) {
         const name = column instanceof Column ? column.get_full_sql() : column;
         if(value === null || value === '') {
             this.search_plugin.delete(name);
         } else {
             this.search_plugin.set(name, value);
+            if(type !== undefined) {
+                this.search_type_plugin.set(name, type);
+            }
         }
+    }
+    /**
+     * @param {Column | string} column 
+     * @param {number} type
+     */
+    set_search_type(column, type) {
+        const name = column instanceof Column ? column.get_full_sql() : column;
+        this.search_type_plugin.set(name, type % 4);
+    }
+    /**
+     * @param {Column | string} column 
+     */
+    set_search_type_cycle(column) {
+        const name = column instanceof Column ? column.get_full_sql() : column;
+        const old_type = this.search_type_plugin.get(name) ?? 0;
+        return this.set_search_type(name, old_type + 1);
     }
 
     //////// Display Columns /////////////

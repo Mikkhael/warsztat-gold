@@ -134,6 +134,8 @@ const QVFactory_find_zlec_open = () => {
     src.auto_add_column(ZLEC_COLS.ID,                 {display: 'ID'});
     src.auto_add_column(KLIE_COLS.NAZWA,              {display: 'Klient'});
     src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
+    src.auto_add_column(CAR_COLS.marka,               {display: 'Marka'});
+    src.auto_add_column(CAR_COLS.model,               {display: 'Model'});
     src.auto_add_column(ZLEC_COLS.data_otwarcia,      {display: 'Otwarcie'});
     
     if(!show_only_open_ref.value) {

@@ -37,7 +37,7 @@ function select_field_definition_to_sql(select_field) {
 
 /**
  * @template [T=never]
- * @typedef {string | [MaybeRef<SQLValue | boolean> | T] | [string, 'l'] | [string, 'b']} QueryPart
+ * @typedef {string | [MaybeRef<SQLValue | boolean> | T] | [string, 'l'] | [string, 'l', number] | [string, 'b']} QueryPart
  * */
 
 /**
@@ -88,7 +88,7 @@ function query_parts_to_string(parts) {
         if(typeof part === 'string') return part;
         if(part instanceof Array) {
             if(part.length === 1) return escape_sql_value(unref(part[0]));
-            if(part[1] === 'l')   return escape_like_full(part[0]);
+            if(part[1] === 'l')   return escape_like_full(part[0], part[2]);
             if(part[1] === 'b')   return escape_backtick_smart(part[0]);
         }
         throw new Error('INVALID QUERY PART');

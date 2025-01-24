@@ -95,6 +95,41 @@ impl SqliteManager{
         println!("structure sql: {}", state.structure_sql_path.display());
     }
 
+    #[allow(dead_code)]
+    pub fn create_detached_and_rebuild_in_temp(&self) -> Result<SqliteConn, SqliteOrIOError> {
+        let temp_filename_sufix = self.sqlite_conn.as_ref().map(|x| x.path.to_string_lossy());
+        let temp_filename_sufix = if let Some(ref val) = temp_filename_sufix { val } else { "generic" };
+        let temp_filename = "warsztat_gold_temp_detached_".to_string() + temp_filename_sufix;
+        let path = std::env::temp_dir().join(temp_filename);
+        self.open_detached_and_rebuild(&path, false)
+    }
+    pub fn open_detached_and_rebuild(&self, path: &Path, with_vacuum: bool) -> Result<SqliteConn, SqliteOrIOError> {
+        let res = Connection::open(path); 
+        if let Ok(conn) = res {
+            println!("Opened database DETACHED {}", path.display());
+            unsafe {
+                let _guard = rusqlite::LoadExtensionGuard::new(&conn)?;
+                conn.load_extension(&self.decimal_extension_path, None)?;
+                conn.load_extension(&self.vsv_extension_path, None)?;
+            }
+            println!("Loaded extensions DETACHED");
+            // rusqlite::vtab::csvtab::load_module(&conn)?;
+            let sqlite_conn = SqliteConn { 
+                conn: conn, 
+                path: path.to_path_buf() 
+            };
+            let trans = sqlite_conn.conn.unchecked_transaction()?;
+            sqlite_conn.execute_file(&self.structure_sql_path)?;
+            trans.commit()?;
+            if with_vacuum {
+                sqlite_conn.execute("VACUUM", ())?;
+            };
+            return Ok(sqlite_conn);
+        } else {
+            println!("Failed opening database DETACHED");
+            return Err(SqliteOrIOError::Sqlite(res.err().unwrap()));
+        }
+    }
     pub fn open(&mut self, path: &Path) -> Result<(), Error>{ 
         let res = Connection::open(path); 
         if let Ok(conn) = res {
@@ -169,7 +204,7 @@ fn write_string_for_csv<W : Write>(w: &mut W, v: &str) -> std::io::Result<()> {
 }
 
 pub enum SqliteOrIOError {
-    Sqlite(Error),
+    Sqlite(rusqlite::Error),
     IO(std::io::Error)
 }
 impl From<Error> for SqliteOrIOError {
@@ -202,6 +237,16 @@ impl SqliteConn{
         let extracted_rows = extract_all_rows(&mut rows, cols, max_rows)?;
         drop(rows);
         Ok((extracted_rows, stmt))
+    }
+
+    pub fn export_all_to_csv<T: AsRef<str>>(&self, export_path: &Path, table_names: &[T], use_encoding: bool) -> DynResult<()> {        
+        for table_name in table_names {
+            let table_name = table_name.as_ref();
+            let file_path = export_path.join( format!("{}.txt", table_name));
+            let csv_view_name = table_name.to_string() + "_csv_view";
+            self.export_table_to_csv(&csv_view_name, &file_path, use_encoding)?;
+        }
+        Ok(())
     }
 
     pub fn export_table_to_csv(&self, table_name: &str, file_path: &Path, use_encoding: bool) -> DynResult<()> {
@@ -252,6 +297,18 @@ impl SqliteConn{
         Ok(())
     }
 
+    pub fn import_all_from_csv<T: AsRef<str>>(&self, import_path: &Path, table_names: &[T], use_encoding: bool) -> DynResult<()> {
+        for table_name in table_names {
+            let table_name = table_name.as_ref();
+            let file_path = import_path.join( format!("{}.txt", table_name));
+            if !file_path.is_file() {
+                println!("Specified import csv path {} is not a file", file_path.display());
+                continue;
+            }
+            self.import_table_from_csv(&table_name, &file_path, use_encoding)?;
+        }
+        Ok(())
+    }
     pub fn import_table_from_csv(&self, table_name: &str, file_path: &Path, use_encoding: bool) -> DynResult<()> {
         print!("Importing CSV [{}]... ", table_name);
         std::io::stdout().flush()?;
@@ -385,17 +442,13 @@ pub fn save_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLo
 
 #[tauri::command]
 pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
-    println!("[INVOKE] export_csv");
+    println!("[INVOKE] export_csv: {}", export_path.display());
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(ref sqlite_conn) = db.sqlite_conn {
         dbg!(&export_path);
         fs::create_dir_all(&export_path).map_err(|err| err.to_string())?;
         let table_names = db.get_main_tables().map_err(|err| err.to_string())?;
-        for mut table_name in table_names {
-            let file_name = export_path.join( format!("{}.txt", table_name));
-            table_name.push_str("_csv_view");
-            sqlite_conn.export_table_to_csv(&table_name, &file_name, true).map_err(|err| err.to_string())?;
-        }
+        sqlite_conn.export_all_to_csv(&export_path, &table_names, true).map_err(|err| err.to_string())?;
         Ok(())
     } else {
         return Err("Nie otworzono bazy danych".to_string());
@@ -403,19 +456,11 @@ pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
 }
 #[tauri::command]
 pub fn import_csv(import_path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
-    println!("[INVOKE] import_csv");
+    println!("[INVOKE] import_csv: {}", import_path.display());
     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
     if let Some(ref sqlite_conn) = db.sqlite_conn {
-        // dbg!(&import_path);
         let table_names = db.get_main_tables().map_err(|err| err.to_string())?;
-        for table_name in table_names {
-            let file_path = import_path.join( format!("{}.txt", table_name));
-            if !file_path.is_file() {
-                println!("Specified import csv path {} is not a file", file_path.display());
-                continue;
-            }
-            sqlite_conn.import_table_from_csv(&table_name, &file_path, true).map_err(|err| err.to_string())?;
-        }
+        sqlite_conn.import_all_from_csv(&import_path, &table_names, true).map_err(|err| err.to_string())?;
         Ok(())
     } else {
         return Err("Nie otworzono bazy danych".to_string());

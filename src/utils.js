@@ -61,8 +61,16 @@ function escape_like(/**@type {string} */ value) {
     const res2 = res1.replace(/\"/g, '""');
     return res2;
 }
-function escape_like_full(/**@type {string} */ value) {
-    return`LIKE "%${escape_like(value)}%" ESCAPE '\\'`;
+// function escape_like_full(/**@type {string} */ value) {
+//     return`LIKE "%${escape_like(value)}%" ESCAPE '\\'`;
+// }
+function escape_like_full(/**@type {string} */ value, type = 0) {
+    switch(type % 4) {
+        case 1:  return `LIKE "${escape_like(value)}%" ESCAPE '\\'`;
+        case 2:  return `LIKE "%${escape_like(value)}" ESCAPE '\\'`;
+        case 3:  return `LIKE "${escape_like(value)}" ESCAPE '\\'`;
+        default: return `LIKE "%${escape_like(value)}%" ESCAPE '\\'`;
+    }
 }
 
 /**
