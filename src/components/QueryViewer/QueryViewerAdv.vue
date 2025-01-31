@@ -219,7 +219,7 @@ function init_columns_sizes() {
         for(let col_i in col_refs.value) {
             column_sizes.value[col_i] = [col_refs.value[col_i].getBoundingClientRect().width, true];
         }
-        QueryViewerCache.load_and_apply_column_size(props.name, column_sizes, columns_names);
+        QueryViewerCache.load_and_apply_all(props.name, src, columns_names, column_sizes);
         disable_table_search.value = false;
         src.set_columns_fixed();
     });
@@ -372,7 +372,8 @@ async function handle_search(event, col_name, is_delete = false) {
  */
 async function handle_search_type(event, col_name) {
     if(src.changed.value) return;
-    src.set_search_type_cycle(col_name);
+    const new_type = src.set_search_type_cycle(col_name);
+    QueryViewerCache.update_and_save_column_search_type(props.name, col_name, new_type);
 }
 
 function get_context_menu_custom_data(col_name) {
@@ -408,7 +409,9 @@ function handle_context_menu_custom_event(event, col_name){
             break;
         }
         case 'set_type': {
+            const new_value = payload?.val ?? 0;
             src.set_search_type(col_name, payload?.val ?? 0);
+            QueryViewerCache.update_and_save_column_search_type(props.name, col_name, new_value);
             break;
         }
         case 'toggle_adv': {
@@ -425,6 +428,7 @@ function handle_context_menu_custom_event(event, col_name){
 async function handle_order(new_order, col_name) {
     if(src.changed.value) return;
     src.set_order(col_name, new_order);
+    QueryViewerCache.update_and_save_column_sort(props.name, Array.from(src.order_plugin));
 }
 
 function get_input_type_for_col(col_name) {
@@ -443,7 +447,9 @@ onMounted(() => {
     resizeObserver.observe(container_ref.value);
     window.addEventListener('pointerup', handle_mouse_up);
     window.addEventListener('pointermove', handle_mouse_move);
-    recalculate_limit();
+    setTimeout(() => {
+        recalculate_limit();
+    }, 100);
 });
 onUnmounted(() => {
     resizeObserver.disconnect();

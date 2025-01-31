@@ -202,7 +202,9 @@ class QueryViewerSource extends FormQuerySourceFull {
      */
     set_search_type(column, type) {
         const name = column instanceof Column ? column.get_full_sql() : column;
-        this.search_type_plugin.set(name, type % 4);
+        const new_type = type % 4;
+        this.search_type_plugin.set(name, new_type);
+        return new_type;
     }
     /**
      * @param {Column | string} column 
@@ -384,9 +386,14 @@ class QueryViewerSource extends FormQuerySourceFull {
 
 /**
  * @typedef {Object.<string, {
- *  col_sizes: Object.<string, number>,
+ *  col_sizes?:        Object.<string, number>,
+ *  col_search_types?: Object.<string, number>,
+ *  col_sorts?:        [string, number][],
  * }>} LocalStoreage_QueryViewerCaches
+ * @typedef {keyof LocalStoreage_QueryViewerCaches[string] } QueryViewerCacheKey
+ * @typedef {'col_sizes' | 'col_search_types'} QueryViewerCacheKey_Object
  */
+
 
 const QueryViewerCache_LocalStorageName = 'query_viewer_cache';
 
@@ -423,20 +430,86 @@ class QueryViewerCache {
             console.error("Failed stringify on Query Viewer cache", cache, err);
         }
     }
+    static update_sub_column(/**@type {string|undefined} */ cache_name, /**@type {QueryViewerCacheKey_Object} */ key, /**@type {string} */ column_name, value) {
+        if(!cache_name) return;
+        const cache = this.fetch() ?? {};
+        if(!cache[cache_name])      {cache[cache_name]      = {};}
+        if(!cache[cache_name][key]) {cache[cache_name][key] = {};}
+        cache[cache_name][key][column_name] = value;
+        this.save(cache);
+    }
+    static update_rule(/**@type {string|undefined} */ cache_name, /**@type {QueryViewerCacheKey} */ key, value) {
+        if(!cache_name) return;
+        const cache = this.fetch() ?? {};
+        if(!cache[cache_name]) {cache[cache_name] = {};}
+        cache[cache_name][key] = value;
+        this.save(cache);
+    }
 
     /**
      * @param {string|undefined} cache_name
-     * @param {import('vue').Ref<[value: number, as_px_not_ch: boolean][]>} column_sizes_ref 
+     * @param {QueryViewerSource} src
      * @param {string[]} column_names 
+     * @param {import('vue').Ref<[value: number, as_px_not_ch: boolean][]>} column_sizes_ref 
      */
-    static load_and_apply_column_size(cache_name, column_sizes_ref, column_names) {
+    static load_and_apply_all(cache_name, src, column_names, column_sizes_ref) {
         const cache = this.fetch_name(cache_name);
-        if(!cache) return;
-        for(const [col_name, col_size] of Object.entries(cache.col_sizes)) {
+        if(!cache) return; // No cache is saved
+        this.apply_column_sizes(cache.col_sizes, column_names, column_sizes_ref);
+        this.apply_column_sorts(cache.col_sorts, src);
+        this.apply_column_search_types(cache.col_search_types, src);
+    }
+
+    /**
+     * @param {LocalStoreage_QueryViewerCaches[string]['col_sizes']} col_rules
+     * @param {string[]} column_names 
+     * @param {import('vue').Ref<[value: number, as_px_not_ch: boolean][]>} column_sizes_ref 
+     */
+    static apply_column_sizes(col_rules, column_names, column_sizes_ref) {
+        if(!col_rules) return;
+        for(const [col_name, col_size] of Object.entries(col_rules)) {
             const col_index = column_names.indexOf(col_name);
             if(col_index < 0) continue;
             column_sizes_ref.value[col_index] = [col_size, true];
         }
+    }
+    
+    /**
+     * @param {LocalStoreage_QueryViewerCaches[string]['col_sorts']} col_rules
+     * @param {QueryViewerSource} src
+     */
+    static apply_column_sorts(col_rules, src) {
+        if(!col_rules) return;
+        const arr = Array.isArray(col_rules) ? col_rules : [];
+        for(const [name, value] of arr) {
+            src.set_order(name, value);
+        }
+    }
+    /**
+     * @param {LocalStoreage_QueryViewerCaches[string]['col_search_types']} col_rules
+     * @param {QueryViewerSource} src
+     */
+    static apply_column_search_types(col_rules, src) {
+        if(!col_rules) return;
+        for(const [name, value] of Object.entries(col_rules)) {
+            src.set_search_type(name, value);
+        }
+    }
+
+    /**
+     * @param {string|undefined} cache_name 
+     * @param {[string, number][]} value
+     */
+    static update_and_save_column_sort(cache_name, value) {
+        return this.update_rule(cache_name, 'col_sorts', value);
+    }
+    /**
+     * @param {string|undefined} cache_name 
+     * @param {string} column_name 
+     * @param {number} value
+     */
+    static update_and_save_column_search_type(cache_name, column_name, value) {
+        return this.update_sub_column(cache_name, 'col_search_types', column_name, value);
     }
 
     /**
@@ -445,11 +518,7 @@ class QueryViewerCache {
      * @param {number}  column_size 
      */
     static update_and_save_column_size(cache_name, column_name, column_size) {
-        if(!cache_name) return;
-        const cache = this.fetch() ?? {};
-        if(!cache[cache_name]) {cache[cache_name] = {col_sizes: {}};}
-        cache[cache_name].col_sizes[column_name] = column_size;
-        this.save(cache);
+        return this.update_sub_column(cache_name, 'col_sizes', column_name, column_size);
     }
 
 

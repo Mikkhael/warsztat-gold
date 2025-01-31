@@ -71,8 +71,8 @@
 
 
 + LIKE for polish letters
-- delay limit calculation
-- cache sorting and filtering options for QV
++ delay limit calculation
++ cache sorting and filtering options for QV
 - auto lists for ZlecenieReport (not only Faktura)
     - summary first for parts, then for all
 
