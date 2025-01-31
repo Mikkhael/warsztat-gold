@@ -541,7 +541,7 @@ defineExpose({
                             @reset_changes="e => handle_search(e, col_name, true)">
                         <div class="resizer" @pointerdown="e => handle_mouse_down_on_resizer(e, col_i)"></div>
                     </div>
-                    <div class="header col_name_cell">
+                    <div class="header col_name_cell" :class="{indicate_sorting: src.order_plugin.get(col_name) !== undefined}">
                         <QueryOrderingBtn class="ordering_btns" :value="src.order_plugin.get(col_name)" @update:value="new_order => handle_order(new_order, col_name)"/>
                         <div class="col_name">{{ columns_display_props[col_i].name }}</div>
                     </div>
@@ -730,6 +730,10 @@ defineExpose({
 
     .hidden {
         display: none;
+    }
+
+    .indicate_sorting {
+        background-color: #dfeaff;
     }
 
     /* .selectable .data_tr {

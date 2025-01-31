@@ -2,7 +2,7 @@
 
 import { computed, nextTick, reactive, ref, unref, watch } from "vue";
 import { FormQuerySourceFull, Column, QuerySource, FormDataSetFull_LocalRow, FormDataSetFull } from "../Dataset";
-import { deffered_promise, escape_backtick_smart, escape_sql_value, get_date_format_with_dot } from "../../utils";
+import { deffered_promise, escape_backtick_smart, escape_sql_value, escape_ulower_like_full, get_date_format_with_dot } from "../../utils";
 import { FWWindow } from "../FloatingWindows/FWManager";
 
 /**
@@ -77,28 +77,27 @@ class QueryViewerSource extends FormQuerySourceFull {
         this.search_type_plugin = reactive(/**@type {Map<string, number>} */ (new Map())); // STOPS:  0 - none, 1 - left, 2 - right, 3 - both
         this.interval_plugin    = reactive(/**@type {Map<string, [string|null, string|null]>} */ (new Map()));
 
-        const order_plugin_array  = computed(/**@returns {[string, boolean, string][]} */ () => Array.from(this.order_plugin).map(x => [
+        const order_plugin_array  = computed(/**@returns {[string, boolean, string][]} */ () => Array.from(this.order_plugin)
+         .reverse()
+         .map(x => [
             escape_backtick_smart(x[0]), 
             x[1] > 0, 
             this.display_columns.get(x[0])?.format === 'decimal' ? 'decimal' : ''
         ]));
-        const search_plugin_array = computed(/**@returns {[string, string | [string, 'l', number]][]} */ () => Array.from(this.search_plugin).map(x => {
+        const search_plugin_array = computed(() => Array.from(this.search_plugin)
+         .map(/**@returns {[string]} */ x => {
             const col_name   = x[0];
             const col_search = x[1];
             const col_type   = this.search_type_plugin.get(col_name) ?? 0;
             const format = this.display_columns.get(col_name)?.format ?? '';
             const [true_name, true_search] = apply_format(col_search, col_name, format);
-            /**@type {string | [string, 'l', number]} */
-            const compared_expresion = true_search === "~"  ? "IS ''" :
-                                       true_search === "!~" ? "IS NOT ''" :
-                                       [true_search, 'l', col_type];
-            // console.log("WITH DOT: ", with_dot, escaped);
-            /**@type {[string, string | [string, 'l', number]]} */
-            const res = [
-                true_name,
-                compared_expresion
-            ];
-            return res;
+            if(true_search === "~") {
+                return [true_name + " IS ''"];
+            }
+            if(true_search === "!~") {
+                return [true_name + " IS NOT ''"];
+            }
+            return [escape_ulower_like_full(true_search, true_name, col_type)];
         }));
         const interval_plugin_array = computed(() => Array.from(this.interval_plugin).map(/**@returns {[string] | null} */ x => {
             const col_name  = x[0];

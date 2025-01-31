@@ -66,11 +66,28 @@ function escape_like(/**@type {string} */ value) {
 // }
 function escape_like_full(/**@type {string} */ value, type = 0) {
     switch(type % 4) {
-        case 1:  return `LIKE "${escape_like(value)}%" ESCAPE '\\'`;
-        case 2:  return `LIKE "%${escape_like(value)}" ESCAPE '\\'`;
-        case 3:  return `LIKE "${escape_like(value)}" ESCAPE '\\'`;
-        default: return `LIKE "%${escape_like(value)}%" ESCAPE '\\'`;
+        case 1:  return `LIKE '${escape_like(value)}%' ESCAPE '\\'`;
+        case 2:  return `LIKE '%${escape_like(value)}' ESCAPE '\\'`;
+        case 3:  return `LIKE '${escape_like(value)}' ESCAPE '\\'`;
+        default: return `LIKE '%${escape_like(value)}%' ESCAPE '\\'`;
     }
+}
+function escape_ulower_like_full(/**@type {string} */ pattern, /**@type {string} */ value_escaped, type = 0) {
+    const pattern_is_ascii = is_ascii(pattern);
+    const pattern_escaped = escape_like(pattern);
+    let pattern_full = `'%${pattern_escaped}%'`;
+    switch(type % 4) {
+        case 1:  pattern_full =  `'${pattern_escaped}%'`; break;
+        case 2:  pattern_full = `'%${pattern_escaped}'` ; break;
+        case 3:  pattern_full = `'%${pattern_escaped}%'`; break;
+    }
+    const pattern_sql = pattern_is_ascii ? pattern_full  : pattern_full.toLowerCase();
+    const value_sql   = pattern_is_ascii ? value_escaped : `ulower(${value_escaped})`;
+    return `like(${pattern_sql}, ${value_sql}, '\\')`;
+}
+
+function is_ascii(/**@type {string} */ str) {
+    return /^[\x00-\x7F]*$/.test(str);
 }
 
 /**
@@ -699,6 +716,9 @@ export {
     escape_backtick_smart,
     escape_like,
     escape_like_full,
+    escape_ulower_like_full,
+
+    is_ascii,
 
     arr_to_object,
     query_row_to_object,

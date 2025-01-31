@@ -1,3 +1,4 @@
+use rusqlite::functions::FunctionFlags;
 use rusqlite::Rows;
 use rusqlite::{Connection, Result, Error, backup::Backup};
 use tauri::App;
@@ -16,8 +17,12 @@ use crate::utils;
 pub struct SqliteManager{
     decimal_extension_path: PathBuf,
     vsv_extension_path:     PathBuf,
+    // unicode_extension_path: PathBuf,
     main_tables_path:       PathBuf,
     structure_sql_path:     PathBuf,
+
+    // collator_locale:      Option<icu::collator::Collator>,
+    // collator_locale_case: Option<icu::collator::Collator>,
 
     argv: Vec<String>,
 
@@ -85,12 +90,13 @@ impl SqliteManager{
 
         state.decimal_extension_path = resolver.resolve_resource("resources/sqlite/decimal").expect("Cannot resolve decimal path");
         state.vsv_extension_path     = resolver.resolve_resource("resources/sqlite/vsv").expect("Cannot resolve vsv path");
+        // state.unicode_extension_path = resolver.resolve_resource("resources/sqlite/unicode").expect("Cannot resolve unicode path");
         state.main_tables_path       = resolver.resolve_resource("resources/sqlite/main_tables.txt").expect("Cannot resolve main tables path");
         state.structure_sql_path     = resolver.resolve_resource("resources/sqlite/database_structure.sql").expect("Cannot resolve structure sql path");
 
-
         println!("decimal:       {}", state.decimal_extension_path.display());
         println!("vsv:           {}", state.vsv_extension_path.display());
+        // println!("unicode:       {}", state.unicode_extension_path.display());
         println!("main tables:   {}", state.main_tables_path.display());
         println!("structure sql: {}", state.structure_sql_path.display());
     }
@@ -103,54 +109,91 @@ impl SqliteManager{
         let path = std::env::temp_dir().join(temp_filename);
         self.open_detached_and_rebuild(&path, false)
     }
-    pub fn open_detached_and_rebuild(&self, path: &Path, with_vacuum: bool) -> Result<SqliteConn, SqliteOrIOError> {
+    pub fn open_from_path(&self, path: &Path) -> rusqlite::Result<SqliteConn> { 
         let res = Connection::open(path); 
-        if let Ok(conn) = res {
-            println!("Opened database DETACHED {}", path.display());
-            unsafe {
-                let _guard = rusqlite::LoadExtensionGuard::new(&conn)?;
-                conn.load_extension(&self.decimal_extension_path, None)?;
-                conn.load_extension(&self.vsv_extension_path, None)?;
+        match res {
+            Ok(conn) => {
+                println!("Opening database {}...", path.display());
+                unsafe {
+                    let _guard = rusqlite::LoadExtensionGuard::new(&conn)?;
+                    println!("Loading extension: decimal...");
+                    conn.load_extension(&self.decimal_extension_path, None)?;
+                    println!("Loading extension: vsv...");
+                    conn.load_extension(&self.vsv_extension_path, None)?;
+                    // println!("Loading extension: unicode...");
+                    // conn.load_extension(&self.unicode_extension_path, None)?;
+                }
+                println!("Loaded extensions");
+                
+                println!("Registering custom functions...");
+                println!("Regustering ulower...");
+                conn.create_scalar_function(
+                    "ulower", 1,
+                    FunctionFlags::SQLITE_UTF8 | FunctionFlags::SQLITE_DETERMINISTIC,
+                    |ctx| {
+                        let pattern = ctx.get::<String>(0)?;
+                        return Ok(pattern.to_lowercase());
+                    }
+                )?;
+                println!("Registered custom functions");
+
+
+
+
+                // let mut collator_options      = icu::collator::CollatorOptions::new();
+                // collator_options.strength         = Some(icu::collator::Strength::Primary);
+                // collator_options.case_level       = Some(icu::collator::CaseLevel::Off);
+                // let mut collator_options_case = icu::collator::CollatorOptions::new();
+                // collator_options_case.strength    = Some(icu::collator::Strength::Primary);
+                // collator_options_case.case_level  = Some(icu::collator::CaseLevel::On);
+        
+                // let collator_locale      = icu::collator::Collator::try_new(&Default::default(), collator_options)
+                //     .inspect_err(|err| {println!("Error when creating collator LOCALE: {}", err)})
+                //     .ok();
+                // let collator_locale_case = icu::collator::Collator::try_new(&Default::default(), collator_options_case)
+                //     .inspect_err(|err| {println!("Error when creating collator LOCALECASE: {}", err)})
+                //     .ok();
+
+                // println!("Loaded collators");
+
+                // conn.create_collation("LOCALE", move |left, right| {
+                //     if let Some(collator) = &collator_locale      { collator.compare(left, right) }
+                //     else {left.cmp(right)}
+                // })?;
+                // conn.create_collation("LOCALECASE", move |left, right| {
+                //     if let Some(collator) = &collator_locale_case { collator.compare(left, right) }
+                //     else {left.cmp(right)}
+                // })?;
+                // 
+                // println!("Initialized collators");
+
+                return Ok(SqliteConn { 
+                    conn: conn, 
+                    path: path.to_path_buf() 
+                });
             }
-            println!("Loaded extensions DETACHED");
-            // rusqlite::vtab::csvtab::load_module(&conn)?;
-            let sqlite_conn = SqliteConn { 
-                conn: conn, 
-                path: path.to_path_buf() 
-            };
-            let trans = sqlite_conn.conn.unchecked_transaction()?;
-            sqlite_conn.execute_file(&self.structure_sql_path)?;
-            trans.commit()?;
-            if with_vacuum {
-                sqlite_conn.execute("VACUUM", ())?;
-            };
-            return Ok(sqlite_conn);
-        } else {
-            println!("Failed opening database DETACHED");
-            return Err(SqliteOrIOError::Sqlite(res.err().unwrap()));
+            Err(err) => {
+                println!("Failed opening database {}", path.display());
+                return Err(err);
+            }
         }
     }
+    pub fn open_detached_and_rebuild(&self, path: &Path, with_vacuum: bool) -> Result<SqliteConn, SqliteOrIOError> {
+        let sqlite_conn = self.open_from_path(path)?;
+        let trans = sqlite_conn.conn.unchecked_transaction()?;
+        sqlite_conn.execute_file(&self.structure_sql_path)?;
+        trans.commit()?;
+        if with_vacuum {
+            sqlite_conn.execute("VACUUM", ())?;
+        };
+        return Ok(sqlite_conn);
+    }
     pub fn open(&mut self, path: &Path) -> Result<(), Error>{ 
-        let res = Connection::open(path); 
-        if let Ok(conn) = res {
-            println!("Opened database");
-            unsafe {
-                let _guard = rusqlite::LoadExtensionGuard::new(&conn)?;
-                conn.load_extension(&self.decimal_extension_path, None)?;
-                conn.load_extension(&self.vsv_extension_path, None)?;
-            }
-            println!("Loaded extensions");
-            // rusqlite::vtab::csvtab::load_module(&conn)?;
-            self.sqlite_conn = Some(SqliteConn { 
-                conn: conn, 
-                path: path.to_path_buf() 
-            });
-            return Ok(());
-        } else {
-            println!("Failed opening database");
+        let sqlite_conn = self.open_from_path(path).inspect_err(|_| {
             self.sqlite_conn = None;
-            return Err(res.err().unwrap());
-        }
+        })?;
+        self.sqlite_conn = Some(sqlite_conn);
+        return Ok(());
     }
     pub fn rebuild(&self, with_vacuum: bool) -> Result<bool, SqliteOrIOError>{
         if let Some(ref conn) = self.sqlite_conn {
@@ -363,6 +406,16 @@ impl SqliteConn{
 
 }
 
+fn handle_err<E: error::Error>(err: E) -> String {
+    // let err = err.as_ref();
+    println!("[ERROR] {}", err);
+    err.to_string()
+}
+fn handle_err_dyn(err: Box<dyn error::Error>) -> String {
+    println!("[ERROR] {}", err);
+    err.to_string()
+}
+
 #[derive(serde::Serialize)]
 pub struct CurrentDbState {
     is_open: bool,
@@ -371,7 +424,7 @@ pub struct CurrentDbState {
 }
 #[tauri::command]
 pub fn get_current_db_state(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<CurrentDbState, String>{
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let db = sqlite_manager.lock().map_err(handle_err)?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
         Ok(CurrentDbState {
             is_open: true,
@@ -391,15 +444,15 @@ pub fn get_current_db_state(sqlite_manager: tauri::State<SqliteManagerLock>) -> 
 #[tauri::command]
 pub fn open_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
     println!("[INVOKE] open_database");
-    let mut db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let mut db = sqlite_manager.lock().map_err(handle_err)?;
     println!("got mutex");
-    db.open(&path).map_err(|err| err.to_string())?;
+    db.open(&path).map_err(handle_err)?;
     Ok(())
 }
 #[tauri::command]
 pub fn rebuild_database(with_vacuum: bool, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
     println!("[INVOKE] rebuild_database");
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let db = sqlite_manager.lock().map_err(handle_err)?;
     let is_opened = db.rebuild(with_vacuum).map_err(|err| match err {
         SqliteOrIOError::IO(val)     => val.to_string(),
         SqliteOrIOError::Sqlite(val) => val.to_string()
@@ -409,25 +462,25 @@ pub fn rebuild_database(with_vacuum: bool, sqlite_manager: tauri::State<SqliteMa
 #[tauri::command]
 pub fn close_database(sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
     println!("[INVOKE] close_database");
-    let mut db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let mut db = sqlite_manager.lock().map_err(handle_err)?;
     db.close();
     Ok(())
 }
 
 pub fn save_database_impl(path: &Path, sqlite_manager: &SqliteManagerLock, pages: i32, pause: std::time::Duration) -> Result<(), String> {
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let db = sqlite_manager.lock().map_err(handle_err)?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
         let db_conn = &sqlite_conn.conn;
-        let mut backup_conn = Connection::open(path).map_err(|err| err.to_string())?;
+        let mut backup_conn = Connection::open(path).map_err(handle_err)?;
         if db_conn.path() == backup_conn.path() {
             return Err("Connection to self".to_string());
         }
-        let backup = Backup::new(db_conn, &mut backup_conn).map_err(|err| err.to_string())?;
+        let backup = Backup::new(db_conn, &mut backup_conn).map_err(handle_err)?;
         backup.run_to_completion(pages, pause, Some(|p| {
             let done = p.pagecount - p.remaining;
             let total = p.pagecount;
             println!("Saving Progress: {}%  ({}/{})", done*100/total, done, total);
-        })).map_err(|err| err.to_string())?;
+        })).map_err(handle_err)?;
         Ok(())
     } else {
        Err("Nie otworzono bazy danych".to_string())
@@ -443,12 +496,12 @@ pub fn save_database(path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLo
 #[tauri::command]
 pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
     println!("[INVOKE] export_csv: {}", export_path.display());
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let db = sqlite_manager.lock().map_err(handle_err)?;
     if let Some(ref sqlite_conn) = db.sqlite_conn {
         dbg!(&export_path);
-        fs::create_dir_all(&export_path).map_err(|err| err.to_string())?;
-        let table_names = db.get_main_tables().map_err(|err| err.to_string())?;
-        sqlite_conn.export_all_to_csv(&export_path, &table_names, true).map_err(|err| err.to_string())?;
+        fs::create_dir_all(&export_path).map_err(handle_err)?;
+        let table_names = db.get_main_tables().map_err(handle_err)?;
+        sqlite_conn.export_all_to_csv(&export_path, &table_names, true).map_err(handle_err_dyn)?;
         Ok(())
     } else {
         return Err("Nie otworzono bazy danych".to_string());
@@ -457,10 +510,10 @@ pub fn export_csv(export_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
 #[tauri::command]
 pub fn import_csv(import_path: PathBuf, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
     println!("[INVOKE] import_csv: {}", import_path.display());
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let db = sqlite_manager.lock().map_err(handle_err)?;
     if let Some(ref sqlite_conn) = db.sqlite_conn {
-        let table_names = db.get_main_tables().map_err(|err| err.to_string())?;
-        sqlite_conn.import_all_from_csv(&import_path, &table_names, true).map_err(|err| err.to_string())?;
+        let table_names = db.get_main_tables().map_err(handle_err)?;
+        sqlite_conn.import_all_from_csv(&import_path, &table_names, true).map_err(handle_err_dyn)?;
         Ok(())
     } else {
         return Err("Nie otworzono bazy danych".to_string());
@@ -470,12 +523,15 @@ pub fn import_csv(import_path: PathBuf, sqlite_manager: tauri::State<SqliteManag
 #[tauri::command]
 pub fn perform_query(query: String, hard_limit: Option<usize>, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(ExtractedRows, Vec<String>), String> {
     println!("[INVOKE] perform_query:   {}", query);
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let db = sqlite_manager.lock().map_err(handle_err)?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
         let hard_limit_value = hard_limit.unwrap_or(100);
         let hard_limit_value_param = if hard_limit_value == 0 {None} else {Some(hard_limit_value)};
-        println!("HARD LIMIT ({:?}) : {} - {:?}", hard_limit, hard_limit_value, hard_limit_value_param);
-        let (extracted_rows, stmt) = sqlite_conn.query(&query, (), hard_limit_value_param).map_err(|err| err.to_string())?;
+        // println!("HARD LIMIT ({:?}) : {} - {:?}", hard_limit, hard_limit_value, hard_limit_value_param);
+        let now = std::time::Instant::now();
+        let (extracted_rows, stmt) = sqlite_conn.query(&query, (), hard_limit_value_param).map_err(handle_err)?;
+        let elapsed = now.elapsed();
+        println!("QUERY TIME: {}us", elapsed.as_micros());
         let col_names : Vec<String> = stmt.column_names().into_iter().map(|s| s.to_owned()).collect();
         Ok((extracted_rows, col_names))
     }else{
@@ -486,9 +542,9 @@ pub fn perform_query(query: String, hard_limit: Option<usize>, sqlite_manager: t
 // #[tauri::command]
 // pub fn perform_insert(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<i64, String> {
 //     println!("[INVOKE] perform_insert: {}", query);
-//     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+//     let db = sqlite_manager.lock().map_err(handle_err)?;
 //     if let Some(sqlite_conn) = &db.sqlite_conn {
-//         sqlite_conn.insert(&query, ()).map_err(|err| err.to_string())
+//         sqlite_conn.insert(&query, ()).map_err(handle_err)
 //     }else{
 //         Err("Nie otworzono bazy danych".into())
 //     }
@@ -496,16 +552,16 @@ pub fn perform_query(query: String, hard_limit: Option<usize>, sqlite_manager: t
 #[tauri::command]
 pub fn perform_execute(query: String, as_batch: bool, get_last_rowid: bool, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<i64, String> {
     println!("[INVOKE] perform_execute: {}", query);
-    let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+    let db = sqlite_manager.lock().map_err(handle_err)?;
     if let Some(sqlite_conn) = &db.sqlite_conn {
         if get_last_rowid {
-            let last_rowid = sqlite_conn.execute_batch_get_rowid(&query).map_err(|err| err.to_string())?;
+            let last_rowid = sqlite_conn.execute_batch_get_rowid(&query).map_err(handle_err)?;
             return Ok(last_rowid);
         } else if as_batch {
-            sqlite_conn.execute_batch(&query).map_err(|err| err.to_string())?;
+            sqlite_conn.execute_batch(&query).map_err(handle_err)?;
             return Ok(0);
         } else {
-            let affected_rows = sqlite_conn.execute(&query, ()).map_err(|err| err.to_string())?;
+            let affected_rows = sqlite_conn.execute(&query, ()).map_err(handle_err)?;
             return Ok(affected_rows.try_into().unwrap());
         }
     }else{
@@ -515,9 +571,9 @@ pub fn perform_execute(query: String, as_batch: bool, get_last_rowid: bool, sqli
 // #[tauri::command]
 // pub fn perform_execute_batch(query: String, sqlite_manager: tauri::State<SqliteManagerLock>) -> Result<(), String> {
 //     println!("[INVOKE] perform_batch:   {}", query);
-//     let db = sqlite_manager.lock().map_err(|err| err.to_string())?;
+//     let db = sqlite_manager.lock().map_err(handle_err)?;
 //     if let Some(sqlite_conn) = &db.sqlite_conn {
-//         sqlite_conn.execute_batch(&query).map_err(|err| err.to_string())
+//         sqlite_conn.execute_batch(&query).map_err(handle_err)
 //     }else{
 //         Err("Nie otworzono bazy danych".into())
 //     }
