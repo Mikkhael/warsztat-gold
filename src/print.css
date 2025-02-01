@@ -133,6 +133,7 @@ table {
     box-sizing: border-box;
     margin:       0mm;
     margin-left:  0mm;
+    margin-bottom: 10cm;
     padding:      10mm;
     padding-left: 14mm;
     width:  calc(210mm);
@@ -181,6 +182,7 @@ table {
     display: none !important;
     }
     .over_page {
+    margin-bottom: 0mm;
     padding:      0mm;
     padding-left: 0mm;
     width:  calc(210mm - 10mm - 14mm);
@@ -219,22 +221,53 @@ table {
     margin-left: 2mm;
 }
 
-.fake_list {
+.zlec_list {
     margin-top: 1cm;
     display: grid;
     grid-template: auto / 6fr 1fr 2fr 2fr;
     font-size: 0.8em;
 }
-.fake_list > * {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
+.zlec_list .h {
     border-top:   1px solid black;
     border-right: 1px solid black;
+    padding-bottom: 2mm;
+    text-align: center;
+}
+.zlec_list .d   {
+    border-right: 1px solid black;
+    padding: 0mm 1mm;
+}
+.zlec_list .sum {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    text-align: right;
+    break-inside: avoid;
+    break-before: avoid;
+    font-size: 1.5em;
+    padding-right: 1ch;
+    padding-top: 1mm;
+}
+.zlec_list .sum > * {
+    border-top: 2px solid black;
+    padding-right: 1ch;
+    min-width: 40mm;
+    overflow: visible;
+}
+.zlec_list .c   {text-align: center;}
+.zlec_list .r   {text-align: right;}
+.zlec_list .nbr {border-right: none;}
+
+.zlec_list.fake_list > * {
+    display: flex;
+    flex-direction: column;
     min-height: 2cm;
 }
-.fake_list > *:last-child {
-    border-right: none;
+
+.page.is_zlec_manual .not_in_zlec_manual,
+.page:not(.is_zlec_manual) .only_in_zlec_manual {
+    display: none;
 }
 
 /********** PARAMS LAYOUT ************/

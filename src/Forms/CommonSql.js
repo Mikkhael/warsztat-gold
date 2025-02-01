@@ -53,7 +53,8 @@ export function get_summary_for_zlec_id(id_zlecenia, with_part = false) {
                         "ifnull(",  COLS_CZES.jednostka,         ", '')",  "AS unit,",
        ...(with_part ? ["ifnull(",  COLS_CZES.numer_części,      ",'-')",  "AS part,"] : []),
                         "ifnull(",  COLS_OBRO.ilość,        "* (-1), 0)",  "AS cnt,",
-                                    COLS_OBRO.cena_netto_sprzedaży,        "AS netto",
+                                    COLS_OBRO.cena_netto_sprzedaży,        "AS netto,",
+                                    "1 AS is_part",
             "FROM",     TAB_OBRO, "LEFT JOIN", TAB_CZES, "ON", COLS_OBRO.numer_cz, "=", COLS_CZES.numer_części,
             "WHERE",    COLS_OBRO.rodzaj_dokumentu, "IS 'zlec'", "AND", COLS_OBRO.numer_dokumentu, "IS", [id_zlecenia]);
             
@@ -62,14 +63,15 @@ export function get_summary_for_zlec_id(id_zlecenia, with_part = false) {
                         "''",                                              "AS unit,",
                                                       ...(with_part ? ["'-' AS part,"] : []),
                         "ifnull(",  COLS_ROBO.krotność_wykonania,",  0)",  "AS cnt,",
-                                    COLS_ROBO.cena_netto,                  "AS netto",
+                                    COLS_ROBO.cena_netto,                  "AS netto,",
+                                    "0 AS is_part",
             "FROM",     TAB_ROBO, "LEFT JOIN", TAB_CZYN, "ON", COLS_ROBO.ID_czynności, "=", COLS_CZYN.ID_cynności,
             "WHERE",    COLS_ROBO.ID_zlecenia, "IS", [id_zlecenia]);
         
         const LIST_SQL = `(${query_parts_to_string(LIST_CZESCI_SQL)} UNION ALL ${query_parts_to_string(LIST_ROBOCIZNA_SQL)})`;
         return LIST_SQL;
     });
-    return res;    
+    return res;
 }
 /**
  * @param {QuerySource} src 

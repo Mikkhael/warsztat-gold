@@ -547,6 +547,16 @@ function format_decimal(source_string, precision = 2, sufix = " zł", force_sep 
 /**
  * @param {any} string 
  */
+function format_decimal2(string, with_zl = false, with_trip = true) {
+    // console.log("FORMATTING", string);
+    string = string?.toString();
+    if(typeof string != 'string') return '';
+    return format_decimal(string, 2, with_zl ? ' zł' : '', ',', with_trip ? '\xa0' : '') ?? '';
+}
+
+/**
+ * @param {any} string 
+ */
 function format_first_line(string) {
     if(typeof string !== 'string') {return string;}
     const index = string.search(/\n|\r/);
@@ -754,6 +764,7 @@ export {
     parse_decimal_adv,
     parse_decimal,
     format_decimal,
+    format_decimal2,
 
     format_first_line,
 

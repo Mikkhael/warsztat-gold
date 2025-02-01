@@ -137,6 +137,7 @@ function convert_column_def(col) {
     let checks = [];
     let check_allow_null = false;
     let unsigned = hasattr('u');
+    let collate = '';
     
 
     // mdb -> wszędzie DATETIME i TIMESTAMP wyeksportowany wygląa na YYYY-MM-DD HH:MM:SS
@@ -154,6 +155,7 @@ function convert_column_def(col) {
             checks.push(`decimal_cmp(${name},"922337203685477,5808") < 0`);
             checks.push(`decimal_cmp(${name},"-922337203685477,5808") > 0`);
             check_allow_null = true;
+            collate = 'DECIMAL';
             break;
         case "DOUBLE": type = "REAL"; break;
         case "FLOAT":  type = "REAL"; break;
@@ -183,6 +185,9 @@ function convert_column_def(col) {
     const parts = [];
     parts.push(name);
     parts.push(type);
+    if(collate.length > 0) {
+        parts.push(`COLLATE ${collate}`);
+    }
     if(checks.length > 0) {
         parts.push(`CHECK (${checks_str_full})`);
     }
