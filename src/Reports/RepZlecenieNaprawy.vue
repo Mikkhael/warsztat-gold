@@ -234,6 +234,9 @@ defineExpose({
                     {{ format_decimal(src_total_brutto_p, true) }}
                 </div>
             </div>
+            <div class="wide">&nbsp;</div>
+            <div class="wide">&nbsp;</div>
+            <div class="wide">&nbsp;</div>
             <template
                 v-for="(row, row_i) in src_list_rows_robos"
             >

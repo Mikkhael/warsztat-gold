@@ -201,6 +201,7 @@ function handle_aux_button_1() {
 
 const display_compact = computed(() => props.minimal);
 const editable_dates  = computed(() => !props.readonly_dates);
+const textarea_resizable = computed(() => props.minimal);
 
 defineExpose({
     src
@@ -216,9 +217,9 @@ defineExpose({
         <form onsubmit="return false" class="form form_content" :ref="e => src.assoc_form(e)" :class="{compact: display_compact}">
 
             <div class="header auto_labels">
-                <label>
+                <label class="highlight">
                     <div>nr zlecenia</div>
-                    <FormInput :value="id"        auto readonly style="width: 10ch" />
+                    <FormInput :value="id"        auto readonly style="width: 10ch;" />
                 </label>
                 <label>
                     <div>data otwarcia</div>
@@ -265,14 +266,14 @@ defineExpose({
             <div class="textarea_section auto_labels">
                 <label>
                     <div>Zgłoszenie do naprawy</div>
-                    <FormInput :value="zgloszenie" :readonly="readonly" auto class="grow" textarea rows="2"/>
+                    <FormInput :value="zgloszenie" :readonly="readonly" auto class="grow" textarea rows="6" :class="{resizable: textarea_resizable}" />
                 </label>
             </div>
             
             <div class="textarea_section auto_labels">
                 <label>
                     <div>Uwagi</div>
-                    <FormInput :value="uwagi" :readonly="readonly" auto class="grow" textarea rows="2"/>
+                    <FormInput :value="uwagi" :readonly="readonly" auto class="grow" textarea rows="2" :class="{resizable: textarea_resizable}"/>
                 </label>
             </div>
             
@@ -341,6 +342,11 @@ defineExpose({
     .hidden {display: none;}
     .emph {font-weight: bold; text-align: center;}
 
+    .highlight {
+        background-color: #00000033;
+        font-weight: bold;
+    }
+
     /* .form_container {
         width: 100%;
     } */
@@ -381,6 +387,9 @@ defineExpose({
         flex-grow: 1;
         align-self: stretch;
         resize: none;
+    }
+    :deep(textarea).resizable {
+        resize: vertical;
     }
     /* .form.compact > .textarea_section {
         flex-grow: 0;

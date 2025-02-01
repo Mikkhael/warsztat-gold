@@ -255,6 +255,7 @@ table {
     min-width: 40mm;
     overflow: visible;
 }
+.zlec_list .wide {grid-column: 1 / -1;}
 .zlec_list .c   {text-align: center;}
 .zlec_list .r   {text-align: right;}
 .zlec_list .nbr {border-right: none;}
