@@ -163,7 +163,7 @@ function handle_err(/**@type {Error} */ err) {
 }
 
 function close_current_zlecenie() {
-    data_zamk.set_local(date_now());
+    data_zamk.set_local(data_otw.get_cached() ?? date_now());
 }
 
 const RepZlecenieNaprawy_ref = ref(/**@type {ReportPreparer?} */ (null));
