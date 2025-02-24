@@ -190,7 +190,10 @@ function open_robocizna_window() {
     const title = "Robocizna - Zlecenie nr " + param_out_zlecenie_id.get_value();
     return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Robocizna, {
         category: 'czesci',
-        props: {id_zlecenia: param_out_zlecenie_id.get_value()},
+        props: {
+            id_zlecenia: param_out_zlecenie_id.get_value(),
+            id_samochodu: param_out_car_id.get_value(),
+        },
         // parent: props.parent_window
     });
 }

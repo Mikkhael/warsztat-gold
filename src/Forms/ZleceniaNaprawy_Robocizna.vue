@@ -1,7 +1,7 @@
 <script setup>
 //@ts-check
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
-import { FormDataSetFull, FormDataSetFull_LocalRow, FormDataSetSingle, FormDefaultProps, FormParamProp, FormQuerySourceSingle, param_from_prop, RefChangableValue } from '../components/Dataset';
+import { DataGraphDependable, FormDataSetFull, FormDataSetFull_LocalRow, FormDataSetSingle, FormDefaultProps, FormParamProp, FormQuerySourceSingle, param_from_prop, RefChangableValue } from '../components/Dataset';
 import { QueryViewerSource } from '../components/QueryViewer/QueryViewer';
 import QueryViewerAdv from '../components/QueryViewer/QueryViewerAdv.vue';
 import QueryViewerAdvOpenBtn from '../components/QueryViewer/QueryViewerAdvOpenBtn.vue';
@@ -13,13 +13,15 @@ import useMainMsgManager from '../components/Msg/MsgManager';
 
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
 import { nextTick, ref } from 'vue';
+import { escape_sql_value } from '../utils';
 
 
 
 
 const props = defineProps({
     ...FormDefaultProps,
-    id_zlecenia: FormParamProp,
+    id_zlecenia:  FormParamProp,
+    id_samochodu: FormParamProp,
 });
 
 const msgManager = useMainMsgManager();
@@ -39,6 +41,7 @@ const ZLEC_TAB  = db.TABS.zlecenia_naprawy;
 const ZLEC_COLS = db.TABS.zlecenia_naprawy.cols;
 
 const param_id_zlecenia = param_from_prop(props, 'id_zlecenia');
+const param_id_samochodu_val = props.id_samochodu instanceof DataGraphDependable ? props.id_samochodu.get_value() : props.id_samochodu ?? null;
 
 const src  = CREATE_FORM_QUERY_SOURCE_IN_COMPONENT(props, {src: new QueryViewerSource(), no_update_on_mounted: true, on_error: handle_err});
 src.set_from_with_deps(MAIN_TAB);
@@ -74,10 +77,20 @@ const id_zlecenia = RefChangableValue.from_sqlvalue(param_id_zlecenia);
 
 ////////////////// FIND (DODAJ CZĘŚCI) ///////////////////
 
+const LAST_CENA_FROM = 
+`(SELECT 
+  ${MAIN_COLS.ID_czynności.get_full_sql()} as nr,
+  ${MAIN_COLS.cena_netto.get_full_sql()} as cena,
+  max(${ZLEC_COLS.data_otwarcia.get_full_sql()}) as list_data
+FROM ${ZLEC_TAB.get_full_sql()} JOIN ${MAIN_TAB.get_full_sql()} ON ${ZLEC_COLS.ID.get_full_sql()} IS ${MAIN_COLS.ID_zlecenia.get_full_sql()}
+WHERE ${ZLEC_COLS.ID_samochodu.get_full_sql()} IS ${ escape_sql_value(param_id_samochodu_val) }
+GROUP BY nr)`;
+
 const src_list = new QueryViewerSource();
-src_list.set_from_with_deps(CZYN_TAB);
+src_list.set_from_with_deps(CZYN_TAB, "LEFT JOIN " + LAST_CENA_FROM + " AS last ON ", CZYN_COLS.ID_cynności, 'IS last.nr');
 src_list.auto_add_column_synced(CZYN_COLS.ID_cynności);
 src_list.auto_add_column_synced(CZYN_COLS.czynność, {display: "Nazwa Czynności"});
+src_list.auto_add_column       ("last_cena_netto",  {display: "Netto Ostatnia", sql:"ifnull(last.cena,'0.00')", input_props: {type: 'decimal'} });
 // src_list.set_order(CZYN_COLS.czynność, 1);
 src.add_aux_query(src_list);
 
