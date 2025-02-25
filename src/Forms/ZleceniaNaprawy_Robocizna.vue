@@ -103,6 +103,7 @@ function QVFactory_czyn_add_select(columns, row) {
     new_row.set_local(MAIN_COLS.krotność_wykonania, 0);
     new_row.set_local(MAIN_COLS.ID_czynności,  row.get_local(CZYN_COLS.ID_cynności));
     new_row.set_local(CZYN_COLS.czynność,      row.get_local(CZYN_COLS.czynność));
+    new_row.set_local(MAIN_COLS.cena_netto,    row.get_local("last_cena_netto"));
 
     const row_index = src.dataset.local_rows.value.indexOf(new_row);
     if(row_index >= 0) {
