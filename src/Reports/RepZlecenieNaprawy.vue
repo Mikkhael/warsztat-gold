@@ -151,11 +151,11 @@ defineExpose({
         
         <div class="faktura_header">
             <div class="left">
-                <div class="bold vbig">Zlecenie nr <span name="zlecenie_id">{{ id }}</span></div>
-                <!-- <div> ORYGINAŁ / KOPIA </div> -->
             </div>
             <div class="right">
                 <div>Gliwice dnia:   {{ date_now_ref }}</div>
+                <div class="bold vbig">Zlecenie nr <span name="zlecenie_id">{{ id }}</span></div>
+                <!-- <div> ORYGINAŁ / KOPIA </div> -->
             </div>
         </div>
 
