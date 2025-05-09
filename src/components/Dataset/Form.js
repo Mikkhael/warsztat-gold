@@ -716,6 +716,7 @@ class FormDataSetFull_LocalRow {
         } else {
             index = this.dataset.lookup_col_index(name);
         }
+        // console.log("GGGG", index, name instanceof Column ? ("C_" + name.get_full_sql()) : ("R_" + name), this.values[index]);
         return this.values[index];
     }
     get_local(/**@type {Column | string | number} */ name) {
@@ -893,11 +894,14 @@ class FormDataSetFull extends FormDataSetBase {
 
     mark_row_deleted(/**@type {number} */ index, deleted_value = true) {
         if(this.local_rows.value[index]) {
-            if(this.local_rows.value[index].inserted && deleted_value) {
-                this.local_rows.value.splice(index, 1);
-            } else {
+            // if(this.local_rows.value[index].inserted && deleted_value) {
+            //     this.local_rows.value.splice(index, 1);
+            //     this.local_rows.value = this.local_rows.value;
+            //     this.poke();
+            // } else {
                 this.local_rows.value[index].deleted = deleted_value;
-            }
+            // }
+            
             // console.log("DELETEDDDDD", index, this.local_rows.value.map(x => x.deleted), this.local_rows);
         }
         // triggerRef(this.local_rows);

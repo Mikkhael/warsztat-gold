@@ -79,7 +79,7 @@ function escape_ulower_like_full(/**@type {string} */ pattern, /**@type {string}
     switch(type % 4) {
         case 1:  pattern_full =  `'${pattern_escaped}%'`; break;
         case 2:  pattern_full = `'%${pattern_escaped}'` ; break;
-        case 3:  pattern_full = `'%${pattern_escaped}%'`; break;
+        case 3:  pattern_full =  `'${pattern_escaped}'` ; break;
     }
     const pattern_sql = pattern_is_ascii ? pattern_full  : pattern_full.toLowerCase();
     const value_sql   = pattern_is_ascii ? value_escaped : `ulower(${value_escaped})`;

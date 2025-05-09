@@ -241,13 +241,14 @@ function move_indicator(element) {
         indicator_elem.style.height = '0px';
         return;
     }
-    const top    = element.offsetTop;
+    const top    = element.offsetTop - (container_ref.value?.scrollTop || 0);
     const height = element.clientHeight;
     // const scrollLeft = container_ref.value?.scrollLeft;
     // console.log(scrollLeft);
     indicator_elem.style.top    = top+'px';
     indicator_elem.style.height = height+'px';
     // indicator_elem.style.left   = scrollLeft + 'px';
+    // console.log("MOVE INDICATOR ELEMENT PARENT", element, element.parentNode, container_ref.value?.scrollTop);
 }
 
 let current_hovered_row_i = -1;
