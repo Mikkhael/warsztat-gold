@@ -86,11 +86,21 @@ FROM ${ZLEC_TAB.get_full_sql()} JOIN ${MAIN_TAB.get_full_sql()} ON ${ZLEC_COLS.I
 WHERE ${ZLEC_COLS.ID_samochodu.get_full_sql()} IS ${ escape_sql_value(param_id_samochodu_val) }
 GROUP BY nr)`;
 
+const SUM_KROTNOSC_FROM = 
+`(SELECT 
+  ${MAIN_COLS.ID_czynności.get_full_sql()} as nr,
+  sum(${MAIN_COLS.krotność_wykonania.get_full_sql()}) as cnt
+FROM ${ZLEC_TAB.get_full_sql()} JOIN ${MAIN_TAB.get_full_sql()} ON ${ZLEC_COLS.ID.get_full_sql()} IS ${MAIN_COLS.ID_zlecenia.get_full_sql()}
+WHERE ${ZLEC_COLS.ID_samochodu.get_full_sql()} IS ${ escape_sql_value(param_id_samochodu_val) }
+GROUP BY nr)`;
+
 const src_list = new QueryViewerSource();
-src_list.set_from_with_deps(CZYN_TAB, "LEFT JOIN " + LAST_CENA_FROM + " AS last ON ", CZYN_COLS.ID_cynności, 'IS last.nr');
+src_list.set_from_with_deps(CZYN_TAB, "LEFT JOIN " + LAST_CENA_FROM    + " AS last ON ",   CZYN_COLS.ID_cynności, 'IS last.nr', 
+                                      "LEFT JOIN " + SUM_KROTNOSC_FROM + " AS summed ON ", CZYN_COLS.ID_cynności, 'IS summed.nr', );
 src_list.auto_add_column_synced(CZYN_COLS.ID_cynności);
 src_list.auto_add_column_synced(CZYN_COLS.czynność, {display: "Nazwa Czynności"});
-src_list.auto_add_column       ("last_cena_netto",  {display: "Netto Ostatnia", sql:"ifnull(last.cena,'0.00')", input_props: {type: 'decimal'} });
+src_list.auto_add_column       ("last_cena_netto",  {display: "Netto Ostatnia",  sql:"ifnull(last.cena,'0.00')", input_props: {type: 'decimal'} });
+src_list.auto_add_column       ("summed_krotnosc",  {display: "Łączna krotność", sql:"summed.cnt"});
 // src_list.set_order(CZYN_COLS.czynność, 1);
 src.add_aux_query(src_list);
 
