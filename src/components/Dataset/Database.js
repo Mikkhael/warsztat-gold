@@ -105,6 +105,7 @@ class TableNode extends DataGraphNodeBase{
     get_full_sql() {
         return escape_backtick_smart(this.name);
     }
+    toString() {return this.get_full_sql();}
 }
 
 class Column {
@@ -142,6 +143,7 @@ class Column {
     get_full_sql() {
         return escape_backtick_smart(this.tab.name) + '.' + escape_backtick_smart(this.name);
     }
+    toString() {return this.get_full_sql();}
 }
 
 export {

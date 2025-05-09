@@ -1,175 +1,272 @@
 
 
 //@ts-check
-import { computed, unref, shallowRef, triggerRef } from "vue";
-import { escape_backtick_smart, escape_like_full, escape_sql_value, reasRef } from "../../utils";
+import { computed, unref, shallowRef, triggerRef, isRef, isReactive } from "vue";
+import { escape_backtick_smart, escape_like_full, escape_sql_value, escape_ulower_like_full, is_sql_value, reasRef, reasShallowRef } from "../../utils";
 import { Column, TableNode } from "./Database";
 
+import "./types";
+import { DataGraphDependable, DataGraphNodeBase } from "./DataGraph";
 
-/**
- * @template T
- * @typedef {import('vue').Ref<T>} Ref
- */
-/**
- * @template T
- * @typedef {import('vue').ComputedRef<T>} ComputedRef
- */
-/**
- * @template T
- * @typedef {T | Ref<T>} MaybeRef
- */
 
-/**
- * @typedef {number | string | null} SQLValue 
- */
+/////////////////////////////////////////////////////// QUERY PARTS //////////////////////////////////////////////////////////////////
 
-/**@typedef {[string] | [string, string]} QuerySelectField */
-/**@param {QuerySelectField} select_field */
-function select_field_definition_to_sql(select_field) {
-    if(select_field.length === 1) {
-        return escape_backtick_smart(select_field[0]);
-    } else if (select_field[0] === '') {
-        return select_field[1];
-    } else {
-        return select_field[1] + ' AS ' + escape_sql_value(select_field[0]);
-    }
-}
+class QP {
 
-/**
- * @template [T=never]
- * @typedef {string | [MaybeRef<SQLValue | boolean> | T] | [string, 'l'] | [string, 'l', number] | [string, 'b']} QueryPart
- * */
-
-/**
- * @template [T=never]
- * @typedef {QueryPart<T>[]} QueryParts
- * */
-
-/**
- * @template [T=SQLValue]
- * @param {QueryParts<T>} parts 
- * @returns {QueryParts<T>}
- * */
-function qparts(...parts) {
-    return parts;
-}
-
-/**
- * @template [T=never]
- * @param  {(QueryPart<T> | Column | TableNode)[]} parts 
- * @returns {QueryParts<T>}
- */
-function qparts_db(...parts) {
-    return parts.map(part => {
-        if(part instanceof Column)    return part.get_full_sql();
-        if(part instanceof TableNode) return part.get_full_sql();
-        return part;
+    // /**@enum {QP.Type[keyof QP.Type]} */
+    static Type = Object.freeze({
+        RawString: 0,
+        Backtick: 1,
+        SQLValue: 2,
+        SQLNode: 3,
+        Like: 4,
+        LikeBuiltin: 5,
     });
+    /**@typedef {QP.Type[keyof QP.Type]} QPType*/
+
+    /**
+     * @template {QPType} T
+     * @typedef {T extends typeof QP.Type.RawString   ? MaybeRef<Stringable> : 
+     *           T extends typeof QP.Type.Backtick    ? MaybeRef<Stringable> : 
+     *           T extends typeof QP.Type.SQLValue    ? MaybeRef<SQLValue> : 
+     *           T extends typeof QP.Type.SQLNode     ? MaybeRef<TableNode | Column> : 
+     *           T extends typeof QP.Type.Like        ? [type: MaybeRef<number>, pattern: MaybeRef<Stringable>, str: QP] : 
+     *           T extends typeof QP.Type.LikeBuiltin ? [type: MaybeRef<number>, pattern: MaybeRef<Stringable>, str: QP] : 
+     *           any
+     * } DataForQPType
+     */
+    /**
+     * @template {QPType} T
+     * @typedef {T extends typeof QP.Type.Like        ? Stringable: 
+     *           T extends typeof QP.Type.LikeBuiltin ? Stringable: 
+     *           import('vue').UnwrapRef<DataForQPType<T>>
+     * } DataForQPTypeTraversed
+     */
+
+    /**
+     * @param {QPType} type 
+     * @param {any} data 
+     */
+    constructor(type, data) {
+        this.type = type;
+        this.data = data;
+    }
+
+    toString() { return QP.ToStringImpl(this.type, this.data); }
+    traverse   (/**@type {(type: QPType, data: any) => any} */ callback) {return QP.TraverseImpl   (this.type, this.data, callback);}
+    traverseAdv(/**@type {(type: QPType, data: any) => any} */ callback) {return QP.TraverseAdvImpl(this.type, this.data, callback);}
+
+    /**@template {QPType} T */
+    static FromType(/**@type {T} */ type, /**@type {DataForQPType<T>} */ data) {return new QP(type, data);}
+
+    /**@returns {string} */
+    static ToStringImpl(/**@type {QPType} */ type, _data) {
+        switch(type) {
+            case QP.Type.RawString:   {const data = unref(/**@type {DataForQPType<typeof type>} */(_data)); return data.toString();}
+            case QP.Type.Backtick:    {const data = unref(/**@type {DataForQPType<typeof type>} */(_data)); return escape_backtick_smart(data.toString());}
+            case QP.Type.SQLValue:    {const data = unref(/**@type {DataForQPType<typeof type>} */(_data)); return escape_sql_value(data);}
+            case QP.Type.SQLNode:     {const data = unref(/**@type {DataForQPType<typeof type>} */(_data)); return data.get_full_sql();}
+            case QP.Type.Like:        {const data = /**@type {DataForQPType<typeof type>} */(_data); return escape_ulower_like_full(unref(data[1]).toString(), data[2].toString(), unref(data[0]));}
+            case QP.Type.LikeBuiltin: {const data = /**@type {DataForQPType<typeof type>} */(_data); return `${data[2].toString()} ${escape_like_full(unref(data[1]).toString()), unref(data[0])}`;}
+        }
+        console.error("UNRECOGNIZED QUERY PART TYPE: ", type);
+        return '';
+    }
+    static TraverseAdvImpl(/**@type {QPType} */ type, _data, /**@type {(type: QPType, data: any) => any} */ callback) {
+        
+        switch(type) {
+            case QP.Type.Like:        {const inner = /**@type {QP}*/(_data[2]); return callback(type, _data) || inner.traverseAdv(callback);}
+            case QP.Type.LikeBuiltin: {const inner = /**@type {QP}*/(_data[2]); return callback(type, _data) || inner.traverseAdv(callback);}
+            default: return callback(type, unref(_data));
+        }
+    }
+    static TraverseImpl(/**@type {QPType} */ type, _data, /**@type {(type: QPType, data: any) => any} */ callback) {
+        switch(type) {
+            case QP.Type.Like:        { const inner = /**@type {QP}*/(_data[2]); return callback(type, unref(_data[1])) || inner.traverse(callback);}
+            case QP.Type.LikeBuiltin: { const inner = /**@type {QP}*/(_data[2]); return callback(type, unref(_data[1])) || inner.traverse(callback);}
+            default: return callback(type, unref(_data));
+        }
+    }
+
+    static S(/**@type {MaybeRef<Stringable>} */ str)    { return QP.FromType(QP.Type.RawString, str); }
+    static B(/**@type {MaybeRef<Stringable>} */ str)    { return QP.FromType(QP.Type.Backtick,  str); }
+    static V(/**@type {MaybeRef<SQLValue>} */ sqlvalue) { return QP.FromType(QP.Type.SQLValue,  sqlvalue); }
+    static T(/**@type {TableNode | Column} */ sqlnode)  { return QP.FromType(QP.Type.SQLNode,   sqlnode); }
+    static Like       (/**@type {QP} */ str, /**@type {MaybeRef<Stringable>} */ pattern, /**@type {MaybeRef<number>} */ type = 0) {
+        return QP.FromType(QP.Type.Like, [type, pattern, str]);
+    }
+    static LikeBuiltin(/**@type {QP} */ str, /**@type {MaybeRef<Stringable>} */ pattern, /**@type {MaybeRef<number>} */ type = 0) {
+        return QP.FromType(QP.Type.Like, [type, pattern, str]);
+    }
+
+    static Def(/**@type {MaybeRef<TableNode | Column | SQLValue | Stringable>} */ value) {
+        if(value instanceof TableNode || value instanceof Column) 
+            return QP.T(value);
+        const unrefed = unref(value);
+        if(is_sql_value(unrefed))
+            //@ts-ignore
+            return QP.V(value);
+        if(typeof (unrefed?.toString()) === 'string')
+            //@ts-ignore
+            return QP.B(value);
+        console.error("INVALID QUERY PART VALUE FOR 'DEF': ", typeof value, value);
+        return QP.S('');
+    }
+};
+
+function QPTag(/**@type {TemplateStringsArray} */ strings, ...keys) {
+    const parts_strings = strings.map(x => QP.S(x));
+    const parts_keys    = keys.map(key => {
+        if(key instanceof QP) return key;
+        return QP.Def(key);
+    });
+    const zipped = parts_keys.map((_,i) => [parts_strings[i], parts_keys[i]]).flat();
+    return [...zipped, parts_strings[parts_strings.length - 1]];
 }
+
+function QPString(/**@type {TemplateStringsArray} */ strings, ...keys) {
+    return QPTag(strings, ...keys).toString();
+}
+
+class QPS {
+    static S(/**@type {MaybeRef<Stringable>} */ str)    { return QP.ToStringImpl(QP.Type.RawString, str); }
+    static B(/**@type {MaybeRef<Stringable>} */ str)    { return QP.ToStringImpl(QP.Type.Backtick,  str); }
+    static V(/**@type {MaybeRef<SQLValue>} */ sqlvalue) { return QP.ToStringImpl(QP.Type.SQLValue,  sqlvalue); }
+    static T(/**@type {TableNode | Column} */ sqlnode)  { return QP.ToStringImpl(QP.Type.SQLNode,   sqlnode); }
+    static Like       (/**@type {QP} */ str, /**@type {MaybeRef<Stringable>} */ pattern, /**@type {MaybeRef<number>} */ type = 0) {
+        return QP.ToStringImpl(QP.Type.Like, [type, pattern, str]);
+    }
+    static LikeBuiltin(/**@type {QP} */ str, /**@type {MaybeRef<Stringable>} */ pattern, /**@type {MaybeRef<number>} */ type = 0) {
+        return QP.ToStringImpl(QP.Type.Like, [type, pattern, str]);
+    }
+};
+
+class QueryParts {
+    constructor(/**@type {MaybeRef<QP[]>}*/ parts) {
+        this.parts = parts;
+        this.computed = QueryParts.to_computed(...unref(this.parts));
+    }
+    get      () { return this.computed.value;}
+    get_inner() { return `(${this.computed.value})`;}
+
+    /**
+     * Check each query part (including inners). If callback returns true-ish value, return said value. Otherwise undefined.
+     * @template R
+     * @returns {R | undefined}
+     */
+    traverse   (/**@type {(type: QPType, data: any) => R} */ callback) {return QueryParts.traverse   (callback, ...unref(this.parts));}
+
+    /**
+     * Like "traverse", but more advanced types (e.g. "Like") and Ref's aren't simplified to a single value.
+     * @template R
+     * @returns {R | undefined}
+     */
+    traverseAdv(/**@type {(type: QPType, data: any) => R} */ callback) {return QueryParts.traverseAdv(callback, ...unref(this.parts));}
+
+    /**
+     * @template R 
+     * @returns {R | undefined}
+     */
+    static traverse    ( /**@type {(type: QPType, data: any) => R} */ callback, /**@type {QP[]}*/ ...parts) {
+        for(const part of parts) {
+            const res = part.traverse(callback);
+            if(res) return res;
+        }
+        return undefined;
+    }
+    
+    /**
+     * @template R 
+     * @returns {R | undefined}
+     */
+    static traverseAdv ( /**@type {(type: QPType, data: any) => R} */ callback, /**@type {QP[]}*/ ...parts) {
+        for(const part of parts) {
+            const res = part.traverseAdv(callback);
+            if(res) return res;
+        }
+        return undefined;
+    }
+
+    static build      (/**@type {QP[]}*/ ...parts) { return parts.map(x => x.toString()).join(' '); }
+    static build_inner(/**@type {QP[]}*/ ...parts) { return `(${this.build(...parts)})`; }
+    
+    static to_computed      (/**@type {QP[]}*/ ...parts) { return computed(() => this.build      (...parts));}
+    static to_computed_inner(/**@type {QP[]}*/ ...parts) { return computed(() => this.build_inner(...parts));}
+};
 
 /**
- * @template T
- * @param {QueryParts<T>} parts 
- * @param {(param: MaybeRef<SQLValue | boolean> | T) => MaybeRef<SQLValue | boolean>} callback 
- * @returns {QueryParts}
+ * @typedef {QP[]} QueryPartsSimple
  */
-function map_query_parts_params(parts, callback) {
-    return parts.map(part => {
-        if(!(part instanceof Array)) return part;
-        if(part.length === 1) {
-            return [callback(part[0])];
-        }
-        return part;
-    });
-}
-/**@param {QueryParts} parts  */
-function query_parts_to_string(parts) {
-    return parts.map(part => {
-        if(typeof part === 'string') return part;
-        if(part instanceof Array) {
-            if(part.length === 1) return escape_sql_value(unref(part[0]));
-            if(part[1] === 'l')   return escape_like_full(part[0], part[2]);
-            if(part[1] === 'b')   return escape_backtick_smart(part[0]);
-        }
-        throw new Error('INVALID QUERY PART');
-    }).join(' ');
-}
-/**@param {QueryParts} parts */
-function query_parts_is_not_null(parts) {
-    return !parts.some(part => part instanceof Array && unref(part[0]) === null);
-}
+
+function qp_has_null(type, data) {return data === null;}
+
+/////////////////////////////////////////////////////// QUERY BUILDER //////////////////////////////////////////////////////////////////
 
 
-/**@typedef {[string] | [string, boolean] | [string, boolean, collate: string | undefined]} QueryOrdering */
-/**@param {QueryOrdering} ordering */
-function query_ordering_to_string(ordering) {
-    if(ordering.length === 1) {
-        return escape_backtick_smart(ordering[0]);
-    } else if(ordering.length === 3 && ordering[2]) {
-        return escape_backtick_smart(ordering[0]) + " COLLATE " + ordering[2] + (ordering[1] ? ' ASC' : ' DESC');
-    } else {
-        return escape_backtick_smart(ordering[0]) + (ordering[1] ? ' ASC' : ' DESC');
-    }
+function query_ordering_to_sql(/**@type {QueryOrderingDefinition} */ ordering) {
+    const label   = escape_backtick_smart(unref(ordering.label).toString());
+    const collate = ordering.collate !== undefined ? ` COLLATE ${unref(ordering.collate.toString())}`    : '';
+    const asc     = ordering.asc     !== undefined ? (unref(ordering.asc) ? ' ASC' : ' DESC') : '';
+    return label + collate + asc;
 }
 
-
+function query_select_field_to_sql(/**@type {QuerySelectFieldDefinition} */ selectfield) {
+    const before_as = selectfield.sql ? unref(selectfield.sql).toString() : escape_backtick_smart((unref(selectfield.name) ?? '').toString());
+    const after_as  = selectfield.as  ? " AS " + escape_sql_value(unref(selectfield.as).toString()) : '';
+    return before_as + after_as;
+}
 class QueryBuilder {
     constructor(implicit_order_roiwd = false) {
 
-        this.select_fields = reasRef(/**@type {QuerySelectField[]} */ ([]));
+        this.select_fields = reasShallowRef(/**@type {QuerySelectFieldDefinition[]} */ ([]));
         this._sql_select_fields = computed(() => 
             this.select_fields.value
-            .map(select_field_definition_to_sql)
+            .map(query_select_field_to_sql)
             .join(', ')
         );
-        this._sql_select_fields_part_custom_only = computed(() => 
-            this.select_fields.value
-            .filter(x => x.length === 2)
-            .map(select_field_definition_to_sql)
-            .join(', ')
-        );
+        // Only those select fields, where sql is defined (to correctly capture in count(*) query)
         // TODO remove if unnessesary in count query
         this._sql_select_fields_part_custom_only_app = computed(() => 
-            this._sql_select_fields_part_custom_only.value ?
-            ', ' + this._sql_select_fields_part_custom_only.value :
-            ''
+            this.select_fields.value
+            .filter(x => x.sql)
+            .map(query_select_field_to_sql)
+            .map(x => ', ' + x)
+            .join('')
         );
 
-        this.from = reasRef("");
-        this._sql_from = this.from;
+        this.from = reasRef(/**@type {QueryPartsSimple} */ ([]));
+        this._sql_from = computed(() => QueryParts.build(...this.from.value));
 
-        this.plugin_where_conj = shallowRef(/**@type {MaybeRef<QueryParts[]>[]} */ ([]));
-        this.where_conj     = reasRef(/**@type {QueryParts[]} */ ([]));
-        this.where_conj_opt = reasRef(/**@type {QueryParts[]} */ ([]));
+        this.plugin_where_conj = shallowRef(/**@type {MaybeRef<QueryPartsSimple[]>[]} */ ([]));
+        this.where_conj     = reasShallowRef(/**@type {QueryPartsSimple[]} */ ([]));
+        this.where_conj_opt = reasShallowRef(/**@type {QueryPartsSimple[]} */ ([]));
         this._sql_where = computed(() => {
             const all_parts = [
                 ...this.where_conj.value,
-                ...this.where_conj_opt.value.filter(query_parts_is_not_null),
+                ...this.where_conj_opt.value.filter(x => !QueryParts.traverse(qp_has_null, ...x)),
                 ...this.plugin_where_conj.value.map(unref).flat()
             ];
             return all_parts
-                .map(query_parts_to_string)
-                .map(x => '(' + x + ')')
+                .map(x => QueryParts.build_inner(...x))
                 .join(' AND ');
         });
 
-        this.groupby = reasRef(/**@type {QueryParts[]} */ ([]));
+        this.groupby = reasShallowRef(/**@type {QueryPartsSimple} */ ([]));
         this._sql_groupby = computed(() => {
             const all_parts = [
                 ...this.groupby.value,
             ];
             return all_parts
-                .map(query_parts_to_string)
-                .map(x => '(' + x + ')')
+                .map(x => QueryParts.build(x))
                 .join(', ');
         });
 
-        this.plugin_orders = shallowRef(/**@type {MaybeRef<QueryOrdering[]>[]} */ ([]));
-        this.order = reasRef(/**@type {QueryOrdering[]} */ ([]));
+        this.plugin_orders = shallowRef(/**@type {MaybeRef<QueryOrderingDefinition[]>[]} */ ([]));
+        this.order = reasShallowRef(/**@type {QueryOrderingDefinition[]} */ ([]));
         this._sql_order  = computed(() => [
                 ...this.order.value, 
                 ...this.plugin_orders.value.map(unref).flat()
-            ].map(query_ordering_to_string).join(','));
+            ].map(query_ordering_to_sql).join(', '));
 
         this.limit = reasRef(1);
         this._sql_limit  = computed(() => this.limit.value < 0 ? '' : this.limit.value.toString());
@@ -178,7 +275,7 @@ class QueryBuilder {
         this._sql_offset = computed(() => this.limit.value < 0 ? '' : this.offset.value.toString());
 
         if(implicit_order_roiwd) {
-            this.order.value = [['rowid']];
+            this.order.value = [{label: 'rowid'}];
         }
 
         this._sections1 = computed(() => {
@@ -282,28 +379,24 @@ class QueryBuilder {
     }
 
     /**
-     * @param {Column | string} column 
-     * @param {string=} sql_definition 
+     * @param {QuerySelectFieldDefinition} selectfield
      */
-    add_select(column, sql_definition) {
-        const name = column instanceof Column ? column.get_full_sql() : column;
-        if(sql_definition === undefined) {
-            this.select_fields.value.push([name]);
-        } else {
-            this.select_fields.value.push([name, sql_definition]);
-        }
+    add_select(selectfield) {
+        this.select_fields.value.push(selectfield);
     }
     /**
-     * @param {string} name 
-     * @param {MaybeRef<SQLValue>} value
+     * @param {QP} name 
+     * @param {QP} value
      */
     add_where_eq(name, value, optional = false) {
-        const parts = qparts([name,'b'],' IS ',[value]);
+        // const parts = qparts([name,'b'],' IS ',[value]);
+        // const parts = [name, QP.S('IS'), value];
+        const parts = QPTag`${name} IS ${value}`;
         this.add_where(parts, optional);
     }
     
     /**
-     * @param {QueryParts} parts
+     * @param {QueryPartsSimple} parts
      */
     add_where(parts, optional = false) {
         if(optional) {
@@ -316,19 +409,15 @@ class QueryBuilder {
      * @param {Column | string} column
      */
     add_groupby_column(column) {
-        if(column instanceof Column) {
-            this.groupby.value.push([column.get_full_sql()]);
-        } else {
-            this.groupby.value.push([[column, 'b']]);
-        }
+        this.groupby.value.push(QP.B(column));
     }
 
-    add_order_plugin(/**@type {MaybeRef<QueryOrdering[]>} */ orders) {
+    add_order_plugin(/**@type {MaybeRef<QueryOrderingDefinition[]>} */ orders) {
         this.plugin_orders.value.push(orders);
         triggerRef(this.plugin_orders);
     }
 
-    add_where_plugin(/**@type {MaybeRef<QueryParts[]>} */ parts) {
+    add_where_plugin(/**@type {MaybeRef<QueryPartsSimple[]>} */ parts) {
         this.plugin_where_conj.value.push(parts);
         triggerRef(this.plugin_where_conj);
     }
@@ -364,13 +453,12 @@ function concat_query(sections) {
 }
 
 export {
+    QP,
+    QPS,
+    QueryParts,
     QueryBuilder,
-    map_query_parts_params,
-    qparts,
-    qparts_db,
-    query_ordering_to_string,
-    query_parts_is_not_null,
-    query_parts_to_string,
+    QPTag,
+    QPString,
     concat_query,
     concat_query_section,
 }

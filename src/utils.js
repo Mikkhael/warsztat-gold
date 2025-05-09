@@ -23,6 +23,12 @@ function typeofpl(value){
     }
 }
 
+function is_sql_value(value) {
+    return value === null || (
+        ['string', 'bigint', 'number', 'boolean'].indexOf(typeof value) !== -1
+    );
+}
+
 /**
  * @param {number | bigint | string | null | boolean} value 
  * @returns 
@@ -717,10 +723,41 @@ function reasRef(val) {
 }
 
 
+/**
+ * @template T
+ * @typedef {import('vue').ShallowRef<T> & {reas: (ref: import('vue').ShallowRef<T>) => void, reas_or_unref: (maybe_ref: T | import('vue').ShallowRef<T>) => void}} ReasShallowRef
+ */
+
+/**
+ * @template T
+ * @param {T} val
+ * @returns {ReasShallowRef<T>}
+ */
+function reasShallowRef(val) {
+    const _ref = shallowRef([shallowRef(val)]);
+    const _computed = computed({
+        get()  {return _ref.value[0].value;	    },
+        set(n) {       _ref.value[0].value = n; }
+    });
+    /**@param { import('vue').ShallowRef<T>} ref */
+    const reas = (ref) => {
+        _ref.value[0] = ref;
+        triggerRef(_ref);
+    }
+    /**@param {T | import('vue').ShallowRef<T>} maybe_ref */
+    const reas_or_unref = (maybe_ref) => {
+        if(isRef(maybe_ref)) {reas(maybe_ref);}
+        else                 {_computed.value = maybe_ref;}
+    }
+    return Object.assign(_computed, {reas, reas_or_unref});
+}
+
+
 
 
 export {
     generate_UID,
+    is_sql_value,
     escape_sql_value,
     escape_backtick,
     escape_backtick_smart,
@@ -771,5 +808,6 @@ export {
     number_to_polish_words,
 
     reasRef,
+    reasShallowRef,
     // watchedRef
 }
