@@ -11,8 +11,10 @@ import AlertsDebug from "./components/SqlDebug/AlertsDebug.vue";
 // import QueryViewerDebug from "./components/SqlDebug/QueryViewerDebug.vue";
 import DataGraphDebug from "./components/SqlDebug/DataGraphDebug.vue";
 // import QuerySourceDebug from "./components/SqlDebug/QuerySourceDebug.vue";
-import RevisedFormQueryDebug from "./components/SqlDebug/RevisedFormQueryDebug.vue";
-import MainWindow from "./components/MainWindow.vue";
+// import RevisedFormQueryDebug from "./components/SqlDebug/RevisedFormQueryDebug.vue";
+import FormInputWithTrackedValueDebug from "./components/SqlDebug/FormInputWithTrackedValueDebug.vue";
+
+// import MainWindow from "./components/MainWindow.vue";
 import { onMounted, reactive, readonly, ref } from "vue";
 
 import WinBox from "./components/WinBox/winbox";
@@ -21,7 +23,7 @@ import useMainMsgManager from "./components/Msg/MsgManager";
 import CornerMsgContainer from "./components/Msg/CornerMsgContainer.vue";
 
 const main_components = [
-  MainWindow,
+  // MainWindow,
   SqlDebugConsole,
   // QueryFormDebug,
   // QueryFormSimpleDebug,
@@ -31,10 +33,11 @@ const main_components = [
   AlertsDebug,
   DataGraphDebug,
   // QuerySourceDebug,
-  RevisedFormQueryDebug,
+  // RevisedFormQueryDebug,
+  FormInputWithTrackedValueDebug,
 ];
 const main_components_names = readonly([
-  "MainWindow",
+  // "MainWindow",
   "SqlDebugConsole",
   // "QueryFormDebug",
   // "QueryFormSimpleDebug",
@@ -43,10 +46,11 @@ const main_components_names = readonly([
   // "QueryViewerDebug",
   "AlertsDebug",
   "DataGraphDebug",
-  "QuerySourceDebug",
-  "RevisedFormQueryDebug",
+  // "QuerySourceDebug",
+  // "RevisedFormQueryDebug",
+  "FormInputWithTrackedValueDebug",
 ]);
-const current_main_component_index = ref(0);
+const current_main_component_index = ref(main_components_names.indexOf("FormInputWithTrackedValueDebug"));
 const current_main_component = ref();
 
 const msg_manager = useMainMsgManager();

@@ -309,6 +309,7 @@ class DataGraphNodeFromRef extends DataGraphNodeBase {
     update_impl()  {this.cached.value = unref(this.ref);}
 }
 
+// TODO rename DataGraphDependable
 /**@template T */
 class DataGraphDependable {
     constructor(){}

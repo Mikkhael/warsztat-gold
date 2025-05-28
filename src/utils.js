@@ -472,6 +472,7 @@ function parse_decimal(source_string) {
     if(!parts) return null;
     return parts[2];
 }
+// TODO replace parsing everywhere, to allow custom formats
 /**
  * 
  * @param {string?} source_string 
@@ -525,8 +526,10 @@ function parse_decimal_adv(source_string) {
  * @param {string} source_string 
  * @param {number} precision 
  * @param {string} sufix 
+ * @param {string} force_sep
+ * @param {string} triplets_sep
  */
-function format_decimal(source_string, precision = 2, sufix = " zł", force_sep = '.', triplets_sep = '') {
+function format_decimal_adv(source_string, precision = 2, sufix = "", force_sep = '.', triplets_sep = '') {
     const parse_res = parse_decimal_adv(source_string);
     if(!parse_res) return null;
     let [whole, frac, full, sign, sep, zero] = parse_res;
@@ -550,14 +553,41 @@ function format_decimal(source_string, precision = 2, sufix = " zł", force_sep 
     return sign + whole + force_sep + frac + sufix;
 }
 
+
 /**
- * @param {any} string 
+ * @typedef {{
+ *  suffix?: string,
+ *  sep?: string,
+ *  trip_sep?: string,
+ *  precission?: number,
+ * }} DecimalFormat
  */
-function format_decimal2(string, with_zl = false, with_trip = true) {
-    // console.log("FORMATTING", string);
+
+const NBSP = '\xa0';
+
+/**@type {{[K in "Default" | "PLN" | "PLN3"]: DecimalFormat}} */
+const DecimalFormatPreset = ({
+    Default: {},
+    PLN:     {precission: 2, suffix: ' zł', sep: ','},
+    PLN3:    {precission: 2, suffix: ' zł', sep: ',', trip_sep: NBSP},
+});
+
+/**
+ * @param {any} string
+ * @param {DecimalFormat} format
+ */
+function format_decimal(string, format) {
+    // console.log("FORMATTING", string, format);
     string = string?.toString();
     if(typeof string != 'string') return '';
-    return format_decimal(string, 2, with_zl ? ' zł' : '', ',', with_trip ? '\xa0' : '') ?? '';
+    return format_decimal_adv(string, format.precission, format.suffix, format.sep, format.trip_sep);
+}
+
+/**
+ * @param {any} string
+ */
+function format_decimal_pln(string, with_trip = true) {
+    return format_decimal(string, with_trip ? DecimalFormatPreset.PLN3 : DecimalFormatPreset.PLN) ?? '';
 }
 
 /**
@@ -752,8 +782,23 @@ function reasShallowRef(val) {
     return Object.assign(_computed, {reas, reas_or_unref});
 }
 
+/**
+ * @typedef {import('vue').ShallowRef<{}> & {trigger: () => void}} ReactiveTrigger
+ */
+
+function reactive_trigger() {
+    const res = shallowRef({});
+    return Object.assign(res, {trigger: () => {res.value = {}}});
+}
 
 
+
+function computed_JSON(/**@type {import('vue').Ref<any>} */ r) {
+    return computed({
+        get()  {return JSON.stringify(r.value);},
+        set(v) {r.value = JSON.parse(v);}
+    });
+}
 
 export {
     generate_UID,
@@ -801,7 +846,11 @@ export {
     parse_decimal_adv,
     parse_decimal,
     format_decimal,
-    format_decimal2,
+    format_decimal_adv,
+    format_decimal_pln,
+
+    DecimalFormatPreset,
+    NBSP,
 
     format_first_line,
 
@@ -810,4 +859,6 @@ export {
     reasRef,
     reasShallowRef,
     // watchedRef
+    computed_JSON,
+    reactive_trigger,
 }

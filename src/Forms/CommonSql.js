@@ -1,7 +1,11 @@
 //@ts-check
 import { computed } from "vue";
-import { Column, qparts_db, query_parts_to_string, QuerySource } from "../components/Dataset";
+import { Column, QuerySource } from "../components/Dataset";
 import useWarsztatDatabase from "../DBStructure/db_warsztat_structure";
+
+// TODO placeholder
+function qparts_db(){};
+function query_parts_to_string(){};
 
 const db = useWarsztatDatabase();
 const TAB_ZLEC = db.TABS.zlecenia_naprawy;

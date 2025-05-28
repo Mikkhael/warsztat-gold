@@ -19,6 +19,10 @@
  * @typedef {T | Ref<T>} MaybeRef
  */
 
+/**
+ * @template T
+ * @typedef {import('vue').PropType<T>} PropType
+ */
 
 
 
@@ -33,7 +37,13 @@
  * @typedef {number | string | null | boolean} SQLValue
  */
 
+/**
+ * @typedef {"integer" | "number" | "decimal" | "boolean" | "date" | "datetime" | "datetime-local" | "text" | "money"} FormValueFormat
+ */
 
+/**
+ * @typedef {import('../../utils').DecimalFormat} DecimalFormat
+ */
 
 ////////////////// Query Parts ////////////////////////
 

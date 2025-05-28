@@ -80,7 +80,7 @@ function handle_context_menu_event(event) {
     event.preventDefault();
     if( is_target_an_input_field(target) ) {
 
-        const custom_data_str = target.getAttribute('context_menu_custom_data') ?? '{}';
+        const custom_data_str = target.getAttribute('context_menu_custom_data') ?? '[]';
         const custom_data_items = [];
         try {
             /**@type {ContextMenuCustomData} */

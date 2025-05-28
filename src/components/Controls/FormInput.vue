@@ -1,66 +1,103 @@
 <script setup>
 //@ts-check
 
-import { computed, ref, watch, toRef, useAttrs, reactive } from 'vue';
+import { computed, ref, watch, toRef, useAttrs, watchEffect, nextTick } from 'vue';
 import { use_FormInput } from './impl/FormInput';
-import { generate_UID } from '../../utils';
 import { smart_focus_next_form , smart_focus_next } from './smartFocus';
+import { TrackedValue } from '../Dataset/TrackedValue';
+import '../Dataset/types';
+import { Column } from '../Dataset';
+
+/*
+ * @typedef {{
+ *  readonly value?: TrackedValue,
+ *  readonly rawvalue?: SQLValue,
+ *  readonly oldvalue?: SQLValue,
+ *  readonly changed?:  boolean,
+ *  readonly decimal_format?: DecimalFormat,
+ *  readonly format?:   FormValueFormat,
+ *  readonly column?:   Column,
+ *  readonly no_col_deduce?: boolean,
+ *  readonly readonly?: boolean,
+ *  readonly nonull?:   boolean,
+ *  readonly len?: number,
+ *  readonly min?: number,
+ *  readonly max?: number,
+ *  readonly hints: any[]
+ * }} PropsType 
+ */
 
 const props = defineProps({
-    type: {
-        /**@type {import('vue').PropType<import('./impl/FormInput').FormInputType>} */
+
+    value:    {
+        /**@type {PropType<TrackedValue>} */ 
+        type: Object, 
+        required: false
+    },
+    rawvalue: {
+        /**@type {PropType<SQLValue>}     */ 
+        type: [String, Number, Boolean, Object],
+        required: false
+    },
+    oldvalue: {
+        /**@type {PropType<SQLValue>}     */ 
+        type: [String, Number, Boolean, Object],
+        default: undefined
+    },
+    changed:  {type: Boolean, default: undefined},
+
+    decimal_format: { 
+        /**@type {PropType<DecimalFormat>} */
+        type: Object,
+        required: false
+    },
+
+    type:   {
+        /**@type {PropType<FormValueFormat>} */
         //@ts-ignore
         type: String,
         required: false
     },
-    auto: {
-        type: Boolean,
-        default: false
-    },
-    textarea: {
-        type: Boolean,
-        default: false
-    },
-    nospin: {
-        type: Boolean,
-        default: false
-    },
-    value: {
-        /**@type {import('vue').PropType<import('../Dataset').ChangableValueLike>} */
-        type: Object,
-        required: true
-    },
-    hints: {
-        type: Array,
-        default: []
-    },
-    readonly: {
-        type: Boolean,
-        default: false
-    },
-    len: {
-        type: Number,
+    column: {
+        /**@type {PropType<Column>}          */
+        type: Column,
         required: false
     },
-    nonull: {
-        type: Boolean,
-        default: false
-    },
+    
+    no_col_deduce: {type: Boolean, default: false},
+    readonly: {type: Boolean, default: undefined},
+    nonull:   {type: Boolean, default: undefined},
+    len:      {type: Number, required: false},
+    min:      {type: Number, required: false},
+    max:      {type: Number, required: false},
+    
+    textarea: {type: Boolean, default: false},
+    nospin:   {type: Boolean, default: false},
+
     preffered_focus: {
-        /**@type {import('vue').PropType<() => (Element | Iterable<Element>)>} */
+        /**@type {PropType<() => (Element | Iterable<Element>)>} */
         //@ts-ignore
         type: Function,
         required: false
-    }
+    },
+
+    _debug_on: Boolean,
+
 });
+
 const fallthrough_attrs = useAttrs();
-const impl = use_FormInput(props);
+
+const emit = defineEmits({
+    "update:rawvalue": (/**@type {SQLValue} */ v) => {return true;}
+});
+function emit_rawvalue_callback(/**@type {SQLValue} */ v) {return emit('update:rawvalue', v);}
+const impl = use_FormInput(props, emit_rawvalue_callback);
 
 function set_as_null() {
     impl.local = null;
 }
 function reset_changes(){
-    props.value.refresh();
+    impl.reset();
 }
 
 function handle_enter(/**@type {KeyboardEvent} */ event) {
@@ -77,20 +114,28 @@ function handle_enter(/**@type {KeyboardEvent} */ event) {
 }
 
 const elem = ref();
-watch(toRef(impl, "custom_validity_message"), (new_value, old_value) => {
-    // console.log("CUSTOM VAL", old_value, new_value);
-    elem.value.setCustomValidity(new_value);
+watchEffect(() => {
+    elem?.value?.setCustomValidity(impl.custom_validity_message);
 });
+// watch(toRef(impl, "custom_validity_message"), (new_value, old_value) => {
+//     elem?.value?.setCustomValidity(new_value);
+// });
+// onMounted(() => {
+//     elem.value.setCustomValidity(impl.custom_validity_message);
+// });
 
-const uid = generate_UID();
-const INPUT_UID = ref(uid + '_input');
 
-const use_datalist = computed(() => props.hints.length > 0);
-const HINTS_UID = ref(uid + '_hint');
 
-const enter_focusable = computed(() => !props.textarea && !impl.attributes['disabled'] && !fallthrough_attrs['disabled']);
+// const uid = generate_UID();
+// const INPUT_UID = ref(uid + '_input');
 
-const all_raactive_class = computed(() => {
+// const use_datalist = computed(() => props.hints.length > 0);
+// const HINTS_UID = ref(uid + '_hint');
+
+const all_attributes  = computed(() => {return {...impl.attributes, ...fallthrough_attrs};});
+const enter_focusable = computed(() => !props.textarea && !all_attributes.value['disabled']);
+
+const all_reactive_class = computed(() => {
     return {
         changed: impl.changed,
         null: impl.local === null,
@@ -99,40 +144,47 @@ const all_raactive_class = computed(() => {
     }
 });
 
+function print_impl(){console.log("IMPL: ", impl, elem.value);}
 
+// Fix for when the "type" changes, and the displayed model value turns empty, and a warning is thrown
+watch(toRef(impl, 'static_changed_trigger'), async () => {
+    await nextTick();
+    if(props._debug_on) {console.log("[FormInput Debug Comp] FORCING REASIGN OF PROXY ", impl.local, impl.local_proxy);}
+    impl.reasign_proxy();
+});
 
+if(props._debug_on) {
+    watchEffect(() => {
+        console.log(`[FormInput Debug Comp] impl: local:${impl.local} local_proxy:${impl.local_proxy} type:${all_attributes.value['type']} `);
+    })
+}
 
 </script>
 
 <template>
+        <!-- <pre v-if="_debug_on"> {{ impl }} </pre> -->
         <input v-if="!props.textarea" ref="elem"
-                 v-model="impl.local_proxy_single_line" 
-                 class="FormControl FormControlInput" 
-                 :class="all_raactive_class"
-                 :placeholder="impl.local === null ? '~' : ''"
-                 :list="use_datalist ? HINTS_UID : undefined"
-                 :id="  use_datalist ? INPUT_UID : undefined"
-                 v-bind="{...impl.attributes, ...fallthrough_attrs}"
-                 v-on="impl.listeners"
+                class="FormControl FormControlInput" 
+                :class="all_reactive_class"
+                :placeholder="impl.local === null ? '~' : ''"
+                v-bind="all_attributes"
+                v-model="impl.local_proxy_single_line" 
+                v-on="impl.listeners"
                  @set_as_null="set_as_null()"
                  @reset_changes="reset_changes()"
                  @keyup.enter="handle_enter"
         />
         <textarea v-else ref="elem"
-                 v-model="impl.local_proxy" 
-                 class="FormControl FormControlInput" 
-                 :class="all_raactive_class"
-                 :placeholder="impl.local === null ? '~' : ''"
-                 :list="use_datalist ? HINTS_UID : ''"
-                 :id="  use_datalist ? INPUT_UID : undefined"
-                 v-bind="{...impl.attributes, ...fallthrough_attrs}"
-                 v-on="impl.listeners"
+                class="FormControl FormControlInput" 
+                :class="all_reactive_class"
+                :placeholder="impl.local === null ? '~' : ''"
+                v-bind="all_attributes"
+                v-model="impl.local_proxy" 
+                v-on="impl.listeners"
                  @set_as_null="set_as_null()"
                  @reset_changes="reset_changes()"
         ></textarea>
-        <datalist v-if="use_datalist" :id="HINTS_UID">
-            <option v-for="v in props.hints" :value="v">{{ v }}</option>
-        </datalist>
+        <!-- <input type="button" value="PRINT_IMPL" @click="print_impl()"> -->
 </template>
 
 <style scoped>

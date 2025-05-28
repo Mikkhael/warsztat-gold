@@ -106,11 +106,7 @@ class QP {
         if(is_sql_value(unrefed))
             //@ts-ignore
             return QP.V(value);
-        if(typeof (unrefed?.toString()) === 'string')
-            //@ts-ignore
-            return QP.B(value);
-        console.error("INVALID QUERY PART VALUE FOR 'DEF': ", typeof value, value);
-        return QP.S('');
+        return QP.S(unrefed?.toString() ?? '');
     }
 };
 

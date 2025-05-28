@@ -5,7 +5,7 @@ import { computed, ref, shallowRef, unref } from "vue";
 import { DataGraphDependable, DataGraphNodeBase } from "./DataGraph";
 import ipc from "../../ipc";
 import { Column, TableNode } from "./Database";
-import { map_query_parts_params, QueryBuilder } from "./QueryBuilder";
+import { QueryBuilder } from "./QueryBuilder";
 import { escape_backtick_smart, escape_sql_value } from "../../utils";
 
 
@@ -423,7 +423,8 @@ class QuerySource extends DataGraphNodeBase {
      */
     #add_where_impl(optional, ...parts){
         this.expire();
-        const _parts = map_query_parts_params(parts, (param => this.add_dependable(param)));
+        // TODO
+        // const _parts = map_query_parts_params(parts, (param => this.add_dependable(param))); 
         this.query.add_where(_parts, optional);
     }
     
