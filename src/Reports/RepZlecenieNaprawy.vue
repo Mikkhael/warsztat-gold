@@ -49,6 +49,7 @@ src.add_join(COLS_Z.ID_samochodu,   COLS_S.ID);
 
 const id         = src.auto_rep_value(COLS_Z.ID, {param: id_zlecenia_param});
 const data_otw   = src.auto_rep_value(COLS_Z.data_otwarcia);
+const data_zam   = src.auto_rep_value(COLS_Z.data_zamknięcia);
 const zgloszenie = src.auto_rep_value(COLS_Z.zgłoszone_naprawy);
 const uwagi      = src.auto_rep_value(COLS_Z.uwagi_o_naprawie);
 
@@ -110,11 +111,15 @@ const src_total_brutto   = src_total.auto_rep_value ("total_brutto",   {sql: "de
 const initial_is_zlec_manual = computed(() => src_list.local_rows.value.length <= 0);
 
 const date_now_ref = ref('');
+const date_otw_ref = ref('');
+const date_zam_ref = ref('');
 async function perform_update() {
     await src.update_complete(true);
     await src_list.update_complete(true);
     await src_total.update_complete(true);
     date_now_ref.value = format_date_str_local(date_now());
+    date_otw_ref.value  = data_otw.value ? format_date_str_local(data_otw.value) : "---";
+    date_zam_ref.value  = data_zam.value ? format_date_str_local(data_zam.value) : "---";
 }
 
 function create_options() {
@@ -128,7 +133,30 @@ function create_options() {
             {name: 'page', val: 'is_zlec_manual', type: 'class_set'},
         ]
     });
-    return btn_type_zlec_auto + btn_type_zlec_manual;
+    const date_btns = [
+        create_print_param_button('Data: Dzisiaj', {
+            actions: [
+                {name: 'date_field_otw',  val: 'disable', type: 'class_set'},
+                {name: 'date_field_zam',  val: 'disable', type: 'class_set'},
+                {name: 'date_field_now',  val: 'disable', type: 'class_remove'},
+            ]
+        }),
+        create_print_param_button('Data: Otwarcie', {
+            actions: [
+                {name: 'date_field_otw',  val: 'disable', type: 'class_remove'},
+                {name: 'date_field_zam',  val: 'disable', type: 'class_set'},
+                {name: 'date_field_now',  val: 'disable', type: 'class_set'},
+            ]
+        }),
+        create_print_param_button('Data: Zamknięcie', {
+            actions: [
+                {name: 'date_field_otw',  val: 'disable', type: 'class_set'},
+                {name: 'date_field_zam',  val: 'disable', type: 'class_remove'},
+                {name: 'date_field_now',  val: 'disable', type: 'class_set'},
+            ]
+        }),
+    ];
+    return btn_type_zlec_auto + btn_type_zlec_manual + "<p> Data </p>" + date_btns.join('');
 }
 
 // const title_getter = "Zlecenie nr {{zlecenie_id}}";
@@ -153,7 +181,9 @@ defineExpose({
             <div class="left">
             </div>
             <div class="right">
-                <div>Gliwice dnia:   {{ date_now_ref }}</div>
+                <div name="date_field_otw"                >Gliwice dnia:   {{ date_otw_ref }}</div>
+                <div name="date_field_zam" class="disable">Gliwice dnia:   {{ date_zam_ref }}</div>
+                <div name="date_field_now" class="disable">Gliwice dnia:   {{ date_now_ref }}</div>
                 <div class="bold vbig">Zlecenie nr <span name="zlecenie_id">{{ id }}</span></div>
                 <!-- <div> ORYGINAŁ / KOPIA </div> -->
             </div>

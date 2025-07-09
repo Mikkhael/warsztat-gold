@@ -6,6 +6,7 @@
 .big     { font-size: 1.2em; }
 .vbig    { font-size: 1.6em; }
 .hide    { visibility: hidden; }
+.disable { display: none !important; }
 
 .spacer { flex-grow: 1; } 
 .wide { grid-column: 1 / -1; }
