@@ -514,13 +514,70 @@ function parse_decimal_adv(source_string) {
 // 	}
 // }
 
+
+/**
+ * @typedef {'down' | 'up' | 'half'} RoundingModeType
+ */
+
+let GLOBAL_DECIMAL_ROUND_MODE = ref(/**@type {RoundingModeType} */ ('half'));
+function set_GLOBAL_DECIMAL_ROUND_MODE(/**@type {RoundingModeType} */ new_rounding_mode) {
+    GLOBAL_DECIMAL_ROUND_MODE.value = new_rounding_mode;
+}
+
+let GLOBAL_DECIMAL_HIGH_PRECISION_INPUT = ref(false);
+function set_GLOBAL_DECIMAL_HIGH_PRECISION_INPUT(/**@type {Boolean} */ new_value) {
+    GLOBAL_DECIMAL_HIGH_PRECISION_INPUT.value = new_value;
+}
+
+/**
+ * 
+ * @param {string} whole 
+ * @param {string} frac 
+ * @param {number} precision 
+ * @param {RoundingModeType} mode 
+ * @returns {[whole: string, frac: string]}
+ */
+function round_float_string( whole, frac, precision, mode ) {
+    if(frac.length < precision) {
+        frac += '0'.repeat(precision - frac.length);
+    }
+
+    let over_frac = frac.slice(0, precision);
+    let sub_frac  = frac.slice(precision) || '0';
+
+    let should_increment = false;
+
+    if( mode == 'up'   ) should_increment = [...sub_frac].some (x => x != '0');
+    if( mode == 'half' ) should_increment = (sub_frac[0] >= '5');
+
+    if(should_increment) {
+        let over_frac_converted = (BigInt('1' + over_frac + '1') + 10n).toString();
+        if(over_frac_converted[0] != '1') {
+            whole = (BigInt(whole) + 1n).toString();
+        }
+        over_frac = over_frac_converted.slice(1, -1);
+    }
+
+    return [whole, over_frac];
+}
+
+// for(let test1 of ['00','01','49','50','69', '99']) {
+//     for (let test2 of ['00', '45', '49', '99']) {
+//         console.log("DEBUG ROUND", '123.' + test2 + test1, 
+//             round_float_string('123', test2 + test1, 2, 'down').join('.'), 
+//             round_float_string('123', test2 + test1, 2, 'up').join('.'),
+//             round_float_string('123', test2 + test1, 2, 'half').join('.'));
+//     }
+// }
+
 /**
  * Appends sufix and sets precision, if input is a valid decimal string. Otherwise returns null
  * @param {string} source_string 
  * @param {number} precision 
  * @param {string} sufix 
+ * @param {RoundingModeType | undefined} rounding_mode 
  */
-function format_decimal(source_string, precision = 2, sufix = " zł", force_sep = '.', triplets_sep = '') {
+function format_decimal(source_string, precision = 2, sufix = " zł", force_sep = '.', triplets_sep = '', rounding_mode = undefined) {
     const parse_res = parse_decimal_adv(source_string);
     if(!parse_res) return null;
     let [whole, frac, full, sign, sep, zero] = parse_res;
@@ -535,13 +592,8 @@ function format_decimal(source_string, precision = 2, sufix = " zł", force_sep 
     if(precision <= 0) {
         return sign + whole + sufix;
     }
-    if(frac.length > precision) {
-        frac = frac.slice(0, precision);
-    }
-    if(frac.length < precision) {
-        frac += '0'.repeat(precision - frac.length);
-    }
-    return sign + whole + force_sep + frac + sufix;
+    let [rounded_whole, rounded_frac] = round_float_string(whole, frac, precision, rounding_mode ?? GLOBAL_DECIMAL_ROUND_MODE.value);
+    return sign + rounded_whole + force_sep + rounded_frac + sufix;
 }
 
 /**
@@ -759,6 +811,12 @@ export {
     str_to_date,
     format_date_str_local,
     get_date_format_with_dot,
+
+    GLOBAL_DECIMAL_ROUND_MODE,
+    set_GLOBAL_DECIMAL_ROUND_MODE,
+    
+    GLOBAL_DECIMAL_HIGH_PRECISION_INPUT,
+    set_GLOBAL_DECIMAL_HIGH_PRECISION_INPUT,
 
     is_decimal,
     parse_decimal_adv,

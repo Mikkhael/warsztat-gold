@@ -1,6 +1,7 @@
 <script setup>
 //@ts-check
 import { onMounted, readonly, ref, computed } from "vue";
+import { set_GLOBAL_DECIMAL_ROUND_MODE, GLOBAL_DECIMAL_ROUND_MODE, GLOBAL_DECIMAL_HIGH_PRECISION_INPUT, set_GLOBAL_DECIMAL_HIGH_PRECISION_INPUT } from "../utils";
 import { emit, listen } from "@tauri-apps/api/event";
 import { onUpdaterEvent } from "@tauri-apps/api/updater";
 import ipc from "../ipc";
@@ -212,6 +213,17 @@ async function close_all(subname, name, /**@type {MouseEvent} */ event) {
                 :options="{
                     name: 'Ustawienia',
                     onclick: tool_settings
+                }"
+            />
+            <MainWindow_OptionBtn
+                :options="{
+                    name: 'Zaokrąglanie',
+                    sub: [
+                        {name: 'Wysoka precyzja' + (GLOBAL_DECIMAL_HIGH_PRECISION_INPUT ? ' (włączone)' : ' (wyłączone)'),  onclick: () => set_GLOBAL_DECIMAL_HIGH_PRECISION_INPUT(!GLOBAL_DECIMAL_HIGH_PRECISION_INPUT)},
+                        {name: 'W górę' + (GLOBAL_DECIMAL_ROUND_MODE == 'up'   ? ' (wybrane)' : ''),  onclick: () => set_GLOBAL_DECIMAL_ROUND_MODE('up')},
+                        {name: 'Od 0.5' + (GLOBAL_DECIMAL_ROUND_MODE == 'half' ? ' (wybrane)' : ''),  onclick: () => set_GLOBAL_DECIMAL_ROUND_MODE('half')},
+                        {name: 'W dół'  + (GLOBAL_DECIMAL_ROUND_MODE == 'down' ? ' (wybrane)' : ''),  onclick: () => set_GLOBAL_DECIMAL_ROUND_MODE('down')},
+                    ]
                 }"
             />
             <div class="spacer"></div>

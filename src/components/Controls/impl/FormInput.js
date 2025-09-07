@@ -4,7 +4,7 @@
 
 import { computed, reactive, toRefs } from 'vue';
 import { ChangableValueLike, Column, FormChangebleValue } from '../../Dataset';
-import { format_decimal, is_decimal, parse_decimal_adv, parse_decimal } from '../../../utils';
+import { format_decimal, is_decimal, parse_decimal_adv, parse_decimal, GLOBAL_DECIMAL_HIGH_PRECISION_INPUT } from '../../../utils';
 
 
 /**
@@ -68,6 +68,10 @@ function auto_params_from_props(props) {
     return params;
 }
 
+function get_decimal_precision() {
+    return GLOBAL_DECIMAL_HIGH_PRECISION_INPUT.value ? 4 : 2; 
+}
+
 /**
  * @param {PropsType} props
  */
@@ -94,11 +98,11 @@ function use_FormInput(props) {
                 value.set_local(null);
                 console.log("!DECIMAL SETTING NULL", input);
             } else {
-                const formated = format_decimal(input)   ?? input;
-                const parsed   = parse_decimal(formated) ?? input;
+                const precision = get_decimal_precision();
+                const formated = format_decimal(input, precision, undefined, undefined, undefined, 'down') ?? input;
+                const parsed   = parse_decimal (formated)         ?? input;
                 event.target.value = formated;
                 value.set_local(parsed);
-                console.log("!DECIMAL SETTING ", input, formated, parse_decimal(formated), parse_decimal_adv(input));
             }
         }
     }
@@ -242,8 +246,8 @@ const proxies_types = {
     //     set(x) { return x === ''   ? null : (parse_decimal (x.toString()) ?? x.toString()); }
     // }
     decimal_standard_no_set: {
-        get(x) { console.log("!DECIMAL GETTING ", x, x === null ? '' : format_decimal(x.toString()));
-                 return x === null ? ''   : format_decimal(x.toString()) ?? x.toString(); },
+        get(x) { console.log("!DECIMAL GETTING ", x, x === null ? '' : format_decimal(x.toString(), get_decimal_precision()));
+                 return x === null ? ''   : format_decimal(x.toString(), get_decimal_precision()) ?? x.toString(); },
     },
 };
 
