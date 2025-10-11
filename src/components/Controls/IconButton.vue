@@ -12,6 +12,8 @@ const props = defineProps({
         type: String,
         default: 'search',
     },
+    inline: Boolean,
+    notext: Boolean,
     noicon: Boolean
 });
 
@@ -27,9 +29,9 @@ const emit = defineEmits({
 
 <template>
 
-<div class="button" @click="e => emit('click', e)">
+<div class="button" :class="{inline:props.inline}" @click="e => emit('click', e)">
     <img v-if="!props.noicon" :src="icon_src"/>
-    <div class="text">
+    <div v-if="!props.notext" class="text">
         {{ props.text }}
     </div>
 </div>
@@ -46,6 +48,7 @@ const emit = defineEmits({
     img{
         box-sizing: border-box;
         height: 3ch;
+        width:  3ch;
         padding: 0.2ch;
     }
     .text {
@@ -53,5 +56,15 @@ const emit = defineEmits({
         justify-self: flex-end;
         text-wrap: nowrap;
         text-align: center;
+    }
+    .inline.button {
+        display: inline-flex;
+        padding: 0;
+        margin: 0px;
+    }
+    .inline.button > img {
+        height: 2ch;
+        width:  2ch;
+        margin: 0px;
     }
 </style>

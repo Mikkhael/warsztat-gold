@@ -2,6 +2,10 @@
 //@ts-check
 import { listen } from "@tauri-apps/api/event";
 
+import { do_fetch, get_nip_data_from_api } from "./api_fetcher";
+window.do_fetch = do_fetch;
+window.get_nip_data_from_api = get_nip_data_from_api;
+
 import SqlDebugConsole from "./components/SqlDebug/SqlDebugConsole.vue";
 // import QueryFormDebug from "./components/SqlDebug/QueryFormDebug.vue";
 // import QueryFormSimpleDebug from "./components/SqlDebug/QueryFormSimpleDebug.vue";

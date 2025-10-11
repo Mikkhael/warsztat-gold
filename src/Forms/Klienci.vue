@@ -23,6 +23,7 @@ import useMainFWManager from '../components/FloatingWindows/FWManager';
 import ZleceniaNaprawyAdv from './ZleceniaNaprawyAdv.vue';
 import ipc from '../ipc';
 
+import { get_nip_data_from_api } from '../api_fetcher';
 
 const props = defineProps({
     ...FormDefaultProps,
@@ -142,6 +143,21 @@ const QVFactory_find_zlec = () => {
 }
 const QVFactory_find_zlec_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1],[src_zlecenia,2]], handle_err, {focus_window: props.parent_window});
 
+
+/////////////////////// NIP /////////////////////
+
+const show_nip_btn = computed(() => !(props.minimal || props.readonly));
+async function do_api_nip(){
+    const res = await get_nip_data_from_api(nip.get_local()?.toString() ?? "");
+    if(!res) return;
+    nazwa.set_local(res.name);
+    miasto.set_local(res.city);
+    kod.set_local(res.zip);
+    ulica.set_local(res.addr);
+}
+
+/////////////////////// Other /////////////////////
+
 const show_zlecenia = ref(true);
 // function click_zlecenia(){
 //     show_zlecenia.value = !show_zlecenia.value;
@@ -250,12 +266,12 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
                     <FormInput :readonly="props.readonly" :value="kod   " auto style="width: 7ch" class="nogrow" /> 
                     <FormInput :readonly="props.readonly" :value="miasto" auto /> 
                 </div>
-                <label class="l5" >NIP                </label>  <FormInput class="v5"  :readonly="props.readonly" :value="nip   " auto />
-                <label class="l6" >wpisał             </label>  <FormInput class="v6"  :readonly="props.readonly" :value="kto   " auto />
-                <label class="l7" >Telefon            </label>  <FormInput class="v7"  :readonly="props.readonly" :value="tele1 " auto />
-                <label class="l8" >dnia               </label>  <FormInput class="v8"  :readonly="props.readonly" :value="kiedy " auto />
-                <label class="l9" >Drugi Telefon      </label>  <FormInput class="v9"  :readonly="props.readonly" :value="tele2 " auto />
-                <label class="lid">ID                 </label>  <FormInput class="vid" readonly                   :value="id    " auto />
+                <label class="l5" >NIP <IconButton v-if="show_nip_btn" icon="edit" notext inline @click="do_api_nip()"/> </label>  <FormInput class="v5"  :readonly="props.readonly" :value="nip   " auto />
+                <label class="l6" >wpisał                                                                                </label>  <FormInput class="v6"  :readonly="props.readonly" :value="kto   " auto />
+                <label class="l7" >Telefon                                                                               </label>  <FormInput class="v7"  :readonly="props.readonly" :value="tele1 " auto />
+                <label class="l8" >dnia                                                                                  </label>  <FormInput class="v8"  :readonly="props.readonly" :value="kiedy " auto />
+                <label class="l9" >Drugi Telefon                                                                         </label>  <FormInput class="v9"  :readonly="props.readonly" :value="tele2 " auto />
+                <label class="lid">ID                                                                                    </label>  <FormInput class="vid" readonly                   :value="id    " auto />
                 <!-- <label>stały upust        </label>  <FormInput :readonly="props.readonly" :value="upust " auto /> -->
 
                 <label v-if="aux_info !== null" class="aux_info">

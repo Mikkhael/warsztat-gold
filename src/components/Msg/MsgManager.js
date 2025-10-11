@@ -30,6 +30,7 @@ class MsgManager {
                 this.close(id);
             }, timeout);
         }
+        return id;
     }
     /**
      * @param {string} type 
@@ -41,7 +42,7 @@ class MsgManager {
         if(existing_msg){
             this.close(existing_msg.id);
         }
-        this.post(type, content, timeout, onclick);
+        return this.post(type, content, timeout, onclick);
     }
     
     /**

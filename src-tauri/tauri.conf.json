@@ -32,6 +32,11 @@
         "all": false,
         "readText": true,
         "writeText": true
+      },
+      "http":{
+        "all": false,
+        "request": true,
+        "scope": ["http://wl-api.mf.gov.pl/*", "http://wl-test.mf.gov.pl/*", "https://wl-api.mf.gov.pl/*", "https://wl-test.mf.gov.pl/*"]
       }
     },
     "bundle": {
