@@ -91,6 +91,7 @@ function query_parts_to_string(parts) {
             if(part[1] === 'l')   return escape_like_full(part[0], part[2]);
             if(part[1] === 'b')   return escape_backtick_smart(part[0]);
         }
+        console.error('INVALID QUERY PART', part);
         throw new Error('INVALID QUERY PART');
     }).join(' ');
 }

@@ -443,6 +443,22 @@ class QuerySource extends DataGraphNodeBase {
     add_where_eq_dynamic(is_enabled, field, value) {
         this.#add_where_impl(false, '(', [is_enabled], `IS 0 ) OR`, field, 'IS', [value]);
     }
+    /**
+     * 
+     * @param {MaybeDependable<boolean>} is_enabled 
+     * @param {QueryPartsDependable} parts 
+     */
+    add_where_dynamic(is_enabled, parts) {
+        this.#add_where_impl(false, '(', [is_enabled], `IS 0 ) OR (`, ...parts, ')');
+    }
+    /**
+     * 
+     * @param {MaybeDependable<boolean>} is_enabled 
+     * @param {QueryPartsDependable} parts 
+     */
+    add_where_dynamic_not(is_enabled, parts) {
+        this.#add_where_impl(false, '(', [is_enabled], `IS 1 ) OR (`, ...parts, ')');
+    }
 
     /**
      * @param  {QueryPartsDependable} parts 

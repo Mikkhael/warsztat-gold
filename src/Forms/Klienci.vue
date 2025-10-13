@@ -15,8 +15,8 @@ import ZleceniaNaprawy from './ZleceniaNaprawy.vue';
 
 import {onMounted, onUnmounted, ref, nextTick, computed} from 'vue';
 import { standard_QV_select, CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
-import { use_datetime_now } from '../utils';
-import { FormParamProp, FormDefaultProps, FormQuerySourceSingle, param_from_prop } from '../components/Dataset';
+import { escape_sql_value, use_datetime_now } from '../utils';
+import { FormParamProp, FormDefaultProps, FormQuerySourceSingle, param_from_prop, qparts_db, qparts } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetScroller.vue';
 import useMainFWManager from '../components/FloatingWindows/FWManager';
@@ -100,21 +100,26 @@ const QVFactory_find_client = () => {
 const QVFactory_find_client_select = QueryViewerSource.create_default_select_handler([[src, COLS.ID]], handle_err, {focus_window: props.parent_window});
 
 
-const QVFactory_find_car = () => {
-    const CAR_TAB  = db.TABS.samochody_klientów;
-    const CAR_COLS = db.TABS.samochody_klientów.cols;
-    const src = new QueryViewerSource();
-    src.set_from_with_deps(CAR_TAB);
-    src.add_join(CAR_COLS.ID_klienta, COLS.ID);
-    src.auto_add_column(CAR_COLS.ID_klienta);
-    src.auto_add_column(CAR_COLS.ID,                  {display: 'ID'});
-    src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
-    src.auto_add_column(COLS.NAZWA,                   {display: 'Klient'});
-    src.auto_add_column(CAR_COLS.marka,               {display: 'Marka'});
-    src.auto_add_column(CAR_COLS.model,               {display: 'Model'});
-    src.auto_add_column(CAR_COLS.nr_silnika,          {display: 'Nr Silnika'});
-    src.auto_add_column(CAR_COLS.nr_nadwozia,         {display: 'Nr Nadwozia'});
-    return src;
+function QVFactory_find_car_factory(with_klient_id) {
+    return () => {
+        const CAR_TAB  = db.TABS.samochody_klientów;
+        const CAR_COLS = db.TABS.samochody_klientów.cols;
+        const src = new QueryViewerSource();
+        src.set_from_with_deps(CAR_TAB);
+        src.add_join(CAR_COLS.ID_klienta, COLS.ID);
+        src.auto_add_column(CAR_COLS.ID_klienta);
+        src.auto_add_column(CAR_COLS.ID,                  {display: 'ID'});
+        src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
+        if(with_klient_id){
+            src.auto_add_column(COLS.ID,                  {display: 'Klient ID'});
+        }
+        src.auto_add_column(COLS.NAZWA,                   {display: 'Klient'});
+        src.auto_add_column(CAR_COLS.marka,               {display: 'Marka'});
+        src.auto_add_column(CAR_COLS.model,               {display: 'Model'});
+        src.auto_add_column(CAR_COLS.nr_silnika,          {display: 'Nr Silnika'});
+        src.auto_add_column(CAR_COLS.nr_nadwozia,         {display: 'Nr Nadwozia'});
+        return src;
+    }
 }
 const QVFactory_find_car_select = QueryViewerSource.create_default_select_handler([[src, 0],[src_car,1]], handle_err, {focus_window: props.parent_window});
 
@@ -154,6 +159,22 @@ async function do_api_nip(){
     miasto.set_local(res.city);
     kod.set_local(res.zip);
     ulica.set_local(res.addr);
+}
+
+//////////////////// CAR SWAP //////////////////////
+
+/**
+ * @param {string[]} columns 
+ * @param {FormDataSetFull_LocalRow} row 
+ * @param {number} offset
+ * @param {() => void} close 
+ */
+async function handle_car_swap (columns, row, offset, close) {
+    // console.log("CAr SWAP", row);
+    // console.log("CAR SWAP", row.values[0].get_cached());
+    await ipc.db_execute(`UPDATE ${db.TABS.samochody_klientów.get_full_sql()} SET \`ID klienta\` = ${escape_sql_value(id.get_cached())} WHERE \`ID\` IS ${row.values[1].get_cached()} `).catch(handle_err);
+    db.TABS.samochody_klientów.expire();
+    close();
 }
 
 /////////////////////// Other /////////////////////
@@ -241,7 +262,7 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
                             :parent_window="props.parent_window"
                             text="Znajdź Samochód"
                             selectable
-                            :src_factory="QVFactory_find_car" 
+                            :src_factory="QVFactory_find_car_factory(false)" 
                                  @select="QVFactory_find_car_select"
                                  @error="handle_err" />
                     </div>
@@ -286,12 +307,22 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
                         :id_klienta="props.force_car_id ? undefined : param_id_klienta"
                         :readonly="props.readonly"
                         :force_car_id="props.force_car_id"
+                        :with_old="!props.force_car_id"
+                        :allow_car_reasign="!props.force_car_id"
                         :minimal="display_compact"
                     />
                 </fieldset>
                 
                 <div class="sub_buttons">
-                    <div></div>
+                    <QueryViewerAdvOpenBtn 
+                        :parent_window="props.parent_window"
+                        text="Dodaj Istniejący Samochód"
+                        selectable
+                        icon="plus"
+                        :src_factory="QVFactory_find_car_factory(true)" 
+                        @select="handle_car_swap"
+                        @error="handle_err" />
+                    <div class="spacer"></div>
                     <IconButton text="zlecenia klienta"   icon="filter" @click="handle_zlec_for_kli"/>
                     <IconButton text="zlecenia samochodu" icon="filter" @click="handle_zlec_for_car"/>
                 </div>
@@ -333,6 +364,10 @@ const display_compact = computed(() => props.minimal && props.no_zlec);
 }
 .form.compact fieldset legend {
     display: none;
+}
+
+.spacer {
+    flex-grow: 1;
 }
 
 .a_find {grid-area: a_find;}
