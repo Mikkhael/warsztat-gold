@@ -581,18 +581,19 @@ function format_decimal(source_string, precision = 2, sufix = " zł", force_sep 
     const parse_res = parse_decimal_adv(source_string);
     if(!parse_res) return null;
     let [whole, frac, full, sign, sep, zero] = parse_res;
+    let [rounded_whole, rounded_frac] = round_float_string(whole, frac, precision, rounding_mode ?? GLOBAL_DECIMAL_ROUND_MODE.value);
     if(triplets_sep !== '') {
         let triplets = [];
-        while(whole.length > 0) {
-            triplets.push(whole.slice(-3));
-            whole = whole.slice(0, -3);
+        while(rounded_whole.length > 0) {
+            triplets.push(rounded_whole.slice(-3));
+            rounded_whole = rounded_whole.slice(0, -3);
+            rounded_whole = rounded_whole.trim()
         }
-        whole = triplets.reverse().join(triplets_sep);
+        rounded_whole = triplets.reverse().join(triplets_sep);
     }
     if(precision <= 0) {
-        return sign + whole + sufix;
+        return sign + rounded_whole + sufix;
     }
-    let [rounded_whole, rounded_frac] = round_float_string(whole, frac, precision, rounding_mode ?? GLOBAL_DECIMAL_ROUND_MODE.value);
     return sign + rounded_whole + force_sep + rounded_frac + sufix;
 }
 
