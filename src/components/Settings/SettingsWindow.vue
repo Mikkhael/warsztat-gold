@@ -7,6 +7,7 @@ import { useMainMsgManager, MsgManager } from '../Msg/MsgManager';
 import SettingsWindowAuto from './SettingsWindowAuto.vue';
 import SettingsWindowBackup from './SettingsWindowBackup.vue';
 import SettingsWindowTest from './SettingsWindowTest.vue';
+import SettingsWindowKsef from './SettingsWindowKsef.vue';
 import { useMainClosePreventionManager } from '../../ClosePrevention';
 
 /**
@@ -43,13 +44,14 @@ const mainClosePreventionManager = useMainClosePreventionManager();
 const categories = /**@type {const} */ ([
     ['backup', 'Kopia Zapasowa', SettingsWindowBackup],
     ['data',   'Informacje',     SettingsWindowAuto],
+    ['ksef',   "KSEF",           SettingsWindowKsef],
     ['test',   'Testowe Opcje',  SettingsWindowTest],
 ]);
 
 const reactive_categories = settings.get_reactive_settings_all();
 const changed = computed(() => Object.values(reactive_categories).some(x => x.changed.value));
 
-const selected_category_name = ref(/**@type {SettingsCategoryNames} */('none'));
+const selected_category_name = ref(/**@type {SettingsCategoryNames | "none"} */('none'));
 const subsettings_comp       = shallowRef(/**@type {any} */ (null));
 const subsettings_reactive   = shallowRef(/**@type {import('./Settings').ReactiveSetting?} */ (null));
 

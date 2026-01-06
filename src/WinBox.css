@@ -325,7 +325,7 @@
   /***************** CATEGORIES ********************/
 
 /**
- * @typedef {"zlecenia_otwarte" | "zlecenia_wszystkie" | "zlecenia_filtered" | "klienci" | "czesci"} FWCategory
+ * @typedef {"zlecenia_otwarte" | "zlecenia_wszystkie" | "zlecenia_filtered" | "klienci" | "czesci" | "ksef" } FWCategory
  */
 
   .winbox.cat_zlecenia_otwarte   {background: #d84f00; }
@@ -333,9 +333,11 @@
   .winbox.cat_zlecenia_filtered  {background: #7300d1; }
   .winbox.cat_klienci            {background: #46be00; }
   .winbox.cat_czesci             {background: #0038d1; }
+  /* .winbox.cat_ksef               {background: #d100c3; } */
 
   .winbox.subcategory.cat_zlecenia_otwarte   {background: #b94400; }
   .winbox.subcategory.cat_zlecenia_wszystkie {background: #bd7100; }
   .winbox.subcategory.cat_zlecenia_filtered  {background: #6000af; }
   .winbox.subcategory.cat_klienci            {background: #3ca500; }
   .winbox.subcategory.cat_czesci             {background: #002faf; }
+  /* .winbox.subcategory.cat_ksef               {background: #b500a9; } */

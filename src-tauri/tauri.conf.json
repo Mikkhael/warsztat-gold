@@ -20,7 +20,12 @@
         "all": false,
         "close": true,
         "create": true,
-        "center": true
+        "center": true,
+        "setFocus": true,
+        "minimize": true,
+        "unminimize": true,
+        "hide": true,
+        "show": true
       },
       "fs": {
         "all": false,

@@ -3,7 +3,7 @@
 
 
 
-import { date_now, format_date_str_local, format_decimal as format_decimal_utils, format_first_line, number_to_polish_words, parse_decimal_adv } from '../utils';
+import { date_now, date_now_ksef, format_date_str_local, format_decimal as format_decimal_utils, format_first_line, number_to_polish_words, parse_decimal_adv } from '../utils';
 import { FormParamProp, param_from_prop, qparts_db, query_parts_to_string, QueryBuilder, RefChangableValue } from '../components/Dataset';
 import { RepQuerySourceSingle, RepQuerySourceFull, create_print_param_input, create_print_param_select, create_print_param_button } from './RepCommon';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
@@ -11,6 +11,7 @@ import { useMainSettings } from '../components/Settings/Settings';
 import { computed, ref } from 'vue';
 
 import {set_from_for_summary_for_zlec_id} from '../Forms/CommonSql';
+import { FA3_DaneKontaktowe, FA3_FA_Wiersz, FA3_Faktura } from '../Ksef/fa3';
 
 const props = defineProps({
     parent_window: {
@@ -91,6 +92,64 @@ const total_brutto_parts = computed(() => {
     return [sign + whole, frac];
 });
 
+//////////////////// KSEF //////////////////////////
+
+
+function generate_ksef_fa3() {
+    const res = new FA3_Faktura();
+
+    res.Naglowek.DataWytworzeniaFa = date_now_ksef();
+
+    res.Podmiot1.DaneIdentyfikacyjne.NIP   = settings_data['NIP'].replace(/\D/g,'');
+    res.Podmiot1.DaneIdentyfikacyjne.Nazwa = settings_data['Pełna Nazwa'];
+    res.Podmiot1.Adres.AdresL1 = settings_data['Adres'];
+
+    const Podmiot1Kontakt = new FA3_DaneKontaktowe();
+    Podmiot1Kontakt.Email   = settings_data['Email'];
+    Podmiot1Kontakt.Telefon = settings_data['Telefon'];
+    res.Podmiot1.DaneKontaktowe = [Podmiot1Kontakt];
+
+    const has_no_nip = typeof klie_nip.value !== 'string' || klie_nip.value === '';
+    res.Podmiot2.DaneIdentyfikacyjne.NoID  = has_no_nip;
+    res.Podmiot2.DaneIdentyfikacyjne.NIP   = has_no_nip ? "" : klie_nip.value?.replace(/\D/g,'');
+    res.Podmiot2.DaneIdentyfikacyjne.Nazwa = klie_nazwa.value;
+    res.Podmiot2.HasAdres = (klie_ulica.value !== "");
+    res.Podmiot2.Adres.AdresL1 = `ul. ${klie_ulica.value}, ${klie_kod.value} ${klie_miasto.value}`;
+
+    // TODO info samochód
+
+    const summary_wiersz = new FA3_FA_Wiersz();
+    summary_wiersz.NrWierszaFa = "1";
+    summary_wiersz.Nazwa       = settings_data['Nazwa Spec.'];
+    summary_wiersz.Miara       = "szt."; // TODO ?
+    summary_wiersz.Ilosc       = "1";
+    summary_wiersz.CenaJednostkowaNetto = format_decimal_ksef_2(src_total_netto.value, false, false);
+    summary_wiersz.TotalNetto           = format_decimal_ksef_2(src_total_netto.value, false, false);
+    summary_wiersz.StawkaPodatku        = "23";
+
+    res.Fa.DataWystawienia    = date_now(); // TODO ?
+    res.Fa.MiejsceWystawienia = "Gliwice";
+    res.Fa.NumerFaktury       = "12345"; // TODO
+    res.Fa.DataSprzedazy      = date_now(); // TODO ?
+    res.Fa.suma_netto_22_23   = format_decimal_ksef_2(src_total_netto.value,  false, false);
+    res.Fa.suma_tax_22_23     = format_decimal_ksef_2(src_total_vat.value,    false, false);
+    res.Fa.suma_brutto        = format_decimal_ksef_2(src_total_brutto.value, false, false);
+    res.Fa.Wiersze = [summary_wiersz];
+    
+    res.Fa.Platnosc.RachunekBankowy.NrRB       = settings_data['Nr Konta'];
+    res.Fa.Platnosc.RachunekBankowy.NazwaBanku = settings_data['Nazwa Banku'];
+
+    res.Stopka.Infos = [
+        `${samo_marka.value} ${samo_model.value} ${samo_nrrej.value}`.trim()
+    ].filter(x => x.length > 0);
+
+    return res;
+}
+
+
+
+
+
 ////////////////// OTHER /////////////////////////////
 
 const CONST_VAT = 0.23;
@@ -105,6 +164,14 @@ function format_decimal(string, with_zl = false, with_trip = true) {
     string = string?.toString();
     if(typeof string != 'string') return '';
     return format_decimal_utils(string, 2, with_zl ? ' zł' : '', ',', with_trip ? '\xa0' : '') ?? '';
+}
+
+
+function format_decimal_ksef_6(/**@type {string} */ str) {
+    return format_decimal_utils(str, 6, '', '.', '');
+}
+function format_decimal_ksef_2(/**@type {string} */ str) {
+    return format_decimal_utils(str, 2, '', '.', '');
 }
 
 const date_now_ref = ref('');
@@ -168,6 +235,7 @@ const title_getter = "{{title}}";
 defineExpose({
     perform_update,
     create_options,
+    generate_ksef_fa3,
     title_getter,
 });
 

@@ -378,6 +378,11 @@ function date_now()    { return date    (new Date()); };
 function time_now()    { return time    (new Date()); };
 function datetime_now(){ return datetime(new Date()); };
 
+function date_now_ksef(/**@type {Date} */ date = new Date()) {
+    const iso = date.toISOString();
+    return iso.replace("Z", "0000Z");
+}
+
 let current_datetime_now = datetime_now();
 let current_datetime_now_outdated = ref(false);
 const datetime_now_reactive = computed(() => {
@@ -805,6 +810,7 @@ export {
     date_now,
     time_now,
     datetime_now,
+    date_now_ksef,
 
     use_datetime_now,
     poke_datetime_now_reactive,

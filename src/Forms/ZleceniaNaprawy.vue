@@ -28,6 +28,7 @@ import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import { QueryViewerSource } from '../components/QueryViewer/QueryViewer';
 import { set_from_for_summary_for_zlec_id } from './CommonSql';
 import { toRef } from 'vue';
+import FA3Viewer from '../Ksef/FA3Viewer.vue';
 
 
 const props = defineProps({
@@ -175,6 +176,21 @@ function open_print_window_faktura() {
     RepZlecenieNaprawyFaktura_ref.value?.update_and_open(false).catch(handle_err);
 }
 
+async function open_ksef_window() {
+    const title = "Ksef - Zlecenie nr " + param_out_zlecenie_id.get_value();
+    // console.log("REPORT PREPARER DEBUG", RepZlecenieNaprawyFaktura_ref.value.rep);
+    const rep = RepZlecenieNaprawyFaktura_ref.value.rep;
+    await rep.perform_update();
+    const fa3 = rep.generate_ksef_fa3();
+    return fwManager.open_or_focus_window(title, FA3Viewer, {
+        category: 'ksef',
+        props: {
+            data: fa3
+        },
+        // parent: props.parent_window
+    });
+}
+
 function open_czesci_window() {
     const title = "Części - Zlecenie nr " + param_out_zlecenie_id.get_value();
     return fwManager.open_or_focus_window(title, ZleceniaNaprawy_Czesci, {
@@ -259,8 +275,9 @@ defineExpose({
                     <!-- <img src="/assets/icons/document.svg" class="button" @click="open_print_window_faktura"/> -->
                     <!-- <div class="button" @click="open_czesci_window">CZĘŚCI</div> -->
                     <!-- <div class="button" @click="open_robocizna_window">ROBOCIZNA</div> -->
-                    <IconButton icon="document" text="Faktura"   @click="open_print_window_faktura" />
-                    <IconButton icon="document" text="Zlecenie"  @click="open_print_window" />
+                    <IconButton icon="document" text="Faktura"   @click="open_print_window_faktura" style="grid-area: 1 / 1" />
+                    <IconButton icon="document" text="KSEF"      @click="open_ksef_window"  style="grid-area: 1 / 2"/>
+                    <IconButton icon="document" text="Zlecenie"  @click="open_print_window" style="grid-column: span 2"/>
                     <IconButton icon="edit"     text="CZĘŚCI"    @click="open_czesci_window" />
                     <IconButton icon="edit"     text="ROBOCIZNA" @click="open_robocizna_window" />
                 </div>

@@ -5,13 +5,13 @@ import { OwningChangableValue } from "../Dataset";
 import { deep_copy, escape_sql_value, object_leaf_map, object_map, query_result_to_object } from "../../utils";
 import ipc from "../../ipc";
 
-const SETTINGS_CATEGORY_NAMES = /**@type {const} */ (['test', 'backup', 'data']);
+const SETTINGS_CATEGORY_NAMES = /**@type {const} */ (['test', 'backup', 'ksef', 'data']);
 /**
  * @typedef {SETTINGS_CATEGORY_NAMES[number]} SettingsCategoryNames
  */
 
 /**
- * @template T
+ * @template [T=any]
  * @extends {OwningChangableValue<T>}
  */
 class ReactiveSettingValue extends OwningChangableValue {
@@ -40,7 +40,7 @@ class ReactiveSetting {
 
 	/**
 	 * @template [T=Settings['categories'][N]]
-	 * @typedef {T extends Array ? ReactiveSettingLeafMapped<T[number]>[] :
+	 * @typedef {T extends Array<any> ? ReactiveSettingLeafMapped<T[number]>[] :
 	* 			 T extends Object.<string, any> ?
 	* 				{[P in keyof T]: ReactiveSettingLeafMapped<T[P]>} :
 	* 			 import('vue').Raw< T extends boolean ? ReactiveSettingValue<boolean> : ReactiveSettingValue<T> >} ReactiveSettingLeafMapped
@@ -232,6 +232,11 @@ class SettingsManager {
  *  list: CategoryBackupListElemType[]
  * }} CategoryBackupType
  * 
+ * 
+ * @typedef {{
+ *  xml_file_path: string,
+ * }} CategoryKsefType
+ * 
  * @typedef {{
  *  val1: string,
  *  val2: number
@@ -243,6 +248,7 @@ class SettingsManager {
 const SettingsDataFieldsKeysList = /**@type {const} */ ([
     'Nazwa',
     'Imię i Nazwisko',
+    'Pełna Nazwa',
     'Adres',
     'Telefon',
     'NIP',
@@ -260,6 +266,7 @@ class Settings {
         this.categories = {
             test:   SettingsDefaults.test(null),
             backup: SettingsDefaults.backup(null),
+            ksef:   SettingsDefaults.ksef(null),
             data:   SettingsDefaults.data(null),
         };
     }
@@ -308,7 +315,7 @@ class Settings {
      * @param  {SettingsCategoryNames[]} cat_names 
      */
     async load_from_db(...cat_names) {
-        const load_routine = (/**@type {SettingsCategoryNames} */ cat_name, value) => {
+        const load_routine = (/**@type {SettingsCategoryNames} */ cat_name, /**@type {any} */ value) => {
             //@ts-ignore
             this.categories[cat_name] = SettingsDefaults[cat_name](value);
             this.poke_update(cat_name, true);
@@ -357,10 +364,10 @@ class Settings {
 
 }
 
-function validate_array (val) {return Array.isArray(val) ? val : null}
-function validate_number(val) {return typeof val === 'number'  ? val : null}
-function validate_bool  (val) {return typeof val === 'boolean' ? val : null}
-function validate_string(val) {return typeof val === 'string'  ? val : null}
+function validate_array ( /**@type {any} */ val) {return Array.isArray(val) ? val : null}
+function validate_number( /**@type {any} */ val) {return typeof val === 'number'  ? val : null}
+function validate_bool  ( /**@type {any} */ val) {return typeof val === 'boolean' ? val : null}
+function validate_string( /**@type {any} */ val) {return typeof val === 'string'  ? val : null}
 
 const SettingsDefaults = {
 
@@ -394,6 +401,12 @@ const SettingsDefaults = {
         return {list};
     },
 
+    /**@type {(partial: CategoryKsefType?) => CategoryKsefType} */
+    ksef: (partial = null) => {
+        return {
+            xml_file_path: validate_string(partial?.xml_file_path) ?? '',
+        };
+    },
     
     /**@type {(partial: CategoryTestType?) => CategoryTestType} */
     test: (partial = null) => {
@@ -411,6 +424,7 @@ const SettingsDefaults = {
         for(const key of SettingsDataFieldsKeysList) {
             res[key] = validate_string(partial?.[key]) ?? `(${key})`;
         }
+        res['Pełna Nazwa'] = 'AUTO-GOLD Piotr Gold';
         res['RODO'] = 'Wraz z wystawieniem zlecenia, zgadzam się na przechowywanie moich danych osobowych przez firmę AUTO-GOLD Piotr Gold';
         res['Nazwa Spec.'] = 'naprawa mech. z częściami wg Specyfikacji';
         return res;
@@ -430,10 +444,12 @@ function useMainSettings() {
  * @param {(settings: Settings['categories'][T], loaded: boolean) => void} handler 
  */
 function add_settings_update_listener(category_name, handler) {
-    const listener = (event) => handler(mainSettings.categories[category_name], event.loaded);
+    const listener = (/**@type {SettingsUpdateEvent} */ event) => handler(mainSettings.categories[category_name], event.loaded);
     const event_name = get_settings_event_name(category_name);
+    //@ts-ignore
     window.addEventListener(event_name, listener);
     return () => {
+        //@ts-ignore
         window.removeEventListener(event_name, listener);
     }
 }

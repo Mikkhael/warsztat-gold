@@ -53,6 +53,18 @@ function sync_close_prevention(value) {
     return invoke('sync_close_prevention', {value});
 }
 
+// /**
+//  * @param {string} label 
+//  * @param {string} js 
+//  */
+// function run_js(label, js) {
+//     console.log(`RUN_JS Label:${label} JS:\`${js}\` ...`);
+//     return invoke("run_js", {label, js}).then( () => {
+//         console.log("RUN_JS done.");
+//     }).catch((err) => {
+//         console.error("RUN_JS error: ", err);
+//     });
+// }
 
 
 // function get_state(){
@@ -77,6 +89,17 @@ function join_path(a, b) {
  */
 function file_name(path) {
     return invoke("file_name", {path});
+}
+
+
+//////////// File System //////////////////////
+
+/**
+ * @param {string} path 
+ * @param {string} data
+ */
+function write_string_file(path, data) {
+    return invoke("write_string_file", {path, data});
 }
 
 
@@ -271,6 +294,15 @@ async function db_query(query, hardLimit) {
 }
 
 /**
+ * @param {string} path 
+ * @param {string} data 
+ */
+async function save_ksef_faktura(path, data) {
+    return write_string_file(path, data);
+}
+
+
+/**
  * @typedef {{
  *  is_open: boolean,
  *  path:    string,
@@ -304,7 +336,7 @@ export default {
     set_state_db_opened,
     set_state_db_path,
     sync_close_prevention,
-
+    
     db_open,
     db_rebuild,
     db_create,
@@ -318,6 +350,8 @@ export default {
     db_query,
 
     db_as_transaction,
+
+    save_ksef_faktura,
 
     backup_list,
     backup,

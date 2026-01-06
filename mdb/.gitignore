@@ -3,3 +3,5 @@ exported_from_sqlite
 tests_temp.txt
 test_backup_live
 test_db_version_*_export
+ksef_xml/*
+!ksef_xml/.gitkeep

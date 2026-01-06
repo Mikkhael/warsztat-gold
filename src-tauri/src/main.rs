@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::path::{Path, PathBuf};
+use std::{fs, path::{Path, PathBuf}};
 
 use tauri::Manager;
 use tauri_plugin_context_menu;
@@ -20,6 +20,22 @@ fn join_path(a: &Path, b: &Path) -> PathBuf {
 fn file_name(path: &Path) -> String {
     path.file_name().unwrap_or_default().to_string_lossy().to_string()
 }
+
+#[tauri::command]
+fn write_string_file(path: &Path, data: &str) -> Result<(), String> {
+
+    if path.exists() && path.is_dir() {
+        return Err(format!("Podana ścieżka to folder, a nie plik: '{}'", path.to_string_lossy()))
+    }
+    fs::write(path, data).map_err(|err| format!("Nie udało się zapisać pliku: {}", err))?;
+    Ok(())
+}
+
+// #[tauri::command]
+// fn run_js<R: tauri::Runtime>(app: tauri::AppHandle<R>, label: &str, js: &str) -> Result<(), String> {
+//     let ksef_window = app.get_window(label).unwrap();
+//     ksef_window.eval(js).map_err(|err| err.to_string())
+// }
 
 struct ClosePreventionState(std::sync::Mutex<bool>);
 
@@ -57,6 +73,8 @@ fn main() {
         join_path,
         file_name,
         sync_close_prevention,
+        write_string_file,
+        // run_js,
         sqlite_manager::open_database,
         sqlite_manager::rebuild_database,
         sqlite_manager::close_database,
