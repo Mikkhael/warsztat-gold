@@ -176,12 +176,16 @@ function open_print_window_faktura() {
     RepZlecenieNaprawyFaktura_ref.value?.update_and_open(false).catch(handle_err);
 }
 
-async function open_ksef_window() {
+/**
+ * 
+ * @param as_summary 
+ */
+async function open_ksef_window(as_summary) {
     const title = "Ksef - Zlecenie nr " + param_out_zlecenie_id.get_value();
     // console.log("REPORT PREPARER DEBUG", RepZlecenieNaprawyFaktura_ref.value.rep);
     const rep = RepZlecenieNaprawyFaktura_ref.value.rep;
     await rep.perform_update();
-    const fa3 = rep.generate_ksef_fa3();
+    const fa3 = rep.generate_ksef_fa3(as_summary);
     return fwManager.open_or_focus_window(title, FA3Viewer, {
         category: 'ksef',
         props: {
@@ -275,11 +279,12 @@ defineExpose({
                     <!-- <img src="/assets/icons/document.svg" class="button" @click="open_print_window_faktura"/> -->
                     <!-- <div class="button" @click="open_czesci_window">CZĘŚCI</div> -->
                     <!-- <div class="button" @click="open_robocizna_window">ROBOCIZNA</div> -->
-                    <IconButton icon="document" text="Faktura"   @click="open_print_window_faktura" style="grid-area: 1 / 1" />
-                    <IconButton icon="document" text="KSEF"      @click="open_ksef_window"  style="grid-area: 1 / 2"/>
-                    <IconButton icon="document" text="Zlecenie"  @click="open_print_window" style="grid-column: span 2"/>
-                    <IconButton icon="edit"     text="CZĘŚCI"    @click="open_czesci_window" />
-                    <IconButton icon="edit"     text="ROBOCIZNA" @click="open_robocizna_window" />
+                    <IconButton icon="document" text="KSEF Lista" @click="()=>open_ksef_window(false)"  style="grid-area: 1 / 1"/>
+                    <IconButton icon="document" text="KSEF Spec"  @click="()=>open_ksef_window(true)"   style="grid-area: 1 / 2"/>
+                    <IconButton icon="document" text="Faktura"    @click="open_print_window_faktura" style="grid-area: 2 / 1" />
+                    <IconButton icon="document" text="Zlecenie"   @click="open_print_window" style="grid-area: 2 / 2"/>
+                    <IconButton icon="edit"     text="CZĘŚCI"     @click="open_czesci_window" />
+                    <IconButton icon="edit"     text="ROBOCIZNA"  @click="open_robocizna_window" />
                 </div>
             </div>
 

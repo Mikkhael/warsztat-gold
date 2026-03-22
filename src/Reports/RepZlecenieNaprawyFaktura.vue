@@ -95,7 +95,10 @@ const total_brutto_parts = computed(() => {
 //////////////////// KSEF //////////////////////////
 
 
-function generate_ksef_fa3() {
+/**
+ * @param {boolean} as_summary
+ */
+function generate_ksef_fa3( as_summary ) {
     const res = new FA3_Faktura();
 
     res.Naglowek.DataWytworzeniaFa = date_now_ksef();
@@ -116,16 +119,7 @@ function generate_ksef_fa3() {
     res.Podmiot2.HasAdres = (klie_ulica.value !== "");
     res.Podmiot2.Adres.AdresL1 = `ul. ${klie_ulica.value}, ${klie_kod.value} ${klie_miasto.value}`;
 
-    // TODO info samochód
 
-    const summary_wiersz = new FA3_FA_Wiersz();
-    summary_wiersz.NrWierszaFa = "1";
-    summary_wiersz.Nazwa       = settings_data['Nazwa Spec.'];
-    summary_wiersz.Miara       = "szt."; // TODO ?
-    summary_wiersz.Ilosc       = "1";
-    summary_wiersz.CenaJednostkowaNetto = format_decimal_ksef_2(src_total_netto.value, false, false);
-    summary_wiersz.TotalNetto           = format_decimal_ksef_2(src_total_netto.value, false, false);
-    summary_wiersz.StawkaPodatku        = "23";
 
     res.Fa.DataWystawienia    = date_now(); // TODO ?
     res.Fa.MiejsceWystawienia = "Gliwice";
@@ -134,7 +128,35 @@ function generate_ksef_fa3() {
     res.Fa.suma_netto_22_23   = format_decimal_ksef_2(src_total_netto.value,  false, false);
     res.Fa.suma_tax_22_23     = format_decimal_ksef_2(src_total_vat.value,    false, false);
     res.Fa.suma_brutto        = format_decimal_ksef_2(src_total_brutto.value, false, false);
-    res.Fa.Wiersze = [summary_wiersz];
+
+    if( as_summary ) {
+        const summary_wiersz = new FA3_FA_Wiersz();
+        summary_wiersz.NrWierszaFa = "1";
+        summary_wiersz.Nazwa       = settings_data['Nazwa Spec.'];
+        summary_wiersz.Miara       = "szt."; // TODO ?
+        summary_wiersz.Ilosc       = "1";
+        summary_wiersz.CenaJednostkowaNetto = format_decimal_ksef_2(src_total_netto.value, false, false);
+        summary_wiersz.TotalNetto           = format_decimal_ksef_2(src_total_netto.value, false, false);
+        summary_wiersz.StawkaPodatku        = "23";
+
+        res.Fa.Wiersze = [summary_wiersz];
+    } else {
+        res.Fa.Wiersze = [];
+        const rows_data = src_list.local_rows.value;
+        for( let index = 0; index < rows_data.length; index++ ) {
+            const row = rows_data[index];
+            const res_row = new FA3_FA_Wiersz();
+            res_row.NrWierszaFa = index + 1;
+            res_row.Nazwa                = format_first_line( row.get('name') );
+            res_row.Miara                = row.get('unit');
+            res_row.Ilosc                = row.get('cnt');
+            res_row.CenaJednostkowaNetto = format_decimal_ksef_2(row.get('netto'),     false, false);
+            res_row.TotalNetto           = format_decimal_ksef_2(row.get('mul_netto'), false, false);
+            res_row.StawkaPodatku        = "23";
+
+            res.Fa.Wiersze.push(res_row)
+        }
+    }
     
     res.Fa.Platnosc.RachunekBankowy.NrRB       = settings_data['Nr Konta'];
     res.Fa.Platnosc.RachunekBankowy.NazwaBanku = settings_data['Nazwa Banku'];

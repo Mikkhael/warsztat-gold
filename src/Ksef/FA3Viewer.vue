@@ -38,25 +38,13 @@ async function generate_xml_file() {
 }
 
 const show_advanced = ref(false);
-const is_faktura_simple = computed(() => {
-    if(fa3.Fa.Wiersze.length !== 1) return false;
-    if(fa3.Fa.Wiersze[0].Ilosc !== "1") return false;
-    if(fa3.Fa.Wiersze[0].StawkaPodatku !== "23") return false;
-    return true;
-})
-
-function tyy_update_single_wiersz() {
-    if(!is_faktura_simple.value) return;
-    fa3.Fa.Wiersze[0].CenaJednostkowaNetto = fa3.Fa.suma_netto_22_23;
-    fa3.Fa.Wiersze[0].TotalNetto           = fa3.Fa.suma_netto_22_23;
-}
 
 </script>
 
 
 <template>
 
-<div>
+<div class="content">
 
     
     <fieldset class="main_fieldset">
@@ -94,153 +82,55 @@ function tyy_update_single_wiersz() {
         </div>
     </fieldset>
 
-    <fieldset>
-        <legend>Sprzedawca</legend>
-        <div class="field">
-            <label> NIP </label>
-            <input type="text" v-model="fa3.Podmiot1.DaneIdentyfikacyjne.NIP">
-        </div>
-        <div class="field">
-            <label> Nazwa </label>
-            <input type="text" v-model="fa3.Podmiot1.DaneIdentyfikacyjne.Nazwa">
-        </div>
-        <fieldset>
-            <legend>Adres</legend>
-            <div class="field">
-                <label> Kod Kraju </label>
-                <input type="text" v-model="fa3.Podmiot1.Adres.KodKraju">
-            </div>
-            <div class="field">
-                <label> Linijka 1 </label>
-                <input type="text" v-model="fa3.Podmiot1.Adres.AdresL1">
-            </div>
-            <div class="field">
-                <label> Linijka 2 </label>
-                <input type="text" v-model="fa3.Podmiot1.Adres.AdresL2">
-            </div>
-        </fieldset>
-        <fieldset :class="{hidden: !fa3.Podmiot1.HasAdresKoresp}"> 
-            <legend>Adres Korespondencyjny <input type="checkbox" v-model="fa3.Podmiot1.HasAdresKoresp"> </legend>
-            <div class="field">
-                <label> Kod Kraju </label>
-                <input type="text" v-model="fa3.Podmiot1.AdresKoresp.KodKraju">
-            </div>
-            <div class="field">
-                <label> Linijka 1 </label>
-                <input type="text" v-model="fa3.Podmiot1.AdresKoresp.AdresL1">
-            </div>
-            <div class="field">
-                <label> Linijka 2 </label>
-                <input type="text" v-model="fa3.Podmiot1.AdresKoresp.AdresL2">
-            </div>
-        </fieldset>
-        <fieldset v-for="(value, index) in fa3.Podmiot1.DaneKontaktowe">
-            <legend> Dane Kontaktowe {{ index + 1 }} </legend>
-            <div class="field">
-                <label> Email </label>
-                <input type="text" v-model="value.Email">
-            </div>
-            <div class="field">
-                <label> Telefon </label>
-                <input type="text" v-model="value.Telefon">
-            </div>
-        </fieldset>
-    </fieldset>
+    <div class="form">
 
-    
-    <fieldset>
-        <legend>Nabywca</legend>
-        <div class="field">
-            <label> Brak numeru NIP </label>
-            <input type="checkbox" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.NoID">
-        </div>
-        <div class="field">
-            <label> NIP </label>
-            <input type="text" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.NIP" :disabled="fa3.Podmiot2.DaneIdentyfikacyjne.NoID">
-        </div>
-        <div class="field">
-            <label> Nazwa </label>
-            <input type="text" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.Nazwa">
-        </div>
-        <fieldset :class="{hidden: !fa3.Podmiot2.HasAdres}" > 
-            <legend>Adres <input type="checkbox" v-model="fa3.Podmiot2.HasAdres"></legend>
-            <div class="field">
-                <label> Kod Kraju </label>
-                <input type="text" v-model="fa3.Podmiot2.Adres.KodKraju">
-            </div>
-            <div class="field">
-                <label> Linijka 1 </label>
-                <input type="text" v-model="fa3.Podmiot2.Adres.AdresL1">
-            </div>
-            <div class="field">
-                <label> Linijka 2 </label>
-                <input type="text" v-model="fa3.Podmiot2.Adres.AdresL2">
-            </div>
+        <fieldset class="sprzedawca simplegrid">
+            <legend>Sprzedawca</legend>
+            
+            <label> NIP                </label> <input type="text" v-model="fa3.Podmiot1.DaneIdentyfikacyjne.NIP">
+            <label> Nazwa              </label> <input type="text" v-model="fa3.Podmiot1.DaneIdentyfikacyjne.Nazwa">
+            <label> Kod Kraju          </label> <input type="text" v-model="fa3.Podmiot1.Adres.KodKraju">
+            <label> Adres              </label> <input type="text" v-model="fa3.Podmiot1.Adres.AdresL1">
+            <label> Adres l. 2         </label> <input type="text" v-model="fa3.Podmiot1.Adres.AdresL2">
+            <label> Koresp. Kod Kraju  </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.KodKraju">
+            <label> Koresp. Adres      </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.AdresL1">
+            <label> Koresp. Adres l. 2 </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.AdresL2">
+            <label> Email              </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.Email">
+            <label> Telefon            </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.Telefon">
+
+             <!-- <input type="checkbox" v-model="fa3.Podmiot1.HasAdresKoresp"> -->
         </fieldset>
-        <fieldset :class="{hidden: !fa3.Podmiot2.HasAdresKoresp}" > 
-            <legend>Adres Korespondencyjny <input type="checkbox" v-model="fa3.Podmiot2.HasAdresKoresp"></legend>
-            <div class="field">
-                <label> Kod Kraju </label>
-                <input type="text" v-model="fa3.Podmiot2.AdresKoresp.KodKraju">
-            </div>
-            <div class="field">
-                <label> Linijka 1 </label>
-                <input type="text" v-model="fa3.Podmiot2.AdresKoresp.AdresL1">
-            </div>
-            <div class="field">
-                <label> Linijka 2 </label>
-                <input type="text" v-model="fa3.Podmiot2.AdresKoresp.AdresL2">
-            </div>
+        
+        <fieldset class="nabywca simplegrid">
+            <legend>Nabywca</legend>
+            
+            <label> NIP                </label> <input type="text" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.NIP">
+            <label> Nazwa              </label> <input type="text" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.Nazwa">
+            <label> Kod Kraju          </label> <input type="text" v-model="fa3.Podmiot2.Adres.KodKraju">
+            <label> Adres              </label> <input type="text" v-model="fa3.Podmiot2.Adres.AdresL1">
+            <label> Adres l. 2         </label> <input type="text" v-model="fa3.Podmiot2.Adres.AdresL2">
+            <label> Koresp. Kod Kraju  </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.KodKraju">
+            <label> Koresp. Adres      </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.AdresL1">
+            <label> Koresp. Adres l. 2 </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.AdresL2">
+            <label> Email              </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.Email">
+            <label> Telefon            </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.Telefon">
+
+             <!-- <input type="checkbox" v-model="fa3.Podmiot2.HasAdresKoresp"> -->
+             <!-- <input type="checkbox" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.NoID"> -->
         </fieldset>
-        <fieldset v-for="(value, index) in fa3.Podmiot2.DaneKontaktowe">
-            <legend> Dane Kontaktowe {{ index + 1 }} </legend>
-            <div class="field">
-                <label> Email </label>
-                <input type="text" v-model="value.Email">
-            </div>
-            <div class="field">
-                <label> Telefon </label>
-                <input type="text" v-model="value.Telefon">
-            </div>
-        </fieldset>
-    </fieldset>
-    
-    <fieldset>
-        <legend>Sprzedaż</legend>
-        <div class="field">
-            <label> Kod Waluty </label>
-            <input type="text" v-model="fa3.Fa.KodWaluty">
-        </div>
-        <div class="field">
-            <label> Data Wystawienia </label>
-            <input type="text" v-model="fa3.Fa.DataWystawienia">
-        </div>
-        <div class="field">
-            <label> Miejsce Wystawienia </label>
-            <input type="text" v-model="fa3.Fa.MiejsceWystawienia">
-        </div>
-        <div class="field">
-            <label> Numer Faktury </label>
-            <input type="text" v-model="fa3.Fa.NumerFaktury">
-        </div>
-        <div class="field">
-            <label> Data Sprzedaży </label>
-            <input type="text" v-model="fa3.Fa.DataSprzedazy">
-        </div>
-        <div class="field">
-            <label> Suma Netto </label>
-            <input type="text" v-model="fa3.Fa.suma_netto_22_23">
-        </div>
-        <div class="field">
-            <label> Suma Podatku </label>
-            <input type="text" v-model="fa3.Fa.suma_tax_22_23">
-        </div>
-        <div class="field">
-            <label> Suma Brutto </label>
-            <input type="text" v-model="fa3.Fa.suma_brutto">
-        </div>
-        <fieldset>
-            <legend>Wiersze</legend>
+        
+        <fieldset class="sprzedaz simplegrid">
+            <legend>Sprzedaż</legend>
+
+            <label> Kod Waluty          </label> <input type="text" v-model="fa3.Fa.KodWaluty">
+            <label> Data Wystawienia    </label> <input type="text" v-model="fa3.Fa.DataWystawienia">
+            <label> Miejsce Wystawienia </label> <input type="text" v-model="fa3.Fa.MiejsceWystawienia">
+            <label> Numer Faktury       </label> <input type="text" v-model="fa3.Fa.NumerFaktury">
+            <label> Data Sprzedaży      </label> <input type="text" v-model="fa3.Fa.DataSprzedazy">
+            <label> Suma Netto          </label> <input type="text" v-model="fa3.Fa.suma_netto_22_23">
+            <label> Suma Podatku        </label> <input type="text" v-model="fa3.Fa.suma_tax_22_23">
+            <label> Suma Brutto         </label> <input type="text" v-model="fa3.Fa.suma_brutto">
+
             <div class="wiersze_grid">
                 <div class="header">
                     <div>Lp.</div>
@@ -273,15 +163,14 @@ function tyy_update_single_wiersz() {
                 <input type="text" v-model="fa3.Fa.Platnosc.RachunekBankowy.NazwaBanku">
             </div>
         </fieldset>
-    </fieldset>
-
-    <fieldset>
-        <legend>Pozostałe Informacje</legend>
-        <div class="field" v-for="(value, index) in fa3.Stopka.Infos">
-            <label> Linijka {{ index + 1 }} </label>
-            <input type="text" v-model="fa3.Stopka.Infos[index]">
-        </div>
-    </fieldset>
+        <fieldset>
+            <legend>Pozostałe Informacje</legend>
+            <div class="field" v-for="(value, index) in fa3.Stopka.Infos">
+                <label> Linijka {{ index + 1 }} </label>
+                <input type="text" v-model="fa3.Stopka.Infos[index]">
+            </div>
+        </fieldset>
+    </div>
     
     <fieldset :class="{hidden: !show_advanced}" >
         <legend>Pokaż Opcje Zaawansowane <input type="checkbox" v-model="show_advanced"> </legend>
@@ -308,69 +197,7 @@ function tyy_update_single_wiersz() {
 
 <style scoped>
 
-    fieldset.hidden > div,
-    fieldset.hidden > fieldset {
-        display: none;
-    }
 
-    .full_row {
-        grid-column: 1 / -1;
-    }
-
-    .note {
-        font-size: 0.8em;
-    }
-
-    .warning {
-        color: red;
-    }
-
-    fieldset {
-        display: grid;
-        grid-template-columns: max-content 1fr;
-        grid-column: 1 / -1;
-    }
-
-    .main_fieldset {
-        font-size: 1.1em;
-        background-color: #fef3ca;
-    }
-    .main_fieldset input[type="button"] {
-        grid-column: 1 / -1;
-        font-size: 1.5em;
-        background-color: #c6e6c4;
-    }
-
-    .field {
-        display: contents;
-    }
-    .field > label {
-        padding-left:  3px;
-        padding-right: 3px;
-    }
-    .field > input[type="checkbox"] {
-        justify-self: left;
-    }
-
-    .wiersze_grid {
-        display: grid;
-        grid-template-columns: auto 1fr auto auto auto auto auto;
-        grid-column: 1 / -1;
-    }
-    .wiersze_grid > .header {
-        font-weight: bold;
-    }
-    .wiersze_grid input {
-        min-width: 5ch;
-    }
-    .wiersze_grid input.fill {
-        min-width: unset;
-    }
-
-    .wiersze_grid > .header,
-    .wiersze_grid > .row {
-        display: contents;
-    }
 
 
 </style>
