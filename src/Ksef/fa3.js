@@ -190,6 +190,11 @@ export class FA3_FA_Wiersz {
         /* P_9A */ this.CenaJednostkowaNetto = "";   // -{14}.{8}
         /* P_11 */ this.TotalNetto           = "";   // -{16}.{2}
         /* P_12 */ this.StawkaPodatku        = "23"; // 23
+
+        // TODO
+        // Add P_11A   - wartość brutto
+        // Add P_11Vat - wartość podatku
+
     }
     print() {
         return xml_create_node_parsed( "FaWiersz", 

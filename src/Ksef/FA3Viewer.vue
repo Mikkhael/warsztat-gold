@@ -1,8 +1,8 @@
 <script setup>
 //@ts-check
 
-import { reactive, ref, computed } from 'vue';
-import { FA3_Faktura } from './fa3';
+import { reactive, ref, computed, watch, toRef, watchEffect } from 'vue';
+import { FA3_DaneKontaktowe, FA3_Faktura } from './fa3';
 
 import { useMainSettings } from '../components/Settings/Settings';
 import useMainMsgManager from '../components/Msg/MsgManager';
@@ -22,6 +22,13 @@ const msgManager = useMainMsgManager();
 const settings = useMainSettings();
 
 const fa3 = reactive(props.data);
+
+const Podmiot2_Nip_Checkbox = computed( {
+    get()  { return !fa3.Podmiot2.DaneIdentyfikacyjne.NoID; },
+    set(x) { fa3.Podmiot2.DaneIdentyfikacyjne.NoID = !x;    }
+});
+// const Podmiot1_Kontakt = ref(fa3.Podmiot1.DaneKontaktowe[0] ?? new FA3_DaneKontaktowe());
+// const Podmiot1_Kontakt = ref(fa3.Podmiot2.DaneKontaktowe[0] ?? new FA3_DaneKontaktowe());
 
 async function generate_xml_file() {
     const settings_ksef = settings.get_reactive_settings_raw('ksef');
@@ -50,18 +57,7 @@ const show_advanced = ref(false);
     <fieldset class="main_fieldset">
         <legend>Wyróżnione informacje</legend>
         <input type="button" value="GENERUJ" @click="generate_xml_file()">
-        <div class="field">
-            <label> Numer Faktury </label>
-            <input type="text" v-model="fa3.Fa.NumerFaktury">
-        </div>
-        <div class="field">
-            <label> Data Wystawienia Faktury </label>
-            <input type="text" v-model="fa3.Fa.DataWystawienia">
-        </div>
-        <div class="field">
-            <label> Data Sprzedaży / Wykonania usługi</label>
-            <input type="text" v-model="fa3.Fa.DataSprzedazy">
-        </div>
+        
         <div class="field">
             <label> Suma Netto </label>
             <input type="text" v-model="fa3.Fa.suma_netto_22_23" @change.lazy="tyy_update_single_wiersz">
@@ -74,59 +70,93 @@ const show_advanced = ref(false);
             <label> Suma Brutto </label>
             <input type="text" v-model="fa3.Fa.suma_brutto">
         </div>
-        <div class="note full_row" v-if="is_faktura_simple">
+        <!-- <div class="note full_row" v-if="is_faktura_simple">
             Poniważ faktura składa się z wyłącznie 1 pozycji z polami "ilość" równym "1" oraz "stawka podatku" równym "23", modyfikacja pola "Suma Netto" automatycznie ustawi odpowiednie pola ceny netto w sekcji "Wiersze"
         </div>
         <div class="note full_row warning" v-else>
             Poniważ faktura NIE składa się z wyłącznie 1 pozycji z polami "ilość" równym "1" oraz "stawka podatku" równym "23", modyfikacja pola "Suma Netto" wymaga również ręcznej modyfikacji wszystkich pozycji w sekcji "Weirsze" !
-        </div>
+        </div> -->
     </fieldset>
 
     <div class="form">
 
-        <fieldset class="sprzedawca simplegrid">
+        <fieldset class="maininfo">
+            <legend>Główne Informacje</legend>
+
+            <div class="field highlight">
+                <label> Numer Faktury </label>
+                <input type="text" v-model="fa3.Fa.NumerFaktury">
+            </div>
+            <div class="field">
+                <label> Data Wystawienia Faktury </label>
+                <input type="date" v-model="fa3.Fa.DataWystawienia">
+            </div>
+            <div class="field">
+                <label> Data Sprzedaży / Wykonania usługi</label>
+                <input type="date" v-model="fa3.Fa.DataSprzedazy">
+            </div>
+            <div class="field">
+                <label> Miejsce Wystawienia </label>
+                <input type="text" v-model="fa3.Fa.MiejsceWystawienia">
+            </div>
+        </fieldset>
+
+        <fieldset class="sprzedawca addressgrid simplegrid">
             <legend>Sprzedawca</legend>
             
             <label> NIP                </label> <input type="text" v-model="fa3.Podmiot1.DaneIdentyfikacyjne.NIP">
             <label> Nazwa              </label> <input type="text" v-model="fa3.Podmiot1.DaneIdentyfikacyjne.Nazwa">
-            <label> Kod Kraju          </label> <input type="text" v-model="fa3.Podmiot1.Adres.KodKraju">
-            <label> Adres              </label> <input type="text" v-model="fa3.Podmiot1.Adres.AdresL1">
-            <label> Adres l. 2         </label> <input type="text" v-model="fa3.Podmiot1.Adres.AdresL2">
-            <label> Koresp. Kod Kraju  </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.KodKraju">
-            <label> Koresp. Adres      </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.AdresL1">
-            <label> Koresp. Adres l. 2 </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.AdresL2">
-            <label> Email              </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.Email">
-            <label> Telefon            </label> <input type="text" v-model="fa3.Podmiot1.AdresKoresp.Telefon">
-
-             <!-- <input type="checkbox" v-model="fa3.Podmiot1.HasAdresKoresp"> -->
+            <fieldset class="subaddress">
+                <legend>Adres</legend>
+                                      <input type="text" class="long"  v-model="fa3.Podmiot1.Adres.AdresL1">
+                                      <input type="text"               v-model="fa3.Podmiot1.Adres.AdresL2">
+                <label> Kraj </label> <input type="text" class="short" v-model="fa3.Podmiot1.Adres.KodKraju"> 
+            </fieldset>
+            <fieldset class="subaddress" :class="{collapsed: !fa3.Podmiot1.HasAdresKoresp}">
+                <legend>Adres Koresp. <input type="checkbox" v-model="fa3.Podmiot1.HasAdresKoresp"> </legend>
+                                      <input type="text" class="long"  v-model="fa3.Podmiot1.AdresKoresp.AdresL1">
+                                      <input type="text"               v-model="fa3.Podmiot1.AdresKoresp.AdresL2">
+                <label> Kraj </label> <input type="text" class="short" v-model="fa3.Podmiot1.AdresKoresp.KodKraju"> 
+            </fieldset>
+            <label> Email              </label> <input type="text" v-model="fa3.Podmiot1.DaneKontaktowe[0].Email">
+            <label> Telefon            </label> <input type="text" v-model="fa3.Podmiot1.DaneKontaktowe[0].Telefon">
+            
+            <label> Numer Konta </label> <input type="text" v-model="fa3.Fa.Platnosc.RachunekBankowy.NrRB">
+            <label> Nazwa Banku </label> <input type="text" v-model="fa3.Fa.Platnosc.RachunekBankowy.NazwaBanku">
         </fieldset>
         
-        <fieldset class="nabywca simplegrid">
+        <fieldset class="nabywca addressgrid simplegrid" :class="{NoID: fa3.Podmiot2.DaneIdentyfikacyjne.NoID}" >
             <legend>Nabywca</legend>
             
-            <label> NIP                </label> <input type="text" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.NIP">
+            <label> NIP  <input type="checkbox" v-model="Podmiot2_Nip_Checkbox"> </label> 
+                                                <input type="text" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.NIP" class="ID">
+                                                <input type="text" value="Brak" disabled class="NoID">
             <label> Nazwa              </label> <input type="text" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.Nazwa">
-            <label> Kod Kraju          </label> <input type="text" v-model="fa3.Podmiot2.Adres.KodKraju">
-            <label> Adres              </label> <input type="text" v-model="fa3.Podmiot2.Adres.AdresL1">
-            <label> Adres l. 2         </label> <input type="text" v-model="fa3.Podmiot2.Adres.AdresL2">
-            <label> Koresp. Kod Kraju  </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.KodKraju">
-            <label> Koresp. Adres      </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.AdresL1">
-            <label> Koresp. Adres l. 2 </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.AdresL2">
-            <label> Email              </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.Email">
-            <label> Telefon            </label> <input type="text" v-model="fa3.Podmiot2.AdresKoresp.Telefon">
-
-             <!-- <input type="checkbox" v-model="fa3.Podmiot2.HasAdresKoresp"> -->
-             <!-- <input type="checkbox" v-model="fa3.Podmiot2.DaneIdentyfikacyjne.NoID"> -->
+            <fieldset class="subaddress">
+                <legend>Adres</legend>
+                                      <input type="text" class="long"  v-model="fa3.Podmiot2.Adres.AdresL1">
+                                      <input type="text"               v-model="fa3.Podmiot2.Adres.AdresL2">
+                <label> Kraj </label> <input type="text" class="short" v-model="fa3.Podmiot2.Adres.KodKraju"> 
+            </fieldset>
+            <fieldset class="subaddress" :class="{collapsed: !fa3.Podmiot2.HasAdresKoresp}">
+                <legend>Adres Koresp. <input type="checkbox" v-model="fa3.Podmiot2.HasAdresKoresp"> </legend>
+                                      <input type="text" class="long"  v-model="fa3.Podmiot2.AdresKoresp.AdresL1">
+                                      <input type="text"               v-model="fa3.Podmiot2.AdresKoresp.AdresL2">
+                <label> Kraj </label> <input type="text" class="short" v-model="fa3.Podmiot2.AdresKoresp.KodKraju"> 
+            </fieldset>
+            <!-- <label> Email              </label> <input type="text" v-model="fa3.Podmiot2.DaneKontaktowe[0].Email">
+            <label> Telefon            </label> <input type="text" v-model="fa3.Podmiot2.DaneKontaktowe[0].Telefon"> -->
+            
         </fieldset>
+        <fieldset>
+            <legend>TEST</legend>
+        </fieldset>
+
         
         <fieldset class="sprzedaz simplegrid">
             <legend>Sprzedaż</legend>
 
             <label> Kod Waluty          </label> <input type="text" v-model="fa3.Fa.KodWaluty">
-            <label> Data Wystawienia    </label> <input type="text" v-model="fa3.Fa.DataWystawienia">
-            <label> Miejsce Wystawienia </label> <input type="text" v-model="fa3.Fa.MiejsceWystawienia">
-            <label> Numer Faktury       </label> <input type="text" v-model="fa3.Fa.NumerFaktury">
-            <label> Data Sprzedaży      </label> <input type="text" v-model="fa3.Fa.DataSprzedazy">
             <label> Suma Netto          </label> <input type="text" v-model="fa3.Fa.suma_netto_22_23">
             <label> Suma Podatku        </label> <input type="text" v-model="fa3.Fa.suma_tax_22_23">
             <label> Suma Brutto         </label> <input type="text" v-model="fa3.Fa.suma_brutto">
@@ -139,28 +169,22 @@ const show_advanced = ref(false);
                     <div>Ilosc</div>
                     <div>Cena Jednostkowa Netto</div>
                     <div>Cena Łączna Netto</div>
-                    <div>Stawka Podatku</div>
+                    <div></div><!-- <div>Stawka Podatku</div> -->
+                    <div>VAT</div>
+                    <div>Brutto</div>
                 </div>
                 <div class="row" v-for="(row, row_index) in fa3.Fa.Wiersze">
-                    <input type="text" v-model="row.NrWierszaFa">
-                    <input type="text" class="fill" v-model="row.Nazwa">
-                    <input type="text" v-model="row.Miara">
-                    <input type="text" v-model="row.Ilosc">
-                    <input type="text" v-model="row.CenaJednostkowaNetto">
-                    <input type="text" v-model="row.TotalNetto">
-                    <input type="text" v-model="row.StawkaPodatku" disabled>
+                    <!-- <input type="text" class="minim"   v-model="row.NrWierszaFa" disabled> -->
+                    <input type="text" class="minim"   :value="row_index+1" disabled>
+                    <input type="text" class="fill"    v-model="row.Nazwa">
+                    <input type="text" class="short r" v-model="row.Miara">
+                    <input type="text" class="short r" v-model="row.Ilosc">
+                    <input type="text" class="r"       v-model="row.CenaJednostkowaNetto">
+                    <input type="text" class="r"       v-model="row.TotalNetto">
+                    <input type="text" class="minim r" v-model="row.StawkaPodatku" disabled>
+                    <input type="text" class="r" value="123" disabled> <!-- TODO -->
+                    <input type="text" class="r" value="123" disabled> <!-- TODO -->
                 </div>
-            </div>
-        </fieldset>
-        <fieldset>
-            <legend>Płatność - Rachunek Bankowy</legend>
-            <div class="field">
-                <label> Numer Konta </label>
-                <input type="text" v-model="fa3.Fa.Platnosc.RachunekBankowy.NrRB">
-            </div>
-            <div class="field">
-                <label> Nazwa Banku </label>
-                <input type="text" v-model="fa3.Fa.Platnosc.RachunekBankowy.NazwaBanku">
             </div>
         </fieldset>
         <fieldset>
@@ -197,6 +221,115 @@ const show_advanced = ref(false);
 
 <style scoped>
 
+    fieldset.collapsed {
+        padding-bottom: 0px;
+        padding-top: 0px;
+    }
+    fieldset.collapsed > * {
+        display: none;
+    }
+    fieldset.collapsed > legend {
+        display: unset;
+    }
+
+    
+    .form {
+        display: grid;
+        grid-template: auto / auto auto;
+    }
+    .form > .maininfo {
+        grid-column: span 2;
+    }
+    .form > .sprzedawca {
+        grid-row: span 2;
+    }
+    .form > .sprzedaz {
+        grid-column: span 2;
+    }
+    .form > * > legend {
+        color: orange;
+    }
+
+    .maininfo {
+        display: grid;
+        grid-template-columns: auto auto auto auto;
+        column-gap: 4ch;
+    }
+    .maininfo > .field {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        border-top:    1px solid black;
+        border-bottom: 1px solid black;
+        padding: 2px;
+    }
+    .maininfo > .field.highlight {
+        background-color: rgb(212, 212, 212);
+        font-weight: bold;
+    }
+    .maininfo > .field input { text-align: right; }
+    .maininfo > .field label { text-align: center; }
+
+    .addressgrid {
+        display: grid;
+        grid-template: auto / auto 1fr;
+    }
+    .addressgrid input {
+        min-width: 2ch;
+    }
+    .addressgrid > .subaddress {
+        grid-column: span 2;
+        display: grid;
+        grid-template: auto / 1fr auto auto;
+    }
+    .addressgrid > .subaddress > .long {
+        grid-column: -1 / 1;
+    }
+    .addressgrid > .subaddress > .short {
+        max-width: 3ch;
+    }
+    .addressgrid      .NoID { display: none;  }
+    .addressgrid.NoID .NoID { display: block; }
+    .addressgrid      .ID   { display: block; }
+    .addressgrid.NoID .ID   { display: none;  }
+
+    .simplegrid {
+        display: grid;
+        grid-template: auto / auto 1fr;
+    }
+    .simplegrid label {
+        margin-left: 1ch;
+        margin-right: 0.5ch;
+    }
+    .sprzedaz > .wiersze_grid {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template: auto / auto 1fr auto auto auto auto auto auto auto ;
+    }
+    .wiersze_grid > .header,
+    .wiersze_grid > .row {
+        display: contents;
+    }
+    .wiersze_grid > .header {
+        text-align: center;
+    }
+    .wiersze_grid > .row > input {
+        min-width: 3ch;
+    }
+    .wiersze_grid > .row > input.fill {
+        min-width: 40ch;
+        width: 100%;
+    }
+    .wiersze_grid > .row > input.short {
+        max-width: 6ch;
+    }
+    .wiersze_grid > .row > input.minim {
+        max-width: 4ch;
+    }
+    .wiersze_grid > .row > input.r {
+        font-family: monospace;
+        text-align: right;
+    }
 
 
 
