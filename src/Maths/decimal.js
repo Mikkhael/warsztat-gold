@@ -101,6 +101,9 @@ class DecimalNumber {
         const frac  = this.mantisa % mask;
         return whole.toString() + '.' + padl(frac.toString(), precision);
     }
+    toString() {
+        return this.as_string();
+    }
 
     /**
      * @param {number}  new_offset 
@@ -132,10 +135,39 @@ class DecimalNumber {
     /**
      * @param {number} precision 
      */
+    simplify_to(precision) {
+        while(this.offset > precision) {
+            if(this.mantisa % 10n != 0n) {
+                return this;
+            }
+            this.offset  -= 1;
+            this.mantisa /= 10n;
+        }
+        if(this.offset < precision) {
+            this.extend_to(precision);
+        }
+        return this;
+    }
+
+    /**
+     * @param {number} precision 
+     */
     rounded(precision) {
         const res = this.copy();
         res.round_to(precision);
         return res;
+    }
+
+    /**
+     * @param {DecimalNumberConvertable} other_raw 
+     */
+    add(other_raw) {
+        const other = DecimalNumber.from(other_raw);
+        const max_offset = Math.max( this.offset, other.offset );
+        this .extend_to(max_offset);
+        other.extend_to(max_offset);
+        this.mantisa += other.mantisa;
+        return this;
     }
 
     static nan() {

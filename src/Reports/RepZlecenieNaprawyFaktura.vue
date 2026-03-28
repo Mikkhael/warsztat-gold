@@ -12,6 +12,7 @@ import { computed, ref } from 'vue';
 
 import {set_from_for_summary_for_zlec_id} from '../Forms/CommonSql';
 import { FA3_DaneKontaktowe, FA3_FA_Wiersz, FA3_Faktura } from '../Ksef/fa3';
+import { DecimalNumber } from '../Maths/decimal';
 
 const props = defineProps({
     parent_window: {
@@ -135,7 +136,7 @@ function generate_ksef_fa3( as_summary ) {
         summary_wiersz.Nazwa       = settings_data['Nazwa Spec.'];
         summary_wiersz.Miara       = "szt."; // TODO ?
         summary_wiersz.Ilosc       = "1";
-        summary_wiersz.CenaJednostkowaNetto = format_decimal_ksef_2(src_total_netto.value, false, false);
+        summary_wiersz.CenaJednostkowaNetto = format_decimal_ksef_8(src_total_netto.value, false, false);
         summary_wiersz.TotalNetto           = format_decimal_ksef_2(src_total_netto.value, false, false);
         summary_wiersz.StawkaPodatku        = "23";
 
@@ -148,9 +149,9 @@ function generate_ksef_fa3( as_summary ) {
             const res_row = new FA3_FA_Wiersz();
             res_row.NrWierszaFa = index + 1;
             res_row.Nazwa                = format_first_line( row.get('name') );
-            res_row.Miara                = row.get('unit');
-            res_row.Ilosc                = row.get('cnt');
-            res_row.CenaJednostkowaNetto = format_decimal_ksef_2(row.get('netto'),     false, false);
+            res_row.Miara                = row.get('unit') || 'szt.';
+            res_row.Ilosc                = row.get('cnt')  ?? '1';
+            res_row.CenaJednostkowaNetto = format_decimal_ksef_8(row.get('netto'),     false, false);
             res_row.TotalNetto           = format_decimal_ksef_2(row.get('mul_netto'), false, false);
             res_row.StawkaPodatku        = "23";
 
@@ -189,6 +190,12 @@ function format_decimal(string, with_zl = false, with_trip = true) {
 }
 
 
+
+function format_decimal_ksef_8(/**@type {string} */ str) {
+    const res_str = format_decimal_utils(str, 8, '', '.', '') ?? "0";
+    const res_dec = DecimalNumber.from(res_str).simplify_to(2);
+    return res_dec.as_string();
+}
 function format_decimal_ksef_6(/**@type {string} */ str) {
     return format_decimal_utils(str, 6, '', '.', '');
 }

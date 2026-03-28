@@ -2,7 +2,9 @@
 //@ts-check
 
 import { reactive, ref, computed, watch, toRef, watchEffect } from 'vue';
-import { FA3_DaneKontaktowe, FA3_Faktura } from './fa3';
+import { FA3_DaneKontaktowe, FA3_FA_Wiersz, FA3_Faktura } from './fa3';
+
+import { decimal_add, decimal_mul, DecimalNumber } from '../Maths/decimal';
 
 import { useMainSettings } from '../components/Settings/Settings';
 import useMainMsgManager from '../components/Msg/MsgManager';
@@ -23,14 +25,75 @@ const settings = useMainSettings();
 
 const fa3 = reactive(props.data);
 
+//////////// Custrom FA3 controls ///////////////////////////
+
 const Podmiot2_Nip_Checkbox = computed( {
     get()  { return !fa3.Podmiot2.DaneIdentyfikacyjne.NoID; },
     set(x) { fa3.Podmiot2.DaneIdentyfikacyjne.NoID = !x;    }
 });
+
+const Fa_Infos = computed({
+    get(){
+        return fa3.Stopka.Infos[0] ?? '';
+    },
+    set(x){
+        if(x.trim().length == 0) fa3.Stopka.Infos = [];
+        else                     fa3.Stopka.Infos = [x];
+    }
+});
+
 // const Podmiot1_Kontakt = ref(fa3.Podmiot1.DaneKontaktowe[0] ?? new FA3_DaneKontaktowe());
 // const Podmiot1_Kontakt = ref(fa3.Podmiot2.DaneKontaktowe[0] ?? new FA3_DaneKontaktowe());
 
+const calculated_wiersze = computed(() => {
+    const vat_percent = DecimalNumber.from("0.23");
+    const res = fa3.Fa.Wiersze.map(row => {
+        const ilosc            = DecimalNumber.from(row.Ilosc);
+        const cena_jednostkowa = DecimalNumber.from(row.CenaJednostkowaNetto).rounded(8);
+        const cena_all         = decimal_mul( ilosc,    cena_jednostkowa ).rounded(2);
+        const cena_vat         = decimal_mul( cena_all, vat_percent      ).rounded(2);
+        const cena_brutto      = decimal_add( cena_all, cena_vat         ).rounded(2);
+        return {
+            cena_all,
+            cena_vat,
+            cena_brutto
+        };
+    })
+    return res;
+});
+
+const calculated_summary = computed(() => {
+    const total_netto  = DecimalNumber.from(0);
+    const total_vat    = DecimalNumber.from(0);
+    const total_brutto = DecimalNumber.from(0);
+    for(const row of calculated_wiersze.value) {
+        total_netto  .add( row.cena_all    );
+        total_vat    .add( row.cena_vat    );
+        total_brutto .add( row.cena_brutto );
+    }
+    return {
+        total_netto,
+        total_vat,
+        total_brutto
+    }
+});
+
+
+function finalize_fa3() {
+    for(let i = 0; i<fa3.Fa.Wiersze.length; i++) {
+        fa3.Fa.Wiersze[i].NrWierszaFa = (i+1).toString();
+        fa3.Fa.Wiersze[i].TotalNetto  = calculated_wiersze.value[i].cena_all.as_string(2);
+    }
+    fa3.Fa.suma_netto_22_23 = calculated_summary.value.total_netto .as_string(2);
+    fa3.Fa.suma_tax_22_23   = calculated_summary.value.total_vat   .as_string(2);
+    fa3.Fa.suma_brutto      = calculated_summary.value.total_brutto.as_string(2);
+}
+
+
+////////////////////////////////////
+
 async function generate_xml_file() {
+    finalize_fa3();
     const settings_ksef = settings.get_reactive_settings_raw('ksef');
     const path = settings_ksef.xml_file_path;
     const data = fa3.to_xml();
@@ -44,6 +107,19 @@ async function generate_xml_file() {
 
 }
 
+function delete_wiersz(row_index) {
+    fa3.Fa.Wiersze = fa3.Fa.Wiersze.filter((x,i) => i != row_index);
+}
+function add_wiersz() {
+    const new_row = new FA3_FA_Wiersz();
+    new_row.Nazwa = "";
+    new_row.Miara = "szt.";
+    new_row.Ilosc = "0";
+    new_row.CenaJednostkowaNetto = "0";
+    new_row.TotalNetto = "0";
+    fa3.Fa.Wiersze.push(new_row);
+}
+
 const show_advanced = ref(false);
 
 </script>
@@ -52,31 +128,6 @@ const show_advanced = ref(false);
 <template>
 
 <div class="content">
-
-    
-    <fieldset class="main_fieldset">
-        <legend>Wyróżnione informacje</legend>
-        <input type="button" value="GENERUJ" @click="generate_xml_file()">
-        
-        <div class="field">
-            <label> Suma Netto </label>
-            <input type="text" v-model="fa3.Fa.suma_netto_22_23" @change.lazy="tyy_update_single_wiersz">
-        </div>
-        <div class="field">
-            <label> Suma Podatku </label>
-            <input type="text" v-model="fa3.Fa.suma_tax_22_23">
-        </div>
-        <div class="field">
-            <label> Suma Brutto </label>
-            <input type="text" v-model="fa3.Fa.suma_brutto">
-        </div>
-        <!-- <div class="note full_row" v-if="is_faktura_simple">
-            Poniważ faktura składa się z wyłącznie 1 pozycji z polami "ilość" równym "1" oraz "stawka podatku" równym "23", modyfikacja pola "Suma Netto" automatycznie ustawi odpowiednie pola ceny netto w sekcji "Wiersze"
-        </div>
-        <div class="note full_row warning" v-else>
-            Poniważ faktura NIE składa się z wyłącznie 1 pozycji z polami "ilość" równym "1" oraz "stawka podatku" równym "23", modyfikacja pola "Suma Netto" wymaga również ręcznej modyfikacji wszystkich pozycji w sekcji "Weirsze" !
-        </div> -->
-    </fieldset>
 
     <div class="form">
 
@@ -148,21 +199,21 @@ const show_advanced = ref(false);
             <label> Telefon            </label> <input type="text" v-model="fa3.Podmiot2.DaneKontaktowe[0].Telefon"> -->
             
         </fieldset>
-        <fieldset>
-            <legend>TEST</legend>
+        <fieldset class="summarygrid">
+            <legend>Podsumowanie</legend>
+            <input type="text" class="long" v-model="Fa_Infos">
+            <label> Suma Netto   </label> <div class="value"> {{calculated_summary.total_netto}}  {{ fa3.Fa.KodWaluty }}</div>
+            <label> Suma Podatku </label> <div class="value"> {{calculated_summary.total_vat}}    {{ fa3.Fa.KodWaluty }}</div>
+            <label> Suma Brutto  </label> <div class="value"> {{calculated_summary.total_brutto}} {{ fa3.Fa.KodWaluty }}</div>
         </fieldset>
 
         
         <fieldset class="sprzedaz simplegrid">
-            <legend>Sprzedaż</legend>
-
-            <label> Kod Waluty          </label> <input type="text" v-model="fa3.Fa.KodWaluty">
-            <label> Suma Netto          </label> <input type="text" v-model="fa3.Fa.suma_netto_22_23">
-            <label> Suma Podatku        </label> <input type="text" v-model="fa3.Fa.suma_tax_22_23">
-            <label> Suma Brutto         </label> <input type="text" v-model="fa3.Fa.suma_brutto">
+            <legend>Wiersze</legend>
 
             <div class="wiersze_grid">
                 <div class="header">
+                    <div></div> <!-- button -->
                     <div>Lp.</div>
                     <div>Nazwa</div>
                     <div>Miara</div>
@@ -175,29 +226,30 @@ const show_advanced = ref(false);
                 </div>
                 <div class="row" v-for="(row, row_index) in fa3.Fa.Wiersze">
                     <!-- <input type="text" class="minim"   v-model="row.NrWierszaFa" disabled> -->
+                    <input type="button" class="del_btn" value="x" @click="delete_wiersz(row_index);">
                     <input type="text" class="minim"   :value="row_index+1" disabled>
-                    <input type="text" class="fill"    v-model="row.Nazwa">
-                    <input type="text" class="short r" v-model="row.Miara">
-                    <input type="text" class="short r" v-model="row.Ilosc">
-                    <input type="text" class="r"       v-model="row.CenaJednostkowaNetto">
-                    <input type="text" class="r"       v-model="row.TotalNetto">
-                    <input type="text" class="minim r" v-model="row.StawkaPodatku" disabled>
-                    <input type="text" class="r" value="123" disabled> <!-- TODO -->
-                    <input type="text" class="r" value="123" disabled> <!-- TODO -->
+                    <input type="text" class="fill"    v-model.lazy="row.Nazwa">
+                    <input type="text" class="short r" v-model.lazy="row.Miara">
+                    <input type="text" class="short r" v-model.lazy="row.Ilosc">
+                    <input type="text" class="r"       v-model.lazy="row.CenaJednostkowaNetto">
+                    <input type="text" class="r"       :value="calculated_wiersze[row_index].cena_all"    disabled >
+                    <input type="text" class="minim r" v-model.lazy="row.StawkaPodatku"                   disabled >
+                    <input type="text" class="r"       :value="calculated_wiersze[row_index].cena_vat"    disabled >
+                    <input type="text" class="r"       :value="calculated_wiersze[row_index].cena_brutto" disabled >
+                </div>
+                <div class="row_full">
+                    <input type="button" value="Dodaj wiersz" @click="add_wiersz();">
                 </div>
             </div>
         </fieldset>
-        <fieldset>
-            <legend>Pozostałe Informacje</legend>
-            <div class="field" v-for="(value, index) in fa3.Stopka.Infos">
-                <label> Linijka {{ index + 1 }} </label>
-                <input type="text" v-model="fa3.Stopka.Infos[index]">
-            </div>
-        </fieldset>
+        
+        <input class="generuj_button" type="button" value="GENERUJ" @click="generate_xml_file()">
     </div>
-    
-    <fieldset :class="{hidden: !show_advanced}" >
+
+
+    <fieldset :class="{collapsed: !show_advanced}" class="advanced" >
         <legend>Pokaż Opcje Zaawansowane <input type="checkbox" v-model="show_advanced"> </legend>
+        
         <div class="field adv">
             <label> Kod Systemowy </label>
             <input type="text" v-model="fa3.Naglowek.KodFormularza.kodSystemowy">
@@ -213,6 +265,10 @@ const show_advanced = ref(false);
         <div class="field">
             <label> Data Wytworzenia Faktury </label>
             <input type="text" v-model="fa3.Naglowek.DataWytworzeniaFa">
+        </div>
+        <div class="field adv">
+            <label> Kod Waluty  </label> 
+            <input type="text" v-model="fa3.Fa.KodWaluty">
         </div>
     </fieldset>
 </div>
@@ -245,6 +301,8 @@ const show_advanced = ref(false);
     }
     .form > .sprzedaz {
         grid-column: span 2;
+        border-width: 3px;
+        border-color: orange;
     }
     .form > * > legend {
         color: orange;
@@ -301,14 +359,35 @@ const show_advanced = ref(false);
         margin-left: 1ch;
         margin-right: 0.5ch;
     }
+
+    .summarygrid {
+        display: grid;
+        grid-template: 1fr auto auto / auto auto auto;
+        grid-auto-flow: column;
+        column-gap: 3ch;
+    }
+    .summarygrid > .long {
+        grid-column: 1 / -1;
+    }
+    .summarygrid > .value{
+        font-family: monospace;
+        text-align:  right;
+        font-weight: bold;
+        border-bottom: 1px solid blue;
+        font-size: 1.2em;
+    }
+
     .sprzedaz > .wiersze_grid {
         grid-column: 1 / -1;
         display: grid;
-        grid-template: auto / auto 1fr auto auto auto auto auto auto auto ;
+        grid-template: auto / min-content auto 1fr auto auto auto auto auto auto auto ;
     }
     .wiersze_grid > .header,
     .wiersze_grid > .row {
         display: contents;
+    }
+    .wiersze_grid > .row_full {
+        grid-column: 1 / -1;
     }
     .wiersze_grid > .header {
         text-align: center;
@@ -330,7 +409,16 @@ const show_advanced = ref(false);
         font-family: monospace;
         text-align: right;
     }
+    .wiersze_grid > .del_btn {
+        width: 1ch;
+        padding: 0px;
+    }
 
+    .generuj_button {
+        height: 4ch;
+        margin: 1ch;
+        grid-column: 1 / span 2;
+    }
 
 
 </style>
