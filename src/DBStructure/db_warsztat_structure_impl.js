@@ -13,7 +13,7 @@ import {DatabaseNode, TableNode, Column} from '../components/Dataset';
     "klienci": TableNode<"ID"|"NAZWA"|"MIASTO"|"ULICA"|"KOD_POCZT"|"TELEFON1"|"TELEFON2"|"NIP"|"KTO"|"KIEDY"|"UPUST"|"odbierający_fakturę"|"list"|"aux_info">,
     "liczby_słownie": TableNode<"liczba"|"słownie">,
     "modele_sam": TableNode<"ID_modelu"|"Model:"|"Typ:"|"Nadw:"|"Rok_produkcji:"|"Silnik:"|"Kod:">,
-    "nazwy_części": TableNode<"numer_części"|"nazwa_części"|"jednostka"|"grupa"|"VAT"|"ilość_w_opakowaniu_zbiorczym"|"lokalizacja_w_magazynie"|"odpowiedniki">,
+    "nazwy_części": TableNode<"numer_części"|"nazwa_części"|"gtu"|"jednostka"|"grupa"|"VAT"|"ilość_w_opakowaniu_zbiorczym"|"lokalizacja_w_magazynie"|"odpowiedniki">,
     "obroty_magazynowe": TableNode<"ID"|"numer_cz"|"ilość"|"cena_netto"|"data_przyjęcia"|"rodzaj_dokumentu"|"numer_dokumentu"|"cena_netto_sprzedaży">,
     "płace": TableNode<"ID_płac"|"ID_pracownika"|"data"|"kwota"|"podstawa"|"miesiąc_płacenia">,
     "pracownicy": TableNode<"ID_pracownika"|"nazwisko"|"imię"|"inię_II"|"nazwisko_rodowe"|"imię_ojca"|"imię_matki"|"nazwisko_rodowe_matki"|"data_urodzenia"|"miejsce_urodzenia"|"obywatelstwo"|"nr_PESEL"|"nr_NIP"|"ul_i_nr_domu"|"kod"|"miejscowość"|"tel_domowy"|"wykształcenie"|"wykształcenie_uzupełniające"|"dodatkowe_uprawnienia"|"stanowisko">,
@@ -27,7 +27,7 @@ import {DatabaseNode, TableNode, Column} from '../components/Dataset';
     "zlecenia_czynności": TableNode<"ID_zlecenia"|"ID_czynności"|"krotność_wykonania"|"cena_netto">,
     "zlecenia_gaz": TableNode<"ID_zlecenia"|"ID_czynności"|"krotność_wykonania"|"cena_netto">,
     "zlecenia_instalacji_gazowej": TableNode<"ID"|"ID_klienta"|"ID_samochodu"|"data_otwarcia"|"data_zamknięcia"|"zysk_z_części"|"zysk_z_robocizny"|"mechanik_prowadzący"|"%_udziału"|"pomocnik_1"|"%_udziału_p1"|"pomocnik_2"|"%_udziału_p2"|"zgłoszone_naprawy"|"uwagi_o_naprawie">,
-    "zlecenia_naprawy": TableNode<"ID"|"ID_klienta"|"ID_samochodu"|"data_otwarcia"|"data_zamknięcia"|"zysk_z_części"|"zysk_z_robocizny"|"mechanik_prowadzący"|"%_udziału"|"pomocnik_1"|"%_udziału_p1"|"pomocnik_2"|"%_udziału_p2"|"zgłoszone_naprawy"|"uwagi_o_naprawie">,
+    "zlecenia_naprawy": TableNode<"ID"|"ID_klienta"|"ID_samochodu"|"data_otwarcia"|"data_zamknięcia"|"nr_faktury"|"zysk_z_części"|"zysk_z_robocizny"|"mechanik_prowadzący"|"%_udziału"|"pomocnik_1"|"%_udziału_p1"|"pomocnik_2"|"%_udziału_p2"|"zgłoszone_naprawy"|"uwagi_o_naprawie">,
 }}}*/
 const DB = new DatabaseNode([
     {name: "CENNIK  GM", cols: [
@@ -139,6 +139,7 @@ const DB = new DatabaseNode([
     {name: "nazwy części", cols: [
         {"name":"numer części","type":"VARCHAR","targ":"15","attr":"pnq"},
         {"name":"nazwa części","type":"VARCHAR","targ":"255","attr":""},
+        {"name":"gtu","type":"LONGTEXT","attr":""},
         {"name":"jednostka","type":"VARCHAR","targ":"50","def":"'szt.'","attr":""},
         {"name":"grupa","type":"FLOAT","def":"0","attr":""},
         {"name":"VAT","type":"FLOAT","def":".22","attr":""},
@@ -269,6 +270,7 @@ const DB = new DatabaseNode([
         {"name":"ID samochodu","type":"INTEGER","def":"0","attr":""},
         {"name":"data otwarcia","type":"TIMESTAMP","def":"CURRENT_TIMESTAMP","attr":""},
         {"name":"data zamknięcia","type":"DATETIME","attr":""},
+        {"name":"nr_faktury","type":"LONGTEXT","attr":"q"},
         {"name":"zysk z części","type":"DECIMAL","targ":"19,4","def":"0","attr":""},
         {"name":"zysk z robocizny","type":"DECIMAL","targ":"19,4","def":"0","attr":""},
         {"name":"mechanik prowadzący","type":"VARCHAR","targ":"30","attr":""},

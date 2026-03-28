@@ -74,6 +74,7 @@ set_from_for_summary_for_zlec_id(src_list, id_zlecenia.get_local_ref());
 
 src_list.auto_rep_column ('name', {default: ''});
 src_list.auto_rep_column ('unit', {default: ''});
+src_list.auto_rep_column ('gtu',  {default: ''});
 src_list.auto_rep_column ('cnt',  {default:  0});
 src_list.auto_rep_column ('netto',{default: "0.00"});
 src_list.auto_rep_column ("mul_netto",  {sql: "decimal_mul(1,    decimal_mul(`cnt`,`netto`))"});
@@ -139,6 +140,7 @@ function generate_ksef_fa3( as_summary ) {
         summary_wiersz.CenaJednostkowaNetto = format_decimal_ksef_8(src_total_netto.value, false, false);
         summary_wiersz.TotalNetto           = format_decimal_ksef_2(src_total_netto.value, false, false);
         summary_wiersz.StawkaPodatku        = "23";
+        summary_wiersz.GTU                  = "";
 
         res.Fa.Wiersze = [summary_wiersz];
     } else {
@@ -150,10 +152,20 @@ function generate_ksef_fa3( as_summary ) {
             res_row.NrWierszaFa = index + 1;
             res_row.Nazwa                = format_first_line( row.get('name') );
             res_row.Miara                = row.get('unit') || 'szt.';
-            res_row.Ilosc                = row.get('cnt')  ?? '1';
+            res_row.Ilosc                = row.get('cnt')?.toString() ?? '1';
             res_row.CenaJednostkowaNetto = format_decimal_ksef_8(row.get('netto'),     false, false);
             res_row.TotalNetto           = format_decimal_ksef_2(row.get('mul_netto'), false, false);
             res_row.StawkaPodatku        = "23";
+            const gtu_from_row = row.get('gtu');
+            if(gtu_from_row == "0") {
+                res_row.GTU = '';
+            } else if(gtu_from_row.trim() == "") {
+                res_row.GTU = "BRAK!";
+            } else if(gtu_from_row.length == 1){
+                res_row.GTU = "GTU_0" + gtu_from_row;
+            } else {
+                res_row.GTU = "GTU_"  + gtu_from_row;
+            }
 
             res.Fa.Wiersze.push(res_row)
         }

@@ -25,6 +25,8 @@ const settings = useMainSettings();
 
 const fa3 = reactive(props.data);
 
+console.log("RECEIVED FA3:", fa3);
+
 //////////// Custrom FA3 controls ///////////////////////////
 
 const Podmiot2_Nip_Checkbox = computed( {
@@ -41,7 +43,6 @@ const Fa_Infos = computed({
         else                     fa3.Stopka.Infos = [x];
     }
 });
-
 // const Podmiot1_Kontakt = ref(fa3.Podmiot1.DaneKontaktowe[0] ?? new FA3_DaneKontaktowe());
 // const Podmiot1_Kontakt = ref(fa3.Podmiot2.DaneKontaktowe[0] ?? new FA3_DaneKontaktowe());
 
@@ -53,14 +54,25 @@ const calculated_wiersze = computed(() => {
         const cena_all         = decimal_mul( ilosc,    cena_jednostkowa ).rounded(2);
         const cena_vat         = decimal_mul( cena_all, vat_percent      ).rounded(2);
         const cena_brutto      = decimal_add( cena_all, cena_vat         ).rounded(2);
+        // const short_ilosc      = DecimalNumber.from(row.Ilosc).simplify_to(0);
+        // const short_cena_all   = cena_all.copy().simplify_to(0);
+        const bad_gtu          = row.GTU.match(/^(?:GTU_\d\d)?$/) === null;
         return {
             cena_all,
             cena_vat,
-            cena_brutto
+            cena_brutto,
+            // short_ilosc,
+            // short_cena_all,
+            bad_gtu
         };
-    })
+    });
     return res;
 });
+
+const all_good_gtu = computed(() => {
+    return !calculated_wiersze.value.some(x => x.bad_gtu);
+});
+
 
 const calculated_summary = computed(() => {
     const total_netto  = DecimalNumber.from(0);
@@ -83,16 +95,23 @@ function finalize_fa3() {
     for(let i = 0; i<fa3.Fa.Wiersze.length; i++) {
         fa3.Fa.Wiersze[i].NrWierszaFa = (i+1).toString();
         fa3.Fa.Wiersze[i].TotalNetto  = calculated_wiersze.value[i].cena_all.as_string(2);
+        // fa3.Fa.Wiersze[i].TotalNetto  = calculated_wiersze.value[i].short_cena_all.toString();
+        // fa3.Fa.Wiersze[i].Ilosc       = calculated_wiersze.value[i].short_ilosc.toString();
     }
     fa3.Fa.suma_netto_22_23 = calculated_summary.value.total_netto .as_string(2);
     fa3.Fa.suma_tax_22_23   = calculated_summary.value.total_vat   .as_string(2);
     fa3.Fa.suma_brutto      = calculated_summary.value.total_brutto.as_string(2);
+    console.log("FINALIZED FA3:", fa3);
 }
 
 
 ////////////////////////////////////
 
 async function generate_xml_file() {
+    if(!all_good_gtu.value) {
+        msgManager.postError("Niekture pola mają błędne GTU!");
+        return;
+    }
     finalize_fa3();
     const settings_ksef = settings.get_reactive_settings_raw('ksef');
     const path = settings_ksef.xml_file_path;
@@ -223,6 +242,7 @@ const show_advanced = ref(false);
                     <div></div><!-- <div>Stawka Podatku</div> -->
                     <div>VAT</div>
                     <div>Brutto</div>
+                    <div>GTU</div>
                 </div>
                 <div class="row" v-for="(row, row_index) in fa3.Fa.Wiersze">
                     <!-- <input type="text" class="minim"   v-model="row.NrWierszaFa" disabled> -->
@@ -236,9 +256,14 @@ const show_advanced = ref(false);
                     <input type="text" class="minim r" v-model.lazy="row.StawkaPodatku"                   disabled >
                     <input type="text" class="r"       :value="calculated_wiersze[row_index].cena_vat"    disabled >
                     <input type="text" class="r"       :value="calculated_wiersze[row_index].cena_brutto" disabled >
+                    <input type="text" class="l"       v-model.lazy="row.GTU" :class="{error: calculated_wiersze[row_index].bad_gtu}" >
                 </div>
                 <div class="row_full">
                     <input type="button" value="Dodaj wiersz" @click="add_wiersz();">
+                </div>
+                <div class="row_full error" :class="{hidden: all_good_gtu}">
+                    Niekture pola nie mają ustawionego GTU. Ustaw je dla każdej z części. Należy to zrobić w okienku, gdzie dodaje się części
+                    do zlecenia. Zmienienie GTU tutaj nie zapisze trwale tej zmiany!
                 </div>
             </div>
         </fieldset>
@@ -288,10 +313,16 @@ const show_advanced = ref(false);
         display: unset;
     }
 
+    .error {
+        color: red;
+    }
+    .hidden {
+        display: none;
+    }
     
     .form {
         display: grid;
-        grid-template: auto / auto auto;
+        grid-template: auto / 1fr 1fr;
     }
     .form > .maininfo {
         grid-column: span 2;
@@ -380,7 +411,7 @@ const show_advanced = ref(false);
     .sprzedaz > .wiersze_grid {
         grid-column: 1 / -1;
         display: grid;
-        grid-template: auto / min-content auto 1fr auto auto auto auto auto auto auto ;
+        grid-template: auto / min-content auto 1fr auto auto auto auto auto auto auto 8ch ;
     }
     .wiersze_grid > .header,
     .wiersze_grid > .row {

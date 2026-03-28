@@ -190,6 +190,7 @@ export class FA3_FA_Wiersz {
         /* P_9A */ this.CenaJednostkowaNetto = "";   // -{14}.{8}
         /* P_11 */ this.TotalNetto           = "";   // -{16}.{2}
         /* P_12 */ this.StawkaPodatku        = "23"; // 23
+        /* GTU  */ this.GTU                  = "";
 
         // TODO
         // Add P_11A   - wartość brutto
@@ -204,7 +205,8 @@ export class FA3_FA_Wiersz {
             xml_create_node_unparsed( "P_8B",        this.Ilosc                ) +
             xml_create_node_unparsed( "P_9A",        this.CenaJednostkowaNetto ) +
             xml_create_node_unparsed( "P_11",        this.TotalNetto           ) +
-            xml_create_node_unparsed( "P_12",        this.StawkaPodatku        )
+            xml_create_node_unparsed( "P_12",        this.StawkaPodatku        ) +
+            xml_create_node_unparsed_opt( "GTU",     this.GTU                  ) 
         );
     }
 }
@@ -304,7 +306,7 @@ export class FA3_FA {
             xml_create_node_unparsed( "P_15",      this.suma_brutto        ) +
             FA3_Adnotacje_Fixed +
             xml_create_node_unparsed( "RodzajFaktury", this.RodzajFaktury ) +
-            this.Wiersze.map(x => x.print()) +
+            this.Wiersze.map(x => x.print()).join('') +
             this.Platnosc.print()
         );
     }

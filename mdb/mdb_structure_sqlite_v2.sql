@@ -452,6 +452,7 @@ FROM `modele sam`;
 DROP TABLE IF EXISTS `nazwy części_migration`; CREATE TABLE `nazwy części_migration` (
   `numer części` TEXT CHECK (length(`numer części`) <= 15) NOT NULL UNIQUE PRIMARY KEY,
   `nazwa części` TEXT CHECK (length(`nazwa części`) <= 255),
+  `gtu` TEXT,
   `jednostka` TEXT CHECK (length(`jednostka`) <= 50) DEFAULT 'szt.',
   `grupa` REAL DEFAULT 0,
   `VAT` REAL DEFAULT .22,
@@ -464,6 +465,7 @@ CREATE TABlE IF NOT EXISTS `nazwy części` AS SELECT * FROM `nazwy części_mig
  WITH `migration_cols` AS (SELECT name FROM pragma_table_info('nazwy części')) INSERT INTO `nazwy części_migration` SELECT
     iif('numer części' IN `migration_cols`, "numer części", NULL) as 'numer części',
     iif('nazwa części' IN `migration_cols`, "nazwa części", NULL) as 'nazwa części',
+    iif('gtu' IN `migration_cols`, "gtu", NULL) as 'gtu',
     iif('jednostka' IN `migration_cols`, "jednostka", NULL) as 'jednostka',
     iif('grupa' IN `migration_cols`, "grupa", NULL) as 'grupa',
     iif('VAT' IN `migration_cols`, "VAT", NULL) as 'VAT',
@@ -474,9 +476,10 @@ CREATE TABlE IF NOT EXISTS `nazwy części` AS SELECT * FROM `nazwy części_mig
 DROP TABLE `nazwy części`;
 ALTER TABLE `nazwy części_migration` RENAME TO `nazwy części`;
 
-CREATE VIEW `nazwy części_csv_view` (`numer części`, `nazwa części`, `jednostka`, `grupa`, `VAT`, `ilość w opakowaniu zbiorczym`, `lokalizacja w magazynie`, `odpowiedniki`) AS SELECT 
+CREATE VIEW `nazwy części_csv_view` (`numer części`, `nazwa części`, `gtu`, `jednostka`, `grupa`, `VAT`, `ilość w opakowaniu zbiorczym`, `lokalizacja w magazynie`, `odpowiedniki`) AS SELECT 
   `numer części`,
   `nazwa części`,
+  `gtu`,
   `jednostka`,
   REPLACE(CAST(`grupa` AS TEXT),".",","),
   REPLACE(CAST(`VAT` AS TEXT),".",","),
@@ -997,6 +1000,7 @@ DROP TABLE IF EXISTS `zlecenia naprawy_migration`; CREATE TABLE `zlecenia napraw
   `ID samochodu` INTEGER DEFAULT 0,
   `data otwarcia` TEXT CHECK (`data otwarcia` IS NULL OR datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
+  `nr_faktury` TEXT UNIQUE,
   `zysk z części` TEXT COLLATE DECIMAL CHECK (`zysk z części` IS NULL OR ((`zysk z części` IS decimal(`zysk z części`) OR `zysk z części` LIKE (decimal(`zysk z części`) || ' z_')) AND decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `zysk z robocizny` TEXT COLLATE DECIMAL CHECK (`zysk z robocizny` IS NULL OR ((`zysk z robocizny` IS decimal(`zysk z robocizny`) OR `zysk z robocizny` LIKE (decimal(`zysk z robocizny`) || ' z_')) AND decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
@@ -1016,6 +1020,7 @@ CREATE TABlE IF NOT EXISTS `zlecenia naprawy` AS SELECT * FROM `zlecenia naprawy
     iif('ID samochodu' IN `migration_cols`, "ID samochodu", NULL) as 'ID samochodu',
     iif('data otwarcia' IN `migration_cols`, "data otwarcia", NULL) as 'data otwarcia',
     iif('data zamknięcia' IN `migration_cols`, "data zamknięcia", NULL) as 'data zamknięcia',
+    iif('nr_faktury' IN `migration_cols`, "nr_faktury", NULL) as 'nr_faktury',
     iif('zysk z części' IN `migration_cols`, "zysk z części", NULL) as 'zysk z części',
     iif('zysk z robocizny' IN `migration_cols`, "zysk z robocizny", NULL) as 'zysk z robocizny',
     iif('mechanik prowadzący' IN `migration_cols`, "mechanik prowadzący", NULL) as 'mechanik prowadzący',
@@ -1037,12 +1042,13 @@ DROP INDEX IF EXISTS `zlecenia naprawy IDX ID samochodu`; CREATE INDEX `zlecenia
 DROP TRIGGER IF EXISTS `zlecenia naprawy_dec_insert_trigger`; CREATE TRIGGER `zlecenia naprawy_dec_insert_trigger` AFTER INSERT ON `zlecenia naprawy` BEGIN
    UPDATE `zlecenia naprawy` SET `zysk z części` = decimal(new.`zysk z części`), `zysk z robocizny` = decimal(new.`zysk z robocizny`) WHERE ROWID = new.ROWID;
 END;
-CREATE VIEW `zlecenia naprawy_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `data otwarcia`, `data zamknięcia`, `zysk z części`, `zysk z robocizny`, `mechanik prowadzący`, `% udziału`, `pomocnik 1`, `% udziału p1`, `pomocnik 2`, `% udziału p2`, `zgłoszone naprawy`, `uwagi o naprawie`) AS SELECT 
+CREATE VIEW `zlecenia naprawy_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `data otwarcia`, `data zamknięcia`, `nr_faktury`, `zysk z części`, `zysk z robocizny`, `mechanik prowadzący`, `% udziału`, `pomocnik 1`, `% udziału p1`, `pomocnik 2`, `% udziału p2`, `zgłoszone naprawy`, `uwagi o naprawie`) AS SELECT 
   CAST(`ID` AS TEXT),
   CAST(`ID klienta` AS TEXT),
   CAST(`ID samochodu` AS TEXT),
   DATETIME(`data otwarcia`),
   DATETIME(`data zamknięcia`),
+  `nr_faktury`,
   REPLACE(CAST(decimal(`zysk z części`) AS TEXT),".",","),
   REPLACE(CAST(decimal(`zysk z robocizny`) AS TEXT),".",","),
   `mechanik prowadzący`,

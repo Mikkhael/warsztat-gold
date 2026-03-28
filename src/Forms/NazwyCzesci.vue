@@ -39,6 +39,7 @@ const group = src.auto_add_value_synced(COLS.grupa,     {default: 0});
 const vat   = src.auto_add_value_synced(COLS.VAT,       {default: 0.22});
 const ilosc = src.auto_add_value_synced(COLS.ilość_w_opakowaniu_zbiorczym, {default: 0});
 const lokal = src.auto_add_value_synced(COLS.lokalizacja_w_magazynie);
+const gtu   = src.auto_add_value_synced(COLS.gtu);
 const odpow = src.auto_add_value_synced(COLS.odpowiedniki);
 
 
@@ -54,6 +55,7 @@ const QVFactory_find = () => {
     src.auto_add_column(COLS.VAT,                          {display: "VAT"});
     src.auto_add_column(COLS.ilość_w_opakowaniu_zbiorczym, {display: "Ilość"});
     src.auto_add_column(COLS.jednostka,                    {display: "Jedn."});
+    src.auto_add_column(COLS.gtu,                          {display: "GTU"});
     src.auto_add_column(COLS.lokalizacja_w_magazynie,      {display: "lok. w magazynie"});
     src.auto_add_column(COLS.odpowiedniki,                 {display: "Odpowiedniki"});
     src.auto_add_column(COLS.grupa,                        {display: "Grupa"});
@@ -78,7 +80,7 @@ defineExpose({
 
 <div class="form_container" :class="src.form_style.value">
 
-<form onsubmit="return false" class="form_content form" :ref="e => src.assoc_form(e)">
+<form onsubmit="return false" class="form_content form" :class="{warn_gtu: gtu.get_cached() === null}" :ref="e => src.assoc_form(e)">
     <label class="label">Numer                  </label> <FormInput :value="numer" auto />
     <div></div>
     <QueryViewerAdvOpenBtn 
@@ -95,7 +97,9 @@ defineExpose({
     <label class="label">Ilość w opakowaniu     </label> <FormInput :value="ilosc" auto />
     <label class="label">VAT                    </label> <FormInput :value="vat  " auto />
     <label class="label">Grupa                  </label> <FormInput :value="group" auto />
+    <label class="label">GTU                    </label> <FormInput :value="gtu"   auto pattern="\d+" required class="gtu_field"/>
     <label class="label">Lokalizacja w magazynie</label> <FormInput :value="lokal" auto />
+    <span class="gtu_info"> Nie ustawiono GTU (Wpisz "0", jeśli brak GTU) </span>
 </form>
 <QuerySourceOffsetScroller
     :src="src"
@@ -126,6 +130,19 @@ defineExpose({
 }
 .form > ::v-deep(textarea) {
     grid-column: 2 / span 3;
+}
+
+.gtu_info {
+    grid-column: span 2;
+    color: red;
+    visibility: hidden;
+}
+.warn_gtu :deep(.gtu_field) {
+    border-color: red;
+    background-color: #ffd8d8;
+}
+.warn_gtu .gtu_info {
+    visibility: visible;
 }
 
 </style>

@@ -55,6 +55,7 @@ src.auto_add_column_synced (OBR_COLS.numer_dokumentu,  {param: param_id_zlecenia
 src.auto_add_column_synced (OBR_COLS.cena_netto);
 src.auto_add_column_synced (OBR_COLS.ilość,            {default: 0});
 src.auto_add_column_synced (OBR_COLS.numer_cz,         {display: "Numer Części", readonly: true});
+src.auto_add_column_synced (CZ_COLS.numer_części);
 src.auto_add_column        (CZ_COLS.nazwa_części,      {display: "Nazwa Części", readonly: true});
 src.auto_add_column_local  ("pos_ilość", {
     assoc_col: OBR_COLS.ilość,
@@ -69,6 +70,9 @@ src.auto_add_column        ("brutto",                       {
         type: 'decimal'
     }
 });
+src.auto_add_column_synced (CZ_COLS.gtu,               {display: "GTU",          readonly: false});
+src.dataset.get_or_create_sync(CZ_TAB).set_update_only();
+console.log("CZESCI SRC", src);
 
 //////////////// TOTAL ///////////////
 
@@ -104,6 +108,7 @@ src_list.auto_add_column(CZ_COLS.numer_części, {display: "Numer"});
 src_list.auto_add_column(CZ_COLS.nazwa_części, {display: "Nazwa", width: 10});
 src_list.auto_add_column("last_cena_netto_sprz",  {display: "Netto Ostatnia Sprzedaży", sql:"ifnull(last.cena_sprz,'0.00')", input_props: {type: 'decimal'} });
 src_list.auto_add_column("last_cena_netto",       {sql:"ifnull(last.cena,     '0.00')", input_props: {type: 'decimal'} });
+src_list.auto_add_column(CZ_COLS.gtu,          {display: "GTU", width: 2});
 src.add_aux_query(src_list);
 
 /**
