@@ -30,6 +30,7 @@ import { set_from_for_summary_for_zlec_id } from './CommonSql';
 import { toRef } from 'vue';
 import FA3Viewer from '../Ksef/FA3Viewer.vue';
 
+import ipc from '../ipc';
 
 const props = defineProps({
     ...FormDefaultProps,
@@ -84,6 +85,7 @@ const id_car     = src.auto_add_value_synced(COLS.ID_samochodu,         {param: 
 
 const data_otw   = src.auto_add_value_synced(COLS.data_otwarcia,        {default: use_datetime_now()} );
 const data_zamk  = src.auto_add_value_synced(COLS.data_zamknięcia,                            );
+const nr_faktury = src.auto_add_value_synced(COLS.nr_faktury);
 const zgloszenie = src.auto_add_value_synced(COLS.zgłoszone_naprawy,                          );
 const uwagi      = src.auto_add_value_synced(COLS.uwagi_o_naprawie,                           );
 
@@ -133,6 +135,7 @@ const QVFactory_find_zlec_open = () => {
     // src.auto_add_column(ZLEC_COLS.ID),
     // src.auto_add_column(CAR_COLS.ID),
     src.auto_add_column(ZLEC_COLS.ID,                 {display: 'ID'});
+    src.auto_add_column(ZLEC_COLS.nr_faktury,         {display: 'Faktura'});
     src.auto_add_column(KLIE_COLS.NAZWA,              {display: 'Klient'});
     src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
     src.auto_add_column(CAR_COLS.marka,               {display: 'Marka'});
@@ -164,7 +167,8 @@ function handle_err(/**@type {Error} */ err) {
 }
 
 function close_current_zlecenie() {
-    data_zamk.set_local(data_otw.get_cached() ?? date_now());
+    // data_zamk.set_local(data_otw.get_cached() ?? date_now());
+    data_zamk.set_local(date_now());
 }
 
 const RepZlecenieNaprawy_ref = ref(/**@type {ReportPreparer?} */ (null));
@@ -174,6 +178,23 @@ function open_print_window() {
 const RepZlecenieNaprawyFaktura_ref = ref(/**@type {ReportPreparer?} */ (null));
 function open_print_window_faktura() {
     RepZlecenieNaprawyFaktura_ref.value?.update_and_open(false).catch(handle_err);
+}
+
+async function set_auto_nr_faktury() {
+    //with ARR(x) as (VALUES ('12/34'),('56/7'),('11/0'),('20'),('33/asd'),('55/500'),('44/ZZZ'),('44/50/1')) SELECT CAST(substr(x,4) AS INTEGER) as suffix FROM ARR ORDER BY suffix DESC;  
+    const now = new Date();
+    const now_year  = now.getFullYear();
+    const now_month = `0${now.getMonth() + 1}`.slice(-2); // padding with 0
+    const prefix = `${now_year}/${now_month}/`;
+    const sql_res = await ipc.db_query(`
+        SELECT 
+            CAST(substr(${COLS.nr_faktury.get_full_sql()},${prefix.length+1}) AS INTEGER) as suffix 
+        FROM ${TAB.get_full_sql()}
+        WHERE (${COLS.nr_faktury.get_full_sql()} LIKE '${prefix}%')
+        ORDER BY suffix DESC LIMIT 1`);
+    const prev_suffix = sql_res?.[0]?.[0]?.[0] ?? 0; // First value of first row of the result
+    console.log("FAKTURA PREV_SUFFIX:", prev_suffix);
+    nr_faktury.set_local(`${prefix}${prev_suffix + 1}`);
 }
 
 /**
@@ -244,6 +265,13 @@ defineExpose({
                     <div>nr zlecenia</div>
                     <FormInput :value="id"        auto readonly style="width: 10ch;" />
                 </label>
+                <label class="highlight">
+                    <div>
+                        nr faktury
+                        <IconButton inline noicon text="AUTO" v-if="nr_faktury.get_cached() === null" @click="set_auto_nr_faktury().catch(handle_err)"/>
+                    </div>
+                    <FormInput :value="nr_faktury" auto :readonly="readonly" />
+                </label>
                 <label>
                     <div>data otwarcia</div>
                     <FormInput :value="data_otw"  auto :readonly="readonly || !editable_dates" />
@@ -280,8 +308,8 @@ defineExpose({
                     <!-- <div class="button" @click="open_czesci_window">CZĘŚCI</div> -->
                     <!-- <div class="button" @click="open_robocizna_window">ROBOCIZNA</div> -->
                     <IconButton icon="document" text="KSEF Lista" @click="()=>open_ksef_window(false)"  style="grid-area: 1 / 1"/>
-                    <IconButton icon="document" text="KSEF Spec"  @click="()=>open_ksef_window(true)"   style="grid-area: 1 / 2"/>
-                    <IconButton icon="document" text="Faktura"    @click="open_print_window_faktura" style="grid-area: 2 / 1" />
+                    <IconButton icon="document" text="KSEF Spec"  @click="()=>open_ksef_window(true)"   style="grid-area: 2 / 1"/>
+                    <IconButton icon="document" text="Faktura"    @click="open_print_window_faktura" style="grid-area: 1 / 2" />
                     <IconButton icon="document" text="Zlecenie"   @click="open_print_window" style="grid-area: 2 / 2"/>
                     <IconButton icon="edit"     text="CZĘŚCI"     @click="open_czesci_window" />
                     <IconButton icon="edit"     text="ROBOCIZNA"  @click="open_robocizna_window" />

@@ -135,6 +135,7 @@ const QVFactory_find_zlec = () => {
     src.auto_add_column(COLS.ID),
     src.auto_add_column(CAR_COLS.ID),
     src.auto_add_column(ZLEC_COLS.ID,                 {display: 'ID'});
+    src.auto_add_column(ZLEC_COLS.nr_faktury,         {display: 'Faktura'});
     src.auto_add_column(COLS.NAZWA,                   {display: 'Klient'});
     src.auto_add_column(CAR_COLS.nr_rej,              {display: 'Nr Rej.'});
     src.auto_add_column(ZLEC_COLS.data_otwarcia,      {display: 'Otwarcie'});

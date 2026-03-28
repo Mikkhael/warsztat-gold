@@ -72,6 +72,9 @@ const calculated_wiersze = computed(() => {
 const all_good_gtu = computed(() => {
     return !calculated_wiersze.value.some(x => x.bad_gtu);
 });
+const good_nr_faktury = computed(() => {
+    return fa3.Fa.NumerFaktury.trim().length > 0;
+})
 
 
 const calculated_summary = computed(() => {
@@ -98,6 +101,7 @@ function finalize_fa3() {
         // fa3.Fa.Wiersze[i].TotalNetto  = calculated_wiersze.value[i].short_cena_all.toString();
         // fa3.Fa.Wiersze[i].Ilosc       = calculated_wiersze.value[i].short_ilosc.toString();
     }
+    fa3.Fa.NumerFaktury     = fa3.Fa.NumerFaktury.trim();
     fa3.Fa.suma_netto_22_23 = calculated_summary.value.total_netto .as_string(2);
     fa3.Fa.suma_tax_22_23   = calculated_summary.value.total_vat   .as_string(2);
     fa3.Fa.suma_brutto      = calculated_summary.value.total_brutto.as_string(2);
@@ -108,6 +112,10 @@ function finalize_fa3() {
 ////////////////////////////////////
 
 async function generate_xml_file() {
+    if(!good_nr_faktury.value) {
+        msgManager.postError("Nie ustawiono numeru faktury!");
+        return;
+    }
     if(!all_good_gtu.value) {
         msgManager.postError("Niekture pola mają błędne GTU!");
         return;
@@ -153,7 +161,7 @@ const show_advanced = ref(false);
         <fieldset class="maininfo">
             <legend>Główne Informacje</legend>
 
-            <div class="field highlight">
+            <div class="field highlight" :class="{error: !good_nr_faktury}">
                 <label> Numer Faktury </label>
                 <input type="text" v-model="fa3.Fa.NumerFaktury">
             </div>
@@ -260,6 +268,9 @@ const show_advanced = ref(false);
                 </div>
                 <div class="row_full">
                     <input type="button" value="Dodaj wiersz" @click="add_wiersz();">
+                </div>
+                <div class="row_full error" :class="{hidden: good_nr_faktury}">
+                    Nie ustawiono numeru faktury!
                 </div>
                 <div class="row_full error" :class="{hidden: all_good_gtu}">
                     Niekture pola nie mają ustawionego GTU. Ustaw je dla każdej z części. Należy to zrobić w okienku, gdzie dodaje się części

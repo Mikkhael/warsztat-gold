@@ -52,9 +52,18 @@ src_main.add_join(COLS_ZLEC.ID_klienta,     COLS_KLIE.ID, 'LEFT');
 src_main.add_join(COLS_ZLEC.ID_samochodu,   COLS_SAMO.ID, 'LEFT');
 
 const zlec_id         = src_main.auto_rep_value(COLS_ZLEC.ID, {param: id_zlecenia_param});
+const zlec_nr_faktury = src_main.auto_rep_value(COLS_ZLEC.nr_faktury);
+const zlec_data_zamk  = src_main.auto_rep_value(COLS_ZLEC.data_zamknięcia);
 // const zlec_data_otw   = src_main.auto_rep_value(COLS_ZLEC.data_otwarcia);
 // const zlec_zgloszenie = src_main.auto_rep_value(COLS_ZLEC.zgłoszone_naprawy);
 // const zlec_uwagi      = src_main.auto_rep_value(COLS_ZLEC.uwagi_o_naprawie);
+const parsed_date_zamk = computed(() => {
+    if(zlec_data_zamk.value === null) {
+        return date_now();
+    } else {
+        return zlec_data_zamk.value.toString().slice(0, 10); // Slicing just the date part of "YYYY-MM-DD hh:mm:ss"
+    }
+})
 
 const samo_marka       = src_main.auto_rep_value(COLS_SAMO.marka);
 const samo_model       = src_main.auto_rep_value(COLS_SAMO.model);
@@ -122,11 +131,11 @@ function generate_ksef_fa3( as_summary ) {
     res.Podmiot2.Adres.AdresL1 = `ul. ${klie_ulica.value}, ${klie_kod.value} ${klie_miasto.value}`;
 
 
-
-    res.Fa.DataWystawienia    = date_now(); // TODO ?
+    console.log("zlec_data_zamk",zlec_data_zamk.value);
+    res.Fa.DataWystawienia    = parsed_date_zamk.value;
     res.Fa.MiejsceWystawienia = "Gliwice";
-    res.Fa.NumerFaktury       = "12345"; // TODO
-    res.Fa.DataSprzedazy      = date_now(); // TODO ?
+    res.Fa.NumerFaktury       = zlec_nr_faktury.value ?? "";
+    res.Fa.DataSprzedazy      = parsed_date_zamk.value;
     res.Fa.suma_netto_22_23   = format_decimal_ksef_2(src_total_netto.value,  false, false);
     res.Fa.suma_tax_22_23     = format_decimal_ksef_2(src_total_vat.value,    false, false);
     res.Fa.suma_brutto        = format_decimal_ksef_2(src_total_brutto.value, false, false);
@@ -135,7 +144,7 @@ function generate_ksef_fa3( as_summary ) {
         const summary_wiersz = new FA3_FA_Wiersz();
         summary_wiersz.NrWierszaFa = "1";
         summary_wiersz.Nazwa       = settings_data['Nazwa Spec.'];
-        summary_wiersz.Miara       = "szt."; // TODO ?
+        summary_wiersz.Miara       = "szt.";
         summary_wiersz.Ilosc       = "1";
         summary_wiersz.CenaJednostkowaNetto = format_decimal_ksef_8(src_total_netto.value, false, false);
         summary_wiersz.TotalNetto           = format_decimal_ksef_2(src_total_netto.value, false, false);
@@ -215,14 +224,18 @@ function format_decimal_ksef_2(/**@type {string} */ str) {
     return format_decimal_utils(str, 2, '', '.', '');
 }
 
-const date_now_ref = ref('');
+const parsed_human_date_zamk = ref('');
 async function perform_update() {
     await Promise.all([
         src_main.update_complete(true),
         src_list.update_complete(true),
         src_total.update_complete(true),
     ]);
-    date_now_ref.value = format_date_str_local(date_now());
+    if( zlec_data_zamk.value === null ) {
+        parsed_human_date_zamk.value = format_date_str_local(date_now());
+    } else {
+        parsed_human_date_zamk.value = format_date_str_local(zlec_data_zamk.value);
+    }
 }
 
 function create_options() {
@@ -295,7 +308,7 @@ defineExpose({
         <div class="faktura_header">
             <div class="left">
                 <div class="bold vbig not_title_spec">
-                    Faktura VAT nr <span name="option_faktura_nr">&lt;nr faktury&gt;</span>
+                    Faktura VAT nr <span name="option_faktura_nr">{{ zlec_nr_faktury ?? "<nr faktury>" }}</span>
                 </div>
                 <div class="bold vbig only_title_spec">
                     Specyfikacja części / robocizna
@@ -303,8 +316,8 @@ defineExpose({
                 <div> ORYGINAŁ / KOPIA </div>
             </div>
             <div class="right">
-                <div>Gliwice dnia:   {{ date_now_ref }}</div>
-                <div>Data sprzedaży: {{ date_now_ref }}</div>
+                <div>Gliwice dnia:   {{ parsed_human_date_zamk }}</div>
+                <div>Data sprzedaży: {{ parsed_human_date_zamk }}</div>
             </div>
         </div>
 

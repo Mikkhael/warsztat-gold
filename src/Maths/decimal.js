@@ -220,5 +220,4 @@ export {
     DecimalNumber,
     decimal_add,
     decimal_mul,
-    // decimal_sub, // TODO Negative values not supported
 };
