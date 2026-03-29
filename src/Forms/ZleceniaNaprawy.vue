@@ -185,16 +185,17 @@ async function set_auto_nr_faktury() {
     const now = new Date();
     const now_year  = now.getFullYear();
     const now_month = `0${now.getMonth() + 1}`.slice(-2); // padding with 0
-    const prefix = `${now_year}/${now_month}/`;
+    const prefix = `/${now_month}/${now_year}`;
+    const nr_str = COLS.nr_faktury.get_full_sql();
     const sql_res = await ipc.db_query(`
         SELECT 
-            CAST(substr(${COLS.nr_faktury.get_full_sql()},${prefix.length+1}) AS INTEGER) as suffix 
+            CAST(substr(${nr_str},1,length(${nr_str})-${prefix.length}) AS INTEGER) as suffix 
         FROM ${TAB.get_full_sql()}
-        WHERE (${COLS.nr_faktury.get_full_sql()} LIKE '${prefix}%')
+        WHERE (${COLS.nr_faktury.get_full_sql()} LIKE '%${prefix}')
         ORDER BY suffix DESC LIMIT 1`);
     const prev_suffix = sql_res?.[0]?.[0]?.[0] ?? 0; // First value of first row of the result
     console.log("FAKTURA PREV_SUFFIX:", prev_suffix);
-    nr_faktury.set_local(`${prefix}${prev_suffix + 1}`);
+    nr_faktury.set_local(`${prev_suffix + 1}${prefix}`);
 }
 
 /**
