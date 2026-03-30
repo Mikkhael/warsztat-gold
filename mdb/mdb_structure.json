@@ -1446,6 +1446,16 @@
                     "attr": "q"
                 },
                 {
+                    "name": "platnosc_forma",
+                    "type": "LONGTEXT",
+                    "attr": ""
+                },
+                {
+                    "name": "platnosc_data",
+                    "type": "DATETIME",
+                    "attr": ""
+                },
+                {
                     "name": "zysk z części",
                     "type": "DECIMAL",
                     "targ": "19,4",

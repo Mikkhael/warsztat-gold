@@ -1001,6 +1001,8 @@ DROP TABLE IF EXISTS `zlecenia naprawy_migration`; CREATE TABLE `zlecenia napraw
   `data otwarcia` TEXT CHECK (`data otwarcia` IS NULL OR datetime(`data otwarcia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
   `nr_faktury` TEXT UNIQUE,
+  `platnosc_forma` TEXT,
+  `platnosc_data` TEXT CHECK (`platnosc_data` IS NULL OR datetime(`platnosc_data`) IS NOT NULL),
   `zysk z części` TEXT COLLATE DECIMAL CHECK (`zysk z części` IS NULL OR ((`zysk z części` IS decimal(`zysk z części`) OR `zysk z części` LIKE (decimal(`zysk z części`) || ' z_')) AND decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `zysk z robocizny` TEXT COLLATE DECIMAL CHECK (`zysk z robocizny` IS NULL OR ((`zysk z robocizny` IS decimal(`zysk z robocizny`) OR `zysk z robocizny` LIKE (decimal(`zysk z robocizny`) || ' z_')) AND decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
@@ -1021,6 +1023,8 @@ CREATE TABlE IF NOT EXISTS `zlecenia naprawy` AS SELECT * FROM `zlecenia naprawy
     iif('data otwarcia' IN `migration_cols`, "data otwarcia", NULL) as 'data otwarcia',
     iif('data zamknięcia' IN `migration_cols`, "data zamknięcia", NULL) as 'data zamknięcia',
     iif('nr_faktury' IN `migration_cols`, "nr_faktury", NULL) as 'nr_faktury',
+    iif('platnosc_forma' IN `migration_cols`, "platnosc_forma", NULL) as 'platnosc_forma',
+    iif('platnosc_data' IN `migration_cols`, "platnosc_data", NULL) as 'platnosc_data',
     iif('zysk z części' IN `migration_cols`, "zysk z części", NULL) as 'zysk z części',
     iif('zysk z robocizny' IN `migration_cols`, "zysk z robocizny", NULL) as 'zysk z robocizny',
     iif('mechanik prowadzący' IN `migration_cols`, "mechanik prowadzący", NULL) as 'mechanik prowadzący',
@@ -1042,13 +1046,15 @@ DROP INDEX IF EXISTS `zlecenia naprawy IDX ID samochodu`; CREATE INDEX `zlecenia
 DROP TRIGGER IF EXISTS `zlecenia naprawy_dec_insert_trigger`; CREATE TRIGGER `zlecenia naprawy_dec_insert_trigger` AFTER INSERT ON `zlecenia naprawy` BEGIN
    UPDATE `zlecenia naprawy` SET `zysk z części` = decimal(new.`zysk z części`), `zysk z robocizny` = decimal(new.`zysk z robocizny`) WHERE ROWID = new.ROWID;
 END;
-CREATE VIEW `zlecenia naprawy_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `data otwarcia`, `data zamknięcia`, `nr_faktury`, `zysk z części`, `zysk z robocizny`, `mechanik prowadzący`, `% udziału`, `pomocnik 1`, `% udziału p1`, `pomocnik 2`, `% udziału p2`, `zgłoszone naprawy`, `uwagi o naprawie`) AS SELECT 
+CREATE VIEW `zlecenia naprawy_csv_view` (`ID`, `ID klienta`, `ID samochodu`, `data otwarcia`, `data zamknięcia`, `nr_faktury`, `platnosc_forma`, `platnosc_data`, `zysk z części`, `zysk z robocizny`, `mechanik prowadzący`, `% udziału`, `pomocnik 1`, `% udziału p1`, `pomocnik 2`, `% udziału p2`, `zgłoszone naprawy`, `uwagi o naprawie`) AS SELECT 
   CAST(`ID` AS TEXT),
   CAST(`ID klienta` AS TEXT),
   CAST(`ID samochodu` AS TEXT),
   DATETIME(`data otwarcia`),
   DATETIME(`data zamknięcia`),
   `nr_faktury`,
+  `platnosc_forma`,
+  DATETIME(`platnosc_data`),
   REPLACE(CAST(decimal(`zysk z części`) AS TEXT),".",","),
   REPLACE(CAST(decimal(`zysk z robocizny`) AS TEXT),".",","),
   `mechanik prowadzący`,

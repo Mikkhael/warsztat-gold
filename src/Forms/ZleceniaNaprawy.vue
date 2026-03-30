@@ -11,6 +11,8 @@ import QuerySourceOffsetScroller from '../components/Scroller/QuerySourceOffsetS
 import QueryViewerAdvOpenBtn from '../components/QueryViewer/QueryViewerAdvOpenBtn.vue';
 import IconButton from '../components/Controls/IconButton.vue';
 
+import SimpleDropdown from '../components/Controls/SimpleDropdown.vue';
+
 import Klienci from './Klienci.vue';
 
 import ReportPreparer from '../Reports/ReportPreparer.vue';
@@ -20,9 +22,9 @@ import RepZlecenieNaprawyFaktura from '../Reports/RepZlecenieNaprawyFaktura.vue'
 import ZleceniaNaprawy_Czesci from './ZleceniaNaprawy_Czesci.vue';
 import ZleceniaNaprawy_Robocizna from './ZleceniaNaprawy_Robocizna.vue';
 
-import { ref, computed} from 'vue';
+import { ref, computed, nextTick} from 'vue';
 import { CREATE_FORM_QUERY_SOURCE_IN_COMPONENT } from './FormCommon';
-import { date_now, use_datetime_now } from '../utils';
+import { datetime, date_now, use_datetime_now } from '../utils';
 import { FormParamProp, param_from_prop } from '../components/Dataset';
 import useWarsztatDatabase from '../DBStructure/db_warsztat_structure';
 import { QueryViewerSource } from '../components/QueryViewer/QueryViewer';
@@ -86,6 +88,8 @@ const id_car     = src.auto_add_value_synced(COLS.ID_samochodu,         {param: 
 const data_otw   = src.auto_add_value_synced(COLS.data_otwarcia,        {default: use_datetime_now()} );
 const data_zamk  = src.auto_add_value_synced(COLS.data_zamknięcia,                            );
 const nr_faktury = src.auto_add_value_synced(COLS.nr_faktury);
+const plat_forma = src.auto_add_value_synced(COLS.platnosc_forma);
+const plat_data  = src.auto_add_value_synced(COLS.platnosc_data);
 const zgloszenie = src.auto_add_value_synced(COLS.zgłoszone_naprawy,                          );
 const uwagi      = src.auto_add_value_synced(COLS.uwagi_o_naprawie,                           );
 
@@ -208,13 +212,19 @@ async function open_ksef_window(as_summary) {
     const rep = RepZlecenieNaprawyFaktura_ref.value.rep;
     await rep.perform_update();
     const fa3 = rep.generate_ksef_fa3(as_summary);
-    return fwManager.open_or_focus_window(title, FA3Viewer, {
+    const window = fwManager.open_or_focus_window(title, FA3Viewer, {
         category: 'ksef',
         props: {
             data: fa3
         },
         // parent: props.parent_window
     });
+    if(window) {
+        nextTick(() => {
+            // window.box.streach_vertical(0.85).recenter();
+            window.box.resize_to_content().recenter();
+        });
+    }
 }
 
 function open_czesci_window() {
@@ -244,6 +254,26 @@ function handle_aux_button_1() {
     emit('clicked_aux_1');
 }
 
+function set_plat_forma(value) {
+    plat_forma.set_local(value);
+}
+const plat_data_info = ref("");
+const plat_data_ref  = ref( /**@type {HTMLElement|undefined} */ (undefined) )
+async function display_plat_data(value) {
+    console.log("Plate data ref", plat_data_ref.value);
+    plat_data_info.value = `+${value}`;
+    plat_data_ref.value?.classList.remove('fadeout');
+    setTimeout(() => {
+        plat_data_ref.value?.classList.add('fadeout');
+    }, 1);
+}
+function set_plat_data_offset(value) {
+    const time = new Date();
+    time.setDate( time.getDate() + value );
+    plat_data.set_local( datetime(time) );
+    display_plat_data(value);
+}
+
 const display_compact = computed(() => props.minimal);
 const editable_dates  = computed(() => !props.readonly_dates);
 const textarea_resizable = computed(() => props.minimal);
@@ -269,9 +299,11 @@ defineExpose({
                 <label class="highlight">
                     <div>
                         nr faktury
-                        <IconButton inline noicon text="AUTO" v-if="nr_faktury.get_cached() === null" @click="set_auto_nr_faktury().catch(handle_err)"/>
+                        <IconButton inline noicon text="AUTO" 
+                            v-if="!display_compact && nr_faktury.get_cached() === null"
+                            @click="set_auto_nr_faktury().catch(handle_err)"/>
                     </div>
-                    <FormInput :value="nr_faktury" auto :readonly="readonly" />
+                    <FormInput :value="nr_faktury" auto type="text_empty_null" :readonly="readonly" />
                 </label>
                 <label>
                     <div>data otwarcia</div>
@@ -298,10 +330,38 @@ defineExpose({
             </div>
 
             <div class="subheader flex_auto" :class="{hidden: display_compact}">
-                <div class="udzialy grid">
-                    <div>Adres e-mail</div> <FormInput :value="prow" auto :readonly="readonly"/> <FormInput auto :value="prow_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
-                    <div>pomocnik 1</div>   <FormInput :value="pom1" auto :readonly="readonly"/> <FormInput auto :value="pom1_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
-                    <div>pomocnik 2</div>   <FormInput :value="pom2" auto :readonly="readonly"/> <FormInput auto :value="pom2_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
+                <div>
+                    <div class="platnosc_info">
+                        <div>Płatność</div>
+                        <div class="spacer"></div>
+                        <SimpleDropdown @selected="x => set_plat_forma(x)" :options="[
+                            ['Gotówka'    , 'Gotówka'   ],
+                            ['Mobilna'    , 'Mobilna'   ],
+                            ['Przelew'    , 'Przelew'   ],
+                            ['Kompensata' , 'Kompensata'],
+                            ['Karta'      , 'Karta'     ],
+                            ['Bon'        , 'Bon'       ],
+                            ['Czek'       , 'Czek'      ],
+                        ]"/>
+                        <FormInput class="platnosc_forma" :value="plat_forma" auto />
+                        <div class="spacer"></div>
+                        <SimpleDropdown @selected="x => set_plat_data_offset(x)" :options="[
+                            [ 0 , 'Dzisiaj'],
+                            [ 7 , '7 dni'  ],
+                            [14 , '14 dni' ],
+                            [21 , '21 dni' ],
+                            [28 , '28 dni' ],
+                        ]" class="nowrap"/>
+                        <FormInput class="platnosc_data"  :value="plat_data" auto />
+                        <div class="plat_data_info" ref="plat_data_ref">
+                            {{ plat_data_info }}
+                        </div>
+                    </div>
+                    <div class="udzialy grid">
+                        <div>Adres e-mail</div> <FormInput :value="prow" auto :readonly="readonly"/> <FormInput auto :value="prow_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
+                        <div>pomocnik 1</div>   <FormInput :value="pom1" auto :readonly="readonly"/> <FormInput auto :value="pom1_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
+                        <div>pomocnik 2</div>   <FormInput :value="pom2" auto :readonly="readonly"/> <FormInput auto :value="pom2_p" :readonly="readonly" nospin min="0" max="100"/> <span>%</span>
+                    </div>
                 </div>
                 <div class="buttons">
                     <!-- <img src="/assets/icons/document.svg" class="button" @click="open_print_window"/> -->
@@ -392,7 +452,6 @@ defineExpose({
 </template>
 
 <style scoped>
-
     .hidden {display: none;}
     .emph {font-weight: bold; text-align: center;}
 
@@ -451,7 +510,39 @@ defineExpose({
 
     .udzialy {
         grid-template-columns: auto auto 4ch auto ;
+        font-size: 0.9em;
     }
+    .platnosc_info {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        border-bottom: 1px solid black;
+    }
+    .platnosc_info :deep(.platnosc_forma) {
+        width: 10ch;
+    }
+    .platnosc_info .spacer {
+        min-width: 1ch;
+        max-width: 2ch;
+    }
+    .platnosc_info :deep(.nowrap) > .dropdown_list {
+        width: 10ch;
+    }
+    @keyframes fadeout_anim {
+        0%   { opacity: 100%; }
+        100% { opacity: 0%;   }
+    }
+    .plat_data_info {
+        width: 3.6ch;
+        font-size: 0.8em;
+    }
+    .plat_data_info.fadeout {
+        animation: fadeout_anim 2s ease-in;
+        animation-fill-mode: forwards;
+    }
+
 
     .totals > label :deep(input) {
         margin-right: 1%;

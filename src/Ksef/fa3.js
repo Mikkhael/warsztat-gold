@@ -228,6 +228,8 @@ class FA3_RachunekBankowy {
 export class FA3_Platnosc {
     constructor() {
         this.RachunekBankowy = new FA3_RachunekBankowy();
+        this.TerminPlatnosci = '';
+        this.FormaPlatnosci  = '';
     }
     try_append_node( /**@type { {print: () => string}? } */ node ) {
         if(!node) return '';
@@ -235,11 +237,38 @@ export class FA3_Platnosc {
         if( node_str == '' ) return '';
         return node_str;
     }
+    print_termin_platnosci() {
+        if(this.TerminPlatnosci.match(/^\d\d\d\d-\d\d-\d\d$/)) {
+            return xml_create_node_parsed('TerminPlatnosci',
+                xml_create_node_unparsed('Termin', this.TerminPlatnosci)
+            );
+        }
+        return '';
+    }
+    print_forma_platnosci() {
+        if(typeof this.FormaPlatnosci !== 'string' || this.FormaPlatnosci.length == 0) {
+            return '';
+        }
+        switch(this.FormaPlatnosci) {
+            case 'Gotówka'  : return xml_create_node_unparsed('FormaPlatnosci', '1');
+            case 'Karta'    : return xml_create_node_unparsed('FormaPlatnosci', '2');
+            case 'Bon'      : return xml_create_node_unparsed('FormaPlatnosci', '3');
+            case 'Czek'     : return xml_create_node_unparsed('FormaPlatnosci', '4');
+            case 'Kredyt'   : return xml_create_node_unparsed('FormaPlatnosci', '5');
+            case 'Przelew'  : return xml_create_node_unparsed('FormaPlatnosci', '6');
+            case 'Mobilna'  : return xml_create_node_unparsed('FormaPlatnosci', '7');
+            default: {
+                return xml_create_node_unparsed('PlatnoscInna', '1') + xml_create_node_unparsed('OpisPlatnosci',this.FormaPlatnosci);
+            }
+        }
+    }
     print() {
-        let res = '';
-        res += this.RachunekBankowy.print();
+        const res =
+            this.print_termin_platnosci() + 
+            this.print_forma_platnosci() +
+            this.RachunekBankowy.print();
         if(res == '') return '';
-        return xml_create_node_parsed( 'Platnosc', res );
+        return xml_create_node_parsed( 'Platnosc', res);
     }
 }
 

@@ -54,6 +54,8 @@ src_main.add_join(COLS_ZLEC.ID_samochodu,   COLS_SAMO.ID, 'LEFT');
 const zlec_id         = src_main.auto_rep_value(COLS_ZLEC.ID, {param: id_zlecenia_param});
 const zlec_nr_faktury = src_main.auto_rep_value(COLS_ZLEC.nr_faktury);
 const zlec_data_zamk  = src_main.auto_rep_value(COLS_ZLEC.data_zamknięcia);
+const zlec_plat_forma = src_main.auto_rep_value(COLS_ZLEC.platnosc_forma);
+const zlec_plat_data  = src_main.auto_rep_value(COLS_ZLEC.platnosc_data);
 // const zlec_data_otw   = src_main.auto_rep_value(COLS_ZLEC.data_otwarcia);
 // const zlec_zgloszenie = src_main.auto_rep_value(COLS_ZLEC.zgłoszone_naprawy);
 // const zlec_uwagi      = src_main.auto_rep_value(COLS_ZLEC.uwagi_o_naprawie);
@@ -182,6 +184,8 @@ function generate_ksef_fa3( as_summary ) {
     
     res.Fa.Platnosc.RachunekBankowy.NrRB       = settings_data['Nr Konta'];
     res.Fa.Platnosc.RachunekBankowy.NazwaBanku = settings_data['Nazwa Banku'];
+    res.Fa.Platnosc.FormaPlatnosci  = zlec_plat_forma.value ?? '';
+    res.Fa.Platnosc.TerminPlatnosci = zlec_plat_data.value?.slice(0,10)  ?? '';
 
     res.Stopka.Infos = [
         `${samo_marka.value} ${samo_model.value} ${samo_nrrej.value}`.trim()
@@ -423,7 +427,7 @@ defineExpose({
         </div>
 
         <div class="summary_footer nobreak">
-            <label>sposób zapłaty:</label> <div class="bold big" name="option_payment_method">{{ 'gotówka' }}</div>
+            <label>sposób zapłaty:</label> <div class="bold big" name="option_payment_method">{{ zlec_plat_forma ?? 'brak' }} {{ typeof zlec_plat_data !== 'string' ? '' : `do ${zlec_plat_data.slice(0,10)}` }} </div>
             <label>do zapłaty:</label>     <div class="bold vbig">{{ format_decimal( src_total_brutto, true ) }}</div>
             <label>słownie:</label>        <div></div>
             <div class="bold big slownie" >{{ number_to_polish_words( total_brutto_parts[0] ) }}</div>

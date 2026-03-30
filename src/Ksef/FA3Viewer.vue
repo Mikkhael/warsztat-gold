@@ -166,6 +166,17 @@ const show_advanced = ref(false);
                 <input type="text" v-model="fa3.Fa.NumerFaktury">
             </div>
             <div class="field">
+                <label class="long"> Płatność </label>
+                <div>
+                    <input type="text" v-model="fa3.Fa.Platnosc.FormaPlatnosci" style="width: 10ch;">
+                    <input type="date" v-model="fa3.Fa.Platnosc.TerminPlatnosci">
+                    <input type="button" value="X" @click="fa3.Fa.Platnosc.TerminPlatnosci=''">
+                </div>
+            </div>
+        </fieldset>
+        
+        <fieldset class="maininfo">
+            <div class="field">
                 <label> Data Wystawienia Faktury </label>
                 <input type="date" v-model="fa3.Fa.DataWystawienia">
             </div>
@@ -351,8 +362,13 @@ const show_advanced = ref(false);
     }
 
     .maininfo {
-        display: grid;
-        grid-template-columns: auto auto auto auto;
+        /* display: grid;
+        grid-template-columns: auto auto auto auto auto;
+        column-gap: 4ch; */
+        display: flex;
+        flex-direction: row;
+        justify-content: left;
+        flex-wrap: nowrap;
         column-gap: 4ch;
     }
     .maininfo > .field {
@@ -369,6 +385,13 @@ const show_advanced = ref(false);
     }
     .maininfo > .field input { text-align: right; }
     .maininfo > .field label { text-align: center; }
+    .maininfo > .fieldgrid {
+        display: grid;
+        grid-template: auto / auto auto;
+    }
+    .maininfo > .fieldgrid > .long {
+        grid-column: 1 / -1;
+    }
 
     .addressgrid {
         display: grid;

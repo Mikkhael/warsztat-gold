@@ -27,7 +27,7 @@ import {DatabaseNode, TableNode, Column} from '../components/Dataset';
     "zlecenia_czynności": TableNode<"ID_zlecenia"|"ID_czynności"|"krotność_wykonania"|"cena_netto">,
     "zlecenia_gaz": TableNode<"ID_zlecenia"|"ID_czynności"|"krotność_wykonania"|"cena_netto">,
     "zlecenia_instalacji_gazowej": TableNode<"ID"|"ID_klienta"|"ID_samochodu"|"data_otwarcia"|"data_zamknięcia"|"zysk_z_części"|"zysk_z_robocizny"|"mechanik_prowadzący"|"%_udziału"|"pomocnik_1"|"%_udziału_p1"|"pomocnik_2"|"%_udziału_p2"|"zgłoszone_naprawy"|"uwagi_o_naprawie">,
-    "zlecenia_naprawy": TableNode<"ID"|"ID_klienta"|"ID_samochodu"|"data_otwarcia"|"data_zamknięcia"|"nr_faktury"|"zysk_z_części"|"zysk_z_robocizny"|"mechanik_prowadzący"|"%_udziału"|"pomocnik_1"|"%_udziału_p1"|"pomocnik_2"|"%_udziału_p2"|"zgłoszone_naprawy"|"uwagi_o_naprawie">,
+    "zlecenia_naprawy": TableNode<"ID"|"ID_klienta"|"ID_samochodu"|"data_otwarcia"|"data_zamknięcia"|"nr_faktury"|"platnosc_forma"|"platnosc_data"|"zysk_z_części"|"zysk_z_robocizny"|"mechanik_prowadzący"|"%_udziału"|"pomocnik_1"|"%_udziału_p1"|"pomocnik_2"|"%_udziału_p2"|"zgłoszone_naprawy"|"uwagi_o_naprawie">,
 }}}*/
 const DB = new DatabaseNode([
     {name: "CENNIK  GM", cols: [
@@ -271,6 +271,8 @@ const DB = new DatabaseNode([
         {"name":"data otwarcia","type":"TIMESTAMP","def":"CURRENT_TIMESTAMP","attr":""},
         {"name":"data zamknięcia","type":"DATETIME","attr":""},
         {"name":"nr_faktury","type":"LONGTEXT","attr":"q"},
+        {"name":"platnosc_forma","type":"LONGTEXT","attr":""},
+        {"name":"platnosc_data","type":"DATETIME","attr":""},
         {"name":"zysk z części","type":"DECIMAL","targ":"19,4","def":"0","attr":""},
         {"name":"zysk z robocizny","type":"DECIMAL","targ":"19,4","def":"0","attr":""},
         {"name":"mechanik prowadzący","type":"VARCHAR","targ":"30","attr":""},

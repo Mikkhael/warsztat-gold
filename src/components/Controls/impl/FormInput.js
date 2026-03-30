@@ -9,7 +9,7 @@ import { format_decimal, is_decimal, parse_decimal_adv, parse_decimal, GLOBAL_DE
 
 /**
  * 
- * @typedef {"integer" | "number" | "decimal" | "boolean" | "date" | "datetime" | "datetime-local" | "text" | "money" } FormInputType
+ * @typedef {"integer" | "number" | "decimal" | "boolean" | "date" | "datetime" | "datetime-local" | "text" | "text_empty_null" | "money" } FormInputType
  * @typedef {{type?: FormInputType, auto?: boolean, value: ChangableValueLike, readonly: boolean, nonull: boolean, len?: number, hints: any[]}} PropsType 
  */
 
@@ -208,6 +208,10 @@ function apply_correct_attributes_and_proxy_based_on_type(type, attributes, list
         case "text": {
             attributes.type = "text";
             return proxies_types.pass;
+        }
+        case "text_empty_null": {
+            attributes.type = "text";
+            return proxies_types.empty_as_null;
         }
         default: {
             console.error('Unrecognized input type: ', type);
