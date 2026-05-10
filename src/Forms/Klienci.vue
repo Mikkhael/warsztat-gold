@@ -202,7 +202,7 @@ function handle_zlec_for_kli() {
     });
     if(window) {
         nextTick(() => {
-            window.box.slam_left_top().streach_vertical(0.95);
+            window.box.slam_left_top().resize_bounds(0.45, 0.95);
         });
     }
 }
@@ -220,7 +220,7 @@ function handle_zlec_for_car() {
     });
     if(window) {
         nextTick(() => {
-            window.box.slam_left_top().streach_vertical(0.95);
+            window.box.slam_left_top().resize_bounds(0.45, 0.95);
         });
     }
 }

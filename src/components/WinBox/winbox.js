@@ -1261,21 +1261,25 @@ WinBox.prototype.move = function(x, y, _skip_update){
  * @param {boolean} [_skip_update]
  * @this WinBox
  */
-
-WinBox.prototype.resize_true = function(w, h, bound_factor = 0.9, _skip_update){
+WinBox.prototype.resize_true = function(w, h, bound_factor_w = 0.9, bound_factor_h = 0.9, _skip_update){
     // console.log("REsizing to ", w, h);
-    if(bound_factor > 0) {
-        w = Math.min(w, bound_factor * (this.maxwidth  ?? Infinity));
-        h = Math.min(h, bound_factor * (this.maxheight ?? Infinity - this.header));
+    if(bound_factor_w > 0) {
+        w = Math.min(w, bound_factor_w * (this.maxwidth  ?? Infinity));
     }
-    console.log("RESIZING", w, h, this.maxwidth, this.maxheight, bound_factor);
+    if(bound_factor_h > 0) {
+        h = Math.min(h, bound_factor_h * (this.maxheight ?? Infinity - this.header));
+    }
+    console.log("RESIZING", w, h, this.maxwidth, this.maxheight, bound_factor_w, bound_factor_h);
     return this.resize(w, h + this.header, _skip_update);
+}
+
+WinBox.prototype.resize_bounds = function(bound_factor_w = 0.9, bound_factor_h = 0.9, _skip_update){
+    return this.resize_true(Infinity, Infinity, bound_factor_w, bound_factor_h, _skip_update);
 }
 
 WinBox.prototype.streach_vertical = function(bound_factor = 0.9, _skip_update) {
     return this.resize_true(this.width, Infinity, bound_factor, _skip_update);
 }
-
 WinBox.prototype.slam_left_top = function(_skip_update) {
     return this.move(0, this.top, _skip_update);
 }
