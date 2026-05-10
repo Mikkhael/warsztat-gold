@@ -292,7 +292,7 @@ defineExpose({
 
         <form onsubmit="return false" class="form form_content" :ref="e => src.assoc_form(e)" :class="{compact: display_compact}">
 
-            <div class="header auto_labels">
+            <div class="header auto_labels zlecenia_header">
                 <label class="highlight">
                     <div>nr zlecenia</div>
                     <FormInput :value="id"        auto readonly style="width: 10ch;" />
@@ -485,6 +485,12 @@ defineExpose({
         flex-direction: row;
         align-items: center;
         word-wrap: normal;
+    }
+
+    .form.compact > .zlecenia_header {
+        display: grid;
+        grid-template: auto auto / auto;
+        grid-auto-flow: column;
     }
 
     .buttons{
