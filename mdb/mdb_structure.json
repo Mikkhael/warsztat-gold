@@ -10,20 +10,17 @@
                 },
                 {
                     "name": "CATALOG_NO",
-                    "type": "VARCHAR",
-                    "targ": "7",
+                    "type": "LONGTEXT",
                     "attr": "nq"
                 },
                 {
                     "name": "DESC_GER1",
-                    "type": "VARCHAR",
-                    "targ": "10",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "DESC_GER2",
-                    "type": "VARCHAR",
-                    "targ": "10",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -48,8 +45,7 @@
                 },
                 {
                     "name": "czynność",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": "nq"
                 }
             ],
@@ -69,14 +65,12 @@
                 },
                 {
                     "name": "Producent",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "Typ/Nr",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -88,8 +82,7 @@
                 },
                 {
                     "name": "67R-_",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -123,14 +116,12 @@
                 },
                 {
                     "name": "nazwa dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "nr dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "nq"
                 },
                 {
@@ -160,14 +151,12 @@
             "cols": [
                 {
                     "name": "nazwa dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "nr dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "nq"
                 },
                 {
@@ -199,74 +188,62 @@
                 },
                 {
                     "name": "Nazwa",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": "nq"
                 },
                 {
                     "name": "kod pocztowy",
-                    "type": "VARCHAR",
-                    "targ": "6",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "miejscowość",
-                    "type": "VARCHAR",
-                    "targ": "20",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "ulica nr domu",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "tel 1",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "tel 2",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "fax",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "konto bank",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "nr konta",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "przedstawiciel",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "@-maill",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": "q"
                 },
                 {
                     "name": "NIP",
-                    "type": "VARCHAR",
-                    "targ": "14",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -291,14 +268,12 @@
             "cols": [
                 {
                     "name": "nazwa części lub czynności",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "jednostka",
-                    "type": "VARCHAR",
-                    "targ": "5",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -316,8 +291,7 @@
                 },
                 {
                     "name": "numer",
-                    "type": "VARCHAR",
-                    "targ": "10",
+                    "type": "LONGTEXT",
                     "attr": ""
                 }
             ],
@@ -332,8 +306,7 @@
             "cols": [
                 {
                     "name": "numer cz",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -349,8 +322,7 @@
                 },
                 {
                     "name": "rodzaj dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "5",
+                    "type": "LONGTEXT",
                     "def": "'inwen'",
                     "attr": "n"
                 },
@@ -375,8 +347,7 @@
             "cols": [
                 {
                     "name": "numer cz",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -392,8 +363,7 @@
                 },
                 {
                     "name": "rodzaj dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "5",
+                    "type": "LONGTEXT",
                     "def": "'inwen'",
                     "attr": "n"
                 },
@@ -418,14 +388,12 @@
             "cols": [
                 {
                     "name": "nazwa części lub czynności",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "jednostka",
-                    "type": "VARCHAR",
-                    "targ": "5",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -443,8 +411,7 @@
                 },
                 {
                     "name": "numer",
-                    "type": "VARCHAR",
-                    "targ": "10",
+                    "type": "LONGTEXT",
                     "attr": ""
                 }
             ],
@@ -464,50 +431,42 @@
                 },
                 {
                     "name": "NAZWA",
-                    "type": "VARCHAR",
-                    "targ": "60",
+                    "type": "LONGTEXT",
                     "attr": "nq"
                 },
                 {
                     "name": "MIASTO",
-                    "type": "VARCHAR",
-                    "targ": "20",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "ULICA",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "KOD_POCZT",
-                    "type": "VARCHAR",
-                    "targ": "10",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "TELEFON1",
-                    "type": "VARCHAR",
-                    "targ": "17",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "TELEFON2",
-                    "type": "VARCHAR",
-                    "targ": "17",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "NIP",
-                    "type": "VARCHAR",
-                    "targ": "13",
+                    "type": "LONGTEXT",
                     "attr": "q"
                 },
                 {
                     "name": "KTO",
-                    "type": "VARCHAR",
-                    "targ": "8",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -525,8 +484,7 @@
                 },
                 {
                     "name": "odbierający fakturę",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -561,8 +519,7 @@
                 },
                 {
                     "name": "słownie",
-                    "type": "VARCHAR",
-                    "targ": "100",
+                    "type": "LONGTEXT",
                     "attr": "nq"
                 }
             ],
@@ -578,38 +535,32 @@
                 },
                 {
                     "name": "Model:",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "Typ:",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "q"
                 },
                 {
                     "name": "Nadw:",
-                    "type": "VARCHAR",
-                    "targ": "7",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "Rok produkcji:",
-                    "type": "VARCHAR",
-                    "targ": "7",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "Silnik:",
-                    "type": "VARCHAR",
-                    "targ": "10",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "Kod:",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 }
             ],
@@ -627,14 +578,12 @@
             "cols": [
                 {
                     "name": "numer części",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "pnq"
                 },
                 {
                     "name": "nazwa części",
-                    "type": "VARCHAR",
-                    "targ": "255",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -644,8 +593,7 @@
                 },
                 {
                     "name": "jednostka",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "def": "'szt.'",
                     "attr": ""
                 },
@@ -670,14 +618,12 @@
                 },
                 {
                     "name": "lokalizacja w magazynie",
-                    "type": "VARCHAR",
-                    "targ": "10",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "odpowiedniki",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 }
             ],
@@ -693,8 +639,7 @@
                 },
                 {
                     "name": "numer cz",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -717,8 +662,7 @@
                 },
                 {
                     "name": "rodzaj dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "5",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -773,8 +717,7 @@
                 },
                 {
                     "name": "data",
-                    "type": "VARCHAR",
-                    "targ": "10",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -785,8 +728,7 @@
                 },
                 {
                     "name": "podstawa",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -814,44 +756,37 @@
                 },
                 {
                     "name": "nazwisko",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "imię",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "inię II",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "nazwisko rodowe",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "imię ojca",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "imię matki",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "nazwisko rodowe matki",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -861,56 +796,47 @@
                 },
                 {
                     "name": "miejsce urodzenia",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "obywatelstwo",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "nr PESEL",
-                    "type": "VARCHAR",
-                    "targ": "12",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "nr NIP",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "ul i nr domu",
-                    "type": "VARCHAR",
-                    "targ": "20",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "kod",
-                    "type": "VARCHAR",
-                    "targ": "7",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "miejscowość",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "tel domowy",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
                     "name": "wykształcenie",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -925,8 +851,7 @@
                 },
                 {
                     "name": "stanowisko",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 }
             ],
@@ -947,8 +872,7 @@
             "cols": [
                 {
                     "name": "numer cz",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -971,8 +895,7 @@
                 },
                 {
                     "name": "rodzaj dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "5",
+                    "type": "LONGTEXT",
                     "def": "'dosta'",
                     "attr": "n"
                 },
@@ -997,8 +920,7 @@
             "cols": [
                 {
                     "name": "rodzaj dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "5",
+                    "type": "LONGTEXT",
                     "attr": ""
                 }
             ],
@@ -1024,20 +946,17 @@
                 },
                 {
                     "name": "marka",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "model",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "nr rej",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -1048,14 +967,12 @@
                 },
                 {
                     "name": "nr silnika",
-                    "type": "VARCHAR",
-                    "targ": "20",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
                     "name": "nr nadwozia",
-                    "type": "VARCHAR",
-                    "targ": "25",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 }
             ],
@@ -1076,8 +993,7 @@
             "cols": [
                 {
                     "name": "sposób zapłaty",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 }
             ],
@@ -1088,8 +1004,7 @@
             "cols": [
                 {
                     "name": "numer cz",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": "nq"
                 },
                 {
@@ -1112,8 +1027,7 @@
                 },
                 {
                     "name": "rodzaj dokumentu",
-                    "type": "VARCHAR",
-                    "targ": "5",
+                    "type": "LONGTEXT",
                     "attr": "n"
                 },
                 {
@@ -1142,8 +1056,7 @@
             "cols": [
                 {
                     "name": "numer części",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -1160,8 +1073,7 @@
                 },
                 {
                     "name": "uwagi / przeznaczenie",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 }
             ],
@@ -1176,8 +1088,7 @@
             "cols": [
                 {
                     "name": "numer części",
-                    "type": "VARCHAR",
-                    "targ": "15",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -1199,8 +1110,7 @@
                 },
                 {
                     "name": "uwagi / przeznaczenie",
-                    "type": "VARCHAR",
-                    "targ": "50",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -1345,8 +1255,7 @@
                 },
                 {
                     "name": "mechanik prowadzący",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -1358,8 +1267,7 @@
                 },
                 {
                     "name": "pomocnik 1",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -1371,8 +1279,7 @@
                 },
                 {
                     "name": "pomocnik 2",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -1471,8 +1378,7 @@
                 },
                 {
                     "name": "mechanik prowadzący",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -1484,8 +1390,7 @@
                 },
                 {
                     "name": "pomocnik 1",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {
@@ -1497,8 +1402,7 @@
                 },
                 {
                     "name": "pomocnik 2",
-                    "type": "VARCHAR",
-                    "targ": "30",
+                    "type": "LONGTEXT",
                     "attr": ""
                 },
                 {

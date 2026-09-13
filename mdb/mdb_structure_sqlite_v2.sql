@@ -4,9 +4,9 @@ CREATE VIEW `DB_STRUCTURE_INFO` (`version_int`) AS SELECT 1 AS 'version_int';
 
 DROP TABLE IF EXISTS `CENNIK  GM_migration`; CREATE TABLE `CENNIK  GM_migration` (
   `ID cennin GM` INTEGER NOT NULL PRIMARY KEY,
-  `CATALOG_NO` TEXT CHECK (length(`CATALOG_NO`) <= 7) NOT NULL UNIQUE,
-  `DESC_GER1` TEXT CHECK (length(`DESC_GER1`) <= 10),
-  `DESC_GER2` TEXT CHECK (length(`DESC_GER2`) <= 10),
+  `CATALOG_NO` TEXT NOT NULL UNIQUE,
+  `DESC_GER1` TEXT,
+  `DESC_GER2` TEXT,
   `PRICE` REAL
 ) STRICT;
 DROP VIEW IF EXISTS `CENNIK  GM_csv_view`;
@@ -34,7 +34,7 @@ FROM `CENNIK  GM`;
 
 DROP TABLE IF EXISTS `czynność_migration`; CREATE TABLE `czynność_migration` (
   `ID cynności` INTEGER NOT NULL PRIMARY KEY,
-  `czynność` TEXT CHECK (length(`czynność`) <= 50) NOT NULL UNIQUE
+  `czynność` TEXT NOT NULL UNIQUE
 ) STRICT;
 DROP VIEW IF EXISTS `czynność_csv_view`;
 CREATE TABlE IF NOT EXISTS `czynność` AS SELECT * FROM `czynność_migration`;
@@ -55,10 +55,10 @@ FROM `czynność`;
 
 DROP TABLE IF EXISTS `dane do zaświadczenie o sprawności inst_migration`; CREATE TABLE `dane do zaświadczenie o sprawności inst_migration` (
   `ID typów` INTEGER NOT NULL PRIMARY KEY,
-  `Producent` TEXT CHECK (length(`Producent`) <= 15),
-  `Typ/Nr` TEXT CHECK (length(`Typ/Nr`) <= 15) NOT NULL,
+  `Producent` TEXT,
+  `Typ/Nr` TEXT NOT NULL,
   `E-_` INTEGER CHECK (`E-_` <= 255 AND `E-_` >= 0) NOT NULL DEFAULT 0,
-  `67R-_` TEXT CHECK (length(`67R-_`) <= 15) NOT NULL,
+  `67R-_` TEXT NOT NULL,
   `Ważność legalizacji zbiornika do` TEXT CHECK (`Ważność legalizacji zbiornika do` IS NULL OR datetime(`Ważność legalizacji zbiornika do`) IS NOT NULL),
   `ID obrotów mag` INTEGER NOT NULL DEFAULT 0
 ) STRICT;
@@ -92,8 +92,8 @@ FROM `dane do zaświadczenie o sprawności inst`;
 
 DROP TABLE IF EXISTS `dokumenty sprzedaży_migration`; CREATE TABLE `dokumenty sprzedaży_migration` (
   `ID dokumentu` INTEGER NOT NULL PRIMARY KEY,
-  `nazwa dokumentu` TEXT CHECK (length(`nazwa dokumentu`) <= 50) NOT NULL,
-  `nr dokumentu` TEXT CHECK (length(`nr dokumentu`) <= 15) NOT NULL UNIQUE,
+  `nazwa dokumentu` TEXT NOT NULL,
+  `nr dokumentu` TEXT NOT NULL UNIQUE,
   `ID zlecenia` INTEGER NOT NULL DEFAULT 0,
   `data wystawienia` TEXT CHECK (`data wystawienia` IS NULL OR datetime(`data wystawienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP
 ) STRICT;
@@ -122,8 +122,8 @@ FROM `dokumenty sprzedaży`;
 
 
 DROP TABLE IF EXISTS `dokumenty sprzedaży chwilówk_migration`; CREATE TABLE `dokumenty sprzedaży chwilówk_migration` (
-  `nazwa dokumentu` TEXT CHECK (length(`nazwa dokumentu`) <= 50) NOT NULL,
-  `nr dokumentu` TEXT CHECK (length(`nr dokumentu`) <= 15) NOT NULL UNIQUE,
+  `nazwa dokumentu` TEXT NOT NULL,
+  `nr dokumentu` TEXT NOT NULL UNIQUE,
   `ID zlecenia` INTEGER NOT NULL DEFAULT 0,
   `data wystawienia` TEXT CHECK (`data wystawienia` IS NULL OR datetime(`data wystawienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP
 ) STRICT;
@@ -150,18 +150,18 @@ FROM `dokumenty sprzedaży chwilówk`;
 
 DROP TABLE IF EXISTS `dostawcy_migration`; CREATE TABLE `dostawcy_migration` (
   `ID dostawcy - producenta` INTEGER NOT NULL PRIMARY KEY,
-  `Nazwa` TEXT CHECK (length(`Nazwa`) <= 50) NOT NULL UNIQUE,
-  `kod pocztowy` TEXT CHECK (length(`kod pocztowy`) <= 6) NOT NULL,
-  `miejscowość` TEXT CHECK (length(`miejscowość`) <= 20) NOT NULL,
-  `ulica nr domu` TEXT CHECK (length(`ulica nr domu`) <= 30),
-  `tel 1` TEXT CHECK (length(`tel 1`) <= 15),
-  `tel 2` TEXT CHECK (length(`tel 2`) <= 15),
-  `fax` TEXT CHECK (length(`fax`) <= 15),
-  `konto bank` TEXT CHECK (length(`konto bank`) <= 50),
-  `nr konta` TEXT CHECK (length(`nr konta`) <= 50),
-  `przedstawiciel` TEXT CHECK (length(`przedstawiciel`) <= 50),
-  `@-maill` TEXT CHECK (length(`@-maill`) <= 30) UNIQUE,
-  `NIP` TEXT CHECK (length(`NIP`) <= 14),
+  `Nazwa` TEXT NOT NULL UNIQUE,
+  `kod pocztowy` TEXT NOT NULL,
+  `miejscowość` TEXT NOT NULL,
+  `ulica nr domu` TEXT,
+  `tel 1` TEXT,
+  `tel 2` TEXT,
+  `fax` TEXT,
+  `konto bank` TEXT,
+  `nr konta` TEXT,
+  `przedstawiciel` TEXT,
+  `@-maill` TEXT UNIQUE,
+  `NIP` TEXT,
   `otrzymany rabat %` INTEGER CHECK (`otrzymany rabat %` <= 255 AND `otrzymany rabat %` >= 0) NOT NULL DEFAULT 0
 ) STRICT;
 DROP VIEW IF EXISTS `dostawcy_csv_view`;
@@ -207,11 +207,11 @@ FROM `dostawcy`;
 
 
 DROP TABLE IF EXISTS `faktura szczegóły chwilówka_migration`; CREATE TABLE `faktura szczegóły chwilówka_migration` (
-  `nazwa części lub czynności` TEXT CHECK (length(`nazwa części lub czynności`) <= 50),
-  `jednostka` TEXT CHECK (length(`jednostka`) <= 5),
+  `nazwa części lub czynności` TEXT,
+  `jednostka` TEXT,
   `ilość` REAL DEFAULT 0,
   `cena netto` TEXT COLLATE DECIMAL CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
-  `numer` TEXT CHECK (length(`numer`) <= 10)
+  `numer` TEXT
 ) STRICT;
 DROP VIEW IF EXISTS `faktura szczegóły chwilówka_csv_view`;
 CREATE TABlE IF NOT EXISTS `faktura szczegóły chwilówka` AS SELECT * FROM `faktura szczegóły chwilówka_migration`;
@@ -240,10 +240,10 @@ FROM `faktura szczegóły chwilówka`;
 
 
 DROP TABLE IF EXISTS `inwentaryzacja_migration`; CREATE TABLE `inwentaryzacja_migration` (
-  `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
+  `numer cz` TEXT NOT NULL,
   `ilość` REAL,
   `data zapisu` TEXT CHECK (`data zapisu` IS NULL OR datetime(`data zapisu`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL DEFAULT 'inwen',
+  `rodzaj dokumentu` TEXT NOT NULL DEFAULT 'inwen',
   `numer dokumentu` INTEGER DEFAULT 4
 ) STRICT;
 DROP VIEW IF EXISTS `inwentaryzacja_csv_view`;
@@ -271,10 +271,10 @@ FROM `inwentaryzacja`;
 
 
 DROP TABLE IF EXISTS `inwentaryzacja nr 3_migration`; CREATE TABLE `inwentaryzacja nr 3_migration` (
-  `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
+  `numer cz` TEXT NOT NULL,
   `ilość` REAL,
   `data zapisu` TEXT CHECK (`data zapisu` IS NULL OR datetime(`data zapisu`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL DEFAULT 'inwen',
+  `rodzaj dokumentu` TEXT NOT NULL DEFAULT 'inwen',
   `numer dokumentu` INTEGER DEFAULT 3
 ) STRICT;
 DROP VIEW IF EXISTS `inwentaryzacja nr 3_csv_view`;
@@ -302,11 +302,11 @@ FROM `inwentaryzacja nr 3`;
 
 
 DROP TABLE IF EXISTS `jamar_migration`; CREATE TABLE `jamar_migration` (
-  `nazwa części lub czynności` TEXT CHECK (length(`nazwa części lub czynności`) <= 50),
-  `jednostka` TEXT CHECK (length(`jednostka`) <= 5),
+  `nazwa części lub czynności` TEXT,
+  `jednostka` TEXT,
   `ilość` REAL DEFAULT 0,
   `cena netto` TEXT COLLATE DECIMAL CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
-  `numer` TEXT CHECK (length(`numer`) <= 10)
+  `numer` TEXT
 ) STRICT;
 DROP VIEW IF EXISTS `jamar_csv_view`;
 CREATE TABlE IF NOT EXISTS `jamar` AS SELECT * FROM `jamar_migration`;
@@ -336,17 +336,17 @@ FROM `jamar`;
 
 DROP TABLE IF EXISTS `klienci_migration`; CREATE TABLE `klienci_migration` (
   `ID` INTEGER NOT NULL PRIMARY KEY,
-  `NAZWA` TEXT CHECK (length(`NAZWA`) <= 60) NOT NULL UNIQUE,
-  `MIASTO` TEXT CHECK (length(`MIASTO`) <= 20) NOT NULL,
-  `ULICA` TEXT CHECK (length(`ULICA`) <= 30) NOT NULL,
-  `KOD_POCZT` TEXT CHECK (length(`KOD_POCZT`) <= 10) NOT NULL,
-  `TELEFON1` TEXT CHECK (length(`TELEFON1`) <= 17),
-  `TELEFON2` TEXT CHECK (length(`TELEFON2`) <= 17),
-  `NIP` TEXT CHECK (length(`NIP`) <= 13) UNIQUE,
-  `KTO` TEXT CHECK (length(`KTO`) <= 8),
+  `NAZWA` TEXT NOT NULL UNIQUE,
+  `MIASTO` TEXT NOT NULL,
+  `ULICA` TEXT NOT NULL,
+  `KOD_POCZT` TEXT NOT NULL,
+  `TELEFON1` TEXT,
+  `TELEFON2` TEXT,
+  `NIP` TEXT UNIQUE,
+  `KTO` TEXT,
   `KIEDY` TEXT CHECK (`KIEDY` IS NULL OR datetime(`KIEDY`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `UPUST` INTEGER CHECK (`UPUST` <= 255 AND `UPUST` >= 0) DEFAULT 0,
-  `odbierający fakturę` TEXT CHECK (length(`odbierający fakturę`) <= 50),
+  `odbierający fakturę` TEXT,
   `list` INTEGER CHECK (`list` <= 1 AND `list` >= 0),
   `aux_info` TEXT DEFAULT NULL
 ) STRICT;
@@ -394,7 +394,7 @@ FROM `klienci`;
 
 DROP TABLE IF EXISTS `liczby słownie_migration`; CREATE TABLE `liczby słownie_migration` (
   `liczba` REAL NOT NULL PRIMARY KEY,
-  `słownie` TEXT CHECK (length(`słownie`) <= 100) NOT NULL UNIQUE
+  `słownie` TEXT NOT NULL UNIQUE
 ) STRICT;
 DROP VIEW IF EXISTS `liczby słownie_csv_view`;
 CREATE TABlE IF NOT EXISTS `liczby słownie` AS SELECT * FROM `liczby słownie_migration`;
@@ -414,12 +414,12 @@ FROM `liczby słownie`;
 
 DROP TABLE IF EXISTS `modele sam_migration`; CREATE TABLE `modele sam_migration` (
   `ID modelu` INTEGER NOT NULL PRIMARY KEY,
-  `Model:` TEXT CHECK (length(`Model:`) <= 15),
-  `Typ:` TEXT CHECK (length(`Typ:`) <= 15) UNIQUE,
-  `Nadw:` TEXT CHECK (length(`Nadw:`) <= 7),
-  `Rok produkcji:` TEXT CHECK (length(`Rok produkcji:`) <= 7),
-  `Silnik:` TEXT CHECK (length(`Silnik:`) <= 10),
-  `Kod:` TEXT CHECK (length(`Kod:`) <= 15)
+  `Model:` TEXT,
+  `Typ:` TEXT UNIQUE,
+  `Nadw:` TEXT,
+  `Rok produkcji:` TEXT,
+  `Silnik:` TEXT,
+  `Kod:` TEXT
 ) STRICT;
 DROP VIEW IF EXISTS `modele sam_csv_view`;
 CREATE TABlE IF NOT EXISTS `modele sam` AS SELECT * FROM `modele sam_migration`;
@@ -450,15 +450,15 @@ FROM `modele sam`;
 
 
 DROP TABLE IF EXISTS `nazwy części_migration`; CREATE TABLE `nazwy części_migration` (
-  `numer części` TEXT CHECK (length(`numer części`) <= 15) NOT NULL UNIQUE PRIMARY KEY,
-  `nazwa części` TEXT CHECK (length(`nazwa części`) <= 255),
+  `numer części` TEXT NOT NULL UNIQUE PRIMARY KEY,
+  `nazwa części` TEXT,
   `gtu` TEXT,
-  `jednostka` TEXT CHECK (length(`jednostka`) <= 50) DEFAULT 'szt.',
+  `jednostka` TEXT DEFAULT 'szt.',
   `grupa` REAL DEFAULT 0,
   `VAT` REAL DEFAULT .22,
   `ilość w opakowaniu zbiorczym` INTEGER CHECK (`ilość w opakowaniu zbiorczym` <= 255 AND `ilość w opakowaniu zbiorczym` >= 0) DEFAULT 0,
-  `lokalizacja w magazynie` TEXT CHECK (length(`lokalizacja w magazynie`) <= 10),
-  `odpowiedniki` TEXT CHECK (length(`odpowiedniki`) <= 50)
+  `lokalizacja w magazynie` TEXT,
+  `odpowiedniki` TEXT
 ) STRICT;
 DROP VIEW IF EXISTS `nazwy części_csv_view`;
 CREATE TABlE IF NOT EXISTS `nazwy części` AS SELECT * FROM `nazwy części_migration`;
@@ -492,11 +492,11 @@ FROM `nazwy części`;
 
 DROP TABLE IF EXISTS `obroty magazynowe_migration`; CREATE TABLE `obroty magazynowe_migration` (
   `ID` INTEGER NOT NULL PRIMARY KEY,
-  `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
+  `numer cz` TEXT NOT NULL,
   `ilość` REAL NOT NULL,
   `cena netto` TEXT COLLATE DECIMAL CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL,
+  `rodzaj dokumentu` TEXT NOT NULL,
   `numer dokumentu` INTEGER DEFAULT 0,
   `cena netto sprzedaży` TEXT COLLATE DECIMAL CHECK (`cena netto sprzedaży` IS NULL OR ((`cena netto sprzedaży` IS decimal(`cena netto sprzedaży`) OR `cena netto sprzedaży` LIKE (decimal(`cena netto sprzedaży`) || ' z_')) AND decimal_cmp(`cena netto sprzedaży`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto sprzedaży`,"-922337203685477,5808") > 0)) DEFAULT 0
 ) STRICT;
@@ -540,9 +540,9 @@ FROM `obroty magazynowe`;
 DROP TABLE IF EXISTS `płace_migration`; CREATE TABLE `płace_migration` (
   `ID płac` INTEGER NOT NULL PRIMARY KEY,
   `ID pracownika` INTEGER DEFAULT 0,
-  `data` TEXT CHECK (length(`data`) <= 10),
+  `data` TEXT,
   `kwota` REAL DEFAULT 0,
-  `podstawa` TEXT CHECK (length(`podstawa`) <= 15),
+  `podstawa` TEXT,
   `miesiąc płacenia` TEXT CHECK (`miesiąc płacenia` IS NULL OR datetime(`miesiąc płacenia`) IS NOT NULL)
 ) STRICT;
 DROP VIEW IF EXISTS `płace_csv_view`;
@@ -573,26 +573,26 @@ FROM `płace`;
 
 DROP TABLE IF EXISTS `pracownicy_migration`; CREATE TABLE `pracownicy_migration` (
   `ID pracownika` INTEGER NOT NULL PRIMARY KEY,
-  `nazwisko` TEXT CHECK (length(`nazwisko`) <= 15),
-  `imię` TEXT CHECK (length(`imię`) <= 15),
-  `inię II` TEXT CHECK (length(`inię II`) <= 15),
-  `nazwisko rodowe` TEXT CHECK (length(`nazwisko rodowe`) <= 15),
-  `imię ojca` TEXT CHECK (length(`imię ojca`) <= 15),
-  `imię matki` TEXT CHECK (length(`imię matki`) <= 15),
-  `nazwisko rodowe matki` TEXT CHECK (length(`nazwisko rodowe matki`) <= 15),
+  `nazwisko` TEXT,
+  `imię` TEXT,
+  `inię II` TEXT,
+  `nazwisko rodowe` TEXT,
+  `imię ojca` TEXT,
+  `imię matki` TEXT,
+  `nazwisko rodowe matki` TEXT,
   `data urodzenia` TEXT CHECK (`data urodzenia` IS NULL OR datetime(`data urodzenia`) IS NOT NULL) NOT NULL,
-  `miejsce urodzenia` TEXT CHECK (length(`miejsce urodzenia`) <= 15),
-  `obywatelstwo` TEXT CHECK (length(`obywatelstwo`) <= 15),
-  `nr PESEL` TEXT CHECK (length(`nr PESEL`) <= 12),
-  `nr NIP` TEXT CHECK (length(`nr NIP`) <= 15),
-  `ul i nr domu` TEXT CHECK (length(`ul i nr domu`) <= 20),
-  `kod` TEXT CHECK (length(`kod`) <= 7),
-  `miejscowość` TEXT CHECK (length(`miejscowość`) <= 15),
-  `tel domowy` TEXT CHECK (length(`tel domowy`) <= 15),
-  `wykształcenie` TEXT CHECK (length(`wykształcenie`) <= 15),
+  `miejsce urodzenia` TEXT,
+  `obywatelstwo` TEXT,
+  `nr PESEL` TEXT,
+  `nr NIP` TEXT,
+  `ul i nr domu` TEXT,
+  `kod` TEXT,
+  `miejscowość` TEXT,
+  `tel domowy` TEXT,
+  `wykształcenie` TEXT,
   `wykształcenie uzupełniające` TEXT,
   `dodatkowe uprawnienia` TEXT,
-  `stanowisko` TEXT CHECK (length(`stanowisko`) <= 15)
+  `stanowisko` TEXT
 ) STRICT;
 DROP VIEW IF EXISTS `pracownicy_csv_view`;
 CREATE TABlE IF NOT EXISTS `pracownicy` AS SELECT * FROM `pracownicy_migration`;
@@ -652,11 +652,11 @@ FROM `pracownicy`;
 
 
 DROP TABLE IF EXISTS `przyjęcia PZ_migration`; CREATE TABLE `przyjęcia PZ_migration` (
-  `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL,
+  `numer cz` TEXT NOT NULL,
   `ilość` REAL,
   `cena netto` TEXT COLLATE DECIMAL CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL DEFAULT 'dosta',
+  `rodzaj dokumentu` TEXT NOT NULL DEFAULT 'dosta',
   `numer dokumentu` INTEGER DEFAULT 0
 ) STRICT;
 DROP VIEW IF EXISTS `przyjęcia PZ_csv_view`;
@@ -689,7 +689,7 @@ FROM `przyjęcia PZ`;
 
 
 DROP TABLE IF EXISTS `rodzaje dokumentów_migration`; CREATE TABLE `rodzaje dokumentów_migration` (
-  `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5)
+  `rodzaj dokumentu` TEXT
 ) STRICT;
 DROP VIEW IF EXISTS `rodzaje dokumentów_csv_view`;
 CREATE TABlE IF NOT EXISTS `rodzaje dokumentów` AS SELECT * FROM `rodzaje dokumentów_migration`;
@@ -709,12 +709,12 @@ FROM `rodzaje dokumentów`;
 DROP TABLE IF EXISTS `samochody klientów_migration`; CREATE TABLE `samochody klientów_migration` (
   `ID` INTEGER NOT NULL PRIMARY KEY,
   `kalkulacja` INTEGER DEFAULT 0,
-  `marka` TEXT CHECK (length(`marka`) <= 15) NOT NULL,
-  `model` TEXT CHECK (length(`model`) <= 15) NOT NULL,
-  `nr rej` TEXT CHECK (length(`nr rej`) <= 15) NOT NULL,
+  `marka` TEXT NOT NULL,
+  `model` TEXT NOT NULL,
+  `nr rej` TEXT NOT NULL,
   `ID klienta` INTEGER DEFAULT 0,
-  `nr silnika` TEXT CHECK (length(`nr silnika`) <= 20) NOT NULL,
-  `nr nadwozia` TEXT CHECK (length(`nr nadwozia`) <= 25) NOT NULL
+  `nr silnika` TEXT NOT NULL,
+  `nr nadwozia` TEXT NOT NULL
 ) STRICT;
 DROP VIEW IF EXISTS `samochody klientów_csv_view`;
 CREATE TABlE IF NOT EXISTS `samochody klientów` AS SELECT * FROM `samochody klientów_migration`;
@@ -748,7 +748,7 @@ FROM `samochody klientów`;
 
 
 DROP TABLE IF EXISTS `sposób zapłaty_migration`; CREATE TABLE `sposób zapłaty_migration` (
-  `sposób zapłaty` TEXT CHECK (length(`sposób zapłaty`) <= 15)
+  `sposób zapłaty` TEXT
 ) STRICT;
 DROP VIEW IF EXISTS `sposób zapłaty_csv_view`;
 CREATE TABlE IF NOT EXISTS `sposób zapłaty` AS SELECT * FROM `sposób zapłaty_migration`;
@@ -765,11 +765,11 @@ FROM `sposób zapłaty`;
 
 
 DROP TABLE IF EXISTS `sprzedaż_migration`; CREATE TABLE `sprzedaż_migration` (
-  `numer cz` TEXT CHECK (length(`numer cz`) <= 15) NOT NULL UNIQUE,
+  `numer cz` TEXT NOT NULL UNIQUE,
   `ilość` REAL,
   `cena netto sprzedaży` TEXT COLLATE DECIMAL CHECK (`cena netto sprzedaży` IS NULL OR ((`cena netto sprzedaży` IS decimal(`cena netto sprzedaży`) OR `cena netto sprzedaży` LIKE (decimal(`cena netto sprzedaży`) || ' z_')) AND decimal_cmp(`cena netto sprzedaży`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto sprzedaży`,"-922337203685477,5808") > 0)),
   `cena netto` TEXT COLLATE DECIMAL CHECK (`cena netto` IS NULL OR ((`cena netto` IS decimal(`cena netto`) OR `cena netto` LIKE (decimal(`cena netto`) || ' z_')) AND decimal_cmp(`cena netto`,"922337203685477,5808") < 0 AND decimal_cmp(`cena netto`,"-922337203685477,5808") > 0)) DEFAULT 0,
-  `rodzaj dokumentu` TEXT CHECK (length(`rodzaj dokumentu`) <= 5) NOT NULL,
+  `rodzaj dokumentu` TEXT NOT NULL,
   `numer dokumentu` INTEGER NOT NULL,
   `data przyjęcia` TEXT CHECK (`data przyjęcia` IS NULL OR datetime(`data przyjęcia`) IS NOT NULL) NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) STRICT;
@@ -805,10 +805,10 @@ FROM `sprzedaż`;
 
 
 DROP TABLE IF EXISTS `zamówienia części_migration`; CREATE TABLE `zamówienia części_migration` (
-  `numer części` TEXT CHECK (length(`numer części`) <= 15),
+  `numer części` TEXT,
   `ilość` REAL DEFAULT 0,
   `data zamówienia` TEXT CHECK (`data zamówienia` IS NULL OR datetime(`data zamówienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
-  `uwagi / przeznaczenie` TEXT CHECK (length(`uwagi / przeznaczenie`) <= 50)
+  `uwagi / przeznaczenie` TEXT
 ) STRICT;
 DROP VIEW IF EXISTS `zamówienia części_csv_view`;
 CREATE TABlE IF NOT EXISTS `zamówienia części` AS SELECT * FROM `zamówienia części_migration`;
@@ -832,11 +832,11 @@ FROM `zamówienia części`;
 
 
 DROP TABLE IF EXISTS `zamówienia części archiwum_migration`; CREATE TABLE `zamówienia części archiwum_migration` (
-  `numer części` TEXT CHECK (length(`numer części`) <= 15),
+  `numer części` TEXT,
   `ilość` REAL DEFAULT 0,
   `data zamówienia` TEXT CHECK (`data zamówienia` IS NULL OR datetime(`data zamówienia`) IS NOT NULL) DEFAULT CURRENT_TIMESTAMP,
   `data realizacji` TEXT CHECK (`data realizacji` IS NULL OR datetime(`data realizacji`) IS NOT NULL),
-  `uwagi / przeznaczenie` TEXT CHECK (length(`uwagi / przeznaczenie`) <= 50),
+  `uwagi / przeznaczenie` TEXT,
   `zlealizowane` INTEGER CHECK (`zlealizowane` <= 1 AND `zlealizowane` >= 0)
 ) STRICT;
 DROP VIEW IF EXISTS `zamówienia części archiwum_csv_view`;
@@ -936,11 +936,11 @@ DROP TABLE IF EXISTS `zlecenia instalacji gazowej_migration`; CREATE TABLE `zlec
   `data zamknięcia` TEXT CHECK (`data zamknięcia` IS NULL OR datetime(`data zamknięcia`) IS NOT NULL),
   `zysk z części` TEXT COLLATE DECIMAL CHECK (`zysk z części` IS NULL OR ((`zysk z części` IS decimal(`zysk z części`) OR `zysk z części` LIKE (decimal(`zysk z części`) || ' z_')) AND decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `zysk z robocizny` TEXT COLLATE DECIMAL CHECK (`zysk z robocizny` IS NULL OR ((`zysk z robocizny` IS decimal(`zysk z robocizny`) OR `zysk z robocizny` LIKE (decimal(`zysk z robocizny`) || ' z_')) AND decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
-  `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
+  `mechanik prowadzący` TEXT,
   `% udziału` INTEGER CHECK (`% udziału` <= 255 AND `% udziału` >= 0) DEFAULT 0,
-  `pomocnik 1` TEXT CHECK (length(`pomocnik 1`) <= 30),
+  `pomocnik 1` TEXT,
   `% udziału p1` INTEGER CHECK (`% udziału p1` <= 255 AND `% udziału p1` >= 0) DEFAULT 0,
-  `pomocnik 2` TEXT CHECK (length(`pomocnik 2`) <= 30),
+  `pomocnik 2` TEXT,
   `% udziału p2` INTEGER CHECK (`% udziału p2` <= 255 AND `% udziału p2` >= 0) DEFAULT 0,
   `zgłoszone naprawy` TEXT,
   `uwagi o naprawie` INTEGER NOT NULL DEFAULT 0
@@ -1005,11 +1005,11 @@ DROP TABLE IF EXISTS `zlecenia naprawy_migration`; CREATE TABLE `zlecenia napraw
   `platnosc_data` TEXT CHECK (`platnosc_data` IS NULL OR datetime(`platnosc_data`) IS NOT NULL),
   `zysk z części` TEXT COLLATE DECIMAL CHECK (`zysk z części` IS NULL OR ((`zysk z części` IS decimal(`zysk z części`) OR `zysk z części` LIKE (decimal(`zysk z części`) || ' z_')) AND decimal_cmp(`zysk z części`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z części`,"-922337203685477,5808") > 0)) DEFAULT 0,
   `zysk z robocizny` TEXT COLLATE DECIMAL CHECK (`zysk z robocizny` IS NULL OR ((`zysk z robocizny` IS decimal(`zysk z robocizny`) OR `zysk z robocizny` LIKE (decimal(`zysk z robocizny`) || ' z_')) AND decimal_cmp(`zysk z robocizny`,"922337203685477,5808") < 0 AND decimal_cmp(`zysk z robocizny`,"-922337203685477,5808") > 0)) DEFAULT 0,
-  `mechanik prowadzący` TEXT CHECK (length(`mechanik prowadzący`) <= 30),
+  `mechanik prowadzący` TEXT,
   `% udziału` INTEGER CHECK (`% udziału` <= 255 AND `% udziału` >= 0) DEFAULT 0,
-  `pomocnik 1` TEXT CHECK (length(`pomocnik 1`) <= 30),
+  `pomocnik 1` TEXT,
   `% udziału p1` INTEGER CHECK (`% udziału p1` <= 255 AND `% udziału p1` >= 0) DEFAULT 0,
-  `pomocnik 2` TEXT CHECK (length(`pomocnik 2`) <= 30),
+  `pomocnik 2` TEXT,
   `% udziału p2` INTEGER CHECK (`% udziału p2` <= 255 AND `% udziału p2` >= 0) DEFAULT 0,
   `zgłoszone naprawy` TEXT,
   `uwagi o naprawie` TEXT
